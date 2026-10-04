@@ -37,7 +37,8 @@ export const feesApi = {
   getReceiptPrint: (id) => apiClient.get(`/fees/receipts/${id}/print`),
   cancelReceipt: (id, data) => apiClient.post(`/fees/receipts/${id}/cancel`, data),
 
-  // Reports
+  // Reports & Demand Bills
+  getDemandBills: (params) => apiClient.get('/fees/demand-bills', { params }),
   getDailyCollection: (params) => apiClient.get('/fees/reports/daily-collection', { params }),
   getDefaulters: (params) => apiClient.get('/fees/reports/defaulters', { params }),
   getClassMonthStatus: (params) => apiClient.get('/fees/reports/class-month-status', { params }),

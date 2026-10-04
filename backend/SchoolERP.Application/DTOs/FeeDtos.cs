@@ -466,6 +466,66 @@ namespace SchoolERP.Application.DTOs
         public decimal FinePaid { get; set; }
         public decimal BalanceCarried { get; set; }
     }
+
+    // 12. Demand Bill DTOs
+    public class DemandBillItemDto
+    {
+        public long FeeHeadId { get; set; }
+        public string FeeHeadName { get; set; } = string.Empty;
+        public long InstallmentId { get; set; }
+        public string InstallmentName { get; set; } = string.Empty;
+        public DateTime DueDate { get; set; }
+        public decimal OriginalAmount { get; set; }
+        public decimal ConcessionAmount { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
+        public decimal FineAmount { get; set; }
+        public decimal NetDemand { get; set; }
+    }
+
+    public class DemandBillStudentDto
+    {
+        public long StudentId { get; set; }
+        public string AdmissionNo { get; set; } = string.Empty;
+        public string RollNo { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string FatherName { get; set; } = string.Empty;
+        public string MotherName { get; set; } = string.Empty;
+        public string GuardianMobile { get; set; } = string.Empty;
+        public long ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public long? SectionId { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string DemandBillNo { get; set; } = string.Empty;
+        public DateTime BillDate { get; set; }
+        public DateTime DueDate { get; set; }
+        public decimal GrossAmount { get; set; }
+        public decimal ConcessionAmount { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
+        public decimal PreviousArrears { get; set; }
+        public decimal CurrentPeriodDue { get; set; }
+        public decimal FineAmount { get; set; }
+        public decimal NetDemandAmount { get; set; }
+        public string Status { get; set; } = "Unpaid";
+        public List<string> InstallmentNames { get; set; } = new List<string>();
+        public List<DemandBillItemDto> Items { get; set; } = new List<DemandBillItemDto>();
+    }
+
+    public class DemandBillResponseDto
+    {
+        public int TotalStudents { get; set; }
+        public decimal TotalGrossAmount { get; set; }
+        public decimal TotalConcessionAmount { get; set; }
+        public decimal TotalPaidAmount { get; set; }
+        public decimal TotalBalanceAmount { get; set; }
+        public decimal TotalFineAmount { get; set; }
+        public decimal TotalNetDemandAmount { get; set; }
+        public int TotalDefaulters { get; set; }
+        public List<DemandBillStudentDto> Students { get; set; } = new List<DemandBillStudentDto>();
+    }
 }
+
 
 

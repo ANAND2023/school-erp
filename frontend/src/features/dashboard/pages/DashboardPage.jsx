@@ -653,6 +653,9 @@ export const DashboardPage = () => {
                   <Button size="small" variant="outlined" color="secondary" startIcon={<PaymentIcon />} onClick={() => navigate('/fees/collection')}>
                     Collect Fees Counter
                   </Button>
+                  <Button size="small" variant="outlined" color="warning" startIcon={<ReceiptLongIcon />} onClick={() => navigate('/fees/demand-bills')}>
+                    Fee Demand Bills
+                  </Button>
                   <Button size="small" variant="outlined" color="success" startIcon={<ReceiptLongIcon />} onClick={() => navigate('/fees/reports')}>
                     Fee Register & Receipts
                   </Button>

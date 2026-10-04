@@ -39,6 +39,7 @@ import TeacherAllocationPage from '../features/staff/pages/TeacherAllocationPage
 import FeeStructurePage from '../features/fees/pages/FeeStructurePage';
 import FeeAssignmentPage from '../features/fees/pages/FeeAssignmentPage';
 import FeeCollectionPage from '../features/fees/pages/FeeCollectionPage';
+import DemandBillPage from '../features/fees/pages/DemandBillPage';
 import FeeReportsPage from '../features/fees/pages/FeeReportsPage';
 
 // Module 6: Attendance & Timetable
@@ -375,6 +376,22 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="FeeCollection">
               <FeeCollectionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="fees/demand-bills"
+          element={
+            <ProtectedRoute requiredMenu={['FeeCollection', 'FeeReports']}>
+              <DemandBillPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="fees/demand-notice"
+          element={
+            <ProtectedRoute requiredMenu={['FeeCollection', 'FeeReports']}>
+              <DemandBillPage />
             </ProtectedRoute>
           }
         />

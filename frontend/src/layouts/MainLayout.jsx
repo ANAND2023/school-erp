@@ -76,6 +76,7 @@ const navItems = [
       { title: 'Fee Structure', path: '/fees/structure', menuKey: 'FeeStructure' },
       { title: 'Fee Assignment', path: '/fees/assignment', menuKey: 'FeeStructure' },
       { title: 'Fee Collection', path: '/fees/collection', menuKey: 'FeeCollection' },
+      { title: 'Demand Bill', path: '/fees/demand-bills', menuKey: 'FeeCollection' },
       { title: 'Fee Concessions', path: '/fees/concessions', menuKey: 'FeeConcessions' },
       { title: 'Fee Reports', path: '/fees/reports', menuKey: 'FeeReports' },
     ],
