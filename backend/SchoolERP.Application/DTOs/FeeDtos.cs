@@ -509,6 +509,8 @@ namespace SchoolERP.Application.DTOs
         public decimal FineAmount { get; set; }
         public decimal NetDemandAmount { get; set; }
         public string Status { get; set; } = "Unpaid";
+        public string MonthName { get; set; } = string.Empty;
+        public string BillingPeriod { get; set; } = string.Empty;
         public List<string> InstallmentNames { get; set; } = new List<string>();
         public List<DemandBillItemDto> Items { get; set; } = new List<DemandBillItemDto>();
     }

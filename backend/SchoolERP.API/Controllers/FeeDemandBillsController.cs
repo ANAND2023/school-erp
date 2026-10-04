@@ -24,6 +24,12 @@ namespace SchoolERP.API.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
 
+        private static readonly string[] MonthNames = new[]
+        {
+            "April", "May", "June", "July", "August", "September",
+            "October", "November", "December", "January", "February", "March"
+        };
+
         public FeeDemandBillsController(ApplicationDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
@@ -36,9 +42,12 @@ namespace SchoolERP.API.Controllers
             [FromQuery] long? classId,
             [FromQuery] long? sectionId,
             [FromQuery] long? installmentId,
-            [FromQuery] long? academicYearId,
-            [FromQuery] string? searchTerm,
-            [FromQuery] DateTime? customDueDate,
+            [FromQuery] int? monthIndex,
+            [FromQuery] string? monthName,
+            [FromQuery] string? mode = "all", // "single_month", "upto_month", "all"
+            [FromQuery] long? academicYearId = null,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] DateTime? customDueDate = null,
             [FromQuery] string? statusFilter = "unpaid")
         {
             var branchId = _currentUserService.BranchId;
@@ -60,10 +69,35 @@ namespace SchoolERP.API.Controllers
                 .ThenBy(i => i.DueDate)
                 .ToListAsync();
 
+            // Determine Target Installment(s)
             FeeInstallment? targetInstallment = null;
             if (installmentId.HasValue && installmentId.Value > 0)
             {
                 targetInstallment = allInstallments.FirstOrDefault(i => i.Id == installmentId.Value);
+            }
+            else if (!string.IsNullOrWhiteSpace(monthName))
+            {
+                targetInstallment = allInstallments.FirstOrDefault(i => i.Name.ToLower().Contains(monthName.Trim().ToLower()));
+            }
+            else if (monthIndex.HasValue && monthIndex.Value >= 1 && monthIndex.Value <= allInstallments.Count)
+            {
+                targetInstallment = allInstallments[monthIndex.Value - 1];
+            }
+
+            string billingPeriodLabel = "Academic Session Due";
+            if (targetInstallment != null)
+            {
+                if (mode == "upto_month")
+                {
+                    var firstInst = allInstallments.FirstOrDefault();
+                    billingPeriodLabel = firstInst != null && firstInst.Id != targetInstallment.Id
+                        ? $"{firstInst.Name} to {targetInstallment.Name}"
+                        : $"Up to {targetInstallment.Name}";
+                }
+                else
+                {
+                    billingPeriodLabel = $"Month of {targetInstallment.Name}";
+                }
             }
 
             // Query active students enrolled in this academic year
@@ -155,14 +189,14 @@ namespace SchoolERP.API.Controllers
 
                 if (studentDues == null || !studentDues.Any()) continue;
 
-                // Determine relevant dues based on targetInstallment
+                // Determine relevant dues based on targetInstallment and mode
                 List<StudentFeeDue> relevantDues;
                 decimal prevArrears = 0;
                 decimal currentDue = 0;
 
                 if (targetInstallment != null)
                 {
-                    // Prior unpaid installments
+                    // Prior unpaid installments (before the target installment)
                     var priorDues = studentDues
                         .Where(d => d.Installment != null &&
                                     (d.Installment.DisplayOrder < targetInstallment.DisplayOrder ||
@@ -172,26 +206,43 @@ namespace SchoolERP.API.Controllers
 
                     prevArrears = priorDues.Sum(d => d.BalanceAmount);
 
-                    // Target installment dues
-                    var currentInstallmentDues = studentDues
-                        .Where(d => d.InstallmentId == targetInstallment.Id)
-                        .ToList();
+                    if (mode == "single_month")
+                    {
+                        // Specific single month dues
+                        var currentMonthDues = studentDues
+                            .Where(d => d.InstallmentId == targetInstallment.Id)
+                            .ToList();
 
-                    currentDue = currentInstallmentDues.Sum(d => d.BalanceAmount);
+                        currentDue = currentMonthDues.Sum(d => d.BalanceAmount);
+                        relevantDues = currentMonthDues; // Show target month items in table, arrears shown as prior balance
+                    }
+                    else // "upto_month" or default
+                    {
+                        var uptoDues = studentDues
+                            .Where(d => d.Installment != null &&
+                                        (d.Installment.DisplayOrder < targetInstallment.DisplayOrder ||
+                                         (d.Installment.DisplayOrder == targetInstallment.DisplayOrder && d.Installment.DueDate <= targetInstallment.DueDate)))
+                            .ToList();
 
-                    // Combine prior + current for total demand
-                    relevantDues = priorDues.Concat(currentInstallmentDues).ToList();
+                        var currentMonthDues = studentDues.Where(d => d.InstallmentId == targetInstallment.Id).ToList();
+                        currentDue = currentMonthDues.Sum(d => d.BalanceAmount);
+                        relevantDues = uptoDues;
+                    }
                 }
                 else
                 {
-                    // All dues (or all unpaid dues)
+                    // All dues across whole session
                     relevantDues = studentDues;
                     prevArrears = 0;
                     currentDue = relevantDues.Sum(d => d.BalanceAmount);
                 }
 
+                // Total balance for the demand (including previous arrears if single month mode)
+                var relevantBalance = relevantDues.Sum(d => d.BalanceAmount);
+                var totalDemandBalance = mode == "single_month" ? (relevantBalance + prevArrears) : relevantBalance;
+
                 // Apply statusFilter
-                if (statusFilter == "unpaid" && !relevantDues.Any(d => d.BalanceAmount > 0))
+                if (statusFilter == "unpaid" && totalDemandBalance <= 0)
                 {
                     continue; // Skip if no balance due
                 }
@@ -253,10 +304,9 @@ namespace SchoolERP.API.Controllers
                 var totalGross = relevantDues.Sum(d => d.OriginalAmount);
                 var totalConcession = relevantDues.Sum(d => d.ConcessionAmount);
                 var totalPaid = relevantDues.Sum(d => d.PaidAmount);
-                var totalBalance = relevantDues.Sum(d => d.BalanceAmount);
-                var totalNetDemand = totalBalance + studentTotalFine;
+                var totalNetDemand = totalDemandBalance + studentTotalFine;
 
-                var overallStatus = totalBalance <= 0
+                var overallStatus = totalDemandBalance <= 0
                     ? "Paid"
                     : (totalPaid > 0 ? "Partially Paid" : "Unpaid");
 
@@ -268,6 +318,7 @@ namespace SchoolERP.API.Controllers
                     .ToList();
 
                 var finalDueDate = customDueDate ?? (targetInstallment?.DueDate ?? today.AddDays(10));
+                var activeMonthName = targetInstallment?.Name ?? (distinctInstallmentNames.FirstOrDefault() ?? "Annual Term");
 
                 studentDtos.Add(new DemandBillStudentDto
                 {
@@ -289,12 +340,14 @@ namespace SchoolERP.API.Controllers
                     GrossAmount = totalGross,
                     ConcessionAmount = totalConcession,
                     PaidAmount = totalPaid,
-                    BalanceAmount = totalBalance,
+                    BalanceAmount = totalDemandBalance,
                     PreviousArrears = prevArrears,
-                    CurrentPeriodDue = currentDue > 0 ? currentDue : totalBalance,
+                    CurrentPeriodDue = currentDue > 0 ? currentDue : relevantBalance,
                     FineAmount = studentTotalFine,
                     NetDemandAmount = totalNetDemand,
                     Status = overallStatus,
+                    MonthName = activeMonthName,
+                    BillingPeriod = billingPeriodLabel,
                     InstallmentNames = distinctInstallmentNames,
                     Items = itemsDtoList
                 });

@@ -9,7 +9,7 @@ import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Calendar } from 'primereact/calendar';
 import { Dialog } from 'primereact/dialog';
-import { ProgressSpinner } from 'primereact/progressspinner';
+import { SelectButton } from 'primereact/selectbutton';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 
@@ -19,6 +19,21 @@ import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useAuthStore } from '../../../store/authStore';
 import { DemandBillPrintModal } from '../components/DemandBillPrintModal';
 
+const ACADEMIC_MONTHS = [
+  { index: 1, name: 'April', short: 'Apr' },
+  { index: 2, name: 'May', short: 'May' },
+  { index: 3, name: 'June', short: 'Jun' },
+  { index: 4, name: 'July', short: 'Jul' },
+  { index: 5, name: 'August', short: 'Aug' },
+  { index: 6, name: 'September', short: 'Sep' },
+  { index: 7, name: 'October', short: 'Oct' },
+  { index: 8, name: 'November', short: 'Nov' },
+  { index: 9, name: 'December', short: 'Dec' },
+  { index: 10, name: 'January', short: 'Jan' },
+  { index: 11, name: 'February', short: 'Feb' },
+  { index: 12, name: 'March', short: 'Mar' },
+];
+
 export const DemandBillPage = () => {
   const toastRef = useRef(null);
   const { activeAcademicYearId, activeAcademicYearName } = useAcademicYear();
@@ -27,6 +42,8 @@ export const DemandBillPage = () => {
   // Filter states
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null); // 1-12 or null for all
+  const [billingMode, setBillingMode] = useState('single_month'); // 'single_month', 'upto_month', 'all'
   const [selectedInstallment, setSelectedInstallment] = useState(null);
   const [statusFilter, setStatusFilter] = useState('unpaid');
   const [customDueDate, setCustomDueDate] = useState(null);
@@ -113,11 +130,21 @@ export const DemandBillPage = () => {
   // Fetch Demand Bills Data
   const fetchDemandBills = () => {
     setLoading(true);
+
+    const selectedMonthObj = selectedMonthIndex
+      ? ACADEMIC_MONTHS.find((m) => m.index === selectedMonthIndex)
+      : null;
+
+    const effectiveMode = selectedMonthIndex ? billingMode : 'all';
+
     const params = {
       academicYearId: activeAcademicYearId,
       classId: selectedClass || undefined,
       sectionId: selectedSection || undefined,
       installmentId: selectedInstallment || undefined,
+      monthIndex: selectedMonthIndex || undefined,
+      monthName: selectedMonthObj?.name || undefined,
+      mode: effectiveMode,
       statusFilter: statusFilter || undefined,
       searchTerm: searchTerm || undefined,
       customDueDate: customDueDate ? dayjs(customDueDate).format('YYYY-MM-DD') : undefined,
@@ -155,7 +182,7 @@ export const DemandBillPage = () => {
 
   useEffect(() => {
     fetchDemandBills();
-  }, [activeAcademicYearId, selectedClass, selectedSection, selectedInstallment, statusFilter]);
+  }, [activeAcademicYearId, selectedClass, selectedSection, selectedInstallment, selectedMonthIndex, billingMode, statusFilter]);
 
   // Handle Single Student Print
   const handlePrintSingle = (student) => {
@@ -205,10 +232,12 @@ export const DemandBillPage = () => {
     const mobileWithCountry = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
     const dueDate = student.dueDate ? dayjs(student.dueDate).format('DD-MM-YYYY') : dayjs().add(10, 'day').format('DD-MM-YYYY');
     const netAmount = Number(student.netDemandAmount || student.balanceAmount || 0).toLocaleString('en-IN');
+    const period = student.billingPeriod || student.monthName || 'Current Due';
     
     const message = `*FEE DEMAND NOTICE - ${schoolInfo?.schoolName || 'SCHOOL'}*\n\n` +
       `Dear Parent,\n` +
       `This is a gentle reminder regarding the fee demand bill for your ward *${student.studentName}* (Class: *${student.className}${student.sectionName ? ' - ' + student.sectionName : ''}*, Adm No: *${student.admissionNo}*).\n\n` +
+      `• *Billing Period:* ${period}\n` +
       `• *Total Due Demand:* ₹${netAmount}\n` +
       `• *Due Date:* ${dueDate}\n` +
       `• *Bill No:* ${student.demandBillNo || 'DB-' + student.admissionNo}\n\n` +
@@ -226,6 +255,7 @@ export const DemandBillPage = () => {
     const dataToExport = students.map((s, idx) => ({
       'S.No': idx + 1,
       'Bill No': s.demandBillNo,
+      'Billing Period': s.billingPeriod || s.monthName || '',
       'Admission No': s.admissionNo,
       'Roll No': s.rollNo,
       'Student Name': s.studentName,
@@ -233,7 +263,6 @@ export const DemandBillPage = () => {
       'Guardian Mobile': s.guardianMobile,
       'Class': s.className,
       'Section': s.sectionName,
-      'Fee Periods': s.installmentNames?.join(', ') || '',
       'Gross Fee (INR)': s.grossAmount,
       'Concession (INR)': s.concessionAmount,
       'Paid Fee (INR)': s.paidAmount,
@@ -266,11 +295,17 @@ export const DemandBillPage = () => {
     return <Tag value={status} severity={severity} className="text-xs font-semibold px-2 py-1" />;
   };
 
-  // Amount Body Templates
   const netDemandBodyTemplate = (rowData) => (
-    <span className="font-bold text-red-600 text-sm">
-      ₹ {Number(rowData.netDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-    </span>
+    <div className="flex flex-column align-items-end">
+      <span className="font-bold text-red-600 text-sm">
+        ₹ {Number(rowData.netDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+      </span>
+      {Number(rowData.previousArrears || 0) > 0 && (
+        <span className="text-xs text-orange-600 font-semibold">
+          (Arrears: ₹{Number(rowData.previousArrears).toLocaleString('en-IN')})
+        </span>
+      )}
+    </div>
   );
 
   const studentNameBodyTemplate = (rowData) => (
@@ -312,6 +347,11 @@ export const DemandBillPage = () => {
     </div>
   );
 
+  const modeOptions = [
+    { label: 'Selected Month Only', value: 'single_month' },
+    { label: 'Cumulative (Up to Month)', value: 'upto_month' },
+  ];
+
   return (
     <div className="p-3">
       <Toast ref={toastRef} />
@@ -324,7 +364,7 @@ export const DemandBillPage = () => {
             <Tag value={activeAcademicYearName || 'Active Session'} severity="info" className="font-semibold" />
           </div>
           <p className="text-xs text-500 m-0 mt-1">
-            Generate, bulk print & dispatch student fee demand notices, invoices, and bank challans with itemized heads and overdue fines.
+            Generate, bulk print & dispatch month-wise student fee demand bills, notices, and bank challans with itemized heads and arrears.
           </p>
         </div>
 
@@ -345,6 +385,60 @@ export const DemandBillPage = () => {
           />
         </div>
       </div>
+
+      {/* 🗓️ Interactive Month Navigation Bar */}
+      <Card className="shadow-1 mb-3 py-2 px-1" style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
+        <div className="flex flex-column md:flex-row md:align-items-center justify-content-between gap-2">
+          <div className="flex align-items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+            <span className="text-xs font-bold text-600 mr-2 flex align-items-center gap-1">
+              <i className="pi pi-calendar text-primary text-sm" />
+              MONTH:
+            </span>
+
+            <Button
+              label="All Session"
+              className={`p-button-xs font-semibold ${selectedMonthIndex === null ? 'p-button-primary shadow-1' : 'p-button-outlined p-button-secondary'}`}
+              style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px' }}
+              onClick={() => setSelectedMonthIndex(null)}
+            />
+
+            {ACADEMIC_MONTHS.map((m) => {
+              const isSelected = selectedMonthIndex === m.index;
+              return (
+                <Button
+                  key={m.index}
+                  label={m.short}
+                  title={`Bill for ${m.name}`}
+                  className={`p-button-xs font-semibold ${isSelected ? 'p-button-primary shadow-2' : 'p-button-outlined p-button-secondary'}`}
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '4px 9px',
+                    borderRadius: '6px',
+                    backgroundColor: isSelected ? 'var(--primary-color, #1e3a8a)' : 'transparent',
+                    color: isSelected ? '#ffffff' : '#475569',
+                    borderColor: isSelected ? 'var(--primary-color, #1e3a8a)' : '#cbd5e1',
+                  }}
+                  onClick={() => setSelectedMonthIndex(m.index)}
+                />
+              );
+            })}
+          </div>
+
+          {/* Mode Selector for Selected Month */}
+          {selectedMonthIndex !== null && (
+            <div className="flex align-items-center gap-2">
+              <span className="text-xs text-500 font-semibold">Mode:</span>
+              <SelectButton
+                value={billingMode}
+                options={modeOptions}
+                onChange={(e) => e.value && setBillingMode(e.value)}
+                className="p-buttonset-xs"
+                style={{ fontSize: '0.75rem' }}
+              />
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Top Statistics KPI Cards */}
       <div className="grid mb-3">
@@ -444,17 +538,6 @@ export const DemandBillPage = () => {
           </div>
 
           <div className="col-12 sm:col-6 md:col-2">
-            <label className="block text-xs font-semibold text-600 mb-1">Fee Installment / Period</label>
-            <Dropdown
-              value={selectedInstallment}
-              options={[{ label: 'All Due Periods', value: null }, ...installments.map(i => ({ label: i.name, value: i.id }))]}
-              onChange={(e) => setSelectedInstallment(e.value)}
-              placeholder="All Periods"
-              className="w-full p-inputtext-sm"
-            />
-          </div>
-
-          <div className="col-12 sm:col-6 md:col-2">
             <label className="block text-xs font-semibold text-600 mb-1">Due Status</label>
             <Dropdown
               value={statusFilter}
@@ -464,6 +547,18 @@ export const DemandBillPage = () => {
                 { label: 'Partially Paid', value: 'partial' },
               ]}
               onChange={(e) => setStatusFilter(e.value)}
+              className="w-full p-inputtext-sm"
+            />
+          </div>
+
+          <div className="col-12 sm:col-6 md:col-2">
+            <label className="block text-xs font-semibold text-600 mb-1">Custom Due Date</label>
+            <Calendar
+              value={customDueDate}
+              onChange={(e) => setCustomDueDate(e.value)}
+              placeholder="Bill Due Date"
+              dateFormat="dd-mm-yy"
+              showIcon
               className="w-full p-inputtext-sm"
             />
           </div>
@@ -501,17 +596,18 @@ export const DemandBillPage = () => {
           stripedRows
         >
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-          <Column field="demandBillNo" header="Bill No" sortable className="font-semibold text-xs text-700" style={{ width: '130px' }} />
+          <Column field="demandBillNo" header="Bill No" sortable className="font-semibold text-xs text-700" style={{ width: '120px' }} />
           <Column header="Student Particulars" body={studentNameBodyTemplate} sortable field="studentName" />
-          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ width: '110px' }} />
+          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ width: '100px' }} />
           <Column header="Parent & Contact" body={guardianBodyTemplate} />
-          <Column header="Fee Period(s)" body={(r) => r.installmentNames?.join(', ') || '-'} className="text-xs text-600" style={{ maxWidth: '180px' }} />
+          <Column header="Billing Period" body={(r) => <Tag value={r.billingPeriod || r.monthName || 'Session Due'} severity="info" className="text-xs" />} style={{ width: '150px' }} />
           <Column field="grossAmount" header="Gross (₹)" body={(r) => Number(r.grossAmount || 0).toLocaleString('en-IN')} className="text-right text-xs" />
           <Column field="concessionAmount" header="Disc (₹)" body={(r) => Number(r.concessionAmount || 0) > 0 ? `-${Number(r.concessionAmount).toFixed(0)}` : '0'} className="text-right text-xs text-green-600" />
+          <Column field="currentPeriodDue" header="Month Due (₹)" body={(r) => Number(r.currentPeriodDue || r.balanceAmount || 0).toLocaleString('en-IN')} className="text-right text-xs font-semibold text-blue-700" />
           <Column field="previousArrears" header="Arrears (₹)" body={(r) => Number(r.previousArrears || 0) > 0 ? Number(r.previousArrears).toLocaleString('en-IN') : '-'} className="text-right text-xs text-orange-600" />
           <Column field="fineAmount" header="Fine (₹)" body={(r) => Number(r.fineAmount || 0) > 0 ? Number(r.fineAmount).toFixed(0) : '-'} className="text-right text-xs text-red-500" />
           <Column field="netDemandAmount" header="Net Demand (₹)" body={netDemandBodyTemplate} sortable className="text-right" />
-          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '110px' }} />
+          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '100px' }} />
           <Column header="Actions" body={actionBodyTemplate} style={{ width: '130px' }} />
         </DataTable>
       </Card>
@@ -528,7 +624,7 @@ export const DemandBillPage = () => {
       <Dialog
         visible={!!breakdownStudent}
         onHide={() => setBreakdownStudent(null)}
-        header={`Fee Head Breakdown: ${breakdownStudent?.studentName} (${breakdownStudent?.admissionNo})`}
+        header={`Fee Breakdown: ${breakdownStudent?.studentName} (${breakdownStudent?.admissionNo})`}
         style={{ width: '650px' }}
         modal
       >
@@ -536,7 +632,7 @@ export const DemandBillPage = () => {
           <div>
             <div className="flex justify-content-between p-2 bg-blue-50 border-round mb-3 text-xs">
               <span><strong>Class:</strong> {breakdownStudent.className} {breakdownStudent.sectionName}</span>
-              <span><strong>Total Gross:</strong> ₹{Number(breakdownStudent.grossAmount).toLocaleString('en-IN')}</span>
+              <span><strong>Period:</strong> {breakdownStudent.billingPeriod || breakdownStudent.monthName}</span>
               <span><strong>Net Demand Due:</strong> <strong className="text-red-600">₹{Number(breakdownStudent.netDemandAmount).toLocaleString('en-IN')}</strong></span>
             </div>
 
@@ -564,6 +660,13 @@ export const DemandBillPage = () => {
                 ))}
               </tbody>
             </table>
+
+            {Number(breakdownStudent.previousArrears || 0) > 0 && (
+              <div className="flex justify-content-between p-2 bg-orange-50 border-round mt-2 text-xs font-semibold text-orange-800">
+                <span>Previous Unpaid Arrears:</span>
+                <span>₹ {Number(breakdownStudent.previousArrears).toLocaleString('en-IN')}</span>
+              </div>
+            )}
 
             <div className="flex justify-content-end gap-2 mt-3">
               <Button

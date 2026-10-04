@@ -156,9 +156,9 @@ export const SingleDemandSlip = ({ data = {}, copyTitle = 'STUDENT / PARENT COPY
         </div>
       </div>
 
-      {/* Installment Coverage Notice */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', padding: '3px 8px', borderRadius: '3px', marginBottom: '6px', fontSize: '10px', color: '#1e40af' }}>
-        <span><strong>Fee Period:</strong> {installmentsList}</span>
+      {/* Installment & Month Coverage Notice */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', padding: '4px 8px', borderRadius: '3px', marginBottom: '6px', fontSize: '10.5px', color: '#1e40af', border: '1px solid #bfdbfe' }}>
+        <span><strong>Billing Month / Period:</strong> <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>{data.billingPeriod || data.monthName || installmentsList}</span></span>
         <span><strong>Payment Status:</strong> <span style={{ color: netPayable > 0 ? '#b91c1c' : '#15803d', fontWeight: 'bold' }}>{data.status || (netPayable > 0 ? 'DUE / UNPAID' : 'PAID')}</span></span>
       </div>
 
