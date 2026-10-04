@@ -1,0 +1,2629 @@
+import React, { useState } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  TextField,
+  MenuItem,
+  Button,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Stack,
+  Alert,
+  CircularProgress,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Tooltip,
+  InputAdornment,
+  Avatar,
+  LinearProgress,
+} from '@mui/material';
+import {
+  Receipt as ReceiptIcon,
+  Warning as DefaulterIcon,
+  Print as PrintIcon,
+  Cancel as CancelIcon,
+  FileDownload as FileDownloadIcon,
+  PictureAsPdf as PdfIcon,
+  TableChart as ExcelIcon,
+  PointOfSale as CollectIcon,
+  School as SchoolIcon,
+  Close as CloseIcon,
+  FilterList as FilterIcon,
+  Person as PersonIcon,
+  Settings as SettingsIcon,
+  CalendarMonth as CalendarMonthIcon,
+  History as HistoryIcon,
+  Search as SearchIcon,
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+  AccountBalanceWallet as WalletIcon,
+  Clear as ClearIcon,
+  ReceiptLong as ReceiptLongIcon,
+  Check as CheckIcon,
+  Payment as PaymentIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import { feesApi } from '../api';
+import { studentApi } from '../../students/api';
+import { branchApi, classesApi } from '../../masters/api';
+import { usePermission } from '../../../hooks/usePermission';
+import { useAuthStore } from '../../../store/authStore';
+import {
+  exportCollectionToExcel,
+  exportCollectionToPdf,
+  exportDefaultersToExcel,
+  exportDefaultersToPdf,
+  exportDualFeeReceiptPdf,
+  exportClassMonthStatusToExcel,
+} from '../utils/feeExportUtils';
+import { FeeReceiptSlip } from '../components/FeeReceiptSlip';
+import { StudentFeeHistoryModal } from '../components/StudentFeeHistoryModal';
+import { AppDatePicker, AppSelect } from '../../../components/common';
+import { printWithTitle } from '../../../utils/printUtils';
+
+const PAYMENT_MODES = [
+  { label: 'All Payment Modes', value: 'ALL' },
+  { label: 'Cash', value: 'Cash' },
+  { label: 'UPI (GPay / PhonePe / Paytm)', value: 'UPI' },
+  { label: 'Cheque', value: 'Cheque' },
+  { label: 'Bank Transfer / NEFT / IMPS', value: 'BankTransfer' },
+  { label: 'Debit / Credit Card', value: 'Card' },
+  { label: 'Online Gateway', value: 'Online' },
+];
+
+export default function FeeReportsPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { can } = usePermission();
+  const { user } = useAuthStore();
+
+  const schoolName = user?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const branchName = user?.branchName ? `${user.branchName} Branch` : 'Main Campus';
+
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Tab 1: Collection filters
+  const [startDate, setStartDate] = useState(dayjs().subtract(7, 'day').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [paymentModeFilter, setPaymentModeFilter] = useState('ALL');
+
+  // Tab 2: Defaulters filters
+  const [defaulterClassId, setDefaulterClassId] = useState('');
+  const [defaulterSectionId, setDefaulterSectionId] = useState('');
+
+  // Modals
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedReceiptForCancel, setSelectedReceiptForCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelError, setCancelError] = useState('');
+
+  // Single Receipt Print
+  const { activeBranchId } = useAuthStore();
+  const [printReceiptData, setPrintReceiptData] = useState(null);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [headerSaveLoading, setHeaderSaveLoading] = useState(false);
+
+  // Full Register Print Previews
+  const [isCollectionPrintOpen, setIsCollectionPrintOpen] = useState(false);
+  const [isDefaultersPrintOpen, setIsDefaultersPrintOpen] = useState(false);
+
+  // Classes query
+  const { data: classesRes } = useQuery({
+    queryKey: ['classes-list'],
+    queryFn: () => classesApi.getClasses(),
+  });
+  const classes = classesRes?.data?.data || [];
+
+  const selectedDefaulterClass = classes.find((c) => String(c.id) === String(defaulterClassId));
+  const defaulterSections = selectedDefaulterClass ? selectedDefaulterClass.sections : [];
+
+  // 1. Daily Collection Query
+  const {
+    data: collectionRes,
+    isLoading: isLoadingCollection,
+  } = useQuery({
+    queryKey: ['fee-daily-collection', startDate, endDate],
+    queryFn: () => feesApi.getDailyCollection({ startDate, endDate }),
+  });
+  const rawCollectionList = collectionRes?.data?.data || [];
+
+  // Client-side Instant Filter by Payment Mode ("mode bhi lgao")
+  const collectionList = rawCollectionList.filter((r) => {
+    if (!paymentModeFilter || paymentModeFilter === 'ALL') return true;
+    return (r.paymentModes || '').toLowerCase().includes(paymentModeFilter.toLowerCase());
+  });
+
+  // 2. Defaulters Query
+  const defaulterParams = {
+    classId: defaulterClassId || undefined,
+    sectionId: defaulterSectionId || undefined,
+  };
+  const {
+    data: defaultersRes,
+    isLoading: isLoadingDefaulters,
+  } = useQuery({
+    queryKey: ['fee-defaulters', defaulterParams],
+    queryFn: () => feesApi.getDefaulters(defaulterParams),
+  });
+  const defaultersList = defaultersRes?.data?.data || [];
+
+  // Cancel Receipt Mutation
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, data }) => feesApi.cancelReceipt(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['fee-daily-collection']);
+      setCancelModalOpen(false);
+      setSelectedReceiptForCancel(null);
+      setCancelReason('');
+      setCancelError('');
+    },
+    onError: (err) => {
+      setCancelError(err?.response?.data?.message || 'Failed to cancel receipt.');
+    },
+  });
+
+  const handleOpenPrint = async (receiptId) => {
+    try {
+      const res = await feesApi.getReceiptPrint(receiptId);
+      setPrintReceiptData(res?.data?.data);
+      setIsPrintOpen(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenCancel = (receipt) => {
+    setSelectedReceiptForCancel(receipt);
+    setCancelReason('');
+    setCancelError('');
+    setCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = (e) => {
+    e.preventDefault();
+    if (!cancelReason.trim()) {
+      setCancelError('Please specify the cancellation reason.');
+      return;
+    }
+    cancelMutation.mutate({
+      id: selectedReceiptForCancel.receiptId,
+      data: { reason: cancelReason.trim() },
+    });
+  };
+
+  // Metrics for Daily Collection
+  const activeReceipts = collectionList.filter((r) => r.status === 1);
+  const cancelledReceiptsCount = collectionList.filter((r) => r.status === 2).length;
+  const totalCollectedPeriod = activeReceipts.reduce((sum, r) => sum + Number(r.totalPaid || 0), 0);
+
+  // Metrics for Defaulters
+  const totalFeeOverdue = defaultersList.reduce((sum, d) => sum + Number(d.overdueAmount || 0), 0);
+  const totalFineOverdue = defaultersList.reduce((sum, d) => sum + Number(d.overdueFine || 0), 0);
+  const totalOverduePeriod = defaultersList.reduce((sum, d) => sum + Number(d.totalOverdue || 0), 0);
+
+  // EXPORT HANDLERS - DAILY COLLECTION
+  const handleDownloadCollectionExcel = () => {
+    exportCollectionToExcel({
+      collectionList,
+      startDate,
+      endDate,
+      modeFilter: paymentModeFilter === 'ALL' ? 'All Modes' : paymentModeFilter,
+      schoolName,
+      branchName,
+    });
+  };
+
+  const handleDownloadCollectionPdf = () => {
+    exportCollectionToPdf({
+      collectionList,
+      startDate,
+      endDate,
+      modeFilter: paymentModeFilter === 'ALL' ? 'All Modes' : paymentModeFilter,
+      schoolName,
+      branchName,
+    });
+  };
+
+  const handleExportCollectionCSV = () => {
+    if (!collectionList.length) return;
+    const headers = [
+      'Receipt No',
+      'Date & Time',
+      'Admission No',
+      'Student Name',
+      'Class & Sec',
+      'Payment Mode',
+      'Collected By',
+      'Status',
+      'Amount Paid (INR)',
+    ];
+    const rows = collectionList.map((r) => [
+      `"${r.receiptNo}"`,
+      `"${dayjs(r.receiptDate).format('YYYY-MM-DD HH:mm')}"`,
+      `"${r.admissionNo}"`,
+      `"${r.studentName}"`,
+      `"${r.classSection}"`,
+      `"${r.paymentModes}"`,
+      `"${r.collectedBy || 'Cashier'}"`,
+      r.status === 1 ? 'Paid' : 'Cancelled',
+      r.totalPaid,
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute(
+      'download',
+      `Fee_Collection_${startDate}_to_${endDate}_${paymentModeFilter}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // EXPORT HANDLERS - DEFAULTERS
+  const handleDownloadDefaultersExcel = () => {
+    const selectedClass = classes.find((c) => String(c.id) === String(defaulterClassId));
+    const selectedSection = defaulterSections.find((s) => String(s.id) === String(defaulterSectionId));
+    exportDefaultersToExcel({
+      defaultersList,
+      selectedClassName: selectedClass ? selectedClass.name : 'All Classes',
+      selectedSectionName: selectedSection ? selectedSection.name : 'All Sections',
+      schoolName,
+      branchName,
+    });
+  };
+
+  const handleDownloadDefaultersPdf = () => {
+    const selectedClass = classes.find((c) => String(c.id) === String(defaulterClassId));
+    const selectedSection = defaulterSections.find((s) => String(s.id) === String(defaulterSectionId));
+    exportDefaultersToPdf({
+      defaultersList,
+      selectedClassName: selectedClass ? selectedClass.name : 'All Classes',
+      selectedSectionName: selectedSection ? selectedSection.name : 'All Sections',
+      schoolName,
+      branchName,
+    });
+  };
+
+  const handleExportDefaultersCSV = () => {
+    if (!defaultersList.length) return;
+    const headers = [
+      'Adm No',
+      'Student Name',
+      'Class',
+      'Guardian',
+      'Mobile',
+      'Overdue Amount',
+      'Overdue Fine',
+      'Total Overdue',
+      'Installments',
+    ];
+    const rows = defaultersList.map((d) => [
+      `"${d.admissionNo}"`,
+      `"${d.studentName}"`,
+      `"${d.className}"`,
+      `"${d.guardianName}"`,
+      `"${d.guardianMobile}"`,
+      d.overdueAmount,
+      d.overdueFine,
+      d.totalOverdue,
+      `"${d.overdueInstallments}"`,
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `Fee_Defaulters_${dayjs().format('YYYY-MM-DD')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // -------------------------------------------------------------
+  // TAB 3 (Index 2): Class & Month-wise Fee Status Report
+  // -------------------------------------------------------------
+  const [statusClassId, setStatusClassId] = useState('');
+  const [statusSectionId, setStatusSectionId] = useState('');
+  const [statusInstallmentId, setStatusInstallmentId] = useState('');
+  const [statusDuesFilter, setStatusDuesFilter] = useState('all'); // 'all', 'dues', 'paid', 'partial'
+  const [statusSearchText, setStatusSearchText] = useState('');
+
+  // Selected student for history modal (from Tab 0, 1, or 2)
+  const [selectedHistoryStudentId, setSelectedHistoryStudentId] = useState(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  // Installments query (12 academic months)
+  const { data: installmentsRes } = useQuery({
+    queryKey: ['fee-installments'],
+    queryFn: () => feesApi.getInstallments(),
+  });
+  const installmentsList = installmentsRes?.data?.data || [];
+
+  const selectedStatusClass = classes.find((c) => String(c.id) === String(statusClassId));
+  const statusSections = selectedStatusClass ? selectedStatusClass.sections || [] : [];
+
+  const statusQueryParams = {
+    classId: statusClassId || undefined,
+    sectionId: statusSectionId || undefined,
+    installmentId: statusInstallmentId || undefined,
+    feeInstallmentId: statusInstallmentId || undefined,
+    status: statusDuesFilter !== 'all' ? statusDuesFilter : undefined,
+    search: statusSearchText.trim() || undefined,
+  };
+
+  const {
+    data: classMonthRes,
+    isLoading: isLoadingClassMonth,
+  } = useQuery({
+    queryKey: ['fee-class-month-status', statusQueryParams],
+    queryFn: () => feesApi.getClassMonthStatus(statusQueryParams),
+    enabled: activeTab === 2,
+  });
+
+  const classMonthData = classMonthRes?.data?.data;
+  const classMonthSummary = classMonthData?.summary || {
+    totalStudents: 0,
+    paidCount: 0,
+    partialCount: 0,
+    unpaidCount: 0,
+    totalGrossFee: 0,
+    totalConcession: 0,
+    totalNetPayable: 0,
+    totalPaid: 0,
+    totalRemainingDues: 0,
+    totalFine: 0,
+    collectionPercentage: 0,
+  };
+  const classMonthStudents = classMonthData?.students || [];
+
+  const handleDownloadClassMonthExcel = () => {
+    const className = selectedStatusClass ? selectedStatusClass.name : 'All Classes';
+    const sectionName = statusSections.find((s) => String(s.id) === String(statusSectionId))?.name || 'All Sections';
+    const inst = installmentsList.find((i) => String(i.id) === String(statusInstallmentId));
+    const instName = inst ? inst.name : 'All Months';
+
+    exportClassMonthStatusToExcel({
+      studentsList: classMonthStudents,
+      summary: classMonthSummary,
+      className,
+      sectionName,
+      installmentName: instName,
+      schoolName,
+      branchName,
+    });
+  };
+
+  const handleOpenStudentHistory = (studentId) => {
+    setSelectedHistoryStudentId(studentId);
+    setIsHistoryModalOpen(true);
+  };
+
+  // -------------------------------------------------------------
+  // TAB 4 (Index 3): Direct Student Fee History & Ledger Search
+  // -------------------------------------------------------------
+  const [directSearchTerm, setDirectSearchTerm] = useState('');
+  const [selectedDirectStudentId, setSelectedDirectStudentId] = useState(null);
+  const [directHistorySubTab, setDirectHistorySubTab] = useState(0);
+
+  const { data: directSearchRes, isLoading: isSearchingDirect } = useQuery({
+    queryKey: ['direct-student-search', directSearchTerm],
+    queryFn: () => studentApi.getStudents({ search: directSearchTerm, pageSize: 8 }),
+    enabled: directSearchTerm.length >= 2,
+  });
+  const directSearchResults = directSearchRes?.data?.data?.items || [];
+
+  const {
+    data: directHistoryRes,
+    isLoading: isLoadingDirectHistory,
+  } = useQuery({
+    queryKey: ['student-fee-history-direct', selectedDirectStudentId],
+    queryFn: () => feesApi.getStudentFullHistory(selectedDirectStudentId),
+    enabled: Boolean(selectedDirectStudentId && activeTab === 3),
+  });
+  const directStudentHistory = directHistoryRes?.data?.data || null;
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* Print CSS styling with zero-clipping margins */}
+      <style>
+        {`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-collection-report,
+          #printable-collection-report *,
+          #printable-defaulters-report,
+          #printable-defaulters-report *,
+          #printable-receipt,
+          #printable-receipt * {
+            visibility: visible !important;
+          }
+          #printable-collection-report,
+          #printable-defaulters-report,
+          #printable-receipt {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 8mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            overflow: visible !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: landscape;
+            margin: 8mm;
+          }
+        }
+        `}
+      </style>
+
+
+
+      {/* Tabs */}
+      <Card sx={{ mb: 3, boxShadow: 1 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, val) => setActiveTab(val)}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab
+            icon={<ReceiptIcon fontSize="small" />}
+            iconPosition="start"
+            label={`1. Daily Collection Register (${collectionList.length})`}
+          />
+          <Tab
+            icon={<DefaulterIcon fontSize="small" />}
+            iconPosition="start"
+            label={`2. Fee Defaulters List (${defaultersList.length})`}
+          />
+          <Tab
+            icon={<CalendarMonthIcon fontSize="small" />}
+            iconPosition="start"
+            label="3. Class & Month-wise Status"
+          />
+          <Tab
+            icon={<HistoryIcon fontSize="small" />}
+            iconPosition="start"
+            label="4. Student Fee History"
+          />
+        </Tabs>
+      </Card>
+
+      {/* Tab 0: Daily Collection Register */}
+      {activeTab === 0 && (
+        <Stack spacing={3}>
+          {/* Filters & Export Toolbar Card */}
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                  <AppDatePicker
+                    label="From Date"
+                    value={startDate}
+                    onChange={(e) => {
+                      if (e.value) {
+                        setStartDate(dayjs(e.value).format('YYYY-MM-DD'));
+                      }
+                    }}
+                    dateFormat="dd/M/yy"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={3}>
+                  <AppDatePicker
+                    label="To Date"
+                    value={endDate}
+                    onChange={(e) => {
+                      if (e.value) {
+                        setEndDate(dayjs(e.value).format('YYYY-MM-DD'));
+                      }
+                    }}
+                    dateFormat="dd/M/yy"
+                  />
+                </Grid>
+
+                {/* Payment Mode Filter Dropdown */}
+                <Grid item xs={12} sm={3}>
+                  <AppSelect
+                    label="Payment Mode"
+                    value={paymentModeFilter}
+                    onChange={(e) => setPaymentModeFilter(e.target.value)}
+                    options={PAYMENT_MODES}
+                    optionLabel="label"
+                    optionValue="value"
+                    showClear
+                    addon="H"
+                  />
+                </Grid>
+
+                {/* Total Stats Mini Card */}
+                <Grid item xs={12} sm={3}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 1.2,
+                      px: 2,
+                      bgcolor: '#f0fdf4',
+                      borderColor: '#86efac',
+                      borderRadius: 1.5,
+                      textAlign: 'right',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                      Net Active Collection
+                    </Typography>
+                    <Typography variant="h6" fontWeight={800} color="#166534">
+                      ₹{totalCollectedPeriod.toLocaleString()}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {activeReceipts.length} Active {cancelledReceiptsCount > 0 && `(${cancelledReceiptsCount} Cancelled)`}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Action Buttons: Excel, PDF, Print, CSV */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Showing <b>{collectionList.length}</b> receipt(s)
+                  {paymentModeFilter !== 'ALL' && (
+                    <span>
+                      {' '}for Mode: <b>{paymentModeFilter}</b>
+                    </span>
+                  )}
+                  {' '}({dayjs(startDate).format('DD MMM YYYY')} – {dayjs(endDate).format('DD MMM YYYY')})
+                </Typography>
+
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {/* Excel (.xlsx) Download Button */}
+                  <Button
+                    variant="contained"
+                    startIcon={<ExcelIcon />}
+                    onClick={handleDownloadCollectionExcel}
+                    disabled={!collectionList.length}
+                    sx={{
+                      bgcolor: '#107c41',
+                      '&:hover': { bgcolor: '#0b5c30' },
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    Export Excel (.xlsx)
+                  </Button>
+
+                  {/* PDF (.pdf) Direct Download Button */}
+                  <Button
+                    variant="contained"
+                    startIcon={<PdfIcon />}
+                    onClick={handleDownloadCollectionPdf}
+                    disabled={!collectionList.length}
+                    sx={{
+                      bgcolor: '#d32f2f',
+                      '&:hover': { bgcolor: '#b71c1c' },
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    Export PDF (.pdf)
+                  </Button>
+
+                  {/* Print / Preview Register Button */}
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<PrintIcon />}
+                    onClick={() => setIsCollectionPrintOpen(true)}
+                    disabled={!collectionList.length}
+                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                  >
+                    Print Register
+                  </Button>
+
+                  {/* CSV Export Button */}
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={handleExportCollectionCSV}
+                    disabled={!collectionList.length}
+                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                  >
+                    CSV
+                  </Button>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Collection Table */}
+          <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
+            <CardContent sx={{ pb: 1 }}>
+              {isLoadingCollection ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : collectionList.length > 0 ? (
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5, overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: '#f4f6f8' }}>
+                      <TableRow>
+                        <TableCell width={160}>
+                          <b>Receipt No</b>
+                        </TableCell>
+                        <TableCell width={150}>
+                          <b>Date & Time</b>
+                        </TableCell>
+                        <TableCell>
+                          <b>Student Name</b>
+                        </TableCell>
+                        <TableCell width={120}>
+                          <b>Class & Sec</b>
+                        </TableCell>
+                        <TableCell width={120}>
+                          <b>Payment Mode</b>
+                        </TableCell>
+                        {/* Who collected the payment ("kisne payment liya wo chahiye") */}
+                        <TableCell width={140}>
+                          <b>Collected By</b>
+                        </TableCell>
+                        <TableCell align="right" width={110}>
+                          <b>Total Paid</b>
+                        </TableCell>
+                        <TableCell width={95} align="center">
+                          <b>Status</b>
+                        </TableCell>
+                        <TableCell width={90} align="right">
+                          <b>Actions</b>
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {collectionList.map((r) => (
+                        <TableRow key={r.receiptId} hover sx={{ opacity: r.status === 2 ? 0.6 : 1 }}>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={700} color="primary.main" noWrap>
+                              {r.receiptNo}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{dayjs(r.receiptDate).format('DD MMM YYYY, hh:mm A')}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>
+                              {r.studentName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {r.admissionNo}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{r.classSection}</TableCell>
+                          <TableCell>
+                            <Chip label={r.paymentModes} size="small" variant="outlined" />
+                          </TableCell>
+                          {/* Collected By Value */}
+                          <TableCell>
+                            <Stack direction="row" spacing={0.8} alignItems="center">
+                              <PersonIcon sx={{ fontSize: 16, color: '#64748b' }} />
+                              <Typography variant="body2" fontWeight={600} color="#334155">
+                                {r.collectedBy || 'Cashier'}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                              ₹{Number(r.totalPaid).toLocaleString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={r.status === 1 ? 'Paid' : 'Cancelled'}
+                              color={r.status === 1 ? 'success' : 'error'}
+                              size="small"
+                              sx={{ fontWeight: 600, height: 22, fontSize: '0.72rem' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                              <Tooltip title="Print Receipt">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleOpenPrint(r.receiptId)}
+                                >
+                                  <PrintIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+
+                              {can('FeeCollection', 'Delete') && r.status === 1 && (
+                                <Tooltip title="Cancel Receipt (FR-5.7)">
+                                  <IconButton size="small" color="error" onClick={() => handleOpenCancel(r)}>
+                                    <CancelIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Summary Row */}
+                      <TableRow sx={{ bgcolor: '#f8fafc', borderTop: '2px solid #cbd5e1' }}>
+                        <TableCell colSpan={6}>
+                          <Typography variant="subtitle2" fontWeight={800}>
+                            Total Net Active Collection
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="success.main">
+                            ₹{totalCollectedPeriod.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Alert severity="info" variant="outlined">
+                  No fee collection records found for the selected criteria.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </Stack>
+      )}
+
+      {/* Tab 1: Defaulters List */}
+      {activeTab === 1 && (
+        <Stack spacing={3}>
+          {/* Filter Bar & Export Toolbar Card */}
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Grid container spacing={2.5} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                  <AppSelect
+                    label="Filter Class"
+                    value={defaulterClassId}
+                    onChange={(e) => {
+                      setDefaulterClassId(e.target.value);
+                      setDefaulterSectionId('');
+                    }}
+                    options={classes}
+                    placeholder="All Classes"
+                    showClear
+                    addon="H"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={3}>
+                  <AppSelect
+                    label="Filter Section"
+                    value={defaulterSectionId}
+                    disabled={!defaulterClassId}
+                    onChange={(e) => setDefaulterSectionId(e.target.value)}
+                    options={defaulterSections}
+                    placeholder="All Sections"
+                    showClear
+                    addon="H"
+                  />
+                </Grid>
+
+                {/* Total Stats Mini Card */}
+                <Grid item xs={12} sm={6}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={2}
+                    justifyContent="flex-end"
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  >
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.2,
+                        px: 2,
+                        bgcolor: '#fef2f2',
+                        borderColor: '#fca5a5',
+                        borderRadius: 1.5,
+                        textAlign: { xs: 'left', sm: 'right' },
+                        minWidth: 160,
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                        Total Outstanding Overdue
+                      </Typography>
+                      <Typography variant="h6" fontWeight={800} color="#b91c1c">
+                        ₹{totalOverduePeriod.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {defaultersList.length} Students with Overdue Fees
+                      </Typography>
+                    </Paper>
+                  </Stack>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Action Buttons: Excel, PDF, Print, CSV */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Showing <b>{defaultersList.length}</b> defaulter student(s){' '}
+                  {defaulterClassId ? `in Class ${selectedDefaulterClass?.name}` : 'across all classes'}
+                </Typography>
+
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {/* Excel (.xlsx) Download Button */}
+                  <Button
+                    variant="contained"
+                    startIcon={<ExcelIcon />}
+                    onClick={handleDownloadDefaultersExcel}
+                    disabled={!defaultersList.length}
+                    sx={{
+                      bgcolor: '#107c41',
+                      '&:hover': { bgcolor: '#0b5c30' },
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    Export Excel (.xlsx)
+                  </Button>
+
+                  {/* PDF (.pdf) Direct Download Button */}
+                  <Button
+                    variant="contained"
+                    startIcon={<PdfIcon />}
+                    onClick={handleDownloadDefaultersPdf}
+                    disabled={!defaultersList.length}
+                    sx={{
+                      bgcolor: '#d32f2f',
+                      '&:hover': { bgcolor: '#b71c1c' },
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    Export PDF (.pdf)
+                  </Button>
+
+                  {/* Print / Preview Defaulters Button */}
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<PrintIcon />}
+                    onClick={() => setIsDefaultersPrintOpen(true)}
+                    disabled={!defaultersList.length}
+                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                  >
+                    Print Defaulters
+                  </Button>
+
+                  {/* CSV Export Button */}
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={handleExportDefaultersCSV}
+                    disabled={!defaultersList.length}
+                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                  >
+                    CSV
+                  </Button>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Defaulters Table */}
+          <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
+            <CardContent sx={{ pb: 1 }}>
+              {isLoadingDefaulters ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : defaultersList.length > 0 ? (
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5, overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: '#f4f6f8' }}>
+                      <TableRow>
+                        <TableCell width={120}>
+                          <b>Adm No</b>
+                        </TableCell>
+                        <TableCell>
+                          <b>Student Name</b>
+                        </TableCell>
+                        <TableCell width={110}>
+                          <b>Class</b>
+                        </TableCell>
+                        <TableCell width={170}>
+                          <b>Guardian / Mobile</b>
+                        </TableCell>
+                        <TableCell width={180}>
+                          <b>Overdue Installments</b>
+                        </TableCell>
+                        <TableCell align="right" width={110}>
+                          <b>Fee Overdue</b>
+                        </TableCell>
+                        <TableCell align="right" width={100}>
+                          <b>Late Fine</b>
+                        </TableCell>
+                        <TableCell align="right" width={120}>
+                          <b>Total Due</b>
+                        </TableCell>
+                        <TableCell align="right" width={180}>
+                          <b>Action</b>
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {defaultersList.map((d) => (
+                        <TableRow key={d.studentId} hover>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={700} color="primary.main">
+                              {d.admissionNo}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>
+                              {d.studentName}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{d.className} {d.sectionName}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{d.guardianName || '—'}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {d.guardianMobile || '—'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {d.overdueInstallments || '—'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            ₹{Number(d.overdueAmount).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>
+                            ₹{Number(d.overdueFine).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" fontWeight={800} color="error.dark">
+                              ₹{Number(d.totalOverdue).toLocaleString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<HistoryIcon fontSize="small" />}
+                                onClick={() => handleOpenStudentHistory(d.studentId)}
+                                sx={{ textTransform: 'none', py: 0.3 }}
+                              >
+                                History
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                startIcon={<CollectIcon fontSize="small" />}
+                                onClick={() => navigate(`/fees/collection?studentId=${d.studentId}`)}
+                                sx={{ textTransform: 'none', py: 0.3 }}
+                              >
+                                Collect
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Summary Row */}
+                      <TableRow sx={{ bgcolor: '#fef2f2', borderTop: '2px solid #fca5a5' }}>
+                        <TableCell colSpan={5}>
+                          <Typography variant="subtitle2" fontWeight={800} color="#991b1b">
+                            Total Outstanding Dues
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800}>
+                            ₹{totalFeeOverdue.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="error.main">
+                            ₹{totalFineOverdue.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="error.dark">
+                            ₹{totalOverduePeriod.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Alert severity="success" variant="outlined">
+                  No fee defaulters found! All dues are currently settled.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </Stack>
+      )}
+
+      {/* Tab 2: Class & Month-wise Status Report */}
+      {activeTab === 2 && (
+        <Stack spacing={3}>
+          {/* Filters & Export Toolbar */}
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Grid container spacing={2} alignItems="center">
+                {/* Class Filter */}
+                <Grid item xs={12} sm={6} md={2.5}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="Select Class"
+                    value={statusClassId}
+                    onChange={(e) => {
+                      setStatusClassId(e.target.value);
+                      setStatusSectionId('');
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>All Classes</em>
+                    </MenuItem>
+                    {classes.map((c) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                {/* Section Filter */}
+                <Grid item xs={12} sm={6} md={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="Select Section"
+                    value={statusSectionId}
+                    disabled={!statusClassId}
+                    onChange={(e) => setStatusSectionId(e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>All Sections</em>
+                    </MenuItem>
+                    {statusSections.map((s) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        {s.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                {/* Month / Installment Filter */}
+                <Grid item xs={12} sm={6} md={2.5}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="Month / Installment"
+                    value={statusInstallmentId}
+                    onChange={(e) => setStatusInstallmentId(e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>All Months / Full Year</em>
+                    </MenuItem>
+                    {installmentsList.map((inst) => (
+                      <MenuItem key={inst.id} value={inst.id}>
+                        {inst.name} ({dayjs(inst.dueDate).format('DD MMM')})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                {/* Status Filter */}
+                <Grid item xs={12} sm={6} md={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="Payment Status"
+                    value={statusDuesFilter}
+                    onChange={(e) => setStatusDuesFilter(e.target.value)}
+                  >
+                    <MenuItem value="all">All Students</MenuItem>
+                    <MenuItem value="dues">Pending Dues Only</MenuItem>
+                    <MenuItem value="paid">Fully Paid</MenuItem>
+                    <MenuItem value="partial">Partially Paid</MenuItem>
+                  </TextField>
+                </Grid>
+
+                {/* Search Text */}
+                <Grid item xs={12} sm={12} md={3}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search Name, Adm No, Roll..."
+                    value={statusSearchText}
+                    onChange={(e) => setStatusSearchText(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: statusSearchText ? (
+                        <InputAdornment position="end">
+                          <IconButton size="small" onClick={() => setStatusSearchText('')}>
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Sub-toolbar with student counts and Excel Export */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Showing <b>{classMonthStudents.length}</b> student record(s){' '}
+                  {statusClassId ? `in ${selectedStatusClass?.name}` : 'across all classes'}
+                  {statusInstallmentId && (
+                    <>
+                      {' '}
+                      &bull; Month:{' '}
+                      <b>{installmentsList.find((i) => String(i.id) === String(statusInstallmentId))?.name}</b>
+                    </>
+                  )}
+                </Typography>
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {(statusClassId || statusSectionId || statusInstallmentId || statusDuesFilter !== 'all' || statusSearchText) && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      color="inherit"
+                      onClick={() => {
+                        setStatusClassId('');
+                        setStatusSectionId('');
+                        setStatusInstallmentId('');
+                        setStatusDuesFilter('all');
+                        setStatusSearchText('');
+                      }}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<ExcelIcon />}
+                    onClick={handleDownloadClassMonthExcel}
+                    disabled={!classMonthStudents.length}
+                    sx={{
+                      bgcolor: '#16a34a',
+                      '&:hover': { bgcolor: '#15803d' },
+                      textTransform: 'none',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Export to Excel (.xlsx)
+                  </Button>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* KPI Summary Cards Grid */}
+          <Grid container spacing={2}>
+            {/* Total Students */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 0 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                  TOTAL STUDENTS
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#0f172a" sx={{ my: 0.5 }}>
+                  {classMonthSummary.totalStudents}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Paid: <strong style={{ color: '#16a34a' }}>{classMonthSummary.paidCount}</strong> | Due: <strong style={{ color: '#dc2626' }}>{classMonthSummary.unpaidCount + classMonthSummary.partialCount}</strong>
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Gross Fee */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 0 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                  GROSS FEE
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#334155" sx={{ my: 0.5 }}>
+                  ₹{Number(classMonthSummary.totalGrossFee || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Full Catalog Fees
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Total Concession */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#fffbeb', border: '1px solid #fde68a', boxShadow: 0 }}>
+                <Typography variant="caption" color="#b45309" fontWeight={700} display="block">
+                  CONCESSION GIVEN
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#b45309" sx={{ my: 0.5 }}>
+                  ₹{Number(classMonthSummary.totalConcession || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="#92400e">
+                  Scholarships & Siblings
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Net Payable */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe', boxShadow: 0 }}>
+                <Typography variant="caption" color="#1d4ed8" fontWeight={700} display="block">
+                  NET PAYABLE
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#1d4ed8" sx={{ my: 0.5 }}>
+                  ₹{Number(classMonthSummary.totalNetPayable || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="#1e40af">
+                  After All Concessions
+                </Typography>
+              </Card>
+            </Grid>
+
+            {/* Collected Amount */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', boxShadow: 0 }}>
+                <Typography variant="caption" color="#15803d" fontWeight={700} display="block">
+                  COLLECTED AMOUNT
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#15803d" sx={{ my: 0.5 }}>
+                  ₹{Number(classMonthSummary.totalPaid || 0).toLocaleString()}
+                </Typography>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Chip
+                    size="small"
+                    label={`${classMonthSummary.collectionPercentage || 0}% Collected`}
+                    sx={{
+                      height: 18,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      bgcolor: '#dcfce7',
+                      color: '#166534',
+                    }}
+                  />
+                </Stack>
+              </Card>
+            </Grid>
+
+            {/* Remaining Dues */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Card sx={{ p: 2, borderRadius: 2, bgcolor: '#fef2f2', border: '1px solid #fecaca', boxShadow: 0 }}>
+                <Typography variant="caption" color="#b91c1c" fontWeight={700} display="block">
+                  REMAINING DUES
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="#b91c1c" sx={{ my: 0.5 }}>
+                  ₹{Number(classMonthSummary.totalRemainingDues || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="#991b1b">
+                  Outstanding Balance
+                </Typography>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Students Status Data Table Card */}
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 0 }}>
+              {isLoadingClassMonth ? (
+                <Box sx={{ p: 6, textAlign: 'center' }}>
+                  <CircularProgress size={36} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                    Loading class-wise fee status...
+                  </Typography>
+                </Box>
+              ) : classMonthStudents.length > 0 ? (
+                <TableContainer sx={{ maxHeight: 600 }}>
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow sx={{ '& th': { bgcolor: '#f8fafc', fontWeight: 800, color: '#334155', py: 1.2 } }}>
+                        <TableCell width={50}>#</TableCell>
+                        <TableCell width={120}>Adm No</TableCell>
+                        <TableCell width={70}>Roll</TableCell>
+                        <TableCell width={200}>Student Name</TableCell>
+                        <TableCell width={130}>Class & Sec</TableCell>
+                        <TableCell align="right" width={110}>Gross Fee</TableCell>
+                        <TableCell align="right" width={100}>Concession</TableCell>
+                        <TableCell align="right" width={110}>Net Payable</TableCell>
+                        <TableCell align="right" width={110}>Amount Paid</TableCell>
+                        <TableCell align="right" width={130}>Remaining Due</TableCell>
+                        <TableCell align="center" width={110}>Status</TableCell>
+                        <TableCell width={150}>Last Payment</TableCell>
+                        <TableCell align="right" width={180}>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {classMonthStudents.map((s, idx) => (
+                        <TableRow key={s.studentId} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
+                          <TableCell sx={{ color: 'text.secondary', fontSize: 12 }}>
+                            {idx + 1}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={700} color="primary.main">
+                              {s.admissionNo}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {s.rollNo || '—'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1.2} alignItems="center">
+                              <Avatar
+                                src={s.photoUrl}
+                                sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#e0e7ff', color: '#3730a3', fontWeight: 700 }}
+                              >
+                                {s.studentName ? s.studentName.charAt(0).toUpperCase() : 'S'}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" fontWeight={700} color="#0f172a">
+                                  {s.studentName}
+                                </Typography>
+                                {s.guardianMobile && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    {s.guardianMobile}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={`${s.className} ${s.sectionName || ''}`.trim()}
+                              size="small"
+                              sx={{ fontWeight: 600, fontSize: 11, height: 22, bgcolor: '#f1f5f9' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            ₹{Number(s.grossFee || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: s.concessionAmount > 0 ? '#b45309' : 'text.secondary', fontWeight: s.concessionAmount > 0 ? 700 : 400 }}>
+                            {s.concessionAmount > 0 ? `₹${Number(s.concessionAmount).toLocaleString()}` : '—'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            ₹{Number(s.netPayable || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: '#16a34a', fontWeight: 700 }}>
+                            ₹{Number(s.paidAmount || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right">
+                            {s.remainingDue > 0 ? (
+                              <Typography variant="body2" fontWeight={800} color="#dc2626">
+                                ₹{Number(s.remainingDue).toLocaleString()}
+                              </Typography>
+                            ) : (
+                              <Chip
+                                label="₹0 (Cleared)"
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                sx={{ height: 22, fontSize: 11, fontWeight: 700 }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              size="small"
+                              label={s.status}
+                              color={
+                                s.status === 'Paid'
+                                  ? 'success'
+                                  : s.status === 'Partial'
+                                  ? 'warning'
+                                  : 'error'
+                              }
+                              sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {s.lastPaymentDate ? (
+                              <Box>
+                                <Typography variant="caption" fontWeight={600} display="block">
+                                  {dayjs(s.lastPaymentDate).format('DD MMM YYYY')}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {s.lastReceiptNo}
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">
+                                No Payments
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Tooltip title="View Complete Fee Breakdown & Payment History">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="primary"
+                                  startIcon={<HistoryIcon fontSize="small" />}
+                                  onClick={() => handleOpenStudentHistory(s.studentId)}
+                                  sx={{ textTransform: 'none', py: 0.3, px: 1, fontSize: 12 }}
+                                >
+                                  History
+                                </Button>
+                              </Tooltip>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                startIcon={<CollectIcon fontSize="small" />}
+                                onClick={() => navigate(`/fees/collection?studentId=${s.studentId}`)}
+                                sx={{ textTransform: 'none', py: 0.3, px: 1, fontSize: 12 }}
+                              >
+                                Collect
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+
+                      {/* Summary Grand Totals Row */}
+                      <TableRow sx={{ bgcolor: '#f8fafc', borderTop: '2px solid #cbd5e1' }}>
+                        <TableCell colSpan={5}>
+                          <Typography variant="subtitle2" fontWeight={800} color="#0f172a">
+                            Grand Totals ({classMonthStudents.length} Students)
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800}>
+                            ₹{Number(classMonthSummary.totalGrossFee || 0).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="#b45309">
+                            ₹{Number(classMonthSummary.totalConcession || 0).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="#1d4ed8">
+                            ₹{Number(classMonthSummary.totalNetPayable || 0).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="#16a34a">
+                            ₹{Number(classMonthSummary.totalPaid || 0).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="subtitle2" fontWeight={800} color="#dc2626">
+                            ₹{Number(classMonthSummary.totalRemainingDues || 0).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell colSpan={3} />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box sx={{ p: 4 }}>
+                  <Alert severity="info" variant="outlined">
+                    No students found matching your filters. Try selecting a different class, section, or clear search text.
+                  </Alert>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Stack>
+      )}
+
+      {/* Tab 3: Direct Student Fee History & Ledger */}
+      {activeTab === 3 && (
+        <Stack spacing={3}>
+          {/* Student Search Box Card */}
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="subtitle1" fontWeight={800} color="#0f172a" sx={{ mb: 0.5 }}>
+                Search Student Fee History & Ledger
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Search any student by Admission Number, Student Name, Roll Number, or Guardian Mobile to view their complete 12-month fee breakdown, head-wise dues, concessions, and printable payment receipts.
+              </Typography>
+
+              <Box sx={{ position: 'relative', maxWidth: 600 }}>
+                <TextField
+                  fullWidth
+                  placeholder="Type student name, admission no, roll no..."
+                  value={directSearchTerm}
+                  onChange={(e) => setDirectSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon color="primary" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: directSearchTerm ? (
+                      <InputAdornment position="end">
+                        {isSearchingDirect ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <IconButton size="small" onClick={() => setDirectSearchTerm('')}>
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                />
+
+                {/* Instant Search Dropdown Results */}
+                {directSearchTerm.length >= 2 && directSearchResults.length > 0 && (
+                  <Paper
+                    sx={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 20,
+                      mt: 0.5,
+                      boxShadow: 3,
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 1.5,
+                      maxHeight: 280,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {directSearchResults.map((st) => (
+                      <Box
+                        key={st.id}
+                        onClick={() => {
+                          setSelectedDirectStudentId(st.id);
+                          setDirectSearchTerm('');
+                        }}
+                        sx={{
+                          p: 1.5,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid #f1f5f9',
+                          '&:hover': { bgcolor: '#f0fdf4' },
+                        }}
+                      >
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Avatar sx={{ width: 34, height: 34, bgcolor: '#eff6ff', color: '#2563eb', fontWeight: 700, fontSize: 13 }}>
+                            {st.fullName ? st.fullName.charAt(0).toUpperCase() : 'S'}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={700}>
+                              {st.fullName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Adm No: <b>{st.admissionNo}</b> &bull; Class: <b>{st.className || '—'} {st.sectionName || ''}</b>
+                              {st.guardianMobile && ` • Mobile: ${st.guardianMobile}`}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <Button size="small" variant="outlined" sx={{ textTransform: 'none', py: 0.2 }}>
+                          View History
+                        </Button>
+                      </Box>
+                    ))}
+                  </Paper>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Selected Student Ledger View */}
+          {selectedDirectStudentId && (
+            <>
+              {isLoadingDirectHistory ? (
+                <Box sx={{ p: 6, textAlign: 'center' }}>
+                  <CircularProgress size={36} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                    Loading student fee history & ledger...
+                  </Typography>
+                </Box>
+              ) : directStudentHistory ? (
+                <Stack spacing={3}>
+                  {/* Student Profile Card */}
+                  <Card sx={{ p: 2.5, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 1 }}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={2}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    >
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar
+                          src={directStudentHistory.photoUrl}
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            bgcolor: '#eff6ff',
+                            color: '#2563eb',
+                            fontWeight: 800,
+                            fontSize: 20,
+                            border: '2px solid #bfdbfe',
+                          }}
+                        >
+                          {directStudentHistory.studentName?.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="h6" fontWeight={800} color="#0f172a">
+                              {directStudentHistory.studentName}
+                            </Typography>
+                            <Chip label={directStudentHistory.admissionNo} size="small" color="primary" sx={{ fontWeight: 700 }} />
+                            {directStudentHistory.rollNo && (
+                              <Chip label={`Roll: ${directStudentHistory.rollNo}`} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                            )}
+                          </Stack>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
+                            Class: <b>{directStudentHistory.className} {directStudentHistory.sectionName}</b> &bull; Guardian:{' '}
+                            <b>{directStudentHistory.guardianName || '—'}</b> ({directStudentHistory.guardianMobile || '—'})
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1.5}>
+                        <Button
+                          variant="outlined"
+                          color="inherit"
+                          onClick={() => setSelectedDirectStudentId(null)}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Change Student
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          startIcon={<CollectIcon />}
+                          onClick={() => navigate(`/fees/collection?studentId=${directStudentHistory.studentId || selectedDirectStudentId}`)}
+                          sx={{ textTransform: 'none', fontWeight: 700 }}
+                        >
+                          Collect Fee
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Card>
+
+                  {/* 5 Financial Overview Metric Cards */}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={2.4}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#f8fafc', borderColor: '#e2e8f0' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                          TOTAL ANNUAL FEE
+                        </Typography>
+                        <Typography variant="h5" fontWeight={800} color="#334155" sx={{ my: 0.5 }}>
+                          ₹{Number(directStudentHistory.totalAnnualFee ?? directStudentHistory.totalGrossFee ?? 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">Gross Structure</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2.4}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#fffbeb', borderColor: '#fde68a' }}>
+                        <Typography variant="caption" color="#b45309" fontWeight={700} display="block">
+                          CONCESSION GRANTED
+                        </Typography>
+                        <Typography variant="h5" fontWeight={800} color="#b45309" sx={{ my: 0.5 }}>
+                          ₹{Number(directStudentHistory.totalAnnualConcession ?? directStudentHistory.totalConcession ?? 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="#92400e">Discount / Scholarship</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2.4}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#eff6ff', borderColor: '#bfdbfe' }}>
+                        <Typography variant="caption" color="#1d4ed8" fontWeight={700} display="block">
+                          NET PAYABLE
+                        </Typography>
+                        <Typography variant="h5" fontWeight={800} color="#1d4ed8" sx={{ my: 0.5 }}>
+                          ₹{Number(directStudentHistory.netAnnualPayable ?? directStudentHistory.totalNetPayable ?? 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="#1e40af">Applicable Total</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2.4}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                        <Typography variant="caption" color="#15803d" fontWeight={700} display="block">
+                          TOTAL PAID
+                        </Typography>
+                        <Typography variant="h5" fontWeight={800} color="#15803d" sx={{ my: 0.5 }}>
+                          ₹{Number(directStudentHistory.totalAnnualPaid ?? directStudentHistory.totalPaid ?? 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="#166534">Collected so far</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2.4}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#fef2f2', borderColor: '#fecaca' }}>
+                        <Typography variant="caption" color="#b91c1c" fontWeight={700} display="block">
+                          BALANCE DUE
+                        </Typography>
+                        <Typography variant="h5" fontWeight={800} color="#b91c1c" sx={{ my: 0.5 }}>
+                          ₹{Number(directStudentHistory.totalOutstandingDues ?? directStudentHistory.totalBalanceDue ?? 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="#991b1b">
+                          {Number(directStudentHistory.totalFine || 0) > 0
+                            ? `+ ₹${Number(directStudentHistory.totalFine).toLocaleString()} Fine`
+                            : 'Remaining Outstanding'}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+
+                  {/* Sub-tabs for Installment Breakdown vs Receipts Log */}
+                  <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+                    <Tabs
+                      value={directHistorySubTab}
+                      onChange={(e, v) => setDirectHistorySubTab(v)}
+                      sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+                    >
+                      <Tab
+                        icon={<CalendarMonthIcon fontSize="small" />}
+                        iconPosition="start"
+                        label={`Academic Installments (${directStudentHistory.installments?.length || 0})`}
+                      />
+                      <Tab
+                        icon={<ReceiptLongIcon fontSize="small" />}
+                        iconPosition="start"
+                        label={`Payment Receipts (${directStudentHistory.receipts?.length || 0})`}
+                      />
+                    </Tabs>
+
+                    {/* Sub-tab 0: Installments Table */}
+                    {directHistorySubTab === 0 && (
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ '& th': { bgcolor: '#f8fafc', fontWeight: 800, color: '#334155' } }}>
+                              <TableCell width={160}>Installment / Month</TableCell>
+                              <TableCell width={110}>Due Date</TableCell>
+                              <TableCell>Fee Heads Breakdown</TableCell>
+                              <TableCell align="right" width={110}>Gross Fee</TableCell>
+                              <TableCell align="right" width={110}>Concession</TableCell>
+                              <TableCell align="right" width={110}>Net Payable</TableCell>
+                              <TableCell align="right" width={110}>Paid</TableCell>
+                              <TableCell align="right" width={120}>Balance Due</TableCell>
+                              <TableCell align="center" width={100}>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {directStudentHistory.installments?.map((inst) => (
+                              <TableRow key={inst.installmentId} hover>
+                                <TableCell>
+                                  <Typography variant="body2" fontWeight={700}>
+                                    {inst.installmentName}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {dayjs(inst.dueDate).format('DD MMM YYYY')}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+                                    {(inst.feeHeads || inst.heads || [])?.map((h) => {
+                                      const isPaidHead = Number(h.balanceAmount || 0) <= 0;
+                                      const origAmount = Number(h.originalAmount || 0).toLocaleString();
+                                      const paidAmount = Number(h.paidAmount || 0).toLocaleString();
+                                      return (
+                                        <Chip
+                                          key={h.dueId || h.feeHeadId || h.headId}
+                                          label={`${h.feeHeadName || h.headName}: ₹${
+                                            isPaidHead ? `${origAmount} (Paid)` : `${paidAmount}/${origAmount}`
+                                          }`}
+                                          size="small"
+                                          variant={isPaidHead ? 'outlined' : 'filled'}
+                                          color={isPaidHead ? 'success' : 'default'}
+                                          sx={{ height: 22, fontSize: 11 }}
+                                        />
+                                      );
+                                    })}
+                                  </Stack>
+                                </TableCell>
+                                <TableCell align="right">
+                                  ₹{Number(inst.totalOriginal ?? inst.grossFee ?? 0).toLocaleString()}
+                                </TableCell>
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    color:
+                                      Number(inst.totalConcession ?? inst.concessionAmount ?? 0) > 0
+                                        ? '#b45309'
+                                        : 'text.secondary',
+                                  }}
+                                >
+                                  {Number(inst.totalConcession ?? inst.concessionAmount ?? 0) > 0
+                                    ? `₹${Number(inst.totalConcession ?? inst.concessionAmount).toLocaleString()}`
+                                    : '—'}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                  ₹{Number(inst.netPayable ?? 0).toLocaleString()}
+                                </TableCell>
+                                <TableCell align="right" sx={{ color: '#16a34a', fontWeight: 700 }}>
+                                  ₹{Number(inst.totalPaid ?? inst.paidAmount ?? 0).toLocaleString()}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {Number(inst.balanceDue ?? 0) > 0 ? (
+                                    <Typography variant="body2" fontWeight={800} color="#dc2626">
+                                      ₹{Number(inst.balanceDue).toLocaleString()}
+                                    </Typography>
+                                  ) : (
+                                    <Chip label="Cleared" size="small" color="success" variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 700 }} />
+                                  )}
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Chip
+                                    size="small"
+                                    label={inst.status}
+                                    color={inst.status === 'Paid' ? 'success' : inst.status === 'Partial' ? 'warning' : 'error'}
+                                    sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+
+                    {/* Sub-tab 1: Receipts Log */}
+                    {directHistorySubTab === 1 && (
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ '& th': { bgcolor: '#f8fafc', fontWeight: 800, color: '#334155' } }}>
+                              <TableCell width={150}>Receipt No</TableCell>
+                              <TableCell width={160}>Date & Time</TableCell>
+                              <TableCell width={180}>Payment Mode(s)</TableCell>
+                              <TableCell width={160}>Collected By</TableCell>
+                              <TableCell align="center" width={110}>Status</TableCell>
+                              <TableCell align="right" width={140}>Total Paid</TableCell>
+                              <TableCell align="right" width={140}>Action</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {directStudentHistory.receipts?.length > 0 ? (
+                              directStudentHistory.receipts.map((r) => {
+                                const isValid = r.status === 'Paid' || r.status === 1 || r.status === 'Valid';
+                                return (
+                                  <TableRow key={r.receiptId} hover>
+                                    <TableCell>
+                                      <Typography variant="body2" fontWeight={700} color="primary.main">
+                                        {r.receiptNo}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {dayjs(r.receiptDate).format('DD MMM YYYY, hh:mm A')}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip label={r.paymentModes || 'Cash'} size="small" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2">{r.collectedBy || 'Cashier'}</Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Chip
+                                        size="small"
+                                        label={isValid ? 'Paid' : 'Cancelled'}
+                                        color={isValid ? 'success' : 'error'}
+                                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                                      />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <Typography variant="body2" fontWeight={800} color={isValid ? '#15803d' : '#94a3b8'}>
+                                        ₹{Number(r.totalPaid || 0).toLocaleString()}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<PrintIcon fontSize="small" />}
+                                        onClick={() => handleOpenPrint(r.receiptId)}
+                                        sx={{ textTransform: 'none', py: 0.3 }}
+                                      >
+                                        Print Slip
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                                  <Typography variant="body2" color="text.secondary">
+                                    No payment receipts recorded for this student yet.
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Card>
+                </Stack>
+              ) : null}
+            </>
+          )}
+
+          {!selectedDirectStudentId && (
+            <Card sx={{ p: 4, textAlign: 'center', bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 2 }}>
+              <SchoolIcon color="disabled" sx={{ fontSize: 48, mb: 1 }} />
+              <Typography variant="h6" fontWeight={700} color="text.secondary">
+                No Student Selected
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5 }}>
+                Please use the search box above to find any student and see their full fee history, individual monthly fee heads, concessions, and printable payment receipts.
+              </Typography>
+            </Card>
+          )}
+        </Stack>
+      )}
+
+      {/* Cancel Receipt Modal (FR-5.7) */}
+      <Dialog open={cancelModalOpen} onClose={() => setCancelModalOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleConfirmCancel}>
+          <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
+            Cancel Fee Receipt (FR-5.7)
+          </DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Are you sure you want to cancel Receipt <b>{selectedReceiptForCancel?.receiptNo}</b> (Amount: ₹
+              {selectedReceiptForCancel?.totalPaid})? This action will automatically{' '}
+              <b>reverse student balances</b> and preserve the cancelled receipt in audit logs.
+            </Typography>
+
+            {cancelError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {cancelError}
+              </Alert>
+            )}
+
+            <TextField
+              fullWidth
+              size="small"
+              required
+              multiline
+              rows={3}
+              label="Cancellation Reason / Notes"
+              placeholder="e.g. Cheque bounced, entered incorrect payment mode..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setCancelModalOpen(false)}>Close</Button>
+            <Button type="submit" variant="contained" color="error" loading={cancelMutation.isPending}>
+              Confirm Cancellation
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* 1. Daily Collection Print Preview Dialog */}
+      <Dialog
+        open={isCollectionPrintOpen}
+        onClose={() => setIsCollectionPrintOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={800}>
+            Daily Fee Collection Register Preview
+          </Typography>
+          <IconButton onClick={() => setIsCollectionPrintOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: '#f8fafc' }}>
+          <Box
+            id="printable-collection-report"
+            sx={{
+              p: 3,
+              bgcolor: '#ffffff',
+              borderRadius: 2,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              overflowX: 'auto',
+            }}
+          >
+            {/* School Header */}
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ mb: 1.5 }}>
+              <SchoolIcon color="primary" sx={{ fontSize: 36 }} />
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" fontWeight={800} color="primary.main">
+                  {schoolName.toUpperCase()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {branchName} &bull; Affiliated & Accredited Institution
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Divider sx={{ my: 1.5 }} />
+
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                DAILY FEE COLLECTION REGISTER & AUDIT TRAIL
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Period: <strong>{dayjs(startDate).format('DD MMM YYYY')}</strong> to{' '}
+                <strong>{dayjs(endDate).format('DD MMM YYYY')}</strong> &bull; Mode:{' '}
+                <strong>{paymentModeFilter === 'ALL' ? 'All Payment Modes' : paymentModeFilter}</strong> &bull; Generated:{' '}
+                {dayjs().format('DD-MMM-YYYY, hh:mm A')}
+              </Typography>
+            </Box>
+
+            {/* Summary Highlights */}
+            <Grid container spacing={2} sx={{ mb: 2.5 }}>
+              <Grid item xs={4}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#f8fafc' }}>
+                  <Typography variant="caption" color="text.secondary">Total Receipts</Typography>
+                  <Typography variant="h6" fontWeight={800}>
+                    {collectionList.length} <Typography variant="caption">({activeReceipts.length} Active)</Typography>
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={4}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#f0fdf4', borderColor: '#86efac' }}>
+                  <Typography variant="caption" color="text.secondary">Net Active Collection</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#166534">
+                    Rs. {totalCollectedPeriod.toLocaleString()}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={4}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#fef2f2', borderColor: '#fca5a5' }}>
+                  <Typography variant="caption" color="text.secondary">Cancelled Receipts</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#991b1b">
+                    {cancelledReceiptsCount}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            {/* Table with Collected By column */}
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, width: '100%' }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: '#f1f5f9' }}>
+                  <TableRow>
+                    <TableCell width={35}><b>#</b></TableCell>
+                    <TableCell width={160}><b>Receipt No</b></TableCell>
+                    <TableCell width={140}><b>Date & Time</b></TableCell>
+                    <TableCell width={110}><b>Adm No</b></TableCell>
+                    <TableCell><b>Student Name</b></TableCell>
+                    <TableCell width={100}><b>Class</b></TableCell>
+                    <TableCell width={100}><b>Mode</b></TableCell>
+                    {/* Collected By in Print */}
+                    <TableCell width={120}><b>Collected By</b></TableCell>
+                    <TableCell width={80} align="center"><b>Status</b></TableCell>
+                    <TableCell align="right" width={110}><b>Amount (Rs.)</b></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {collectionList.map((r, idx) => (
+                    <TableRow key={r.receiptId}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{r.receiptNo}</TableCell>
+                      <TableCell>{dayjs(r.receiptDate).format('DD/MM/YY hh:mm A')}</TableCell>
+                      <TableCell>{r.admissionNo}</TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>{r.studentName}</TableCell>
+                      <TableCell>{r.classSection}</TableCell>
+                      <TableCell>{r.paymentModes}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#334155' }}>
+                        {r.collectedBy || 'Cashier'}
+                      </TableCell>
+                      <TableCell align="center">
+                        <span style={{ color: r.status === 1 ? '#166534' : '#b91c1c', fontWeight: 700, fontSize: '0.78rem' }}>
+                          {r.status === 1 ? 'PAID' : 'CANCELLED'}
+                        </span>
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        Rs. {Number(r.totalPaid).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', borderTop: '2px solid #000' }}>
+                    <TableCell colSpan={9}>
+                      <b>GRAND TOTAL NET COLLECTION (ACTIVE RECEIPTS)</b>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#166534' }}>
+                      Rs. {totalCollectedPeriod.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Verification Signatures */}
+            <Grid container spacing={3} sx={{ mt: 4, pt: 2, borderTop: '1px solid #cbd5e1' }}>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Accountant / Cashier
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(Prepared By)</Typography>
+              </Grid>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Accounts Officer / Auditor
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(Verified By)</Typography>
+              </Grid>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Principal / Director
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(With Official Seal)</Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions className="no-print" sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button onClick={() => setIsCollectionPrintOpen(false)} color="inherit">
+            Close
+          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              startIcon={<ExcelIcon />}
+              onClick={handleDownloadCollectionExcel}
+              sx={{ bgcolor: '#107c41', '&:hover': { bgcolor: '#0b5c30' }, textTransform: 'none' }}
+            >
+              Download Excel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PdfIcon />}
+              onClick={handleDownloadCollectionPdf}
+              sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, textTransform: 'none' }}
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PrintIcon />}
+              onClick={() => printWithTitle(`Fee_Collection_Report_${selectedDate || dayjs().format('YYYY-MM-DD')}`)}
+              sx={{ textTransform: 'none', px: 3, fontWeight: 700 }}
+            >
+              Print / Save as PDF
+            </Button>
+          </Stack>
+        </DialogActions>
+      </Dialog>
+
+      {/* 2. Fee Defaulters Print Preview Dialog */}
+      <Dialog
+        open={isDefaultersPrintOpen}
+        onClose={() => setIsDefaultersPrintOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={800}>
+            Fee Defaulters Register Preview
+          </Typography>
+          <IconButton onClick={() => setIsDefaultersPrintOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: '#f8fafc' }}>
+          <Box
+            id="printable-defaulters-report"
+            sx={{
+              p: 3,
+              bgcolor: '#ffffff',
+              borderRadius: 2,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              overflowX: 'auto',
+            }}
+          >
+            {/* School Header */}
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ mb: 1.5 }}>
+              <SchoolIcon color="primary" sx={{ fontSize: 36 }} />
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" fontWeight={800} color="primary.main">
+                  {schoolName.toUpperCase()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {branchName} &bull; Affiliated & Accredited Institution
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Divider sx={{ my: 1.5 }} />
+
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: '#b91c1c' }}>
+                STUDENT FEE DEFAULTERS & OUTSTANDING DUES AUDIT REGISTER
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Filter: <strong>{defaulterClassId ? selectedDefaulterClass?.name : 'All Classes'}</strong> &bull; Generated: {dayjs().format('DD-MMM-YYYY, hh:mm A')}
+              </Typography>
+            </Box>
+
+            {/* Summary Highlights */}
+            <Grid container spacing={2} sx={{ mb: 2.5 }}>
+              <Grid item xs={3}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#f8fafc' }}>
+                  <Typography variant="caption" color="text.secondary">Total Defaulters</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#b91c1c">
+                    {defaultersList.length} Students
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={3}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#fffbeb' }}>
+                  <Typography variant="caption" color="text.secondary">Total Overdue Fee</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#b45309">
+                    Rs. {totalFeeOverdue.toLocaleString()}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={3}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#fef2f2' }}>
+                  <Typography variant="caption" color="text.secondary">Total Late Fine</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#dc2626">
+                    Rs. {totalFineOverdue.toLocaleString()}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={3}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center', bgcolor: '#fef2f2', borderColor: '#f87171' }}>
+                  <Typography variant="caption" color="text.secondary">Grand Total Due</Typography>
+                  <Typography variant="h6" fontWeight={800} color="#991b1c">
+                    Rs. {totalOverduePeriod.toLocaleString()}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            {/* Table */}
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, width: '100%' }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: '#fef2f2' }}>
+                  <TableRow>
+                    <TableCell width={30}><b>#</b></TableCell>
+                    <TableCell width={110}><b>Adm No</b></TableCell>
+                    <TableCell><b>Student Name</b></TableCell>
+                    <TableCell width={100}><b>Class</b></TableCell>
+                    <TableCell width={140}><b>Guardian</b></TableCell>
+                    <TableCell width={110}><b>Mobile</b></TableCell>
+                    <TableCell><b>Overdue Installments</b></TableCell>
+                    <TableCell align="right" width={110}><b>Fee Overdue</b></TableCell>
+                    <TableCell align="right" width={90}><b>Late Fine</b></TableCell>
+                    <TableCell align="right" width={115}><b>Total Due (Rs.)</b></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {defaultersList.map((d, idx) => (
+                    <TableRow key={d.studentId}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{d.admissionNo}</TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>{d.studentName}</TableCell>
+                      <TableCell>{d.className} {d.sectionName}</TableCell>
+                      <TableCell>{d.guardianName || '—'}</TableCell>
+                      <TableCell>{d.guardianMobile || '—'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        {d.overdueInstallments || '—'}
+                      </TableCell>
+                      <TableCell align="right">Rs. {Number(d.overdueAmount).toLocaleString()}</TableCell>
+                      <TableCell align="right" sx={{ color: '#dc2626' }}>
+                        Rs. {Number(d.overdueFine).toLocaleString()}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: '#991b1c' }}>
+                        Rs. {Number(d.totalOverdue).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#fef2f2', borderTop: '2px solid #000' }}>
+                    <TableCell colSpan={7}>
+                      <b>GRAND TOTAL OUTSTANDING OVERDUE</b>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800 }}>
+                      Rs. {totalFeeOverdue.toLocaleString()}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#dc2626' }}>
+                      Rs. {totalFineOverdue.toLocaleString()}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#991b1c' }}>
+                      Rs. {totalOverduePeriod.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Verification Signatures */}
+            <Grid container spacing={3} sx={{ mt: 4, pt: 2, borderTop: '1px solid #cbd5e1' }}>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Fee In-charge
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(Prepared By)</Typography>
+              </Grid>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Administrative Officer
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(Verified By)</Typography>
+              </Grid>
+              <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ pt: 3, borderTop: '1px dashed #64748b' }}>
+                  Principal / Director
+                </Typography>
+                <Typography variant="caption" color="text.secondary">(With Official Seal)</Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions className="no-print" sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button onClick={() => setIsDefaultersPrintOpen(false)} color="inherit">
+            Close
+          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              startIcon={<ExcelIcon />}
+              onClick={handleDownloadDefaultersExcel}
+              sx={{ bgcolor: '#107c41', '&:hover': { bgcolor: '#0b5c30' }, textTransform: 'none' }}
+            >
+              Download Excel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PdfIcon />}
+              onClick={handleDownloadDefaultersPdf}
+              sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, textTransform: 'none' }}
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PrintIcon />}
+              onClick={() => printWithTitle(`Fee_Defaulters_Report_${selectedClass ? `Class_${selectedClass}` : 'All_Classes'}`)}
+              sx={{ textTransform: 'none', px: 3, fontWeight: 700 }}
+            >
+              Print / Save as PDF
+            </Button>
+          </Stack>
+        </DialogActions>
+      </Dialog>
+
+      {/* 3. Reprint Single Receipt Modal */}
+      <Dialog open={isPrintOpen} onClose={() => setIsPrintOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, fontWeight: 800 }}>
+          <Box sx={{ width: 140 }} />
+          <Typography variant="h6" fontWeight={800}>
+            Fee Payment Receipt Slip (Dual Copy)
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<SettingsIcon />}
+            onClick={() => setIsEditingHeader(!isEditingHeader)}
+            sx={{ textTransform: 'none', fontSize: 12 }}
+          >
+            {isEditingHeader ? 'Hide School Settings' : 'Edit School Info'}
+          </Button>
+        </DialogTitle>
+        <DialogContent sx={{ p: { xs: 1, sm: 2 }, bgcolor: '#f8fafc' }}>
+          {isEditingHeader && printReceiptData && (
+            <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: '#ffffff', borderColor: '#3b82f6' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="primary" sx={{ mb: 1 }}>
+                Edit School Details on Slip (Updates in Real-Time):
+              </Typography>
+              <Grid container spacing={1.5}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="School Name"
+                    value={printReceiptData.schoolName || ''}
+                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, schoolName: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Contact Number"
+                    value={printReceiptData.contact || ''}
+                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, contact: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="School Address"
+                    value={printReceiptData.address || ''}
+                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, address: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Logo Image URL (Optional)"
+                    placeholder="https://... or data:image/..."
+                    value={printReceiptData.logoUrl || ''}
+                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, logoUrl: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Cashier Signature URL (Optional)"
+                    placeholder="https://... or data:image/..."
+                    value={printReceiptData.cashierSignatureUrl || ''}
+                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, cashierSignatureUrl: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+              <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={headerSaveLoading}
+                  onClick={async () => {
+                    try {
+                      setHeaderSaveLoading(true);
+                      await branchApi.updateBranch(activeBranchId || 1, {
+                        name: printReceiptData.branchName || 'Main Campus',
+                        code: 'MAIN',
+                        printHeader: printReceiptData.schoolName,
+                        address: printReceiptData.address,
+                        phone: printReceiptData.contact,
+                        logoUrl: printReceiptData.logoUrl,
+                        cashierSignatureUrl: printReceiptData.cashierSignatureUrl,
+                      });
+                      setIsEditingHeader(false);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setHeaderSaveLoading(false);
+                    }
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Save as Default for All Receipts
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {printReceiptData && (
+            <Paper
+              elevation={2}
+              sx={{
+                p: { xs: 1, sm: 2 },
+                bgcolor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: 2,
+                overflowX: 'auto',
+              }}
+            >
+              <FeeReceiptSlip data={printReceiptData} showCuttingLine={true} />
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions className="no-print" sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#f1f5f9' }}>
+          <Button onClick={() => setIsPrintOpen(false)} color="inherit">
+            Close
+          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<PdfIcon />}
+              onClick={() => exportDualFeeReceiptPdf(printReceiptData)}
+              sx={{ fontWeight: 600, textTransform: 'none' }}
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PrintIcon />}
+              onClick={() => {
+                const sName = printReceiptData?.studentName ? `_${printReceiptData.studentName}` : '';
+                const aNo = printReceiptData?.admissionNumber ? `_${printReceiptData.admissionNumber}` : '';
+                const rNo = printReceiptData?.receiptNo ? `_${printReceiptData.receiptNo}` : '';
+                printWithTitle(`Fee_Receipt${sName}${aNo}${rNo}`);
+              }}
+              sx={{ fontWeight: 700, textTransform: 'none', px: 3 }}
+            >
+              Print Slip (2 Copies)
+            </Button>
+          </Stack>
+        </DialogActions>
+      </Dialog>
+
+      {/* Student Complete Fee History Modal (accessible from any row in Tab 0, 1, 2) */}
+      <StudentFeeHistoryModal
+        open={isHistoryModalOpen}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+          setSelectedHistoryStudentId(null);
+        }}
+        studentId={selectedHistoryStudentId}
+        onPrintReceipt={(receiptId) => handleOpenPrint(receiptId)}
+      />
+    </Box>
+  );
+}

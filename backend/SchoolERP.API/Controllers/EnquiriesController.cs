@@ -1,0 +1,238 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SchoolERP.API.Filters;
+using SchoolERP.Application.Common.Interfaces;
+using SchoolERP.Application.Common.Models;
+using SchoolERP.Application.DTOs;
+using SchoolERP.Domain.Entities;
+using SchoolERP.Domain.Enums;
+using SchoolERP.Infrastructure.Persistence;
+
+namespace SchoolERP.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class EnquiriesController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly INumberingSeriesService _numberingService;
+
+        public EnquiriesController(
+            ApplicationDbContext context,
+            ICurrentUserService currentUserService,
+            INumberingSeriesService numberingService)
+        {
+            _context = context;
+            _currentUserService = currentUserService;
+            _numberingService = numberingService;
+        }
+
+        [HttpGet]
+        [HasPermission("Enquiries", "View")]
+        public async Task<ActionResult<ApiResponse<PagedResult<EnquiryDto>>>> GetEnquiries(
+            [FromQuery] string? search,
+            [FromQuery] long? classId,
+            [FromQuery] EnquiryStatus? status,
+            [FromQuery] long? academicYearId,
+            [FromQuery] int pageNo = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = academicYearId.HasValue && academicYearId.Value > 0
+                ? academicYearId.Value
+                : _currentUserService.AcademicYearId;
+
+            var query = _context.Enquiries
+                .Include(e => e.Class)
+                .Where(e => e.BranchId == branchId && e.AcademicYearId == yearId)
+                .AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(e => e.StudentName.ToLower().Contains(s) ||
+                                         e.GuardianName.ToLower().Contains(s) ||
+                                         e.Mobile.Contains(s) ||
+                                         (e.Email != null && e.Email.ToLower().Contains(s)));
+            }
+
+            if (classId.HasValue)
+            {
+                query = query.Where(e => e.ClassId == classId.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(e => e.Status == status.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            var academicYears = await _context.AcademicYears.Where(ay => ay.BranchId == branchId).ToDictionaryAsync(ay => ay.Id, ay => ay.Name);
+
+            var items = await query
+                .OrderByDescending(e => e.CreatedOn)
+                .Skip((pageNo - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EnquiryDto
+                {
+                    Id = e.Id,
+                    AcademicYearId = e.AcademicYearId,
+                    AcademicYearName = academicYears.ContainsKey(e.AcademicYearId) ? academicYears[e.AcademicYearId] : "",
+                    EnquiryNo = e.EnquiryNo,
+                    StudentName = e.StudentName,
+                    ClassId = e.ClassId,
+                    ClassName = e.Class != null ? e.Class.Name : "",
+                    GuardianName = e.GuardianName,
+                    Mobile = e.Mobile,
+                    Email = e.Email,
+                    Source = e.Source,
+                    Status = e.Status,
+                    NextFollowupDate = e.NextFollowupDate,
+                    Notes = e.Notes,
+                    ConvertedStudentId = e.ConvertedStudentId,
+                    CreatedOn = e.CreatedOn
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<PagedResult<EnquiryDto>>.Ok(
+                new PagedResult<EnquiryDto>(items, totalCount, pageNo, pageSize)
+            ));
+        }
+
+        [HttpGet("{id}")]
+        [HasPermission("Enquiries", "View")]
+        public async Task<ActionResult<ApiResponse<EnquiryDto>>> GetEnquiry(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var enquiry = await _context.Enquiries
+                .Include(e => e.Class)
+                .Include(e => e.Followups)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == id && e.BranchId == branchId);
+
+            if (enquiry == null) return NotFound(ApiResponse<EnquiryDto>.Fail("Enquiry not found."));
+
+            var ay = await _context.AcademicYears.FirstOrDefaultAsync(a => a.Id == enquiry.AcademicYearId);
+
+            return Ok(ApiResponse<EnquiryDto>.Ok(new EnquiryDto
+            {
+                Id = enquiry.Id,
+                AcademicYearId = enquiry.AcademicYearId,
+                AcademicYearName = ay?.Name ?? "",
+                EnquiryNo = enquiry.EnquiryNo,
+                StudentName = enquiry.StudentName,
+                ClassId = enquiry.ClassId,
+                ClassName = enquiry.Class?.Name ?? "",
+                GuardianName = enquiry.GuardianName,
+                Mobile = enquiry.Mobile,
+                Email = enquiry.Email,
+                Source = enquiry.Source,
+                Status = enquiry.Status,
+                NextFollowupDate = enquiry.NextFollowupDate,
+                Notes = enquiry.Notes,
+                ConvertedStudentId = enquiry.ConvertedStudentId,
+                CreatedOn = enquiry.CreatedOn,
+                Followups = enquiry.Followups.OrderByDescending(f => f.FollowupDate).Select(f => new EnquiryFollowupDto
+                {
+                    Id = f.Id,
+                    EnquiryId = f.EnquiryId,
+                    FollowupDate = f.FollowupDate,
+                    Response = f.Response,
+                    Notes = f.Notes,
+                    NextFollowupDate = f.NextFollowupDate
+                }).ToList()
+            }));
+        }
+
+        [HttpPost]
+        [HasPermission("Enquiries", "Add")]
+        public async Task<ActionResult<ApiResponse<EnquiryDto>>> CreateEnquiry([FromBody] CreateEnquiryDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = request.AcademicYearId.HasValue && request.AcademicYearId.Value > 0
+                ? request.AcademicYearId.Value
+                : _currentUserService.AcademicYearId;
+
+            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+            var currentAY = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId);
+
+            var enquiryNo = await _numberingService.GetNextNumberAsync(branchId, "Enquiry", branch?.Code, currentAY?.Name);
+
+            var enquiry = new Enquiry
+            {
+                BranchId = branchId,
+                AcademicYearId = yearId,
+                EnquiryNo = enquiryNo,
+                StudentName = request.StudentName.Trim(),
+                ClassId = request.ClassId,
+                GuardianName = request.GuardianName.Trim(),
+                Mobile = request.Mobile.Trim(),
+                Email = request.Email?.Trim(),
+                Source = request.Source,
+                Status = EnquiryStatus.Open,
+                NextFollowupDate = request.NextFollowupDate,
+                Notes = request.Notes,
+                IsActive = true
+            };
+
+            _context.Enquiries.Add(enquiry);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<EnquiryDto>.Ok(new EnquiryDto
+            {
+                Id = enquiry.Id,
+                AcademicYearId = enquiry.AcademicYearId,
+                AcademicYearName = currentAY?.Name ?? "",
+                EnquiryNo = enquiry.EnquiryNo,
+                StudentName = enquiry.StudentName,
+                ClassId = enquiry.ClassId,
+                GuardianName = enquiry.GuardianName,
+                Mobile = enquiry.Mobile,
+                Status = enquiry.Status
+            }, "Enquiry recorded successfully."));
+        }
+
+        [HttpPost("{id}/followup")]
+        [HasPermission("Enquiries", "Edit")]
+        public async Task<ActionResult<ApiResponse>> AddFollowup(long id, [FromBody] AddFollowupDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var enquiry = await _context.Enquiries.FirstOrDefaultAsync(e => e.Id == id && e.BranchId == branchId);
+            if (enquiry == null) return NotFound(ApiResponse.Fail("Enquiry not found."));
+
+            var followup = new EnquiryFollowup
+            {
+                EnquiryId = id,
+                FollowupDate = DateTime.UtcNow,
+                Response = request.Response.Trim(),
+                Notes = request.Notes,
+                NextFollowupDate = request.NextFollowupDate,
+                IsActive = true
+            };
+
+            _context.EnquiryFollowups.Add(followup);
+
+            // Update parent enquiry status
+            if (request.UpdateStatus.HasValue)
+            {
+                enquiry.Status = request.UpdateStatus.Value;
+            }
+            else
+            {
+                enquiry.Status = EnquiryStatus.FollowUp;
+            }
+
+            enquiry.NextFollowupDate = request.NextFollowupDate;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Followup logged successfully."));
+        }
+    }
+}
