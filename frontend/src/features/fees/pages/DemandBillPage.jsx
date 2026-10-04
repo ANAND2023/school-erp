@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
@@ -10,6 +10,7 @@ import { Toast } from 'primereact/toast';
 import { Calendar } from 'primereact/calendar';
 import { Dialog } from 'primereact/dialog';
 import { SelectButton } from 'primereact/selectbutton';
+import { Avatar } from 'primereact/avatar';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 
@@ -42,7 +43,7 @@ export const DemandBillPage = () => {
   // Filter states
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null); // 1-12 or null for all
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(1); // Default to April (1)
   const [billingMode, setBillingMode] = useState('single_month'); // 'single_month', 'upto_month', 'all'
   const [selectedInstallment, setSelectedInstallment] = useState(null);
   const [statusFilter, setStatusFilter] = useState('unpaid');
@@ -232,7 +233,7 @@ export const DemandBillPage = () => {
     const mobileWithCountry = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
     const dueDate = student.dueDate ? dayjs(student.dueDate).format('DD-MM-YYYY') : dayjs().add(10, 'day').format('DD-MM-YYYY');
     const netAmount = Number(student.netDemandAmount || student.balanceAmount || 0).toLocaleString('en-IN');
-    const period = student.billingPeriod || student.monthName || 'Current Due';
+    const period = (student.billingPeriod || student.monthName || 'Current Due').replace(/^month of\s+/i, '');
     
     const message = `*FEE DEMAND NOTICE - ${schoolInfo?.schoolName || 'SCHOOL'}*\n\n` +
       `Dear Parent,\n` +
@@ -285,55 +286,191 @@ export const DemandBillPage = () => {
     });
   };
 
-  // Status Chip Renderer
+  // Clean, Modern Status Chip Renderer
   const statusBodyTemplate = (rowData) => {
-    const status = rowData.status;
-    let severity = 'danger';
-    if (status === 'Paid') severity = 'success';
-    else if (status === 'Partially Paid') severity = 'warning';
-
-    return <Tag value={status} severity={severity} className="text-xs font-semibold px-2 py-1" />;
+    const status = rowData.status || 'Unpaid';
+    if (status === 'Paid') {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #a7f3d0',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+          Paid
+        </span>
+      );
+    }
+    if (status === 'Partially Paid') {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#fffbeb',
+            color: '#92400e',
+            border: '1px solid #fde68a',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+          Partial
+        </span>
+      );
+    }
+    return (
+      <span
+        className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+        style={{
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          border: '1px solid #fecaca',
+          borderRadius: '9999px',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+        Unpaid
+      </span>
+    );
   };
 
+  // Clean, Unclipped Billing Period Tag Renderer
+  const billingPeriodBodyTemplate = (rowData) => {
+    const rawPeriod = rowData.billingPeriod || rowData.monthName || 'Full Session';
+    const isSingle = rawPeriod.toLowerCase().includes('month of');
+    const cleanLabel = rawPeriod.replace(/^month of\s+/i, '');
+
+    return (
+      <div className="flex flex-column" style={{ minWidth: '130px' }}>
+        <div
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 font-bold text-xs"
+          style={{
+            backgroundColor: '#eff6ff',
+            color: '#1e40af',
+            border: '1px solid #bfdbfe',
+            borderRadius: '6px',
+            width: 'fit-content',
+          }}
+        >
+          <i className="pi pi-calendar text-xs text-blue-600" />
+          <span>{cleanLabel}</span>
+        </div>
+        <span className="text-500 font-medium text-[10px] mt-0.5 ml-1">
+          {isSingle ? 'Single Month Bill' : 'Session Period'}
+        </span>
+      </div>
+    );
+  };
+
+  // Clean Net Demand Container
   const netDemandBodyTemplate = (rowData) => (
-    <div className="flex flex-column align-items-end">
-      <span className="font-bold text-red-600 text-sm">
+    <div className="flex flex-column align-items-end" style={{ minWidth: '100px' }}>
+      <span
+        className="font-bold text-sm px-2.5 py-1"
+        style={{
+          backgroundColor: '#fef2f2',
+          color: '#b91c1c',
+          border: '1px solid #fee2e2',
+          borderRadius: '6px',
+          whiteSpace: 'nowrap',
+        }}
+      >
         ₹ {Number(rowData.netDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
       </span>
       {Number(rowData.previousArrears || 0) > 0 && (
-        <span className="text-xs text-orange-600 font-semibold">
-          (Arrears: ₹{Number(rowData.previousArrears).toLocaleString('en-IN')})
+        <span className="text-[10px] text-orange-600 font-semibold mt-0.5">
+          Arrears: ₹{Number(rowData.previousArrears).toLocaleString('en-IN')}
         </span>
       )}
     </div>
   );
 
-  const studentNameBodyTemplate = (rowData) => (
-    <div className="flex flex-column">
-      <span className="font-bold text-900">{rowData.studentName}</span>
-      <span className="text-xs text-500">Adm: {rowData.admissionNo} | Roll: {rowData.rollNo || '-'}</span>
-    </div>
-  );
+  // Clean Student Name + Initials Avatar
+  const studentNameBodyTemplate = (rowData) => {
+    const initials = rowData.studentName
+      ? rowData.studentName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+      : 'ST';
+
+    return (
+      <div className="flex align-items-center gap-2" style={{ minWidth: '160px' }}>
+        <Avatar
+          label={initials}
+          size="normal"
+          shape="circle"
+          style={{
+            backgroundColor: '#e0e7ff',
+            color: '#3730a3',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            width: '32px',
+            height: '32px',
+            flexShrink: 0,
+          }}
+        />
+        <div className="flex flex-column min-w-0">
+          <span className="font-bold text-900 text-sm line-height-2 text-overflow-ellipsis overflow-hidden">
+            {rowData.studentName}
+          </span>
+          <span className="text-xs text-500 flex align-items-center gap-1">
+            <span className="font-semibold text-700">Adm: {rowData.admissionNo}</span>
+            {rowData.rollNo && rowData.rollNo !== '-' && <span>| Roll: {rowData.rollNo}</span>}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // Bill No Formatted
+  const billNoBodyTemplate = (rowData) => {
+    const billNo = rowData.demandBillNo || `DB-${rowData.admissionNo}`;
+    const shortBill = billNo.length > 18 ? `...${billNo.slice(-12)}` : billNo;
+
+    return (
+      <span
+        title={billNo}
+        className="font-semibold text-xs text-700 font-monospace cursor-pointer"
+        style={{
+          backgroundColor: '#f8fafc',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          border: '1px solid #e2e8f0',
+        }}
+      >
+        {shortBill}
+      </span>
+    );
+  };
 
   const guardianBodyTemplate = (rowData) => (
-    <div className="flex flex-column text-xs">
+    <div className="flex flex-column text-xs" style={{ minWidth: '120px' }}>
       <span className="font-semibold text-800">{rowData.fatherName || 'Guardian'}</span>
-      <span className="text-500">{rowData.guardianMobile || '-'}</span>
+      <span className="text-500 flex align-items-center gap-1 mt-0.5">
+        <i className="pi pi-phone text-[10px] text-400" />
+        {rowData.guardianMobile || '-'}
+      </span>
     </div>
   );
 
   const actionBodyTemplate = (rowData) => (
-    <div className="flex align-items-center gap-1">
+    <div className="flex align-items-center gap-1 justify-content-center" style={{ minWidth: '110px' }}>
       <Button
         icon="pi pi-print"
         className="p-button-rounded p-button-text p-button-primary p-button-sm"
         title="Print Demand Bill / Challan"
+        style={{ width: '28px', height: '28px' }}
         onClick={() => handlePrintSingle(rowData)}
       />
       <Button
         icon="pi pi-list"
         className="p-button-rounded p-button-text p-button-secondary p-button-sm"
         title="View Fee Breakdown"
+        style={{ width: '28px', height: '28px' }}
         onClick={() => setBreakdownStudent(rowData)}
       />
       {rowData.guardianMobile && (
@@ -341,6 +478,7 @@ export const DemandBillPage = () => {
           icon="pi pi-whatsapp"
           className="p-button-rounded p-button-text p-button-success p-button-sm"
           title="Send WhatsApp Reminder"
+          style={{ width: '28px', height: '28px' }}
           onClick={() => handleSendWhatsApp(rowData)}
         />
       )}
@@ -356,7 +494,7 @@ export const DemandBillPage = () => {
     <div className="p-3">
       <Toast ref={toastRef} />
 
-      {/* Header Bar */}
+      {/* Top Header Bar */}
       <div className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-3 gap-2">
         <div>
           <div className="flex align-items-center gap-2">
@@ -364,7 +502,7 @@ export const DemandBillPage = () => {
             <Tag value={activeAcademicYearName || 'Active Session'} severity="info" className="font-semibold" />
           </div>
           <p className="text-xs text-500 m-0 mt-1">
-            Generate, bulk print & dispatch month-wise student fee demand bills, notices, and bank challans with itemized heads and arrears.
+            Generate, bulk print & dispatch month-wise student fee demand bills, notices, and bank challans.
           </p>
         </div>
 
@@ -386,59 +524,68 @@ export const DemandBillPage = () => {
         </div>
       </div>
 
-      {/* 🗓️ Interactive Month Navigation Bar */}
-      <Card className="shadow-1 mb-3 py-2 px-1" style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
-        <div className="flex flex-column md:flex-row md:align-items-center justify-content-between gap-2">
-          <div className="flex align-items-center gap-1 overflow-x-auto pb-1 md:pb-0">
-            <span className="text-xs font-bold text-600 mr-2 flex align-items-center gap-1">
-              <i className="pi pi-calendar text-primary text-sm" />
-              MONTH:
-            </span>
+      {/* 🗓️ Clean, High-Contrast 12-Month Selector Ribbon */}
+      <div
+        className="mb-3 p-2 border-round shadow-1 flex flex-column md:flex-row md:align-items-center justify-content-between gap-2"
+        style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+        }}
+      >
+        <div className="flex align-items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          <span className="text-xs font-bold text-600 mr-1.5 flex align-items-center gap-1 select-none">
+            <i className="pi pi-calendar text-primary text-sm" />
+            MONTH:
+          </span>
 
-            <Button
-              label="All Session"
-              className={`p-button-xs font-semibold ${selectedMonthIndex === null ? 'p-button-primary shadow-1' : 'p-button-outlined p-button-secondary'}`}
-              style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px' }}
-              onClick={() => setSelectedMonthIndex(null)}
-            />
+          <button
+            type="button"
+            onClick={() => setSelectedMonthIndex(null)}
+            className="cursor-pointer border-none font-semibold text-xs px-2.5 py-1.5 border-round transition-all"
+            style={{
+              backgroundColor: selectedMonthIndex === null ? 'var(--primary-color, #1e3a8a)' : '#f1f5f9',
+              color: selectedMonthIndex === null ? '#ffffff' : '#475569',
+              boxShadow: selectedMonthIndex === null ? '0 2px 4px rgba(30, 58, 138, 0.25)' : 'none',
+            }}
+          >
+            All Session
+          </button>
 
-            {ACADEMIC_MONTHS.map((m) => {
-              const isSelected = selectedMonthIndex === m.index;
-              return (
-                <Button
-                  key={m.index}
-                  label={m.short}
-                  title={`Bill for ${m.name}`}
-                  className={`p-button-xs font-semibold ${isSelected ? 'p-button-primary shadow-2' : 'p-button-outlined p-button-secondary'}`}
-                  style={{
-                    fontSize: '0.78rem',
-                    padding: '4px 9px',
-                    borderRadius: '6px',
-                    backgroundColor: isSelected ? 'var(--primary-color, #1e3a8a)' : 'transparent',
-                    color: isSelected ? '#ffffff' : '#475569',
-                    borderColor: isSelected ? 'var(--primary-color, #1e3a8a)' : '#cbd5e1',
-                  }}
-                  onClick={() => setSelectedMonthIndex(m.index)}
-                />
-              );
-            })}
-          </div>
-
-          {/* Mode Selector for Selected Month */}
-          {selectedMonthIndex !== null && (
-            <div className="flex align-items-center gap-2">
-              <span className="text-xs text-500 font-semibold">Mode:</span>
-              <SelectButton
-                value={billingMode}
-                options={modeOptions}
-                onChange={(e) => e.value && setBillingMode(e.value)}
-                className="p-buttonset-xs"
-                style={{ fontSize: '0.75rem' }}
-              />
-            </div>
-          )}
+          {ACADEMIC_MONTHS.map((m) => {
+            const isSelected = selectedMonthIndex === m.index;
+            return (
+              <button
+                key={m.index}
+                type="button"
+                onClick={() => setSelectedMonthIndex(m.index)}
+                title={`Bill for Month of ${m.name}`}
+                className="cursor-pointer border-none font-semibold text-xs px-2.5 py-1.5 border-round transition-all"
+                style={{
+                  backgroundColor: isSelected ? 'var(--primary-color, #1e3a8a)' : '#f1f5f9',
+                  color: isSelected ? '#ffffff' : '#334155',
+                  boxShadow: isSelected ? '0 2px 4px rgba(30, 58, 138, 0.25)' : 'none',
+                }}
+              >
+                {m.short}
+              </button>
+            );
+          })}
         </div>
-      </Card>
+
+        {/* Mode Selector for Selected Month */}
+        {selectedMonthIndex !== null && (
+          <div className="flex align-items-center gap-2 flex-shrink-0">
+            <span className="text-xs text-500 font-semibold select-none">Mode:</span>
+            <SelectButton
+              value={billingMode}
+              options={modeOptions}
+              onChange={(e) => e.value && setBillingMode(e.value)}
+              className="p-buttonset-xs"
+              style={{ fontSize: '0.75rem' }}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Top Statistics KPI Cards */}
       <div className="grid mb-3">
@@ -590,25 +737,27 @@ export const DemandBillPage = () => {
           paginator
           rows={25}
           rowsPerPageOptions={[10, 25, 50, 100]}
+          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
+          currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
           emptyMessage="No students found matching the selected criteria."
           className="p-datatable-sm"
           responsiveLayout="scroll"
           stripedRows
         >
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-          <Column field="demandBillNo" header="Bill No" sortable className="font-semibold text-xs text-700" style={{ width: '120px' }} />
+          <Column field="demandBillNo" header="Bill No" body={billNoBodyTemplate} sortable style={{ width: '120px' }} />
           <Column header="Student Particulars" body={studentNameBodyTemplate} sortable field="studentName" />
-          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ width: '100px' }} />
+          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ width: '95px' }} />
           <Column header="Parent & Contact" body={guardianBodyTemplate} />
-          <Column header="Billing Period" body={(r) => <Tag value={r.billingPeriod || r.monthName || 'Session Due'} severity="info" className="text-xs" />} style={{ width: '150px' }} />
+          <Column header="Billing Period" body={billingPeriodBodyTemplate} style={{ minWidth: '150px' }} />
           <Column field="grossAmount" header="Gross (₹)" body={(r) => Number(r.grossAmount || 0).toLocaleString('en-IN')} className="text-right text-xs" />
           <Column field="concessionAmount" header="Disc (₹)" body={(r) => Number(r.concessionAmount || 0) > 0 ? `-${Number(r.concessionAmount).toFixed(0)}` : '0'} className="text-right text-xs text-green-600" />
           <Column field="currentPeriodDue" header="Month Due (₹)" body={(r) => Number(r.currentPeriodDue || r.balanceAmount || 0).toLocaleString('en-IN')} className="text-right text-xs font-semibold text-blue-700" />
           <Column field="previousArrears" header="Arrears (₹)" body={(r) => Number(r.previousArrears || 0) > 0 ? Number(r.previousArrears).toLocaleString('en-IN') : '-'} className="text-right text-xs text-orange-600" />
           <Column field="fineAmount" header="Fine (₹)" body={(r) => Number(r.fineAmount || 0) > 0 ? Number(r.fineAmount).toFixed(0) : '-'} className="text-right text-xs text-red-500" />
           <Column field="netDemandAmount" header="Net Demand (₹)" body={netDemandBodyTemplate} sortable className="text-right" />
-          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '100px' }} />
-          <Column header="Actions" body={actionBodyTemplate} style={{ width: '130px' }} />
+          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '110px', textAlign: 'center' }} />
+          <Column header="Actions" body={actionBodyTemplate} style={{ width: '120px', textAlign: 'center' }} />
         </DataTable>
       </Card>
 
@@ -630,10 +779,10 @@ export const DemandBillPage = () => {
       >
         {breakdownStudent && (
           <div>
-            <div className="flex justify-content-between p-2 bg-blue-50 border-round mb-3 text-xs">
+            <div className="flex justify-content-between p-2.5 bg-blue-50 border-round mb-3 text-xs border-1 border-blue-200">
               <span><strong>Class:</strong> {breakdownStudent.className} {breakdownStudent.sectionName}</span>
               <span><strong>Period:</strong> {breakdownStudent.billingPeriod || breakdownStudent.monthName}</span>
-              <span><strong>Net Demand Due:</strong> <strong className="text-red-600">₹{Number(breakdownStudent.netDemandAmount).toLocaleString('en-IN')}</strong></span>
+              <span><strong>Net Demand Due:</strong> <strong className="text-red-600 text-sm">₹{Number(breakdownStudent.netDemandAmount).toLocaleString('en-IN')}</strong></span>
             </div>
 
             <table className="w-full border-collapse text-xs">
@@ -662,7 +811,7 @@ export const DemandBillPage = () => {
             </table>
 
             {Number(breakdownStudent.previousArrears || 0) > 0 && (
-              <div className="flex justify-content-between p-2 bg-orange-50 border-round mt-2 text-xs font-semibold text-orange-800">
+              <div className="flex justify-content-between p-2 bg-orange-50 border-round mt-2 text-xs font-semibold text-orange-800 border-1 border-orange-200">
                 <span>Previous Unpaid Arrears:</span>
                 <span>₹ {Number(breakdownStudent.previousArrears).toLocaleString('en-IN')}</span>
               </div>
