@@ -3,6 +3,7 @@ import api from '../../api/client';
 // Holidays
 export const getHolidays = () => api.get('/attendance/holidays');
 export const createHoliday = (data) => api.post('/attendance/holidays', data);
+export const updateHoliday = (id, data) => api.put(`/attendance/holidays/${id}`, data);
 export const deleteHoliday = (id) => api.delete(`/attendance/holidays/${id}`);
 
 // Student Attendance

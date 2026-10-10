@@ -20,6 +20,10 @@ import {
   DialogContent,
   DialogActions,
   Grid,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,36 +38,101 @@ import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
 
 const ALL_MENUS = [
+  // Dashboard
   { key: 'Dashboard', label: 'Dashboard' },
+  
+  // Auth & Access
   { key: 'Users', label: 'User Management' },
   { key: 'Roles', label: 'Roles & Permissions' },
   { key: 'AuditLogs', label: 'Audit Logs' },
+  
+  // Masters
   { key: 'Branch', label: 'School & Branch Master' },
   { key: 'AcademicYears', label: 'Academic Years' },
   { key: 'Classes', label: 'Classes & Sections' },
   { key: 'Subjects', label: 'Subjects' },
   { key: 'ClassSubjects', label: 'Class-Subject Mapping' },
   { key: 'SimpleMasters', label: 'Simple Masters' },
+  { key: 'NumberingSeries', label: 'Numbering Series' },
+  { key: 'BulkStudentUpload', label: 'Bulk Student Upload' },
+
+  // Students & Admission
   { key: 'Enquiries', label: 'Enquiry Management' },
   { key: 'Admissions', label: 'Student Admissions' },
   { key: 'Students', label: 'Student Directory' },
   { key: 'RollNumbers', label: 'Roll Number Assignment' },
   { key: 'SectionChange', label: 'Section Change' },
+  { key: 'IDCardSettings', label: 'ID Card Settings' },
+  { key: 'PrintIDCards', label: 'Print ID Cards' },
+
+  // Staff & HR
   { key: 'Staff', label: 'Staff Directory' },
   { key: 'TeacherAllocation', label: 'Teacher Allocation' },
+
+  // Fees Management
   { key: 'FeeStructure', label: 'Fee Structure' },
+  { key: 'FeeAssignment', label: 'Fee Assignment' },
   { key: 'FeeCollection', label: 'Fee Collection' },
+  { key: 'DemandBill', label: 'Demand Bill' },
   { key: 'FeeConcessions', label: 'Fee Concessions' },
   { key: 'FeeReports', label: 'Fee Reports' },
+
+  // Attendance & Timetable
   { key: 'StudentAttendance', label: 'Student Attendance' },
   { key: 'StaffAttendance', label: 'Staff Attendance' },
-  { key: 'Timetable', label: 'Timetable Management' },
+  { key: 'LeaveManagement', label: 'Leave Management' },
+  { key: 'AttendanceReports', label: 'Attendance Reports' },
+  { key: 'HolidayCalendar', label: 'Holiday Calendar' },
+  { key: 'ClassTimetable', label: 'Class Timetable' },
+  { key: 'TeacherTimetable', label: 'Teacher Timetable' },
+  { key: 'Substitutions', label: 'Substitutions' },
+
+  // Examinations
   { key: 'ExamSchedules', label: 'Exam Schedules' },
   { key: 'MarksEntry', label: 'Marks Entry' },
   { key: 'ReportCards', label: 'Report Cards' },
+
+  // Transport
+  { key: 'Vehicles', label: 'Vehicles' },
+  { key: 'RoutesStops', label: 'Routes & Stops' },
+  { key: 'TransportAllocations', label: 'Student Allocations' },
+
+  // Promotion & TC
   { key: 'Promotion', label: 'Student Promotion' },
   { key: 'TransferCertificates', label: 'Transfer Certificates (TC)' },
+
+  // Inventory & Stock
+  { key: 'InventoryOverview', label: 'Inventory Overview' },
+  { key: 'ItemsMaster', label: 'Items Master' },
+  { key: 'ItemCategories', label: 'Item Categories' },
+  { key: 'Suppliers', label: 'Suppliers / Vendors' },
+  { key: 'Manufactures', label: 'Manufactures' },
+  { key: 'StockInward', label: 'Stock Inward (Purchase)' },
+  { key: 'StockIssue', label: 'Stock Issue (Outward)' },
+  { key: 'StockLedger', label: 'Stock Movement Ledger' },
+
+  // Expenses
+  { key: 'Expenses', label: 'Expense Management' },
+
+  // Reports
   { key: 'Reports', label: 'General Reports' },
+];
+
+const MENU_GROUPS = [
+  { group: 'All Modules', keys: ALL_MENUS.map(m => m.key) },
+  { group: 'Dashboard', keys: ['Dashboard'] },
+  { group: 'Auth & Access', keys: ['Users', 'Roles', 'AuditLogs'] },
+  { group: 'Masters', keys: ['Branch', 'AcademicYears', 'Classes', 'Subjects', 'ClassSubjects', 'SimpleMasters', 'NumberingSeries', 'BulkStudentUpload'] },
+  { group: 'Students & Admission', keys: ['Enquiries', 'Admissions', 'Students', 'RollNumbers', 'SectionChange', 'IDCardSettings', 'PrintIDCards'] },
+  { group: 'Staff & HR', keys: ['Staff', 'TeacherAllocation'] },
+  { group: 'Fees Management', keys: ['FeeStructure', 'FeeAssignment', 'FeeCollection', 'DemandBill', 'FeeConcessions', 'FeeReports'] },
+  { group: 'Attendance & Timetable', keys: ['StudentAttendance', 'StaffAttendance', 'LeaveManagement', 'AttendanceReports', 'HolidayCalendar', 'ClassTimetable', 'TeacherTimetable', 'Substitutions'] },
+  { group: 'Examinations', keys: ['ExamSchedules', 'MarksEntry', 'ReportCards'] },
+  { group: 'Transport', keys: ['Vehicles', 'RoutesStops', 'TransportAllocations'] },
+  { group: 'Promotion & TC', keys: ['Promotion', 'TransferCertificates'] },
+  { group: 'Inventory & Stock', keys: ['InventoryOverview', 'ItemsMaster', 'ItemCategories', 'Suppliers', 'Manufactures', 'StockInward', 'StockIssue', 'StockLedger'] },
+  { group: 'Expenses', keys: ['Expenses'] },
+  { group: 'Reports', keys: ['Reports'] }
 ];
 
 const ACTIONS = ['canView', 'canAdd', 'canEdit', 'canDelete', 'canPrint', 'canExport'];
@@ -85,6 +154,7 @@ export const RolesPage = () => {
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState('All Modules');
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [roleName, setRoleName] = useState('');
   const [roleDesc, setRoleDesc] = useState('');
@@ -175,7 +245,7 @@ export const RolesPage = () => {
   const handleColumnSelectAll = (actionKey, checked) => {
     setPermissionsMap((prev) => {
       const updated = { ...prev };
-      ALL_MENUS.forEach((menu) => {
+      visibleMenus.forEach((menu) => {
         updated[menu.key] = {
           ...updated[menu.key],
           [actionKey]: checked,
@@ -185,10 +255,14 @@ export const RolesPage = () => {
     });
   };
 
-  // Global Select All
+  const visibleMenus = selectedGroup === 'All Modules'
+    ? ALL_MENUS
+    : ALL_MENUS.filter(m => MENU_GROUPS.find(g => g.group === selectedGroup)?.keys.includes(m.key));
+
+  // Global Select All (Acts on visible menus only)
   const handleGlobalSelectAll = (checked) => {
-    const updated = {};
-    ALL_MENUS.forEach((menu) => {
+    const updated = { ...permissionsMap };
+    visibleMenus.forEach((menu) => {
       updated[menu.key] = ACTIONS.reduce((acc, act) => ({ ...acc, [act]: checked }), {});
     });
     setPermissionsMap(updated);
@@ -324,10 +398,10 @@ export const RolesPage = () => {
         <DialogTitle sx={{ fontWeight: 600 }}>
           {editingRoleId ? 'Edit Role & Permissions Matrix' : 'Create Role & Permissions Matrix'}
         </DialogTitle>
-        <Box component="form" onSubmit={handleSaveRole}>
-          <DialogContent dividers sx={{ maxHeight: '75vh' }}>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6}>
+        <Box component="form" onSubmit={handleSaveRole} sx={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 2 }}>
+            <Grid container spacing={2} sx={{ mb: 2, flexShrink: 0 }}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   required
                   fullWidth
@@ -336,13 +410,27 @@ export const RolesPage = () => {
                   onChange={(e) => setRoleName(e.target.value)}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={5}>
                 <TextField
                   fullWidth
                   label="Description"
                   value={roleDesc}
                   onChange={(e) => setRoleDesc(e.target.value)}
                 />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Module Group</InputLabel>
+                  <Select
+                    value={selectedGroup}
+                    label="Module Group"
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                  >
+                    {MENU_GROUPS.map((g) => (
+                      <MenuItem key={g.group} value={g.group}>{g.group}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
 
@@ -352,10 +440,11 @@ export const RolesPage = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                mb: 1.5,
+                mb: 1,
                 p: 1.5,
                 bgcolor: '#f5f5f5',
                 borderRadius: 1,
+                flexShrink: 0
               }}
             >
               <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
@@ -373,7 +462,7 @@ export const RolesPage = () => {
             </Box>
 
             {/* Matrix Table */}
-            <Paper variant="outlined" sx={{ maxHeight: '58vh', overflow: 'auto', borderRadius: 1.5, position: 'relative' }}>
+            <Paper variant="outlined" sx={{ flex: 1, overflow: 'auto', borderRadius: 1.5, position: 'relative' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -381,8 +470,8 @@ export const RolesPage = () => {
                       Menu / Screen
                     </TableCell>
                     {ACTIONS.map((action) => {
-                      const allChecked = ALL_MENUS.length > 0 && ALL_MENUS.every((m) => !!permissionsMap[m.key]?.[action]);
-                      const someChecked = ALL_MENUS.some((m) => !!permissionsMap[m.key]?.[action]);
+                      const allChecked = visibleMenus.length > 0 && visibleMenus.every((m) => !!permissionsMap[m.key]?.[action]);
+                      const someChecked = visibleMenus.some((m) => !!permissionsMap[m.key]?.[action]);
                       const indeterminate = someChecked && !allChecked;
 
                       return (
@@ -417,7 +506,7 @@ export const RolesPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {ALL_MENUS.map((menu) => {
+                  {visibleMenus.map((menu) => {
                     const rowPerms = permissionsMap[menu.key] || {};
                     const isRowAll = ACTIONS.every((act) => rowPerms[act]);
 

@@ -253,7 +253,15 @@ export const ItemSuppliersPage = () => {
           <Column
             field="gstin"
             header="GSTIN"
-            body={(row) => (row.gstin ? <Tag value={row.gstin} severity="secondary" /> : '-')}
+            body={(row) =>
+              row.gstin ? (
+                <span className="bg-blue-500 text-white font-bold" style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '11px' }}>
+                  {row.gstin}
+                </span>
+              ) : (
+                '-'
+              )
+            }
           />
           <Column
             field="totalPurchases"

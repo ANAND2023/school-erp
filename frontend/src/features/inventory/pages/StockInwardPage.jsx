@@ -34,20 +34,51 @@ export const StockInwardPage = () => {
   const [loading, setLoading] = useState(false);
   const [globalFilter, setGlobalFilter] = useState('');
 
-  // View Details Modal
   const [viewDialogVisible, setViewDialogVisible] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
+  
+  // Manufacture Master State
+  const [manuDialogVisible, setManuDialogVisible] = useState(false);
+  const [manuFormData, setManuFormData] = useState({
+    name: '', code: '', address1: '', address2: '', address3: '', postalCode: '',
+    country: '', state: '', district: '', contactPerson: '', contactNumber: '', email: '',
+    isAsset: 'No', isActive: 'Yes'
+  });
+
+  // Supplier Master State
+  const [supplierDialogVisible, setSupplierDialogVisible] = useState(false);
+  const [supplierFormData, setSupplierFormData] = useState({
+    supplierCode: '', name: '', address1: '', postalCode: '', city: '',
+    country: '', state: '', creditDays: '', contactPerson: '', telephoneNo: '',
+    email: '', bankName: '', accountNo: '', paymentType: 'CASH', shipmentDetail: '',
+    tinNo: '', dlNo: '', panNo: '', gstinNo: '', supplierCurrency: '',
+    termsAndConditions: '', isAsset: 'No', isInsuranceProvider: 'No'
+  });
+
+  // Item Master State
+  const [itemMasterDialogVisible, setItemMasterDialogVisible] = useState(false);
+  const [itemMasterFormData, setItemMasterFormData] = useState({
+    category: '', itemName: '', itemCode: '', description: '', manufacturedBy: '',
+    minLevel: '', maxLevel: '', tagDepartment: '', reorderQty: '', purchaseUnit: '',
+    saleUnit: '', expirable: 'No', itemHsnCode: '', active: 'Yes', itemGroup: '',
+    purchaseTaxName: '', purchaseTaxPercent: '', saleTaxName: '', saleTaxPercent: '',
+    fixedSellingPrice: ''
+  });
 
   // New Purchase Dialog State
   const [dialogVisible, setDialogVisible] = useState(false);
   const [formData, setFormData] = useState({
     supplierId: null,
-    invoiceNumber: '',
-    purchaseDate: new Date(),
     paymentMode: 'Cash',
-    paymentStatus: 'Paid',
-    remarks: '',
-    items: [{ itemId: null, quantity: 1, unitCost: 0, batchNo: '', remarks: '' }],
+    invoiceNumber: '',
+    purchaseDate: new Date(), // Invoice Date
+    deliveryDate: new Date(),
+    deliveryNo: '',
+    narration: '',
+    freightCharges: 0,
+    creditNoteAmount: 0,
+    roundOff: 0,
+    items: [{ itemId: null, unitCost: 0, mrp: 0, quantity: 1, batchNo: '', discPercent: 0, discAmt: 0, hsnCode: '', taxPercent: 0, taxAmt: 0, netAmt: 0, expDate: null }],
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -86,15 +117,21 @@ export const StockInwardPage = () => {
     fetchSuppliersAndItems();
   }, []);
 
+  const getEmptyItem = () => ({ itemId: null, unitCost: 0, mrp: 0, quantity: 1, batchNo: '', discPercent: 0, discAmt: 0, hsnCode: '', taxPercent: 0, taxAmt: 0, netAmt: 0, expDate: null });
+
   const openNew = () => {
     setFormData({
       supplierId: suppliers.length > 0 ? suppliers[0].id : null,
+      paymentMode: 'Cash',
       invoiceNumber: '',
       purchaseDate: new Date(),
-      paymentMode: 'Cash',
-      paymentStatus: 'Paid',
-      remarks: '',
-      items: [{ itemId: items.length > 0 ? items[0].id : null, quantity: 1, unitCost: 0, batchNo: '', remarks: '' }],
+      deliveryDate: new Date(),
+      deliveryNo: '',
+      narration: '',
+      freightCharges: 0,
+      creditNoteAmount: 0,
+      roundOff: 0,
+      items: [getEmptyItem()],
     });
     setDialogVisible(true);
   };
@@ -102,10 +139,7 @@ export const StockInwardPage = () => {
   const addItemRow = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [
-        ...prev.items,
-        { itemId: items.length > 0 ? items[0].id : null, quantity: 1, unitCost: 0, batchNo: '', remarks: '' },
-      ],
+      items: [...prev.items, getEmptyItem()],
     }));
   };
 
@@ -122,20 +156,49 @@ export const StockInwardPage = () => {
       const updated = [...prev.items];
       updated[index] = { ...updated[index], [field]: value };
 
-      // If user changes item selection, prefill its unit price
       if (field === 'itemId') {
         const selItem = items.find((it) => it.id === value);
         if (selItem && selItem.unitPrice > 0) {
           updated[index].unitCost = selItem.unitPrice;
+          updated[index].mrp = selItem.unitPrice;
         }
       }
+
+      // Auto compute net amount
+      const row = updated[index];
+      const rate = row.unitCost || 0;
+      const qty = row.quantity || 0;
+      let gross = rate * qty;
+      let discAmt = row.discAmt || 0;
+      if (field === 'discPercent') {
+        discAmt = gross * ((row.discPercent || 0) / 100);
+        updated[index].discAmt = discAmt;
+      } else if (field === 'discAmt') {
+        updated[index].discPercent = gross > 0 ? (discAmt / gross) * 100 : 0;
+      } else if (field === 'unitCost' || field === 'quantity') {
+        discAmt = gross * ((row.discPercent || 0) / 100);
+        updated[index].discAmt = discAmt;
+      }
+      
+      let afterDisc = gross - discAmt;
+      let taxAmt = afterDisc * ((row.taxPercent || 0) / 100);
+      updated[index].taxAmt = taxAmt;
+      updated[index].netAmt = afterDisc + taxAmt;
 
       return { ...prev, items: updated };
     });
   };
 
   const calculateTotalAmount = () => {
-    return formData.items.reduce((sum, it) => sum + (it.quantity || 0) * (it.unitCost || 0), 0);
+    return formData.items.reduce((sum, it) => sum + (it.netAmt || 0), 0);
+  };
+
+  const calculateSummary = () => {
+    const grossAmount = formData.items.reduce((sum, it) => sum + ((it.unitCost || 0) * (it.quantity || 0)), 0);
+    const billDiscAmt = formData.items.reduce((sum, it) => sum + (it.discAmt || 0), 0);
+    const totalTax = formData.items.reduce((sum, it) => sum + (it.taxAmt || 0), 0);
+    const grnAmt = grossAmount - billDiscAmt + totalTax + (formData.freightCharges || 0) - (formData.creditNoteAmount || 0) + (formData.roundOff || 0);
+    return { grossAmount, billDiscAmt, totalTax, grnAmt };
   };
 
   const handleSubmit = async (e) => {
@@ -315,189 +378,148 @@ export const StockInwardPage = () => {
       <Dialog
         header="Record Stock Inward / Purchase Receipt"
         visible={dialogVisible}
-        style={{ width: '820px', maxWidth: '95vw' }}
+        style={{ width: '98vw', maxWidth: '100vw', height: '95vh' }}
         modal
         onHide={() => setDialogVisible(false)}
         footer={
-          <div className="flex align-items-center justify-content-between w-full">
-            <div className="text-left font-bold text-lg text-green-700">
-              Grand Total: {formatCurrency(calculateTotalAmount())}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                label="Cancel"
-                icon="pi pi-times"
-                className="p-button-text p-button-sm"
-                onClick={() => setDialogVisible(false)}
-                disabled={submitting}
-              />
-              <Button
-                label="Save & Inward Stock"
-                icon="pi pi-check"
-                className="p-button-success p-button-sm font-bold"
-                onClick={handleSubmit}
-                loading={submitting}
-              />
-            </div>
+          <div className="flex align-items-center justify-content-end gap-2">
+            <Button label="Cancel" icon="pi pi-times" className="p-button-text p-button-sm" onClick={() => setDialogVisible(false)} disabled={submitting} />
+            <Button label="Save & Inward Stock" icon="pi pi-check" className="p-button-success p-button-sm font-bold" onClick={handleSubmit} loading={submitting} />
           </div>
         }
       >
-        <div className="grid p-fluid pt-2">
-          {/* Supplier */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Vendor / Supplier</label>
-            <Dropdown
-              value={formData.supplierId}
-              options={suppliers.map((s) => ({ label: s.supplierName, value: s.id }))}
-              onChange={(e) => setFormData({ ...formData, supplierId: e.value })}
-              placeholder="Select Vendor"
-              className="p-inputtext-sm"
-            />
+        <div className="flex flex-column gap-3 pt-2">
+          {/* Top Header Section */}
+          <div className="grid p-fluid">
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Supplier</label>
+              <Dropdown value={formData.supplierId} options={suppliers.map((s) => ({ label: s.supplierName, value: s.id }))} onChange={(e) => setFormData({ ...formData, supplierId: e.value })} placeholder="Select Vendor" className="p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Payment Type</label>
+              <Dropdown value={formData.paymentMode} options={PAYMENT_MODES} onChange={(e) => setFormData({ ...formData, paymentMode: e.value })} className="p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Invoice No</label>
+              <InputText value={formData.invoiceNumber} onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })} className="p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Invoice Date</label>
+              <Calendar value={formData.purchaseDate} onChange={(e) => setFormData({ ...formData, purchaseDate: e.value })} dateFormat="dd/mm/yy" showIcon className="p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Delivery Date</label>
+              <Calendar value={formData.deliveryDate} onChange={(e) => setFormData({ ...formData, deliveryDate: e.value })} dateFormat="dd/mm/yy" showIcon className="p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-2">
+              <label className="text-xs font-bold text-700 block mb-1">Delivery No</label>
+              <InputText value={formData.deliveryNo} onChange={(e) => setFormData({ ...formData, deliveryNo: e.target.value })} className="p-inputtext-sm" />
+            </div>
           </div>
 
-          {/* Invoice No */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Invoice / Bill Number</label>
-            <InputText
-              value={formData.invoiceNumber}
-              onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-              placeholder="e.g. INV-2026-981"
-              className="p-inputtext-sm"
-            />
+          {/* Buttons */}
+          <div className="flex justify-content-end gap-2">
+            <Button label="CREATE ITEM STORE" type="button" className="p-button-outlined p-button-sm p-button-help" />
+            <Button label="CREATE MANUFACTURE MASTER" type="button" className="p-button-outlined p-button-sm p-button-help" onClick={() => setManuDialogVisible(true)} />
+            <Button label="CREATE SUPPLIER MASTER" type="button" className="p-button-outlined p-button-sm p-button-help" />
+            <Button label="CREATE GENERIC MASTER" type="button" className="p-button-outlined p-button-sm p-button-help" />
           </div>
 
-          {/* Purchase Date */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Purchase Date</label>
-            <Calendar
-              value={formData.purchaseDate}
-              onChange={(e) => setFormData({ ...formData, purchaseDate: e.value })}
-              dateFormat="dd/mm/yy"
-              showIcon
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Payment Mode */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Payment Mode</label>
-            <Dropdown
-              value={formData.paymentMode}
-              options={PAYMENT_MODES}
-              onChange={(e) => setFormData({ ...formData, paymentMode: e.value })}
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Payment Status */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Payment Status</label>
-            <Dropdown
-              value={formData.paymentStatus}
-              options={PAYMENT_STATUSES}
-              onChange={(e) => setFormData({ ...formData, paymentStatus: e.value })}
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Remarks */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Remarks</label>
-            <InputText
-              value={formData.remarks}
-              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-              placeholder="Optional remarks"
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Items Section Header */}
-          <div className="col-12 flex align-items-center justify-content-between pt-3 pb-1 border-bottom-1 surface-border">
-            <span className="font-bold text-800 text-sm flex align-items-center gap-2">
-              <i className="pi pi-list text-primary" />
-              Stock Items to Inward
-            </span>
-            <Button
-              type="button"
-              label="Add Another Item"
-              icon="pi pi-plus"
-              className="p-button-outlined p-button-sm p-button-secondary"
-              onClick={addItemRow}
-            />
-          </div>
-
-          {/* Items List Rows */}
-          <div className="col-12">
-            {formData.items.map((row, idx) => {
-              const selectedItm = items.find((i) => i.id === row.itemId);
-              const rowTotal = (row.quantity || 0) * (row.unitCost || 0);
-
-              return (
-                <div
-                  key={idx}
-                  className="grid align-items-center p-2 mb-2 border-round surface-50 border-1 surface-border"
-                >
-                  <div className="col-12 sm:col-4">
-                    <label className="text-xs text-500 block mb-1 font-semibold">
-                      Item #{idx + 1} <span className="text-red-500">*</span>
-                    </label>
-                    <Dropdown
-                      value={row.itemId}
-                      options={items.map((it) => ({
-                        label: `${it.itemName} (${it.itemCode}) [Stock: ${it.currentStock}]`,
-                        value: it.id,
-                      }))}
-                      onChange={(e) => updateItemRow(idx, 'itemId', e.value)}
-                      placeholder="Select Stock Item"
-                      filter
-                      className="p-inputtext-sm w-full"
-                    />
+          {/* Items Section */}
+          <div className="overflow-x-auto border-1 surface-border border-round" style={{ minHeight: '200px' }}>
+            <div style={{ minWidth: '1500px' }} className="p-2">
+              <div className="flex gap-2 mb-2 font-bold text-xs surface-200 p-2 border-round">
+                <div style={{ width: '200px' }}>Item Name</div>
+                <div style={{ width: '100px' }}>Rate</div>
+                <div style={{ width: '100px' }}>MRP</div>
+                <div style={{ width: '80px' }}>Qty</div>
+                <div style={{ width: '100px' }}>Batch</div>
+                <div style={{ width: '80px' }}>DISC(%)</div>
+                <div style={{ width: '100px' }}>Disc Amt</div>
+                <div style={{ width: '100px' }}>HSN CODE</div>
+                <div style={{ width: '80px' }}>Tax %</div>
+                <div style={{ width: '100px' }}>TAX AMT</div>
+                <div style={{ width: '120px' }}>Net Amt</div>
+                <div style={{ width: '120px' }}>Exp Date</div>
+                <div style={{ width: '50px' }}></div>
+              </div>
+              
+              {formData.items.map((row, idx) => (
+                <div key={idx} className="flex gap-2 mb-2 align-items-center">
+                  <div style={{ width: '200px' }}>
+                    <Dropdown value={row.itemId} options={items.map((it) => ({ label: it.itemName, value: it.id }))} onChange={(e) => updateItemRow(idx, 'itemId', e.value)} placeholder="Select Item" filter className="p-inputtext-sm w-full" />
                   </div>
-
-                  <div className="col-6 sm:col-2">
-                    <label className="text-xs text-500 block mb-1 font-semibold">
-                      Qty ({selectedItm?.unit || 'Pcs'})
-                    </label>
-                    <InputNumber
-                      value={row.quantity}
-                      onValueChange={(e) => updateItemRow(idx, 'quantity', e.value || 1)}
-                      min={1}
-                      className="p-inputtext-sm w-full"
-                    />
+                  <div style={{ width: '100px' }}>
+                    <InputNumber value={row.unitCost} onValueChange={(e) => updateItemRow(idx, 'unitCost', e.value)} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} />
                   </div>
-
-                  <div className="col-6 sm:col-2">
-                    <label className="text-xs text-500 block mb-1 font-semibold">Unit Cost (₹)</label>
-                    <InputNumber
-                      value={row.unitCost}
-                      onValueChange={(e) => updateItemRow(idx, 'unitCost', e.value || 0)}
-                      mode="currency"
-                      currency="INR"
-                      locale="en-IN"
-                      className="p-inputtext-sm w-full"
-                    />
+                  <div style={{ width: '100px' }}>
+                    <InputNumber value={row.mrp} onValueChange={(e) => updateItemRow(idx, 'mrp', e.value)} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} />
                   </div>
-
-                  <div className="col-6 sm:col-3">
-                    <label className="text-xs text-500 block mb-1 font-semibold">Total Amount</label>
-                    <div className="font-bold text-sm text-green-700 pt-2">
-                      {formatCurrency(rowTotal)}
-                    </div>
+                  <div style={{ width: '80px' }}>
+                    <InputNumber value={row.quantity} onValueChange={(e) => updateItemRow(idx, 'quantity', e.value)} className="p-inputtext-sm w-full" />
                   </div>
-
-                  <div className="col-6 sm:col-1 text-right">
-                    <Button
-                      type="button"
-                      icon="pi pi-trash"
-                      className="p-button-rounded p-button-text p-button-danger p-button-sm"
-                      disabled={formData.items.length <= 1}
-                      onClick={() => removeItemRow(idx)}
-                      tooltip="Remove Row"
-                    />
+                  <div style={{ width: '100px' }}>
+                    <InputText value={row.batchNo} onChange={(e) => updateItemRow(idx, 'batchNo', e.target.value)} className="p-inputtext-sm w-full" />
+                  </div>
+                  <div style={{ width: '80px' }}>
+                    <InputNumber value={row.discPercent} onValueChange={(e) => updateItemRow(idx, 'discPercent', e.value)} className="p-inputtext-sm w-full" />
+                  </div>
+                  <div style={{ width: '100px' }}>
+                    <InputNumber value={row.discAmt} onValueChange={(e) => updateItemRow(idx, 'discAmt', e.value)} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} />
+                  </div>
+                  <div style={{ width: '100px' }}>
+                    <InputText value={row.hsnCode} onChange={(e) => updateItemRow(idx, 'hsnCode', e.target.value)} className="p-inputtext-sm w-full" />
+                  </div>
+                  <div style={{ width: '80px' }}>
+                    <Dropdown value={row.taxPercent} options={[{label:'0',value:0},{label:'5',value:5},{label:'12',value:12},{label:'18',value:18},{label:'28',value:28}]} onChange={(e) => updateItemRow(idx, 'taxPercent', e.value)} className="p-inputtext-sm w-full" />
+                  </div>
+                  <div style={{ width: '100px' }}>
+                    <InputNumber value={row.taxAmt} disabled className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} />
+                  </div>
+                  <div style={{ width: '120px' }}>
+                    <InputNumber value={row.netAmt} disabled className="p-inputtext-sm w-full font-bold text-green-600" mode="decimal" minFractionDigits={2} />
+                  </div>
+                  <div style={{ width: '120px' }}>
+                    <Calendar value={row.expDate} onChange={(e) => updateItemRow(idx, 'expDate', e.value)} dateFormat="dd/mm/yy" className="p-inputtext-sm w-full" />
+                  </div>
+                  <div style={{ width: '50px' }} className="text-center">
+                    <Button icon="pi pi-trash" className="p-button-rounded p-button-text p-button-danger p-button-sm" onClick={() => removeItemRow(idx)} disabled={formData.items.length <= 1} />
                   </div>
                 </div>
-              );
-            })}
+              ))}
+              <div className="mt-2">
+                <Button label="Add Row" icon="pi pi-plus" className="p-button-sm p-button-text" onClick={addItemRow} />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Summary Section */}
+          <div className="grid p-fluid mt-2 surface-100 p-3 border-round">
+            <div className="col-12 sm:col-8">
+              <label className="text-xs font-bold text-700 block mb-1">Narration</label>
+              <InputTextarea value={formData.narration} onChange={(e) => setFormData({...formData, narration: e.target.value})} rows={3} className="w-full p-inputtext-sm" />
+            </div>
+            <div className="col-12 sm:col-4">
+              <div className="grid">
+                <div className="col-6 text-right font-semibold text-sm">Gross Amount:</div>
+                <div className="col-6"><InputNumber value={calculateSummary().grossAmount} disabled className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} /></div>
+                
+                <div className="col-6 text-right font-semibold text-sm">Bill Disc Amt:</div>
+                <div className="col-6"><InputNumber value={calculateSummary().billDiscAmt} disabled className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} /></div>
+                
+                <div className="col-6 text-right font-semibold text-sm align-self-center">Round Off:</div>
+                <div className="col-6"><InputNumber value={formData.roundOff} onValueChange={(e) => setFormData({...formData, roundOff: e.value})} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} /></div>
+                
+                <div className="col-6 text-right font-semibold text-sm align-self-center">Freight Charges:</div>
+                <div className="col-6"><InputNumber value={formData.freightCharges} onValueChange={(e) => setFormData({...formData, freightCharges: e.value})} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} /></div>
+                
+                <div className="col-6 text-right font-semibold text-sm align-self-center">CREDIT NOTE AMOUNT:</div>
+                <div className="col-6"><InputNumber value={formData.creditNoteAmount} onValueChange={(e) => setFormData({...formData, creditNoteAmount: e.value})} className="p-inputtext-sm w-full" mode="decimal" minFractionDigits={2} /></div>
+                
+                <div className="col-6 text-right font-bold text-lg text-primary mt-2">GRN Amt:</div>
+                <div className="col-6 mt-2"><InputNumber value={calculateSummary().grnAmt} disabled className="p-inputtext-sm w-full font-bold" mode="decimal" minFractionDigits={2} /></div>
+              </div>
+            </div>
           </div>
         </div>
       </Dialog>
@@ -553,6 +575,55 @@ export const StockInwardPage = () => {
             </div>
           </div>
         )}
+      </Dialog>
+      {/* Manufacture Master Modal */}
+      <Dialog
+        header={
+          <div className="flex align-items-center gap-2">
+            <i className="pi pi-building text-primary" />
+            <span style={{color: '#902c6c'}}>Manufacture Master</span>
+          </div>
+        }
+        visible={manuDialogVisible}
+        style={{ width: '900px', maxWidth: '95vw' }}
+        modal
+        onHide={() => setManuDialogVisible(false)}
+        footer={
+          <div className="text-left">
+            <Button label="Save" icon="pi pi-check" className="p-button-sm mr-2" style={{ backgroundColor: '#a62e7f', borderColor: '#a62e7f' }} onClick={() => setManuDialogVisible(false)} />
+            <Button label="Cancel" icon="pi pi-times" className="p-button-sm" style={{ backgroundColor: '#a62e7f', borderColor: '#a62e7f' }} onClick={() => setManuDialogVisible(false)} />
+          </div>
+        }
+      >
+        <div className="surface-100 p-2 border-round mb-3">
+          <span className="text-pink-600 font-bold"><i className="pi pi-home mr-1"></i>/GRN/GRN</span>
+        </div>
+        
+        <div className="grid p-fluid">
+          <div className="col-12 sm:col-3"><InputText placeholder="Name" className="p-inputtext-sm border-pink-200" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Code" className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Address1" className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Address2" className="p-inputtext-sm" /></div>
+          
+          <div className="col-12 sm:col-3"><InputText placeholder="Address3" className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Postal Code" className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><Dropdown placeholder="Country" options={[{label:'India',value:'IN'}]} className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="State" className="p-inputtext-sm border-pink-200" /></div>
+          
+          <div className="col-12 sm:col-3"><InputText placeholder="District" className="p-inputtext-sm border-pink-200" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Contact Person" className="p-inputtext-sm" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="Contact Number" className="p-inputtext-sm border-pink-200" /></div>
+          <div className="col-12 sm:col-3"><InputText placeholder="EMAIL" className="p-inputtext-sm" /></div>
+          
+          <div className="col-12 sm:col-3">
+            <span className="text-xs text-600 block mb-1">Is Asset</span>
+            <Dropdown value="No" options={[{label:'Yes',value:'Yes'},{label:'No',value:'No'}]} className="p-inputtext-sm" />
+          </div>
+          <div className="col-12 sm:col-3">
+            <span className="text-xs text-600 block mb-1">Is Active</span>
+            <Dropdown value="Yes" options={[{label:'Yes',value:'Yes'},{label:'No',value:'No'}]} className="p-inputtext-sm" />
+          </div>
+        </div>
       </Dialog>
     </div>
   );

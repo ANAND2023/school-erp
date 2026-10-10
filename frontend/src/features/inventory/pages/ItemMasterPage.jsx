@@ -321,22 +321,23 @@ export const ItemMasterPage = () => {
           rowsPerPageOptions={[10, 15, 25, 50]}
           responsiveLayout="scroll"
         >
-          <Column field="itemCode" header="Item Code" sortable style={{ width: '110px' }} className="font-semibold" />
+          <Column field="itemCode" header="Item Code" sortable style={{ minWidth: '120px' }} className="font-semibold" />
           <Column field="itemName" header="Item Name" sortable className="font-bold text-800" />
           <Column field="categoryName" header="Category" sortable />
+          <Column field="manufacturedBy" header="Manufactured By" sortable />
           <Column field="unit" header="Unit" style={{ width: '80px' }} />
           <Column
             field="unitPrice"
             header="Cost Price"
             body={(row) => formatCurrency(row.unitPrice)}
-            style={{ width: '110px' }}
+            style={{ minWidth: '120px' }}
             sortable
           />
           <Column
             field="sellingPrice"
             header="Sale Price"
             body={(row) => (row.sellingPrice ? formatCurrency(row.sellingPrice) : '-')}
-            style={{ width: '110px' }}
+            style={{ minWidth: '120px' }}
           />
           <Column
             field="currentStock"
@@ -358,11 +359,11 @@ export const ItemMasterPage = () => {
             sortable
           />
           <Column field="reorderLevel" header="Min Alert" style={{ width: '90px' }} />
-          <Column field="rackNumber" header="Rack / Location" style={{ width: '110px' }} />
+          <Column field="rackNumber" header="Rack / Location" style={{ minWidth: '120px' }} />
           <Column
             header="Status"
             body={(row) => getStockStatusTag(row.currentStock, row.reorderLevel)}
-            style={{ width: '110px' }}
+            style={{ minWidth: '120px' }}
           />
           <Column
             header="Actions"
@@ -508,6 +509,26 @@ export const ItemMasterPage = () => {
               />
             </div>
           )}
+
+          {/* Manufactured By */}
+          <div className="col-12 sm:col-4">
+            <label className="text-xs font-bold text-700 block mb-1">Manufactured By</label>
+            <Dropdown
+              value={formData.manufacturedBy || ''}
+              options={[
+                { label: 'Cipla', value: 'Cipla' },
+                { label: 'Sun Pharma', value: 'Sun Pharma' },
+                { label: 'Abbott', value: 'Abbott' },
+                { label: 'GSK', value: 'GSK' },
+                { label: 'Mankind', value: 'Mankind' },
+                { label: 'Glenmark', value: 'Glenmark' }
+              ]}
+              onChange={(e) => setFormData({ ...formData, manufacturedBy: e.value })}
+              placeholder="Select or Type Manufacturer"
+              editable
+              className="p-inputtext-sm w-full"
+            />
+          </div>
 
           {/* Reorder / Min Level */}
           <div className={`col-12 sm:col-${isEdit ? '6' : '4'}`}>

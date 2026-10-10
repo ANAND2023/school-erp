@@ -220,6 +220,8 @@ namespace SchoolERP.Application.DTOs
         public string StartTime { get; set; } = string.Empty; // "HH:mm"
         public string EndTime { get; set; } = string.Empty;   // "HH:mm"
         public bool IsBreak { get; set; }
+        public bool IsBellEnabled { get; set; }
+        public bool IsDismissalBell { get; set; }
         public int DisplayOrder { get; set; }
     }
 
@@ -230,6 +232,8 @@ namespace SchoolERP.Application.DTOs
         public string StartTime { get; set; } = "08:30";
         public string EndTime { get; set; } = "09:15";
         public bool IsBreak { get; set; } = false;
+        public bool IsBellEnabled { get; set; } = false;
+        public bool IsDismissalBell { get; set; } = false;
         public int DisplayOrder { get; set; } = 0;
     }
 

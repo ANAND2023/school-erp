@@ -20,7 +20,7 @@ export const DemandSchoolEmblem = ({ size = 46 }) => (
 );
 
 /**
- * Single Demand Bill Copy
+ * 1. Single Demand Bill Copy (Full format)
  */
 export const SingleDemandSlip = ({ data = {}, copyTitle = 'STUDENT / PARENT COPY', schoolInfo = {} }) => {
   const [imgErr, setImgErr] = React.useState(false);
@@ -289,7 +289,7 @@ export const SingleDemandSlip = ({ data = {}, copyTitle = 'STUDENT / PARENT COPY
 };
 
 /**
- * 2-Copy Demand Bill (Student Copy + Office Copy)
+ * 2. 2-Copy Demand Bill (Student Copy + Office Copy)
  */
 export const TwoCopyDemandSlip = ({ data = {}, schoolInfo = {} }) => {
   return (
@@ -321,7 +321,7 @@ export const TwoCopyDemandSlip = ({ data = {}, schoolInfo = {} }) => {
 };
 
 /**
- * 3-Copy Bank Challan Demand Bill
+ * 3. 3-Copy Bank Challan Demand Bill
  */
 export const ThreeCopyDemandSlip = ({ data = {}, schoolInfo = {} }) => {
   return (
@@ -336,50 +336,253 @@ export const ThreeCopyDemandSlip = ({ data = {}, schoolInfo = {} }) => {
 };
 
 /**
- * Bulk Print Wrapper Component for Multiple Students
+ * 4. Mini 8-on-A4 Demand Bill Slip (Single Micro Slip)
+ * Fits cleanly into 97mm width x 68mm height
  */
-export const BulkDemandBillsPrint = ({ students = [], copyFormat = '2-copy', schoolInfo = {} }) => {
-  return (
-    <div id="bulk-demand-bills-container" className="bulk-demand-print-area">
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #bulk-demand-bills-container, #bulk-demand-bills-container * {
-            visibility: visible;
-          }
-          #bulk-demand-bills-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .demand-bill-page-break {
-            page-break-after: always;
-            break-after: page;
-            padding-bottom: 20px;
-          }
-          @page {
-            size: A4 portrait;
-            margin: 8mm 8mm 8mm 8mm;
-          }
-        }
-      `}</style>
+export const MiniDemandSlip8 = ({ data = {}, schoolInfo = {} }) => {
+  const [imgErr, setImgErr] = React.useState(false);
 
-      {students.map((student, index) => (
-        <div key={student.studentId || index} className="demand-bill-page-break" style={{ marginBottom: '16px' }}>
-          {copyFormat === '1-copy' && (
-            <SingleDemandSlip data={student} copyTitle="STUDENT / PARENT COPY" schoolInfo={schoolInfo} />
-          )}
-          {copyFormat === '2-copy' && (
-            <TwoCopyDemandSlip data={student} schoolInfo={schoolInfo} />
-          )}
-          {copyFormat === '3-copy' && (
-            <ThreeCopyDemandSlip data={student} schoolInfo={schoolInfo} />
+  const schoolName = schoolInfo?.schoolName || data.schoolName || 'DIGITAL VIDYA SARTHI PUBLIC SCHOOL';
+  const phone = schoolInfo?.phone || data.schoolPhone || '9876543210';
+  const logoUrl = schoolInfo?.logoUrl || data.logoUrl;
+
+  const billNo = data.demandBillNo || `DB-${data.admissionNo || data.studentId || '101'}`;
+  const shortBillNo = billNo.length > 12 ? billNo.slice(-9) : billNo;
+  const billDate = data.billDate ? dayjs(data.billDate).format('DD-MM-YYYY') : dayjs().format('DD-MM-YYYY');
+  const dueDate = data.dueDate ? dayjs(data.dueDate).format('DD-MM-YYYY') : dayjs().add(10, 'day').format('DD-MM-YYYY');
+  
+  const studentName = (data.studentName || '').toUpperCase();
+  const admNo = data.admissionNo || '';
+  const rollNo = data.rollNo || '-';
+  const className = data.className || '';
+  const sectionName = data.sectionName ? ` - ${data.sectionName}` : '';
+  const classSec = `${className}${sectionName}`;
+  const fatherName = (data.fatherName || data.guardianName || '').toUpperCase();
+  const mobile = data.guardianMobile || '-';
+  const period = (data.billingPeriod || data.monthName || 'Current Due').replace(/^month of\s+/i, '');
+
+  const netPayable = Number(data.netDemandAmount || data.balanceAmount || 0);
+  const prevArrears = Number(data.previousArrears || 0);
+  const items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
+
+  // Generate compact summary line of items
+  const itemsSummary = items.length > 0
+    ? items.slice(0, 3).map(it => `${it.feeHeadName}: ₹${Number(it.balanceAmount || it.originalAmount || 0).toFixed(0)}`).join(' • ')
+    : (prevArrears > 0 ? `Current Fee + Arrears: ₹${prevArrears.toFixed(0)}` : 'Monthly Tuition & Term Fee');
+
+  return (
+    <div
+      className="mini-demand-slip-8"
+      style={{
+        boxSizing: 'border-box',
+        width: '100%',
+        height: '100%',
+        padding: '5px 7px',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        color: '#0f172a',
+        fontSize: '9px',
+        lineHeight: 1.2,
+        backgroundColor: '#ffffff',
+        border: '1.2px solid #1e3a8a',
+        borderRadius: '4px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* 1. Header Banner */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #1e3a8a', paddingBottom: '2px', marginBottom: '3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+            {logoUrl && !imgErr ? (
+              <img src={logoUrl} alt="Logo" style={{ width: 18, height: 18, objectFit: 'contain' }} onError={() => setImgErr(true)} />
+            ) : (
+              <DemandSchoolEmblem size={18} />
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#1e3a8a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.2px' }}>
+                {schoolName}
+              </div>
+              <div style={{ fontSize: '7px', color: '#64748b', fontWeight: 600 }}>
+                FEE DEMAND BILL / NOTICE
+              </div>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <span style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '1px 4px', borderRadius: '2px', fontSize: '7px', fontWeight: 'bold' }}>
+              #{shortBillNo}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Student & Parent Meta Details (2-Column Grid) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '1px 3px', fontSize: '8px', marginBottom: '3px', backgroundColor: '#f8fafc', padding: '2px 4px', borderRadius: '3px', border: '1px solid #e2e8f0' }}>
+          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ color: '#64748b' }}>Name: </span>
+            <strong style={{ color: '#0f172a' }}>{studentName}</strong>
+          </div>
+          <div>
+            <span style={{ color: '#64748b' }}>Adm: </span>
+            <strong style={{ color: '#1e3a8a' }}>{admNo}</strong>
+          </div>
+
+          <div>
+            <span style={{ color: '#64748b' }}>Class: </span>
+            <strong style={{ color: '#0f172a' }}>{classSec}</strong>
+            {rollNo && rollNo !== '-' && <span style={{ color: '#64748b' }}> (R:{rollNo})</span>}
+          </div>
+          <div>
+            <span style={{ color: '#64748b' }}>Ph: </span>
+            <span style={{ color: '#0f172a' }}>{mobile}</span>
+          </div>
+
+          <div style={{ gridColumn: 'span 2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ color: '#64748b' }}>Father: </span>
+            <span style={{ color: '#334155', fontWeight: 600 }}>{fatherName || '-'}</span>
+          </div>
+        </div>
+
+        {/* 3. Fee Breakdown Summary Line */}
+        <div style={{ fontSize: '7px', color: '#475569', backgroundColor: '#eff6ff', padding: '1.5px 3px', borderRadius: '2px', border: '1px solid #dbeafe', marginBottom: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <strong>Fee:</strong> {itemsSummary}
+        </div>
+      </div>
+
+      {/* 4. Total Amount Due Box & Period (High Contrast Banner) */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '3px', padding: '2.5px 5px', marginBottom: '3px' }}>
+          <div>
+            <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#1e40af', textTransform: 'uppercase' }}>
+              Month: {period}
+            </div>
+            <div style={{ fontSize: '7px', color: '#b91c1c', fontWeight: 'bold' }}>
+              Due: {dueDate}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '6.5px', color: '#991b1b', fontWeight: 700 }}>NET PAYABLE</div>
+            <div style={{ fontSize: '12px', fontWeight: '900', color: '#b91c1c', lineHeight: 1 }}>
+              ₹ {netPayable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Footer: Pay Notes + Authorized Sign */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', fontSize: '6.5px', color: '#64748b', borderTop: '1px dotted #cbd5e1', paddingTop: '1.5px' }}>
+          <div style={{ lineHeight: 1.1 }}>
+            • Pay on/before {dueDate}<br />
+            • Ph: {phone} | Date: {billDate}
+          </div>
+          <div style={{ textAlign: 'center', minWidth: '60px' }}>
+            <div style={{ borderTop: '1px solid #94a3b8', paddingTop: '1px', fontWeight: 'bold', color: '#1e3a8a', fontSize: '7px' }}>
+              Auth Signatory
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * 5. 8-Slips-per-A4 Sheet Grid Component (Exact 2x4 Layout on A4 Sheet)
+ */
+export const EightPerA4DemandSlipSheet = ({ students = [], schoolInfo = {} }) => {
+  // Pad with nulls to make full 8 slips per page
+  const paddedSlips = [...students];
+  while (paddedSlips.length < 8 && paddedSlips.length > 0) {
+    paddedSlips.push(null);
+  }
+
+  return (
+    <div
+      className="a4-eight-page"
+      style={{
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '202mm',
+        height: '278mm',
+        maxHeight: '278mm',
+        margin: '0 auto',
+        padding: '2mm',
+        backgroundColor: '#ffffff',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridTemplateRows: 'repeat(4, 66.5mm)',
+        gap: '3mm',
+        pageBreakAfter: 'always',
+        pageBreakInside: 'avoid',
+        breakAfter: 'page',
+        breakInside: 'avoid',
+      }}
+    >
+      {paddedSlips.slice(0, 8).map((student, idx) => (
+        <div key={student?.studentId || idx} style={{ height: '66.5mm', width: '100%', boxSizing: 'border-box' }}>
+          {student ? (
+            <MiniDemandSlip8 data={student} schoolInfo={schoolInfo} />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                border: '1px dashed #cbd5e1',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#94a3b8',
+                fontSize: '8px',
+              }}
+            >
+              [BLANK SLIP]
+            </div>
           )}
         </div>
       ))}
+    </div>
+  );
+};
+
+/**
+ * 6. Bulk Print Wrapper Component for Multiple Students
+ */
+export const BulkDemandBillsPrint = ({ students = [], copyFormat = '8-per-page', schoolInfo = {} }) => {
+  const chunkArray = (arr, size) => {
+    const chunks = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const studentPages = copyFormat === '8-per-page' ? chunkArray(students, 8) : students;
+
+  return (
+    <div id="bulk-demand-bills-container" className="bulk-demand-print-area">
+      {copyFormat === '8-per-page' ? (
+        studentPages.map((chunk, pageIdx) => (
+          <div key={pageIdx} className="demand-bill-page-break">
+            <EightPerA4DemandSlipSheet students={chunk} schoolInfo={schoolInfo} />
+          </div>
+        ))
+      ) : (
+        students.map((student, index) => (
+          <div key={student.studentId || index} className="demand-bill-page-break" style={{ marginBottom: '16px' }}>
+            {copyFormat === '1-copy' && (
+              <SingleDemandSlip data={student} copyTitle="STUDENT / PARENT COPY" schoolInfo={schoolInfo} />
+            )}
+            {copyFormat === '2-copy' && (
+              <TwoCopyDemandSlip data={student} schoolInfo={schoolInfo} />
+            )}
+            {copyFormat === '3-copy' && (
+              <ThreeCopyDemandSlip data={student} schoolInfo={schoolInfo} />
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 };

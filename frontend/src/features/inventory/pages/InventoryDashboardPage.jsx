@@ -7,6 +7,7 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
+import { Chart } from 'primereact/chart';
 import { inventoryApi } from '../api';
 
 export const InventoryDashboardPage = () => {
@@ -71,6 +72,40 @@ export const InventoryDashboardPage = () => {
     }
   };
 
+  const chartData = {
+    labels: summary?.weeklySalesGraph?.map(d => d.date) || [],
+    datasets: [
+      {
+        label: 'Sales (₹)',
+        data: summary?.weeklySalesGraph?.map(d => d.salesAmount) || [],
+        backgroundColor: '#4caf50',
+        borderColor: '#388e3c',
+        borderWidth: 2,
+        tension: 0.4
+      },
+      {
+        label: 'Profit (₹)',
+        data: summary?.weeklySalesGraph?.map(d => d.profit) || [],
+        backgroundColor: '#2196f3',
+        borderColor: '#1976d2',
+        borderWidth: 2,
+        tension: 0.4
+      }
+    ]
+  };
+
+  const chartOptions = {
+    maintainAspectRatio: false,
+    aspectRatio: 0.8,
+    plugins: {
+      legend: { labels: { color: '#495057' } }
+    },
+    scales: {
+      x: { ticks: { color: '#495057' }, grid: { color: '#ebedef' } },
+      y: { ticks: { color: '#495057' }, grid: { color: '#ebedef' } }
+    }
+  };
+
   return (
     <div className="p-3">
       <Toast ref={toast} />
@@ -115,69 +150,89 @@ export const InventoryDashboardPage = () => {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
+            {/* TOP KPI ROW: Sales & Profit */}
       <div className="grid mb-4">
-        {/* Total Items */}
+        {/* Today's Sales */}
         <div className="col-12 sm:col-6 lg:col-3">
-          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-blue-500 flex justify-content-between align-items-center">
+          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-green-500 flex justify-content-between align-items-center h-full">
             <div>
-              <span className="block text-500 font-medium text-xs mb-1 uppercase">Total Items</span>
-              <div className="text-900 font-bold text-2xl">
-                {loading ? <Skeleton width="3rem" height="1.8rem" /> : summary?.totalItems || 0}
+              <span className="block text-500 font-medium text-xs mb-1 uppercase">Today's Sales</span>
+              <div className="text-900 font-bold text-2xl text-green-700">
+                {loading ? <Skeleton width="5rem" height="1.8rem" /> : formatCurrency(summary?.todaySalesAmount)}
               </div>
-              <span className="text-xs text-blue-500 font-medium">
-                {summary?.totalCategories || 0} Active Categories
-              </span>
+              <span className="text-xs text-green-600 font-medium">Sold Today</span>
             </div>
-            <div
-              className="flex align-items-center justify-content-center bg-blue-100 border-round"
-              style={{ width: '42px', height: '42px' }}
-            >
-              <i className="pi pi-box text-blue-500 text-xl" />
+            <div className="flex align-items-center justify-content-center bg-green-100 border-round" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-indian-rupee text-green-500 text-xl" />
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Profit */}
+        <div className="col-12 sm:col-6 lg:col-3">
+          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-blue-500 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-medium text-xs mb-1 uppercase">Today's Profit</span>
+              <div className="text-900 font-bold text-2xl text-blue-700">
+                {loading ? <Skeleton width="5rem" height="1.8rem" /> : formatCurrency(summary?.todayProfit)}
+              </div>
+              <span className="text-xs text-blue-600 font-medium">Earned Today</span>
+            </div>
+            <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-chart-line text-blue-500 text-xl" />
+            </div>
+          </div>
+        </div>
+
+        {/* Monthly Sales */}
+        <div className="col-12 sm:col-6 lg:col-3">
+          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-teal-500 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-medium text-xs mb-1 uppercase">Monthly Sales</span>
+              <div className="text-900 font-bold text-xl text-teal-700">
+                {loading ? <Skeleton width="5rem" height="1.8rem" /> : formatCurrency(summary?.monthlySalesAmount)}
+              </div>
+              <span className="text-xs text-teal-600 font-medium">Profit: {formatCurrency(summary?.monthlyProfit)}</span>
+            </div>
+            <div className="flex align-items-center justify-content-center bg-teal-100 border-round" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-calendar text-teal-500 text-xl" />
             </div>
           </div>
         </div>
 
         {/* Total Stock Valuation */}
         <div className="col-12 sm:col-6 lg:col-3">
-          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-green-500 flex justify-content-between align-items-center">
+          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-purple-500 flex justify-content-between align-items-center h-full">
             <div>
               <span className="block text-500 font-medium text-xs mb-1 uppercase">Total Stock Value</span>
-              <div className="text-900 font-bold text-xl text-green-700">
+              <div className="text-900 font-bold text-xl text-purple-700">
                 {loading ? <Skeleton width="5rem" height="1.8rem" /> : formatCurrency(summary?.totalStockValue)}
               </div>
-              <span className="text-xs text-green-600 font-medium">At current unit cost</span>
+              <span className="text-xs text-purple-600 font-medium">Items: {summary?.totalItems || 0}</span>
             </div>
-            <div
-              className="flex align-items-center justify-content-center bg-green-100 border-round"
-              style={{ width: '42px', height: '42px' }}
-            >
-              <i className="pi pi-wallet text-green-500 text-xl" />
+            <div className="flex align-items-center justify-content-center bg-purple-100 border-round" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-wallet text-purple-500 text-xl" />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Low Stock Alerts */}
-        <div className="col-12 sm:col-6 lg:col-3">
-          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-orange-500 flex justify-content-between align-items-center">
-            <div>
-              <span className="block text-500 font-medium text-xs mb-1 uppercase">Low Stock Alerts</span>
-              <div className="text-900 font-bold text-2xl text-orange-600">
-                {loading ? <Skeleton width="3rem" height="1.8rem" /> : summary?.lowStockItems || 0}
-              </div>
-              <span className="text-xs text-orange-500 font-medium">Needs Reordering</span>
-            </div>
-            <div
-              className="flex align-items-center justify-content-center bg-orange-100 border-round"
-              style={{ width: '42px', height: '42px' }}
-            >
-              <i className="pi pi-exclamation-triangle text-orange-500 text-xl" />
-            </div>
-          </div>
+      {/* Graph and Secondary Stats */}
+      <div className="grid mb-4">
+        {/* Sales Graph */}
+        <div className="col-12 lg:col-8">
+          <Card title="Sales & Profit (Last 7 Days)" className="shadow-1 h-full">
+            {loading ? (
+              <Skeleton width="100%" height="300px" />
+            ) : (
+              <Chart type="line" data={chartData} options={chartOptions} style={{ height: '300px' }} />
+            )}
+          </Card>
         </div>
 
-        {/* Out of Stock */}
-        <div className="col-12 sm:col-6 lg:col-3">
+        {/* Secondary Stats */}
+        <div className="col-12 lg:col-4 flex flex-column gap-3">
+          {/* Out of Stock */}
           <div className="surface-card shadow-1 p-3 border-round border-left-3 border-red-500 flex justify-content-between align-items-center">
             <div>
               <span className="block text-500 font-medium text-xs mb-1 uppercase">Out of Stock</span>
@@ -186,55 +241,30 @@ export const InventoryDashboardPage = () => {
               </div>
               <span className="text-xs text-red-500 font-medium">Quantity is 0</span>
             </div>
-            <div
-              className="flex align-items-center justify-content-center bg-red-100 border-round"
-              style={{ width: '42px', height: '42px' }}
-            >
+            <div className="flex align-items-center justify-content-center bg-red-100 border-round" style={{ width: '42px', height: '42px' }}>
               <i className="pi pi-times-circle text-red-500 text-xl" />
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Monthly Activity Quick Stats */}
-      <div className="grid mb-4">
-        <div className="col-12 md:col-6">
-          <div className="surface-card shadow-1 p-3 border-round flex align-items-center justify-content-between">
-            <div className="flex align-items-center gap-3">
-              <div className="p-3 bg-teal-50 border-round text-teal-600">
-                <i className="pi pi-shopping-cart text-2xl" />
+          {/* Low Stock Alerts */}
+          <div className="surface-card shadow-1 p-3 border-round border-left-3 border-orange-500 flex justify-content-between align-items-center">
+            <div>
+              <span className="block text-500 font-medium text-xs mb-1 uppercase">Low Stock Alerts</span>
+              <div className="text-900 font-bold text-2xl text-orange-600">
+                {loading ? <Skeleton width="3rem" height="1.8rem" /> : summary?.lowStockItems || 0}
               </div>
-              <div>
-                <span className="text-xs text-500 font-semibold uppercase block">Purchases This Month</span>
-                <span className="text-xl font-bold text-900">{summary?.totalPurchasesThisMonth || 0} Inward Receipts</span>
-              </div>
+              <span className="text-xs text-orange-500 font-medium">Needs Reordering</span>
             </div>
-            <Button
-              label="View Inwards"
-              icon="pi pi-arrow-right"
-              className="p-button-text p-button-sm text-teal-600"
-              onClick={() => navigate('/inventory/purchases')}
-            />
+            <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-exclamation-triangle text-orange-500 text-xl" />
+            </div>
           </div>
-        </div>
-
-        <div className="col-12 md:col-6">
-          <div className="surface-card shadow-1 p-3 border-round flex align-items-center justify-content-between">
-            <div className="flex align-items-center gap-3">
-              <div className="p-3 bg-indigo-50 border-round text-indigo-600">
-                <i className="pi pi-send text-2xl" />
-              </div>
-              <div>
-                <span className="text-xs text-500 font-semibold uppercase block">Issues This Month</span>
-                <span className="text-xl font-bold text-900">{summary?.totalIssuesThisMonth || 0} Outward Issues</span>
-              </div>
-            </div>
-            <Button
-              label="View Issues"
-              icon="pi pi-arrow-right"
-              className="p-button-text p-button-sm text-indigo-600"
-              onClick={() => navigate('/inventory/issues')}
-            />
+          
+          {/* Quick Links */}
+          <div className="surface-card shadow-1 p-3 border-round flex flex-column gap-2">
+            <span className="block text-500 font-semibold text-xs mb-1 uppercase">Quick Actions</span>
+            <Button label="View Issues/Sales" icon="pi pi-arrow-right" className="p-button-outlined p-button-sm p-button-info" onClick={() => navigate('/inventory/issues')} />
+            <Button label="View Purchases" icon="pi pi-arrow-right" className="p-button-outlined p-button-sm p-button-secondary" onClick={() => navigate('/inventory/purchases')} />
           </div>
         </div>
       </div>

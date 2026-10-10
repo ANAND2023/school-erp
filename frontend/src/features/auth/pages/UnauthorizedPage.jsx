@@ -1,10 +1,17 @@
 import React from 'react';
-import { Box, Typography, Button, Container, Paper } from '@mui/material';
-import { GppBad as GppBadIcon } from '@mui/icons-material';
+import { Box, Typography, Button, Container, Paper, Stack } from '@mui/material';
+import { GppBad as GppBadIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../../store/authStore';
 
 export const UnauthorizedPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
@@ -17,9 +24,14 @@ export const UnauthorizedPage = () => {
           You do not have permission to view or access this module. Please contact your
           administrator if you believe this is in error.
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/dashboard')}>
-          Back to Dashboard
-        </Button>
+        <Stack direction="row" spacing={2} justifyContent="center">
+          <Button variant="contained" onClick={() => navigate('/dashboard')}>
+            Back to Dashboard
+          </Button>
+          <Button variant="outlined" color="error" startIcon={<LogoutIcon />} onClick={handleLogout}>
+            Logout
+          </Button>
+        </Stack>
       </Paper>
     </Container>
   );

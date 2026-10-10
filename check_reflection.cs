@@ -1,0 +1,1 @@
+using System; using System.Reflection; class Program { static void Main() { var type = Type.GetType("SchoolERP.Domain.Entities.Expense, SchoolERP.Domain"); Console.WriteLine(type != null ? "Found" : "Not Found"); if(type != null) { foreach(var prop in type.GetProperties()) { Console.WriteLine(prop.Name); } } } }

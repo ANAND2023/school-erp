@@ -30,6 +30,8 @@ import {
   Tooltip,
   Drawer,
   Divider,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,11 +40,15 @@ import {
   Schedule as PeriodIcon,
   TableChart as GridIcon,
   Warning as WarningIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import api from '../../../api/client';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   getPeriods,
   createPeriod,
+  updatePeriod,
   deletePeriod,
   getSectionTimetable,
   saveTimetableSlot,
@@ -90,12 +96,16 @@ const ClassTimetablePage = () => {
 
   // Period Master Drawer
   const [periodDrawer, setPeriodDrawer] = useState(false);
+  const [forceRender, setForceRender] = useState(0);
   const [newPeriod, setNewPeriod] = useState({
+    id: null,
     periodNumber: 1,
     name: 'Period 1',
     startTime: '08:30',
     endTime: '09:15',
     isBreak: false,
+    isBellEnabled: false,
+    isDismissalBell: false,
     displayOrder: 1,
   });
 
@@ -115,7 +125,33 @@ const ClassTimetablePage = () => {
       setClasses(classList);
       setSubjects(subRes.data?.data || subRes.data || []);
       const empList = empRes.data?.data?.items || (Array.isArray(empRes.data?.data) ? empRes.data?.data : []);
-      setTeachers(empList);
+      // Filter out non-teachers
+      const teacherList = empList.filter(emp => {
+        const dept = (emp.departmentName || '').toLowerCase();
+        const desig = (emp.designationName || '').toLowerCase();
+        
+        // If neither is set, we might assume they could be a teacher (or just exclude them). 
+        // For flexibility, let's keep them if both are empty.
+        if (!dept && !desig) return true;
+
+        // Whitelist keywords that guarantee it's a teacher
+        const isTeacher = 
+          dept.includes('teach') || dept.includes('faculty') || dept.includes('acad') || 
+          desig.includes('teach') || desig.includes('faculty') || desig.includes('acad') ||
+          desig.includes('prof') || desig.includes('lecturer') || desig.includes('tutor') || desig.includes('coach');
+
+        // Blacklist keywords that guarantee it's NOT a teacher
+        const isNonTeaching = 
+          dept.includes('account') || dept.includes('fin') || dept.includes('admin') || dept.includes('hr') || dept.includes('transport') ||
+          desig.includes('account') || desig.includes('clerk') || desig.includes('peon') || desig.includes('driver') || desig.includes('guard');
+
+        if (isNonTeaching && !isTeacher) return false;
+        
+        // By default, if they have a role but it doesn't match either, we can decide to exclude or include.
+        // Let's strictly only include if they match the teacher whitelist or have no role.
+        return isTeacher;
+      });
+      setTeachers(teacherList);
 
       if (classList.length > 0) {
         setSelectedClassId(classList[0].id);
@@ -233,26 +269,48 @@ const ClassTimetablePage = () => {
     }
   };
 
-  // Add Period
+  // Add or Edit Period
   const handleAddPeriod = async () => {
     try {
-      await createPeriod(newPeriod);
-      setAlert({ type: 'success', message: 'Period created successfully!' });
+      if (newPeriod.id) {
+        await updatePeriod(newPeriod.id, newPeriod);
+        setAlert({ type: 'success', message: 'Period updated successfully!' });
+      } else {
+        await createPeriod(newPeriod);
+        setAlert({ type: 'success', message: 'Period created successfully!' });
+      }
       fetchPeriods();
       loadTimetable();
       setNewPeriod({
-        periodNumber: periods.length + 2,
-        name: `Period ${periods.length + 2}`,
+        id: null,
+        periodNumber: periods.length + (newPeriod.id ? 1 : 2),
+        name: `Period ${periods.length + (newPeriod.id ? 1 : 2)}`,
         startTime: '09:15',
         endTime: '10:00',
         isBreak: false,
-        displayOrder: periods.length + 2,
+        isBellEnabled: false,
+        isDismissalBell: false,
+        displayOrder: periods.length + (newPeriod.id ? 1 : 2),
       });
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || 'Failed to add period.';
+      const msg = err.response?.data?.message || 'Failed to save period.';
       setAlert({ type: 'error', message: msg });
     }
+  };
+
+  const handleEditPeriod = (p) => {
+    setNewPeriod({
+      id: p.id,
+      periodNumber: p.periodNumber,
+      name: p.name,
+      startTime: p.startTime.substring(0, 5),
+      endTime: p.endTime.substring(0, 5),
+      isBreak: p.isBreak,
+      isBellEnabled: p.isBellEnabled,
+      isDismissalBell: p.isDismissalBell,
+      displayOrder: p.displayOrder,
+    });
   };
 
   const handleDeletePeriod = async (id, name) => {
@@ -269,6 +327,78 @@ const ClassTimetablePage = () => {
     }
   };
 
+  const handleDownloadPdf = () => {
+    if (!timetable || !periods || periods.length === 0) {
+      setAlert({ type: 'error', message: 'No schedule available to export.' });
+      return;
+    }
+
+    const doc = new jsPDF('landscape');
+    
+    // Add Header
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('Class Timetable', 14, 22);
+    
+    const cls = classes.find(c => c.id === selectedClassId);
+    const sec = sections.find(s => s.id === selectedSectionId);
+    
+    if (cls && sec) {
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text(`Class: ${cls.name} - Section: ${sec.name}`, 14, 30);
+    }
+
+    const headRow = ['Day / Period', ...periods.map(p => `${p.name}\n${p.startTime.substring(0,5)} - ${p.endTime.substring(0,5)}`)];
+    
+    const bodyRows = DAYS.map(day => {
+      const row = [day.name];
+      periods.forEach(p => {
+        if (p.isBreak) {
+          row.push('BREAK');
+        } else {
+          const slot = (timetable?.slots || []).find(s => s.dayOfWeek === day.id && s.periodId === p.id);
+          if (slot) {
+            let cellText = `${slot.subjectName}`;
+            if (slot.teacherName) cellText += `\n${slot.teacherName}`;
+            if (slot.roomNo) cellText += `\nRoom: ${slot.roomNo}`;
+            row.push(cellText);
+          } else {
+            row.push('Not Assigned');
+          }
+        }
+      });
+      return row;
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 35,
+      theme: 'grid',
+      headStyles: { fillColor: [232, 234, 246], textColor: [0, 0, 0], halign: 'center', valign: 'middle' },
+      bodyStyles: { halign: 'center', valign: 'middle' },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', fillColor: [250, 250, 250] }
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.cell.raw === 'BREAK') {
+          data.cell.styles.fillColor = [255, 248, 225];
+          data.cell.styles.textColor = [230, 81, 0];
+          data.cell.styles.fontStyle = 'bold';
+        }
+        if (data.section === 'body' && data.cell.raw === 'Not Assigned') {
+          data.cell.styles.textColor = [150, 150, 150];
+        }
+        if (data.section === 'body' && data.cell.raw !== 'BREAK' && data.cell.raw !== 'Not Assigned' && data.column.index !== 0) {
+          data.cell.styles.fillColor = [239, 246, 255];
+        }
+      }
+    });
+
+    doc.save(`Class_Timetable_${cls?.name || 'Class'}_${sec?.name || 'Sec'}.pdf`);
+  };
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       {/* Header */}
@@ -281,14 +411,24 @@ const ClassTimetablePage = () => {
             Construct weekly schedules with automated teacher clash prevention (FR-6.6, FR-6.7)
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<PeriodIcon />}
-          onClick={() => setPeriodDrawer(true)}
-          sx={{ px: 2.5 }}
-        >
-          Manage Periods / Bell Schedule
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            onClick={handleDownloadPdf}
+            sx={{ px: 2.5 }}
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PeriodIcon />}
+            onClick={() => setPeriodDrawer(true)}
+            sx={{ px: 2.5 }}
+          >
+            Manage Periods / Bell Schedule
+          </Button>
+        </Stack>
       </Box>
 
       {alert && (
@@ -544,7 +684,7 @@ const ClassTimetablePage = () => {
           {/* Add Period Form */}
           <Paper sx={{ p: 2, mb: 3, bgcolor: '#f8fafc' }}>
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-              Add New Period / Break
+              {newPeriod.id ? 'Edit Period / Break' : 'Add New Period / Break'}
             </Typography>
             <Grid container spacing={1.5}>
               <Grid item xs={6}>
@@ -604,12 +744,120 @@ const ClassTimetablePage = () => {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={newPeriod.isBellEnabled}
+                      onChange={(e) => setNewPeriod({ ...newPeriod, isBellEnabled: e.target.checked })}
+                      color="primary"
+                    />
+                  }
+                  label="Enable Bell Ring"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={newPeriod.isDismissalBell}
+                      onChange={(e) => setNewPeriod({ ...newPeriod, isDismissalBell: e.target.checked })}
+                      color="error"
+                    />
+                  }
+                  label="Is Dismissal (Chhuti) Bell?"
+                />
+              </Grid>
               <Grid item xs={12}>
-                <Button fullWidth variant="contained" size="small" onClick={handleAddPeriod}>
-                  Save Period
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button fullWidth variant="contained" size="small" onClick={handleAddPeriod}>
+                    {newPeriod.id ? 'Update Period' : 'Save Period'}
+                  </Button>
+                  {newPeriod.id && (
+                    <Button 
+                      fullWidth 
+                      variant="outlined" 
+                      size="small" 
+                      onClick={() => setNewPeriod({
+                        id: null,
+                        periodNumber: periods.length + 1,
+                        name: `Period ${periods.length + 1}`,
+                        startTime: '09:15',
+                        endTime: '10:00',
+                        isBreak: false,
+                        isBellEnabled: false,
+                        isDismissalBell: false,
+                        displayOrder: periods.length + 1,
+                      })}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </Stack>
               </Grid>
             </Grid>
+          </Paper>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Bell Sound Settings */}
+          <Paper sx={{ p: 2, mb: 3, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: '#166534' }}>
+              Upload Custom Bell Audio (MP3/WAV)
+            </Typography>
+            <input
+              type="file"
+              accept="audio/*"
+              id="bell-audio-upload"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (file.size > 2 * 1024 * 1024) {
+                  alert("File is too large! Please select an audio file under 2MB.");
+                  return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  try {
+                    localStorage.setItem('custom_bell_data_url', ev.target.result);
+                    alert("Custom Bell Audio saved successfully!");
+                  } catch (err) {
+                    alert("Error saving audio. The file might be too large.");
+                  }
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+            <Button
+              variant="outlined"
+              color="success"
+              fullWidth
+              size="small"
+              onClick={() => document.getElementById('bell-audio-upload').click()}
+            >
+              Select Audio File from Computer
+            </Button>
+            {localStorage.getItem('custom_bell_data_url') && (
+              <Button
+                variant="text"
+                color="error"
+                fullWidth
+                size="small"
+                sx={{ mt: 1 }}
+                onClick={() => {
+                  localStorage.removeItem('custom_bell_data_url');
+                  alert("Custom audio removed. Reverted to default bell.");
+                }}
+              >
+                Remove Custom Audio
+              </Button>
+            )}
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#166534' }}>
+              Select your own loud MP3 from your PC. Max size: 2MB.
+            </Typography>
           </Paper>
 
           <Divider sx={{ my: 2 }} />
@@ -625,23 +873,84 @@ const ClassTimetablePage = () => {
                 sx={{
                   p: 1.5,
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  flexDirection: 'column',
                   bgcolor: p.isBreak ? '#fff8e1' : '#fff',
                   border: '1px solid #e0e0e0',
                 }}
               >
-                <Box>
-                  <Typography variant="body2" fontWeight={700}>
-                    {p.name} {p.isBreak && <Chip size="small" label="Break" color="warning" sx={{ height: 18 }} />}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    #{p.periodNumber} | {p.startTime} - {p.endTime}
-                  </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      {p.name} {p.isBreak && <Chip size="small" label="Break" color="warning" sx={{ height: 18 }} />}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      #{p.periodNumber} | {p.startTime} - {p.endTime}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <IconButton size="small" color="primary" onClick={() => handleEditPeriod(p)}>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDeletePeriod(p.id, p.name)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
-                <IconButton size="small" color="error" onClick={() => handleDeletePeriod(p.id, p.name)}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed #e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {localStorage.getItem(`custom_bell_data_url_${p.id}`) ? 'Custom Bell Set' : 'Default Bell'}
+                  </Typography>
+                  <Box>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      id={`bell-audio-upload-${p.id}`}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          alert("File is too large! Please select an audio file under 2MB.");
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          try {
+                            localStorage.setItem(`custom_bell_data_url_${p.id}`, ev.target.result);
+                            alert(`Custom Bell Audio saved for ${p.name}!`);
+                            setForceRender(prev => prev + 1);
+                          } catch (err) {
+                            alert("Error saving audio. The file might be too large.");
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      sx={{ fontSize: '0.65rem', py: 0, px: 1, minWidth: 0, mr: 0.5 }}
+                      onClick={() => document.getElementById(`bell-audio-upload-${p.id}`).click()}
+                    >
+                      Set Bell
+                    </Button>
+                    {localStorage.getItem(`custom_bell_data_url_${p.id}`) && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        sx={{ fontSize: '0.65rem', py: 0, px: 1, minWidth: 0 }}
+                        onClick={() => {
+                          localStorage.removeItem(`custom_bell_data_url_${p.id}`);
+                          alert(`Custom audio removed for ${p.name}. Reverted to default.`);
+                          setForceRender(prev => prev + 1);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
               </Paper>
             ))}
           </Stack>

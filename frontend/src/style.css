@@ -703,3 +703,125 @@ input[type="number"] {
   appearance: textfield;
 }
 
+
+/* Fix PrimeReact Tags squishing text */
+.p-tag {
+  white-space: nowrap !important;
+  min-width: max-content;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+}
+.p-tag .p-tag-value {
+  white-space: nowrap !important;
+  line-height: 1.5;
+}
+
+
+
+
+/* Global Data Table Tag/Badge Compact Styling */
+.p-datatable .MuiChip-root, 
+.p-datatable .p-tag, 
+.p-datatable .p-badge {
+    height: 20px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    padding: 0 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Custom PrimeReact MultiSelect to match MUI */
+.mui-custom-multiselect {
+    border-radius: 4px !important;
+    border: 1px solid rgba(0, 0, 0, 0.23) !important;
+    box-shadow: none !important;
+    min-height: 56px !important;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif !important;
+    background: transparent !important;
+}
+.mui-custom-multiselect:hover {
+    border-color: rgba(0, 0, 0, 0.87) !important;
+}
+.mui-custom-multiselect.p-focus {
+    border-color: #1976d2 !important;
+    border-width: 2px !important;
+}
+.mui-custom-multiselect .p-multiselect-label {
+    padding: 8px 14px !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.mui-custom-multiselect .p-multiselect-token {
+    padding: 2px 8px !important;
+    border-radius: 16px !important;
+    font-size: 0.8125rem !important;
+    margin: 2px !important;
+    background: #e0e0e0 !important;
+    color: rgba(0, 0, 0, 0.87) !important;
+}
+.mui-custom-multiselect .p-multiselect-token-icon {
+    font-size: 0.8rem !important;
+    margin-left: 4px !important;
+}
+.mui-custom-multiselect .p-multiselect-trigger {
+    width: 2.5rem !important;
+    color: rgba(0, 0, 0, 0.54) !important;
+}
+@media print {
+  /* Hide UI elements that shouldn't be printed */
+  header, aside, footer, .AppBreadcrumb, .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout constraints for print */
+  body, html {
+    background-color: white !important;
+    color: black !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Simplify MUI Paper/Card for print */
+  .MuiPaper-root, .MuiCard-root {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Table styles */
+  .MuiTableContainer-root {
+    overflow: visible !important;
+  }
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    font-size: 12pt !important;
+  }
+  
+  /* Prevent table splitting issues */
+  tr {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+}

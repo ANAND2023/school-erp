@@ -185,9 +185,12 @@ export const DemandBillPage = () => {
     fetchDemandBills();
   }, [activeAcademicYearId, selectedClass, selectedSection, selectedInstallment, selectedMonthIndex, billingMode, statusFilter]);
 
+  const [printFormat, setPrintFormat] = useState('8-per-page');
+
   // Handle Single Student Print
   const handlePrintSingle = (student) => {
     setStudentsToPrint([student]);
+    setPrintFormat('2-copy');
     setPrintModalVisible(true);
   };
 
@@ -202,6 +205,23 @@ export const DemandBillPage = () => {
       return;
     }
     setStudentsToPrint(selectedStudents);
+    setPrintFormat('8-per-page');
+    setPrintModalVisible(true);
+  };
+
+  // Handle Print 8-on-A4 directly
+  const handlePrint8PerA4 = () => {
+    const toPrint = selectedStudents.length > 0 ? selectedStudents : students;
+    if (toPrint.length === 0) {
+      toastRef.current?.show({
+        severity: 'warn',
+        summary: 'No Data',
+        detail: 'No students available to print demand bills.',
+      });
+      return;
+    }
+    setStudentsToPrint(toPrint);
+    setPrintFormat('8-per-page');
     setPrintModalVisible(true);
   };
 
@@ -216,6 +236,7 @@ export const DemandBillPage = () => {
       return;
     }
     setStudentsToPrint(students);
+    setPrintFormat('8-per-page');
     setPrintModalVisible(true);
   };
 
@@ -506,7 +527,7 @@ export const DemandBillPage = () => {
           </p>
         </div>
 
-        <div className="flex align-items-center gap-2">
+        <div className="flex align-items-center gap-2 flex-wrap">
           <Button
             label="Export Excel"
             icon="pi pi-file-excel"
@@ -515,11 +536,22 @@ export const DemandBillPage = () => {
             disabled={students.length === 0}
           />
           <Button
+            label={`Print 8 Slips / A4 (${selectedStudents.length || students.length})`}
+            icon="pi pi-th-large"
+            className="p-button-help p-button-sm font-bold shadow-1"
+            onClick={handlePrint8PerA4}
+            disabled={students.length === 0}
+            tooltip="Print 8 compact demand slips on each A4 page (Paper & Cost Saver)"
+            tooltipOptions={{ position: 'bottom' }}
+          />
+          <Button
             label={`Bulk Print (${selectedStudents.length || students.length})`}
             icon="pi pi-print"
             className="p-button-primary p-button-sm font-bold shadow-1"
             onClick={selectedStudents.length > 0 ? handlePrintBulk : handlePrintAll}
             disabled={students.length === 0}
+            tooltip="Print standard 2-part / 3-part bank challans"
+            tooltipOptions={{ position: 'bottom' }}
           />
         </div>
       </div>
@@ -767,6 +799,7 @@ export const DemandBillPage = () => {
         onHide={() => setPrintModalVisible(false)}
         students={studentsToPrint}
         schoolInfo={schoolInfo}
+        initialFormat={printFormat}
       />
 
       {/* Student Dues Breakdown Dialog */}

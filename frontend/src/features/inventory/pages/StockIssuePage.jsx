@@ -1,701 +1,513 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box, Card, CardContent, Typography, Grid, TextField, MenuItem, Button as MuiButton,
+  Stack, Alert, Avatar, Chip, Paper, IconButton
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { InputNumber } from 'primereact/inputnumber';
+import { Button } from 'primereact/button';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext';
-import { Dropdown } from 'primereact/dropdown';
-import { InputNumber } from 'primereact/inputnumber';
-import { Calendar } from 'primereact/calendar';
-import { InputSwitch } from 'primereact/inputswitch';
+import { AutoComplete } from 'primereact/autocomplete';
 import { Tag } from 'primereact/tag';
-import { Toast } from 'primereact/toast';
 import { inventoryApi } from '../api';
+import { studentApi } from '../../students/api';
+import IssueSlip from '../components/IssueSlip';
 
-const ISSUED_TO_TYPES = [
-  { label: 'Student', value: 'Student' },
-  { label: 'Staff / Teacher', value: 'Staff' },
-  { label: 'Department / Lab', value: 'Department' },
-  { label: 'Classroom / Section', value: 'Classroom' },
-  { label: 'General / Other', value: 'Other' },
-];
+const StockIssuePage = () => {
+  const [issueType, setIssueType] = useState('Registered');
+  
+  // Student Search
+  const [students, setStudents] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-export const StockIssuePage = () => {
-  const toast = useRef(null);
+  // Walk-in
+  const [walkInDetails, setWalkInDetails] = useState({ title: 'Mr.', name: '', age: '', ageType: 'Yrs', address: '', contactNo: '' });
+
+  // Items
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [selectedSearchItem, setSelectedSearchItem] = useState(null);
+  const [issueQty, setIssueQty] = useState(1);
+  const [cart, setCart] = useState([]);
+
+  // Payment
+  const [paymentSplits, setPaymentSplits] = useState([{ mode: 1, amount: '', transactionRef: '' }]);
+  const [paymentModeError, setPaymentModeError] = useState('');
+
+  // History & Print
   const [issues, setIssues] = useState([]);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [globalFilter, setGlobalFilter] = useState('');
-
-  // View / Return Dialog State
+  const [historyDialogVisible, setHistoryDialogVisible] = useState(false);
   const [viewDialogVisible, setViewDialogVisible] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
-
-  // Return Item Sub-dialog
-  const [returnDialogVisible, setReturnDialogVisible] = useState(false);
-  const [selectedIssueItem, setSelectedIssueItem] = useState(null);
-  const [returnQty, setReturnQty] = useState(1);
-  const [returnRemarks, setReturnRemarks] = useState('');
-  const [returnSubmitting, setReturnSubmitting] = useState(false);
-
-  // New Issue Dialog State
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [formData, setFormData] = useState({
-    issuedToType: 'Student',
-    issuedToName: '',
-    department: '',
-    issueDate: new Date(),
-    isReturnable: false,
-    returnDueDate: null,
-    remarks: '',
-    items: [{ itemId: null, quantity: 1, remarks: '' }],
-  });
+  const [printIssue, setPrintIssue] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchIssues = async () => {
-    setLoading(true);
-    try {
-      const res = await inventoryApi.getIssues();
-      if (res.data?.success) {
-        setIssues(res.data.data);
-      }
-    } catch (err) {
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load stock issue records',
-        life: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchItems = async () => {
-    try {
-      const res = await inventoryApi.getItems();
-      if (res.data?.success) {
-        setItems(res.data.data);
-      }
-    } catch (err) {}
-  };
-
   useEffect(() => {
-    fetchIssues();
-    fetchItems();
+    loadInitialData();
   }, []);
 
-  const openNew = () => {
-    setFormData({
-      issuedToType: 'Student',
-      issuedToName: '',
-      department: '',
-      issueDate: new Date(),
-      isReturnable: false,
-      returnDueDate: null,
-      remarks: '',
-      items: [{ itemId: items.length > 0 ? items[0].id : null, quantity: 1, remarks: '' }],
+  const loadInitialData = async () => {
+    try {
+      const [itemsRes, studentsRes, issuesRes] = await Promise.all([
+        inventoryApi.getItems(),
+        studentApi.getStudents({}),
+        inventoryApi.getIssues()
+      ]);
+      if (itemsRes.data?.success) setInventoryItems(itemsRes.data.data);
+      if (studentsRes.data?.success) setStudents(studentsRes.data.data.items);
+      if (issuesRes.data?.success) setIssues(issuesRes.data.data);
+    } catch (error) {
+      console.error("Error loading data", error);
+    }
+  };
+
+  const searchUsers = (event) => {
+    let query = event.query.toLowerCase();
+    let _filtered = students.filter(s => {
+      const fName = s.fullName || s.FullName || '';
+      const aNo = s.admissionNo || s.AdmissionNo || '';
+      return fName.toLowerCase().includes(query) || aNo.toLowerCase().includes(query);
+    }).map(s => {
+      const fName = s.fullName || s.FullName || '';
+      const aNo = s.admissionNo || s.AdmissionNo || '';
+      const cName = s.className || s.ClassName || '';
+      const secName = s.sectionName || s.SectionName || '';
+      const contact = s.guardianMobile || s.GuardianMobile || s.emergencyContact || s.EmergencyContact || 'N/A';
+      return {
+        id: aNo,
+        name: fName.trim(),
+        class: `${cName} - ${secName}`,
+        userType: 'Student',
+        contactNo: contact
+      };
     });
-    setDialogVisible(true);
+    setFilteredUsers(_filtered);
   };
 
-  const addItemRow = () => {
-    setFormData((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        { itemId: items.length > 0 ? items[0].id : null, quantity: 1, remarks: '' },
-      ],
+  const searchItems = (event) => {
+    let query = event.query.toLowerCase();
+    let _filtered = inventoryItems.filter(i => {
+      const iName = i.itemName || i.ItemName || '';
+      const iCode = i.itemCode || i.ItemCode || '';
+      return iName.toLowerCase().includes(query) || iCode.toLowerCase().includes(query);
+    }).map(i => ({
+      ...i,
+      itemName: i.itemName || i.ItemName || '',
+      itemCode: i.itemCode || i.ItemCode || '',
+      sellingPrice: i.sellingPrice || i.SellingPrice || 0,
+      unitPrice: i.unitPrice || i.UnitPrice || 0,
+      currentStock: i.currentStock || i.CurrentStock || 0
     }));
+    setFilteredItems(_filtered);
   };
 
-  const removeItemRow = (index) => {
-    if (formData.items.length <= 1) return;
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
+  const userTemplate = (item) => {
+    return (
+      <div className="flex flex-column">
+        <span className="font-bold">{item.name || 'Unknown'}</span>
+        <small className="text-500">{item.id || 'No ID'} | {item.class || 'No Class'}</small>
+      </div>
+    );
   };
 
-  const updateItemRow = (index, field, value) => {
-    setFormData((prev) => {
-      const updated = [...prev.items];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, items: updated };
-    });
+  const itemTemplate = (item) => {
+    const price = item.sellingPrice || item.unitPrice || 0;
+    const isOutOfStock = (item.currentStock || 0) <= 0;
+    return (
+      <div className="flex flex-column p-2" style={{ backgroundColor: isOutOfStock ? '#ffebee' : 'transparent', borderRadius: '4px' }}>
+        <div className="flex justify-content-between align-items-center">
+          <span className={`font-bold ${isOutOfStock ? 'text-red-500' : ''}`}>{item.itemName || 'Unknown Item'}</span>
+          <span className="font-bold text-green-600">₹{price}</span>
+        </div>
+        <small className="text-500">
+          Code: {item.itemCode || '-'} | Stock: <span className={isOutOfStock ? 'text-red-500 font-bold' : ''}>{item.currentStock || 0}</span>
+          {isOutOfStock && <span className="text-red-500 ml-2 font-bold">(Out of Stock)</span>}
+        </small>
+      </div>
+    );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.issuedToName.trim()) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Validation',
-        detail: 'Recipient / Issued To name is required',
-        life: 3000,
-      });
+  const handleAddToCart = () => {
+    if (!selectedSearchItem || issueQty <= 0) return;
+    if (selectedSearchItem.currentStock <= 0) {
+      alert("This item is out of stock and cannot be issued.");
       return;
     }
+    
+    const existing = cart.find(c => c.itemId === selectedSearchItem.id);
+    const price = selectedSearchItem.sellingPrice || selectedSearchItem.unitPrice || 0;
+    
+    if (existing) {
+      const newQty = existing.qty + issueQty;
+      setCart(cart.map(c => c.itemId === selectedSearchItem.id ? { 
+        ...c, qty: newQty, totalAmount: newQty * price 
+      } : c));
+    } else {
+      setCart([...cart, {
+        id: Date.now(),
+        itemId: selectedSearchItem.id,
+        itemName: selectedSearchItem.itemName,
+        itemCode: selectedSearchItem.itemCode,
+        qty: issueQty,
+        sellingPrice: selectedSearchItem.sellingPrice,
+        unitPrice: selectedSearchItem.unitPrice,
+        totalAmount: issueQty * price
+      }]);
+    }
+    setSelectedSearchItem(null);
+    setIssueQty(1);
+  };
 
-    const validItems = formData.items.filter((it) => it.itemId && it.quantity > 0);
-    if (validItems.length === 0) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Validation',
-        detail: 'Please select at least one stock item to issue',
-        life: 3000,
-      });
+  const removeFromCart = (id) => setCart(cart.filter(c => c.id !== id));
+
+  // Payment Handlers
+  const handleAddPaymentMode = () => {
+    setPaymentModeError('');
+    const grandTotal = cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+    const enteredTotal = paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    
+    if (enteredTotal >= grandTotal) {
+      alert("Total payable amount is already covered. Cannot add more payment modes.");
       return;
     }
+    
+    setPaymentSplits([...paymentSplits, { mode: 2, amount: '', transactionRef: '' }]);
+  };
 
-    // Stock sufficiency check
-    for (const it of validItems) {
-      const stockItem = items.find((i) => i.id === it.itemId);
-      if (stockItem && stockItem.currentStock < it.quantity) {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Insufficient Stock',
-          detail: `Only ${stockItem.currentStock} available for '${stockItem.itemName}' (Requested: ${it.quantity})`,
-          life: 4000,
-        });
-        return;
+  const handleRemovePaymentMode = (index) => {
+    setPaymentModeError('');
+    if (paymentSplits.length > 1) {
+      setPaymentSplits(paymentSplits.filter((_, i) => i !== index));
+    }
+  };
+
+  const grandTotal = cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+
+  useEffect(() => {
+    // Auto-fill amount if only one payment mode is present
+    if (paymentSplits.length === 1) {
+      setPaymentSplits([{ ...paymentSplits[0], amount: grandTotal || '' }]);
+    }
+  }, [grandTotal]);
+
+  const handlePaymentFieldChange = (index, field, value) => {
+    setPaymentModeError('');
+    const next = [...paymentSplits];
+    
+    if (field === 'amount') {
+      let numVal = Number(value);
+      // Calculate total of OTHER splits
+      const otherTotal = next.reduce((sum, split, i) => i === index ? sum : sum + (Number(split.amount) || 0), 0);
+      
+      // Prevent exceeding grand total
+      if (otherTotal + numVal > grandTotal) {
+        numVal = grandTotal - otherTotal;
+      }
+      next[index][field] = numVal || '';
+    } else {
+      next[index][field] = value;
+    }
+    
+    setPaymentSplits(next);
+  };
+
+  const handleSaveIssue = async () => {
+    if (cart.length === 0) return alert("Cart is empty");
+    if (issueType === 'Registered' && !selectedUser) return alert("Select a user");
+    if (issueType === 'Walk-in') {
+      if (!walkInDetails.name) return alert("Enter Walk-in Name");
+      if (!walkInDetails.contactNo || !/^\d{10}$/.test(walkInDetails.contactNo)) {
+        return alert("Please enter a valid 10-digit mobile number.");
       }
     }
+
+    const grandTotal = cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+    const enteredTotal = paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    
+    if (enteredTotal < grandTotal) {
+      alert(`Please enter full payment. You entered ₹${enteredTotal}, but ₹${grandTotal} is required.`);
+      return;
+    }
+    
+    // Build Payment String
+    const paymentModeStr = paymentSplits.filter(p => Number(p.amount) > 0).map(p => {
+      const modeName = { 1:'Cash', 2:'UPI', 3:'Card', 4:'Cheque', 5:'Bank Transfer' }[p.mode] || 'Cash';
+      return `${modeName}: ${p.amount}`;
+    }).join(' | ') || 'Unpaid';
+
+    const payload = {
+      issuedToType: issueType === 'Registered' ? 'Student' : 'Walk-in',
+      issuedToId: issueType === 'Registered' ? null : null, 
+      issuedToName: issueType === 'Registered' ? selectedUser.name : `${walkInDetails.title} ${walkInDetails.name}`,
+      department: issueType === 'Registered' ? selectedUser.class : walkInDetails.contactNo,
+      isReturnable: false,
+      returnDueDate: null,
+      paymentMode: paymentModeStr,
+      remarks: '',
+      items: cart.map(c => ({
+        itemId: c.itemId,
+        quantity: c.qty,
+        remarks: ''
+      }))
+    };
 
     setSubmitting(true);
     try {
-      const payload = {
-        ...formData,
-        issueDate: formData.issueDate.toISOString(),
-        returnDueDate: formData.returnDueDate ? formData.returnDueDate.toISOString() : null,
-        items: validItems,
-      };
-
       const res = await inventoryApi.createIssue(payload);
       if (res.data?.success) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Item issued successfully and stock deducted!',
-          life: 3500,
+        setCart([]);
+        setPaymentSplits([{ mode: 1, amount: '', transactionRef: '' }]);
+        const savedIssue = res.data.data;
+        setPrintIssue({
+          issueNumber: savedIssue.issueNumber,
+          issueDate: savedIssue.issueDate,
+          issuedToName: payload.issuedToName,
+          issuedToType: payload.issuedToType,
+          paymentMode: paymentModeStr,
+          items: cart
         });
-        setDialogVisible(false);
-        fetchIssues();
-        fetchItems();
+        loadInitialData();
       }
     } catch (err) {
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: err.response?.data?.message || 'Failed to issue items',
-        life: 3000,
-      });
+      console.error(err);
+      alert("Failed to save issue.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openReturnModal = (issueItem) => {
-    setSelectedIssueItem(issueItem);
-    setReturnQty(issueItem.quantity - issueItem.returnedQuantity);
-    setReturnRemarks('');
-    setReturnDialogVisible(true);
-  };
-
-  const handleReturnSubmit = async () => {
-    if (!selectedIssueItem || returnQty <= 0) return;
-
-    setReturnSubmitting(true);
-    try {
-      const res = await inventoryApi.returnIssueItem({
-        issueItemId: selectedIssueItem.id,
-        returnQuantity: returnQty,
-        remarks: returnRemarks,
-      });
-
-      if (res.data?.success) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Returned',
-          detail: 'Item quantity returned back to inventory stock!',
-          life: 3500,
-        });
-        setReturnDialogVisible(false);
-        setViewDialogVisible(false);
-        fetchIssues();
-        fetchItems();
-      }
-    } catch (err) {
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: err.response?.data?.message || 'Failed to process return',
-        life: 3000,
-      });
-    } finally {
-      setReturnSubmitting(false);
-    }
-  };
-
-  const getStatusTag = (status) => {
-    switch (status) {
-      case 'Returned':
-        return <Tag severity="success" value="Returned" />;
-      case 'Partially Returned':
-        return <Tag severity="warning" value="Partial Return" />;
-      case 'Issued':
-      default:
-        return <Tag severity="info" value="Issued" />;
-    }
-  };
-
-  const header = (
-    <div className="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3">
-      <div className="flex align-items-center gap-2">
-        <i className="pi pi-send text-primary text-xl" />
-        <span className="font-bold text-base text-800">Item Issue & Distribution</span>
-        <Tag value={`${issues.length} Issues`} severity="info" className="ml-2" />
-      </div>
-
-      <div className="flex align-items-center gap-2">
-        <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
-            type="search"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search issue / recipient..."
-            className="p-inputtext-sm"
-          />
-        </span>
-        <Button
-          label="Issue Items"
-          icon="pi pi-plus"
-          className="p-button-primary p-button-sm font-semibold"
-          onClick={openNew}
-        />
-        <Button
-          icon="pi pi-refresh"
-          className="p-button-outlined p-button-sm"
-          onClick={fetchIssues}
-          tooltip="Refresh"
-        />
-      </div>
-    </div>
-  );
-
   return (
-    <div className="p-3">
-      <Toast ref={toast} />
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f4f6f8', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <i className="pi pi-send text-primary" style={{ fontSize: '1.5rem' }} /> Stock Issue POS
+        </Typography>
+        <Button label="View History" icon="pi pi-history" className="p-button-outlined p-button-sm" onClick={() => setHistoryDialogVisible(true)} />
+      </Box>
 
-      <div className="surface-card shadow-1 border-round p-3">
-        <DataTable
-          value={issues}
-          loading={loading}
-          globalFilter={globalFilter}
-          header={header}
-          emptyMessage="No item issues recorded yet."
-          className="p-datatable-sm"
-          paginator
-          rows={15}
-          rowsPerPageOptions={[10, 15, 25, 50]}
-          responsiveLayout="scroll"
-        >
-          <Column field="issueNumber" header="Issue No" sortable className="font-bold text-primary" style={{ width: '130px' }} />
-          <Column
-            field="issueDate"
-            header="Date"
-            body={(row) => new Date(row.issueDate).toLocaleDateString('en-GB')}
-            sortable
-            style={{ width: '100px' }}
-          />
-          <Column field="issuedToName" header="Issued To" sortable className="font-semibold text-800" />
-          <Column
-            field="issuedToType"
-            header="Recipient Type"
-            body={(row) => <Tag value={row.issuedToType} severity="secondary" />}
-            style={{ width: '130px' }}
-          />
-          <Column field="department" header="Dept / Class" style={{ width: '110px' }} />
-          <Column
-            field="isReturnable"
-            header="Returnable"
-            body={(row) => (
-              <Tag
-                value={row.isReturnable ? 'Returnable' : 'Non-Returnable'}
-                severity={row.isReturnable ? 'warning' : 'secondary'}
-              />
-            )}
-            style={{ width: '130px' }}
-          />
-          <Column
-            field="status"
-            header="Status"
-            body={(row) => getStatusTag(row.status)}
-            style={{ width: '110px' }}
-          />
-          <Column
-            header="Action"
-            body={(row) => (
-              <Button
-                icon="pi pi-eye"
-                label="View / Return"
-                className="p-button-text p-button-sm font-semibold"
-                onClick={() => {
-                  setSelectedIssue(row);
-                  setViewDialogVisible(true);
-                }}
-              />
-            )}
-            style={{ width: '130px' }}
-          />
-        </DataTable>
-      </div>
+      {/* TOP SECTION: Search & Select Student */}
+      <Card sx={{ mb: 3, boxShadow: 2, borderRadius: 2 }}>
+        <CardContent>
+          <Grid container spacing={3} alignItems="flex-start">
+            {/* Issue Type */}
+            <Grid item xs={12} md={3}>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>Issue Type</Typography>
+              <Dropdown value={issueType} options={[{label: 'Registered', value: 'Registered'}, {label: 'Walk-in', value: 'Walk-in'}]} onChange={(e) => setIssueType(e.value)} className="w-full p-inputtext-sm" />
+            </Grid>
 
-      {/* New Issue Dialog */}
-      <Dialog
-        header="Issue Stock Items to Student / Staff / Department"
-        visible={dialogVisible}
-        style={{ width: '820px', maxWidth: '95vw' }}
-        modal
-        onHide={() => setDialogVisible(false)}
-        footer={
-          <div className="flex justify-content-end gap-2">
-            <Button
-              label="Cancel"
-              icon="pi pi-times"
-              className="p-button-text p-button-sm"
-              onClick={() => setDialogVisible(false)}
-              disabled={submitting}
-            />
-            <Button
-              label="Issue Items & Deduct Stock"
-              icon="pi pi-check"
-              className="p-button-primary p-button-sm font-bold"
-              onClick={handleSubmit}
-              loading={submitting}
-            />
-          </div>
-        }
-      >
-        <div className="grid p-fluid pt-2">
-          {/* Recipient Type */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">
-              Recipient Type <span className="text-red-500">*</span>
-            </label>
-            <Dropdown
-              value={formData.issuedToType}
-              options={ISSUED_TO_TYPES}
-              onChange={(e) => setFormData({ ...formData, issuedToType: e.value })}
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Issued To Name */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">
-              Recipient / Person Name <span className="text-red-500">*</span>
-            </label>
-            <InputText
-              value={formData.issuedToName}
-              onChange={(e) => setFormData({ ...formData, issuedToName: e.target.value })}
-              placeholder="e.g. Aman Sharma (Adm: 1042) or Physics Lab"
-              className="p-inputtext-sm"
-              autoFocus
-            />
-          </div>
-
-          {/* Department / Class */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Department / Class (Optional)</label>
-            <InputText
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              placeholder="e.g. Class 10-A, Science Dept"
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Issue Date */}
-          <div className="col-12 sm:col-4">
-            <label className="text-xs font-bold text-700 block mb-1">Issue Date</label>
-            <Calendar
-              value={formData.issueDate}
-              onChange={(e) => setFormData({ ...formData, issueDate: e.value })}
-              dateFormat="dd/mm/yy"
-              showIcon
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Is Returnable Switch */}
-          <div className="col-12 sm:col-4 flex flex-column justify-content-center">
-            <label className="text-xs font-bold text-700 block mb-1">Is Returnable?</label>
-            <div className="flex align-items-center gap-2 pt-1">
-              <InputSwitch
-                checked={formData.isReturnable}
-                onChange={(e) => setFormData({ ...formData, isReturnable: e.value })}
-              />
-              <span className="text-xs text-600 font-semibold">
-                {formData.isReturnable ? 'Yes (Equipment/Asset)' : 'No (Consumable item)'}
-              </span>
-            </div>
-          </div>
-
-          {/* Return Due Date */}
-          {formData.isReturnable && (
-            <div className="col-12 sm:col-4">
-              <label className="text-xs font-bold text-700 block mb-1">Expected Return Date</label>
-              <Calendar
-                value={formData.returnDueDate}
-                onChange={(e) => setFormData({ ...formData, returnDueDate: e.value })}
-                dateFormat="dd/mm/yy"
-                showIcon
-                className="p-inputtext-sm"
-              />
-            </div>
-          )}
-
-          {/* Remarks */}
-          <div className="col-12">
-            <label className="text-xs font-bold text-700 block mb-1">Remarks / Purpose</label>
-            <InputText
-              value={formData.remarks}
-              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-              placeholder="e.g. For Annual Sports Event, Lab practicals"
-              className="p-inputtext-sm"
-            />
-          </div>
-
-          {/* Items Section Header */}
-          <div className="col-12 flex align-items-center justify-content-between pt-3 pb-1 border-bottom-1 surface-border">
-            <span className="font-bold text-800 text-sm flex align-items-center gap-2">
-              <i className="pi pi-list text-primary" />
-              Stock Items to Issue
-            </span>
-            <Button
-              type="button"
-              label="Add Another Item"
-              icon="pi pi-plus"
-              className="p-button-outlined p-button-sm p-button-secondary"
-              onClick={addItemRow}
-            />
-          </div>
-
-          {/* Items List Rows */}
-          <div className="col-12">
-            {formData.items.map((row, idx) => {
-              const selectedItm = items.find((i) => i.id === row.itemId);
-
-              return (
-                <div
-                  key={idx}
-                  className="grid align-items-center p-2 mb-2 border-round surface-50 border-1 surface-border"
-                >
-                  <div className="col-12 sm:col-6">
-                    <label className="text-xs text-500 block mb-1 font-semibold">
-                      Stock Item #{idx + 1} <span className="text-red-500">*</span>
-                    </label>
-                    <Dropdown
-                      value={row.itemId}
-                      options={items.map((it) => ({
-                        label: `${it.itemName} (${it.itemCode}) [Avail: ${it.currentStock} ${it.unit}]`,
-                        value: it.id,
-                      }))}
-                      onChange={(e) => updateItemRow(idx, 'itemId', e.value)}
-                      placeholder="Select Stock Item"
-                      filter
-                      className="p-inputtext-sm w-full"
-                    />
-                  </div>
-
-                  <div className="col-6 sm:col-2">
-                    <label className="text-xs text-500 block mb-1 font-semibold">
-                      Qty ({selectedItm?.unit || 'Pcs'})
-                    </label>
-                    <InputNumber
-                      value={row.quantity}
-                      onValueChange={(e) => updateItemRow(idx, 'quantity', e.value || 1)}
-                      min={1}
-                      max={selectedItm ? selectedItm.currentStock : undefined}
-                      className="p-inputtext-sm w-full"
-                    />
-                  </div>
-
-                  <div className="col-6 sm:col-3">
-                    <label className="text-xs text-500 block mb-1 font-semibold">Item Notes</label>
-                    <InputText
-                      value={row.remarks}
-                      onChange={(e) => updateItemRow(idx, 'remarks', e.target.value)}
-                      placeholder="e.g. Size 32, Item #2"
-                      className="p-inputtext-sm w-full"
-                    />
-                  </div>
-
-                  <div className="col-12 sm:col-1 text-right">
-                    <Button
-                      type="button"
-                      icon="pi pi-trash"
-                      className="p-button-rounded p-button-text p-button-danger p-button-sm"
-                      disabled={formData.items.length <= 1}
-                      onClick={() => removeItemRow(idx)}
-                      tooltip="Remove Row"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Dialog>
-
-      {/* View Issue Details & Item Return Modal */}
-      <Dialog
-        header={
-          <div className="flex align-items-center gap-2">
-            <i className="pi pi-file-o text-primary" />
-            <span>Issue Details: {selectedIssue?.issueNumber}</span>
-          </div>
-        }
-        visible={viewDialogVisible}
-        style={{ width: '750px', maxWidth: '95vw' }}
-        modal
-        onHide={() => setViewDialogVisible(false)}
-      >
-        {selectedIssue && (
-          <div className="flex flex-column gap-3">
-            <div className="grid p-2 surface-50 border-round">
-              <div className="col-6 sm:col-3">
-                <span className="text-xs text-500 block">Date</span>
-                <span className="font-bold">{new Date(selectedIssue.issueDate).toLocaleDateString('en-GB')}</span>
-              </div>
-              <div className="col-6 sm:col-3">
-                <span className="text-xs text-500 block">Issued To</span>
-                <span className="font-bold">{selectedIssue.issuedToName} ({selectedIssue.issuedToType})</span>
-              </div>
-              <div className="col-6 sm:col-3">
-                <span className="text-xs text-500 block">Type</span>
-                <span className="font-bold">{selectedIssue.isReturnable ? 'Returnable Asset' : 'Consumable'}</span>
-              </div>
-              <div className="col-6 sm:col-3">
-                <span className="text-xs text-500 block">Status</span>
-                <span className="font-bold">{getStatusTag(selectedIssue.status)}</span>
-              </div>
-            </div>
-
-            <DataTable
-              value={selectedIssue.items || []}
-              className="p-datatable-sm"
-              emptyMessage="No items found"
-            >
-              <Column field="itemCode" header="Code" style={{ width: '90px' }} />
-              <Column field="itemName" header="Item Name" className="font-semibold" />
-              <Column field="quantity" header="Issued Qty" body={(r) => `${r.quantity} ${r.unit || 'Pcs'}`} style={{ width: '100px' }} />
-              <Column
-                field="returnedQuantity"
-                header="Returned Qty"
-                body={(r) => `${r.returnedQuantity || 0} ${r.unit || 'Pcs'}`}
-                style={{ width: '110px' }}
-              />
-              <Column
-                header="Status"
-                body={(r) => (
-                  <Tag
-                    value={r.isReturned ? 'Returned' : r.returnedQuantity > 0 ? 'Partial' : 'Issued'}
-                    severity={r.isReturned ? 'success' : r.returnedQuantity > 0 ? 'warning' : 'info'}
+            {issueType === 'Registered' ? (
+              <>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>Search & Select Student / Staff</Typography>
+                  <AutoComplete 
+                    value={selectedUser} 
+                    suggestions={filteredUsers} 
+                    completeMethod={searchUsers} 
+                    field="name" 
+                    itemTemplate={userTemplate}
+                    onChange={(e) => setSelectedUser(e.value)} 
+                    placeholder="Search by Name, ID, Mobile No" 
+                    className="p-inputtext-sm w-full"
                   />
-                )}
-                style={{ width: '100px' }}
-              />
-              <Column
-                header="Action"
-                body={(r) => {
-                  const remaining = r.quantity - (r.returnedQuantity || 0);
-                  if (remaining <= 0 || !selectedIssue.isReturnable) return null;
-                  return (
-                    <Button
-                      label="Return"
-                      icon="pi pi-replay"
-                      className="p-button-warning p-button-sm p-button-outlined"
-                      onClick={() => openReturnModal(r)}
-                    />
-                  );
-                }}
-                style={{ width: '110px' }}
-              />
-            </DataTable>
-          </div>
-        )}
+                </Grid>
+                <Grid item xs={12} md={5}>
+                  {selectedUser ? (
+                    <Paper sx={{ p: 2, bgcolor: '#f7fafc', border: '1px solid #90caf9', borderRadius: 2 }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar sx={{ width: 50, height: 50, bgcolor: 'primary.main', fontSize: 22 }}>
+                            {selectedUser.name ? selectedUser.name[0].toUpperCase() : 'U'}
+                          </Avatar>
+                          <Box>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="subtitle1" fontWeight={700}>{selectedUser.name}</Typography>
+                              <Chip label={selectedUser.id} color="primary" size="small" sx={{ fontWeight: 700 }} />
+                            </Stack>
+                            <Typography variant="body2" color="text.secondary">Role: {selectedUser.userType} | Class/Dept: {selectedUser.class}</Typography>
+                            <Typography variant="caption" color="text.secondary">Contact: {selectedUser.contactNo}</Typography>
+                          </Box>
+                      </Stack>
+                    </Paper>
+                 ) : (
+                    <Typography variant="body2" color="text.secondary" fontStyle="italic" sx={{ mt: 3 }}>Please search and select a user.</Typography>
+                 )}
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid item xs={12} md={5}>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>Walk-in Details</Typography>
+                  <div className="grid p-fluid">
+                     <div className="col-3"><Dropdown value={walkInDetails.title} options={[{label:'Mr.',value:'Mr.'},{label:'Mrs.',value:'Mrs.'},{label:'Ms.',value:'Ms.'}]} onChange={(e) => setWalkInDetails({...walkInDetails, title: e.value})} className="p-inputtext-sm" /></div>
+                     <div className="col-9"><InputText placeholder="Full Name" value={walkInDetails.name} onChange={(e) => setWalkInDetails({...walkInDetails, name: e.target.value})} className="p-inputtext-sm" /></div>
+                     <div className="col-12"><InputText keyfilter="num" maxLength={10} placeholder="10-digit Contact Number" value={walkInDetails.contactNo} onChange={(e) => setWalkInDetails({...walkInDetails, contactNo: e.target.value.replace(/\D/g, '').slice(0, 10)})} className="p-inputtext-sm" /></div>
+                  </div>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Paper sx={{ p: 2, bgcolor: '#fff3e0', border: '1px solid #ffcc80', borderRadius: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="warning.dark">Walk-in Customer</Typography>
+                    <Typography variant="body2">Name: {walkInDetails.title} {walkInDetails.name || 'N/A'}</Typography>
+                    <Typography variant="body2">Contact: {walkInDetails.contactNo || 'N/A'}</Typography>
+                  </Paper>
+                </Grid>
+              </>
+            )}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* BOTTOM SECTION */}
+      <Grid container spacing={3}>
+         {/* Left: Item Search & Cart */}
+         <Grid item xs={12} lg={8}>
+            <Card sx={{ boxShadow: 2, height: '100%' }}>
+              <CardContent>
+                 <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700, color: '#424242' }}>
+                   ITEM SEARCH & CART
+                 </Typography>
+                 
+                 <div className="grid p-fluid align-items-end mb-3">
+                   <div className="col-8">
+                     <label className="text-xs font-bold text-700 block mb-1">Search Item</label>
+                     <AutoComplete 
+                        value={selectedSearchItem} 
+                        suggestions={filteredItems} 
+                        completeMethod={searchItems} 
+                        field="itemName" 
+                        itemTemplate={itemTemplate}
+                        onChange={(e) => {
+                          if (e.value && e.value.currentStock <= 0) {
+                            alert("Cannot select out of stock items.");
+                            return;
+                          }
+                          setSelectedSearchItem(e.value);
+                        }} 
+                        placeholder="Start typing to search item..." 
+                        className="p-inputtext-sm"
+                      />
+                   </div>
+                   <div className="col-2">
+                     <label className="text-xs font-bold text-700 block mb-1">Qty</label>
+                     <InputNumber value={issueQty} onValueChange={(e) => setIssueQty(e.value || 1)} min={1} className="p-inputtext-sm" />
+                   </div>
+                   <div className="col-2">
+                     <Button label="Add" icon="pi pi-plus" className="p-button-primary p-button-sm w-full" onClick={handleAddToCart} />
+                   </div>
+                 </div>
+
+                 <DataTable value={cart} emptyMessage="No items added to cart." className="p-datatable-sm border-1 surface-border">
+                    <Column field="itemName" header="Item Name" className="font-bold" />
+                    <Column field="qty" header="Qty" style={{ width: '80px' }} />
+                    <Column field="mrp" header="Rate" body={(r) => r.sellingPrice ? `₹${r.sellingPrice}` : '-'} style={{ width: '100px' }} />
+                    <Column field="totalAmount" header="Total" body={(r) => `₹${r.totalAmount || 0}`} className="font-bold text-primary" style={{ width: '100px' }} />
+                    <Column header="Action" body={(r) => (
+                      <Button icon="pi pi-trash" className="p-button-rounded p-button-text p-button-danger p-button-sm" onClick={() => removeFromCart(r.id)} />
+                    )} style={{ width: '60px' }} />
+                 </DataTable>
+              </CardContent>
+            </Card>
+         </Grid>
+
+         {/* Right Sidebar: Payment Breakdown */}
+         <Grid item xs={12} lg={4}>
+            <Card sx={{ boxShadow: 2, position: 'sticky', top: 20 }}>
+              <CardContent>
+                 <Box sx={{ pb: 2, borderBottom: '1px dashed #ccc', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={800}>
+                      Payment Breakdown (FR-5.4)
+                    </Typography>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+                      <Typography variant="body2" color="text.secondary">Total Payable:</Typography>
+                      <Typography variant="h6" fontWeight={800} color="success.main">
+                        ₹{cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0)}
+                      </Typography>
+                    </Stack>
+                 </Box>
+
+                 <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700, color: '#424242' }}>
+                   Payment Modes (Cash, UPI, Card, Cheque)
+                 </Typography>
+                 
+                 <Stack spacing={2} sx={{ mb: 2 }}>
+                  {paymentSplits.map((item, index) => (
+                    <Paper key={index} sx={{ p: 1.5, border: "1px solid #e0e0e0", bgcolor: "#fff", display: "flex", gap: "8px", alignItems: "center" }}>
+                        <TextField select size="small" label="Mode" sx={{ width: 130 }} value={item.mode} onChange={(e) => handlePaymentFieldChange(index, "mode", Number(e.target.value))}>
+                          <MenuItem value={1}>Cash</MenuItem>
+                          <MenuItem value={2}>UPI</MenuItem>
+                          <MenuItem value={3}>Card</MenuItem>
+                          <MenuItem value={4}>Cheque</MenuItem>
+                          <MenuItem value={5}>Transfer</MenuItem>
+                        </TextField>
+                        <TextField type="number" size="small" label="Amount (₹)" sx={{ flex: 1 }} value={item.amount} onChange={(e) => handlePaymentFieldChange(index, "amount", e.target.value)} />
+                        {paymentSplits.length > 1 && (
+                          <IconButton size="small" color="error" onClick={() => handleRemovePaymentMode(index)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                    </Paper>
+                  ))}
+                 </Stack>
+                 <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                    <MuiButton size="small" startIcon={<AddIcon />} onClick={handleAddPaymentMode} disabled={paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0) >= cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0) && cart.length > 0}>
+                      Add Payment Mode
+                    </MuiButton>
+                 </Stack>
+
+                 <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #ccc' }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, color: '#757575' }}>Cashier Remarks</Typography>
+                    <TextField fullWidth size="small" placeholder="Enter remarks (optional)..." sx={{ mb: 2 }} />
+                    
+                    <Box sx={{ p: 1.5, bgcolor: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: 1, mb: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" fontWeight={700} color="success.main" display="flex" alignItems="center" gap={1}>
+                          <CheckCircleIcon fontSize="small" /> Total Entered
+                        </Typography>
+                        <Typography variant="h6" fontWeight={800} color="success.main">
+                          ₹{paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                    <MuiButton 
+                       fullWidth variant="contained" color="success" size="large" 
+                       sx={{ py: 1.5, fontWeight: 800, fontSize: '1rem', textTransform: 'none' }} 
+                       onClick={handleSaveIssue} disabled={submitting || cart.length === 0 || paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0) < cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0)}
+                    >
+                      Collect & Generate Receipt (₹{cart.reduce((sum, item) => sum + (item.totalAmount || 0), 0)})
+                    </MuiButton>
+                 </Box>
+              </CardContent>
+            </Card>
+         </Grid>
+      </Grid>
+
+      {/* History Dialog */}
+      <Dialog header="Issue History" visible={historyDialogVisible} style={{ width: '90vw', maxWidth: '1000px' }} modal onHide={() => setHistoryDialogVisible(false)}>
+        <DataTable value={issues} className="p-datatable-sm" paginator rows={10}>
+          <Column field="issueNumber" header="Issue No" />
+          <Column field="issueDate" header="Date" body={(row) => new Date(row.issueDate).toLocaleDateString()} />
+          <Column field="issuedToName" header="Issued To" />
+          <Column field="issuedToType" header="Type" />
+          <Column header="Action" body={(row) => (
+            <div className="flex gap-2">
+              <Button icon="pi pi-print" label="Print" className="p-button-outlined p-button-sm" onClick={() => setPrintIssue(row)} />
+            </div>
+          )} />
+        </DataTable>
       </Dialog>
 
-      {/* Return Item Quantity Sub-modal */}
-      <Dialog
-        header="Return Issued Item to Stock"
-        visible={returnDialogVisible}
-        style={{ width: '400px' }}
-        modal
-        onHide={() => setReturnDialogVisible(false)}
-        footer={
-          <div className="flex justify-content-end gap-2">
-            <Button
-              label="Cancel"
-              icon="pi pi-times"
-              className="p-button-text p-button-sm"
-              onClick={() => setReturnDialogVisible(false)}
-              disabled={returnSubmitting}
-            />
-            <Button
-              label="Confirm Return"
-              icon="pi pi-check"
-              className="p-button-warning p-button-sm font-bold"
-              onClick={handleReturnSubmit}
-              loading={returnSubmitting}
-            />
-          </div>
-        }
-      >
-        {selectedIssueItem && (
-          <div className="flex flex-column gap-3 pt-2">
-            <div>
-              <span className="text-xs text-500 block">Item</span>
-              <span className="font-bold text-sm text-800">{selectedIssueItem.itemName} ({selectedIssueItem.itemCode})</span>
-            </div>
-
-            <div>
-              <span className="text-xs text-500 block">Issued / Remaining</span>
-              <span className="font-semibold text-xs">
-                Issued: {selectedIssueItem.quantity} | Already Returned: {selectedIssueItem.returnedQuantity || 0}
-              </span>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-700 block mb-1">
-                Return Quantity <span className="text-red-500">*</span>
-              </label>
-              <InputNumber
-                value={returnQty}
-                onValueChange={(e) => setReturnQty(e.value || 1)}
-                min={1}
-                max={selectedIssueItem.quantity - (selectedIssueItem.returnedQuantity || 0)}
-                className="w-full p-inputtext-sm"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-700 block mb-1">Return Remarks / Condition</label>
-              <InputText
-                value={returnRemarks}
-                onChange={(e) => setReturnRemarks(e.target.value)}
-                placeholder="e.g. Returned in good condition"
-                className="w-full p-inputtext-sm"
-              />
-            </div>
-          </div>
-        )}
-      </Dialog>
-    </div>
+      {printIssue && (
+        <Dialog header="Print Issue Slip" visible={!!printIssue} style={{ width: '60vw', minWidth: '600px' }} modal onHide={() => setPrintIssue(null)}>
+          <IssueSlip data={printIssue} onHide={() => setPrintIssue(null)} />
+        </Dialog>
+      )}
+    </Box>
   );
 };
 

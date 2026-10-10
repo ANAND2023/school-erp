@@ -1,0 +1,1 @@
+const mysql = require('mysql2/promise'); async function run() { const con = await mysql.createConnection({host:'localhost',user:'root',password:'123456',database:'school_erp'}); await con.query('UPDATE expenses SET spender_name = ? WHERE id = (SELECT max_id FROM (SELECT MAX(id) AS max_id FROM expenses) AS t)', ['Test Spender']); console.log('Updated'); process.exit(0); } run();

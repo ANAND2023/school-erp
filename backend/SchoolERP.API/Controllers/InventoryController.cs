@@ -61,8 +61,39 @@ namespace SchoolERP.API.Controllers
             var purchasesThisMonth = await _context.InventoryPurchases
                 .CountAsync(p => p.BranchId == branchId && p.PurchaseDate >= startOfMonth && p.IsActive);
 
-            var issuesThisMonth = await _context.InventoryIssues
+            var issuesThisMonthCount = await _context.InventoryIssues
                 .CountAsync(i => i.BranchId == branchId && i.IssueDate >= startOfMonth && i.IsActive);
+
+            var today = DateTime.UtcNow.Date;
+            var thirtyDaysAgo = today.AddDays(-30);
+            
+            var recentIssues = await _context.InventoryIssues
+                .Where(i => i.BranchId == branchId && i.IsActive && i.IssueDate >= thirtyDaysAgo)
+                .Include(i => i.IssueItems)
+                .ThenInclude(ii => ii.Item)
+                .ToListAsync();
+
+            var issuesToday = recentIssues.Where(i => i.IssueDate.Date == today).ToList();
+            var issuesThisMonthList = recentIssues.Where(i => i.IssueDate >= startOfMonth).ToList();
+
+            var todaySalesAmount = issuesToday.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * (ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0));
+            var todayProfit = issuesToday.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * ((ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0) - (ii.Item?.UnitPrice ?? 0)));
+
+            var monthlySalesAmount = issuesThisMonthList.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * (ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0));
+            var monthlyProfit = issuesThisMonthList.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * ((ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0) - (ii.Item?.UnitPrice ?? 0)));
+
+            var weeklySalesGraph = Enumerable.Range(0, 7)
+                .Select(offset => today.AddDays(-offset))
+                .Select(date => {
+                    var dailyIssues = recentIssues.Where(i => i.IssueDate.Date == date).ToList();
+                    var sales = dailyIssues.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * (ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0));
+                    var profit = dailyIssues.SelectMany(i => i.IssueItems).Sum(ii => ii.Quantity * ((ii.Item?.SellingPrice ?? ii.Item?.UnitPrice ?? 0) - (ii.Item?.UnitPrice ?? 0)));
+                    return new DailySalesDataDto {
+                        Date = date.ToString("MMM dd"),
+                        SalesAmount = sales,
+                        Profit = profit
+                    };
+                }).OrderBy(x => x.Date).ToList();
 
             var lowStockAlerts = items
                 .Where(i => i.CurrentStock <= i.ReorderLevel)
@@ -120,7 +151,12 @@ namespace SchoolERP.API.Controllers
                 TotalSuppliers = totalSuppliers,
                 TotalStockValue = totalStockValue,
                 TotalPurchasesThisMonth = purchasesThisMonth,
-                TotalIssuesThisMonth = issuesThisMonth,
+                TotalIssuesThisMonth = issuesThisMonthCount,
+                TodaySalesAmount = todaySalesAmount,
+                TodayProfit = todayProfit,
+                MonthlySalesAmount = monthlySalesAmount,
+                MonthlyProfit = monthlyProfit,
+                WeeklySalesGraph = weeklySalesGraph,
                 LowStockAlerts = lowStockAlerts,
                 RecentActivities = recentLogs
             };
@@ -428,6 +464,7 @@ namespace SchoolERP.API.Controllers
                 CurrentStock = i.CurrentStock,
                 RackNumber = i.RackNumber,
                 Description = i.Description,
+                ManufacturedBy = i.ManufacturedBy,
                 StockStatus = i.CurrentStock <= 0 ? "Out of Stock" : (i.CurrentStock <= i.ReorderLevel ? "Low Stock" : "In Stock"),
                 IsActive = i.IsActive
             }).ToList();
@@ -462,6 +499,7 @@ namespace SchoolERP.API.Controllers
                 CurrentStock = i.CurrentStock,
                 RackNumber = i.RackNumber,
                 Description = i.Description,
+                ManufacturedBy = i.ManufacturedBy,
                 StockStatus = i.CurrentStock <= 0 ? "Out of Stock" : (i.CurrentStock <= i.ReorderLevel ? "Low Stock" : "In Stock"),
                 IsActive = i.IsActive
             };
@@ -501,6 +539,7 @@ namespace SchoolERP.API.Controllers
                 OpeningStock = dto.OpeningStock,
                 CurrentStock = dto.OpeningStock,
                 RackNumber = dto.RackNumber?.Trim(),
+                ManufacturedBy = dto.ManufacturedBy?.Trim(),
                 Description = dto.Description?.Trim(),
                 CreatedBy = CurrentUserId,
                 CreatedOn = DateTime.UtcNow,
@@ -549,6 +588,7 @@ namespace SchoolERP.API.Controllers
                 CurrentStock = item.CurrentStock,
                 RackNumber = item.RackNumber,
                 Description = item.Description,
+                ManufacturedBy = item.ManufacturedBy,
                 StockStatus = item.CurrentStock <= 0 ? "Out of Stock" : (item.CurrentStock <= item.ReorderLevel ? "Low Stock" : "In Stock"),
                 IsActive = item.IsActive
             };
@@ -577,6 +617,7 @@ namespace SchoolERP.API.Controllers
             item.ReorderLevel = dto.ReorderLevel;
             item.RackNumber = dto.RackNumber?.Trim();
             item.Description = dto.Description?.Trim();
+            item.ManufacturedBy = dto.ManufacturedBy?.Trim();
             item.IsActive = dto.IsActive;
             item.ModifiedBy = CurrentUserId;
             item.ModifiedOn = DateTime.UtcNow;
@@ -601,6 +642,7 @@ namespace SchoolERP.API.Controllers
                 CurrentStock = item.CurrentStock,
                 RackNumber = item.RackNumber,
                 Description = item.Description,
+                ManufacturedBy = item.ManufacturedBy,
                 StockStatus = item.CurrentStock <= 0 ? "Out of Stock" : (item.CurrentStock <= item.ReorderLevel ? "Low Stock" : "In Stock"),
                 IsActive = item.IsActive
             }, "Item updated successfully"));
@@ -810,6 +852,7 @@ namespace SchoolERP.API.Controllers
                     ReturnDueDate = i.ReturnDueDate,
                     Status = i.Status,
                     Remarks = i.Remarks,
+                    PaymentMode = i.PaymentMode,
                     TotalItems = i.IssueItems.Count,
                     Items = i.IssueItems.Select(ii => new InventoryIssueItemDto
                     {
@@ -888,7 +931,8 @@ namespace SchoolERP.API.Controllers
                 IsReturnable = dto.IsReturnable,
                 ReturnDueDate = dto.ReturnDueDate,
                 Status = "Issued",
-                Remarks = dto.Remarks?.Trim(),
+                Remarks = dto.Remarks,
+                PaymentMode = dto.PaymentMode?.Trim(),
                 IssueItems = issueItems,
                 CreatedBy = CurrentUserId,
                 CreatedOn = DateTime.UtcNow,
@@ -941,7 +985,8 @@ namespace SchoolERP.API.Controllers
                 IsReturnable = issue.IsReturnable,
                 ReturnDueDate = issue.ReturnDueDate,
                 Status = issue.Status,
-                Remarks = issue.Remarks,
+                  Remarks = issue.Remarks,
+                  PaymentMode = issue.PaymentMode,
                 TotalItems = issueItems.Count
             };
 
@@ -1067,3 +1112,4 @@ namespace SchoolERP.API.Controllers
         #endregion
     }
 }
+

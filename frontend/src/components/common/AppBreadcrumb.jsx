@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useThemeStore } from '../../store/themeStore';
@@ -332,6 +332,15 @@ export const AppBreadcrumb = () => {
 
   const primaryColor = currentColorHex || '#2563eb';
   const todayDateString = dayjs().format('dddd, DD MMM YYYY');
+  
+  const [currentTimeStr, setCurrentTimeStr] = useState(dayjs().format('hh:mm:ss A'));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimeStr(dayjs().format('hh:mm:ss A'));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Resolve metadata for current route
   const info = useMemo(() => {
@@ -565,82 +574,11 @@ export const AppBreadcrumb = () => {
             }}
           >
             <i className="pi pi-clock" style={{ fontSize: '10.5px', color: '#d97706' }} />
-            <span>{todayDateString}</span>
+            <span>{todayDateString} &bull; {currentTimeStr}</span>
           </span>
         </div>
       </div>
 
-      {/* Bottom Row: Page Title, Code Badge, and Description */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Module Icon Tile */}
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%)'
-                : 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-              color: primaryColor,
-              border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #93c5fd',
-              boxShadow: '0 2px 5px rgba(37, 99, 235, 0.12)',
-            }}
-          >
-            <i className={`${info.moduleIcon || 'pi pi-folder'}`} style={{ fontSize: '18px', fontWeight: 'bold' }} />
-          </div>
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: '1.25rem',
-                  fontWeight: 800,
-                  letterSpacing: '-0.015em',
-                  color: isDarkMode ? '#f8fafc' : '#0f172a',
-                  lineHeight: 1.25,
-                }}
-              >
-                {info.title}
-              </h1>
-
-              {info.code && (
-                <span
-                  style={{
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                    padding: '2px 7px',
-                    borderRadius: '5px',
-                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                    color: isDarkMode ? '#cbd5e1' : '#475569',
-                    letterSpacing: '0.3px',
-                  }}
-                >
-                  {info.code}
-                </span>
-              )}
-            </div>
-
-            {info.subtitle && (
-              <p
-                style={{
-                  margin: '3px 0 0 0',
-                  fontSize: '12px',
-                  color: isDarkMode ? '#94a3b8' : '#64748b',
-                  lineHeight: 1.35,
-                }}
-              >
-                {info.subtitle}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

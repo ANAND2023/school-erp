@@ -39,6 +39,7 @@ import {
 import api from '../../../api/client';
 import { getStudentAttendance, saveStudentAttendanceBulk } from '../api';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { useUiStore } from '../../../store/uiStore';
 
 const STATUS_CONFIG = {
   1: { label: 'Present', color: 'success', bg: '#e8f5e9' },
@@ -59,7 +60,7 @@ const StudentAttendancePage = () => {
   const [saving, setSaving] = useState(false);
   const [attendanceSheet, setAttendanceSheet] = useState(null);
   const [studentRows, setStudentRows] = useState([]);
-  const [alert, setAlert] = useState(null);
+  const { showSnackbar } = useUiStore();
 
   // 1. Fetch Classes on mount
   useEffect(() => {
@@ -81,7 +82,7 @@ const StudentAttendancePage = () => {
       }
     } catch (err) {
       console.error(err);
-      setAlert({ type: 'error', message: 'Failed to load classes.' });
+      showSnackbar('Failed to load classes.', 'error');
     }
   };
 
@@ -106,9 +107,9 @@ const StudentAttendancePage = () => {
     }
   }, [selectedSectionId, date]);
 
-  const loadAttendance = async () => {
+  const loadAttendance = async (preserveAlert = false) => {
     setLoading(true);
-    setAlert(null);
+    
     try {
       const res = await getStudentAttendance(selectedSectionId, date);
       const data = res.data?.data || res.data;
@@ -128,7 +129,7 @@ const StudentAttendancePage = () => {
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || 'Failed to load attendance sheet.';
-      setAlert({ type: 'error', message: msg });
+      showSnackbar(msg, 'error');
       setAttendanceSheet(null);
       setStudentRows([]);
     } finally {
@@ -159,7 +160,7 @@ const StudentAttendancePage = () => {
   const handleSave = async () => {
     if (!selectedSectionId) return;
     setSaving(true);
-    setAlert(null);
+    
     try {
       const payload = {
         sectionId: selectedSectionId,
@@ -172,13 +173,13 @@ const StudentAttendancePage = () => {
         })),
       };
       await saveStudentAttendanceBulk(payload);
-      setAlert({ type: 'success', message: 'Attendance recorded successfully!' });
+      showSnackbar('Attendance recorded successfully!', 'success');
       // Reload to reflect saved state
-      loadAttendance();
+      loadAttendance(true);
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || 'Failed to save attendance.';
-      setAlert({ type: 'error', message: msg });
+      showSnackbar(msg, 'error');
     } finally {
       setSaving(false);
     }
@@ -221,13 +222,6 @@ const StudentAttendancePage = () => {
           </Button>
         )}
       </Box>
-
-      {/* Alert Notifications */}
-      {alert && (
-        <Alert severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
-          {alert.message}
-        </Alert>
-      )}
 
       {/* Filter / Selector Bar */}
       <Card sx={{ mb: 3, boxShadow: 2 }}>

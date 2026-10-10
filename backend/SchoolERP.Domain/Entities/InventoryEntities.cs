@@ -45,6 +45,7 @@ namespace SchoolERP.Domain.Entities
         public int CurrentStock { get; set; } = 0;
         public string? RackNumber { get; set; }
         public string? Description { get; set; }
+        public string? ManufacturedBy { get; set; }
 
         public ItemCategory? Category { get; set; }
         public ICollection<InventoryPurchaseItem> PurchaseItems { get; set; } = new List<InventoryPurchaseItem>();
@@ -94,6 +95,7 @@ namespace SchoolERP.Domain.Entities
         public bool IsReturnable { get; set; } = false;
         public DateTime? ReturnDueDate { get; set; }
         public string Status { get; set; } = "Issued"; // Issued, Returned, Partially Returned
+        public string? PaymentMode { get; set; }
         public string? Remarks { get; set; }
 
         public ICollection<InventoryIssueItem> IssueItems { get; set; } = new List<InventoryIssueItem>();

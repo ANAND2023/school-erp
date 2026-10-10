@@ -24,6 +24,8 @@ import {
 import { Print as PrintIcon, Person as TeacherIcon } from '@mui/icons-material';
 import api from '../../../api/client';
 import { getTeacherTimetable } from '../api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const DAYS = [
   { id: 1, name: 'Monday' },
@@ -79,12 +81,77 @@ const TeacherTimetablePage = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!timetable || timetable.periods?.length === 0) {
+      setAlert({ type: 'error', message: 'No schedule available to export.' });
+      return;
+    }
+
+    const doc = new jsPDF('landscape');
+    
+    // Add Header
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('Teacher Schedule & Timetable', 14, 22);
+    
+    const teacher = teachers.find(t => t.id === selectedTeacherId);
+    if (teacher) {
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text(`Teacher: ${teacher.fullName} (${teacher.employeeCode})`, 14, 30);
+    }
+
+    const headRow = ['Day / Period', ...timetable.periods.map(p => `${p.name}\n${p.startTime} - ${p.endTime}`)];
+    
+    const bodyRows = DAYS.map(day => {
+      const row = [day.name];
+      timetable.periods.forEach(p => {
+        if (p.isBreak) {
+          row.push('BREAK');
+        } else {
+          const slot = (timetable.slots || []).find(s => s.dayOfWeek === day.id && s.periodId === p.id);
+          if (slot) {
+            let cellText = `${slot.className} - ${slot.sectionName}\n${slot.subjectName}`;
+            if (slot.roomNo) cellText += `\nRoom: ${slot.roomNo}`;
+            row.push(cellText);
+          } else {
+            row.push('Free');
+          }
+        }
+      });
+      return row;
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 35,
+      theme: 'grid',
+      headStyles: { fillColor: [232, 234, 246], textColor: [0, 0, 0], halign: 'center', valign: 'middle' },
+      bodyStyles: { halign: 'center', valign: 'middle' },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', fillColor: [250, 250, 250] } // Day column
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.cell.raw === 'BREAK') {
+          data.cell.styles.fillColor = [255, 248, 225];
+          data.cell.styles.textColor = [230, 81, 0];
+          data.cell.styles.fontStyle = 'bold';
+        }
+        if (data.section === 'body' && data.cell.raw === 'Free') {
+          data.cell.styles.textColor = [150, 150, 150];
+        }
+        if (data.section === 'body' && data.cell.raw !== 'BREAK' && data.cell.raw !== 'Free' && data.column.index !== 0) {
+          data.cell.styles.fillColor = [239, 246, 255];
+        }
+      }
+    });
+
+    doc.save(`Teacher_Timetable_${teacher?.fullName || 'Export'}.pdf`);
   };
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={700} color="primary.main">
             Teacher Schedule & Timetable
@@ -93,19 +160,21 @@ const TeacherTimetablePage = () => {
             Personalized weekly class view for teaching faculty (FR-4.4, FR-6.6)
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ px: 2.5 }}>
-          Print Schedule
+        <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ px: 2.5 }}>
+          Download PDF
         </Button>
       </Box>
 
       {alert && (
-        <Alert severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
+        <Alert  severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
           {alert.message}
         </Alert>
       )}
 
+
+
       {/* Selector */}
-      <Card sx={{ mb: 3, boxShadow: 2 }}>
+      <Card  sx={{ mb: 3, boxShadow: 2 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6}>

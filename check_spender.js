@@ -1,0 +1,1 @@
+const mysql = require('mysql2/promise'); async function run() { const con = await mysql.createConnection({host:'localhost',user:'root',password:'123456',database:'school_erp'}); const [rows] = await con.query('SELECT title, spender_name FROM expenses'); console.log(rows); process.exit(0); } run();

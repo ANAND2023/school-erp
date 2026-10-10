@@ -123,6 +123,32 @@ export class ErrorBoundary extends React.Component {
               >
                 Go to Dashboard
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('access_token');
+                  localStorage.removeItem('refresh_token');
+                  localStorage.removeItem('permissions');
+                  localStorage.removeItem('active_branch_id');
+                  localStorage.removeItem('active_academic_year_id');
+                  localStorage.removeItem('sa_backup_session');
+                  localStorage.removeItem('impersonated_school');
+                  window.location.href = '/login';
+                }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                }}
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>

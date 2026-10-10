@@ -41,6 +41,7 @@ import {
 import api from '../../../api/client';
 import { getLeaveRequests, applyLeave, actionLeave } from '../api';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { usePermission } from '../../../hooks/usePermission';
 
 const LEAVE_TYPES = {
   1: 'Casual Leave',
@@ -58,6 +59,8 @@ const STATUS_CHIPS = {
 };
 
 const LeaveManagementPage = () => {
+  const { hasPermission } = usePermission();
+  const canApprove = hasPermission('LeaveManagement', 'Edit');
   const [tabValue, setTabValue] = useState(0); // 0 = Staff, 1 = Students
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -190,8 +193,8 @@ const LeaveManagementPage = () => {
     try {
       const payload = {
         applicantType: applyForm.applicantType,
-        employeeId: applyForm.applicantType === 'Employee' ? applyForm.employeeId : null,
-        studentId: applyForm.applicantType === 'Student' ? applyForm.studentId : null,
+        employeeId: applyForm.applicantType === 'Employee' ? (applyForm.employeeId || null) : null,
+        studentId: applyForm.applicantType === 'Student' ? (applyForm.studentId || null) : null,
         leaveType: applyForm.leaveType,
         fromDate: applyForm.fromDate,
         toDate: applyForm.toDate,
@@ -222,14 +225,7 @@ const LeaveManagementPage = () => {
             Process employee and student leave requests with automated attendance integration (FR-6.5)
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenApply}
-          sx={{ px: 3 }}
-        >
-          Apply Leave
-        </Button>
+        {hasPermission("LeaveManagement", "Add") && (<Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenApply} sx={{ px: 3 }}>Apply Leave</Button>)}
       </Box>
 
       {alert && (
@@ -301,7 +297,7 @@ const LeaveManagementPage = () => {
                 <TableCell sx={{ fontWeight: 700 }}>Total Days</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Reason</TableCell>
                 <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 140 }}>Actions</TableCell>
+                {canApprove && <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 140 }}>Actions</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -359,34 +355,7 @@ const LeaveManagementPage = () => {
                     />
                   </TableCell>
 
-                  <TableCell sx={{ textAlign: 'center' }}>
-                    {row.status === 1 ? (
-                      <Stack direction="row" spacing={1} justifyContent="center">
-                        <Tooltip title="Approve Leave">
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleOpenAction(row, 'approve')}
-                          >
-                            <ApproveIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Reject Leave">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleOpenAction(row, 'reject')}
-                          >
-                            <RejectIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        Processed
-                      </Typography>
-                    )}
-                  </TableCell>
+                  {canApprove && (<TableCell sx={{ textAlign: 'center' }}>{row.status === 1 ? (<Stack direction="row" spacing={1} justifyContent="center"><Tooltip title="Approve Leave"><IconButton size="small" color="success" onClick={() => handleOpenAction(row, 'approve')}><ApproveIcon fontSize="small" /></IconButton></Tooltip><Tooltip title="Reject Leave"><IconButton size="small" color="error" onClick={() => handleOpenAction(row, 'reject')}><RejectIcon fontSize="small" /></IconButton></Tooltip></Stack>) : (<Typography variant="caption" color="text.secondary">Processed</Typography>)}</TableCell>)}
                 </TableRow>
               ))}
             </TableBody>
@@ -449,55 +418,7 @@ const LeaveManagementPage = () => {
         <DialogTitle>Submit Leave Application</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Applicant Type</InputLabel>
-                <Select
-                  value={applyForm.applicantType}
-                  label="Applicant Type"
-                  onChange={(e) =>
-                    setApplyForm({ ...applyForm, applicantType: e.target.value })
-                  }
-                >
-                  <MenuItem value="Employee">Staff / Employee</MenuItem>
-                  <MenuItem value="Student">Student</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              {applyForm.applicantType === 'Employee' ? (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Employee</InputLabel>
-                  <Select
-                    value={applyForm.employeeId}
-                    label="Employee"
-                    onChange={(e) => setApplyForm({ ...applyForm, employeeId: e.target.value })}
-                  >
-                    {employees.map((e) => (
-                      <MenuItem key={e.id} value={e.id}>
-                        {e.fullName} ({e.employeeCode})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              ) : (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Student</InputLabel>
-                  <Select
-                    value={applyForm.studentId}
-                    label="Student"
-                    onChange={(e) => setApplyForm({ ...applyForm, studentId: e.target.value })}
-                  >
-                    {students.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>
-                        {s.fullName} ({s.admissionNumber || s.admissionNo})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            </Grid>
+            {canApprove && (<><Grid item xs={12} sm={6}> <FormControl fullWidth size="small"> <InputLabel>Applicant Type</InputLabel> <Select value={applyForm.applicantType} label="Applicant Type" onChange={(e) => setApplyForm({ ...applyForm, applicantType: e.target.value }) } > <MenuItem value="Employee">Staff / Employee</MenuItem> <MenuItem value="Student">Student</MenuItem> </Select> </FormControl> </Grid> <Grid item xs={12} sm={6}> {applyForm.applicantType === 'Employee' ? ( <FormControl fullWidth size="small"> <InputLabel>Employee</InputLabel> <Select value={applyForm.employeeId} label="Employee" onChange={(e) => setApplyForm({ ...applyForm, employeeId: e.target.value })} > {employees.map((e) => ( <MenuItem key={e.id} value={e.id}> {e.fullName} ({e.employeeCode}) </MenuItem> ))} </Select> </FormControl> ) : ( <FormControl fullWidth size="small"> <InputLabel>Student</InputLabel> <Select value={applyForm.studentId} label="Student" onChange={(e) => setApplyForm({ ...applyForm, studentId: e.target.value })} > {students.map((s) => ( <MenuItem key={s.id} value={s.id}> {s.fullName} ({s.admissionNumber || s.admissionNo}) </MenuItem> ))} </Select> </FormControl> )} </Grid></>)}
 
             <Grid item xs={12}>
               <FormControl fullWidth size="small">
@@ -559,3 +480,9 @@ const LeaveManagementPage = () => {
 };
 
 export default LeaveManagementPage;
+
+
+
+
+
+

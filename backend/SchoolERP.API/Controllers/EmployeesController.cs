@@ -340,8 +340,7 @@ namespace SchoolERP.API.Controllers
             employee.PhotoUrl = request.PhotoUrl;
             employee.Status = request.Status;
 
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse.Ok("Employee updated successfully."));
+            await _context.SaveChangesAsync(); if (request.AutoCreateUser && !string.IsNullOrWhiteSpace(request.Username)) { var username = request.Username.Trim(); var userExists = await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower()); if (!userExists) { _context.Users.Add(new User { Username = username, PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password), FullName = $"{request.FirstName} {request.LastName}".Trim(), UserType = UserType.Teacher, RoleId = request.RoleId ?? 2, BranchId = branchId, LinkedEntityId = employee.Id, MustChangePassword = true, IsActive = true }); await _context.SaveChangesAsync(); } } return Ok(ApiResponse.Ok("Employee updated successfully."));
         }
 
         [HttpPost("{id}/exit")]
@@ -392,3 +391,4 @@ namespace SchoolERP.API.Controllers
         }
     }
 }
+

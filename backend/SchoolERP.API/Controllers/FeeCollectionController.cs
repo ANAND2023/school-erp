@@ -66,8 +66,8 @@ namespace SchoolERP.API.Controllers
                 .ThenBy(d => d.Installment!.DueDate)
                 .ToListAsync();
 
-            // If student has no dues records yet, automatically sync / assign them on the fly!
-            if (!dues.Any() && enrollment != null)
+            // Always synchronize/assign fees to catch new transport allocations or fee changes
+            if (enrollment != null)
             {
                 await FeeAssignmentHelper.AutoAssignStudentDuesAsync(
                     _context,
@@ -683,3 +683,4 @@ namespace SchoolERP.API.Controllers
         }
     }
 }
+

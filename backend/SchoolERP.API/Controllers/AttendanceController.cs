@@ -95,7 +95,44 @@ namespace SchoolERP.API.Controllers
                 Description = holiday.Description
             }, "Holiday added successfully."));
         }
+        [HttpPut("holidays/{id}")]
+        [HasPermission("StudentAttendance", "Edit")]
+        public async Task<ActionResult<ApiResponse<HolidayDto>>> UpdateHoliday(long id, [FromBody] CreateHolidayDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+            var holidayDate = request.HolidayDate.Date;
 
+            var holiday = await _context.Holidays.FirstOrDefaultAsync(h => h.Id == id && h.BranchId == branchId);
+            if (holiday == null) return NotFound(ApiResponse.Fail("Holiday not found."));
+
+            var exists = await _context.Holidays.AnyAsync(h =>
+                h.Id != id &&
+                h.BranchId == branchId &&
+                h.AcademicYearId == yearId &&
+                h.HolidayDate.Date == holidayDate);
+
+            if (exists)
+            {
+                return BadRequest(ApiResponse<HolidayDto>.Fail("Another holiday is already configured for this date."));
+            }
+
+            holiday.HolidayDate = holidayDate;
+            holiday.Name = request.Name;
+            holiday.Description = request.Description;
+
+            _context.Holidays.Update(holiday);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<HolidayDto>.Ok(new HolidayDto
+            {
+                Id = holiday.Id,
+                AcademicYearId = holiday.AcademicYearId,
+                HolidayDate = holiday.HolidayDate,
+                Name = holiday.Name,
+                Description = holiday.Description
+            }, "Holiday updated successfully."));
+        }
         [HttpDelete("holidays/{id}")]
         [HasPermission("StudentAttendance", "Delete")]
         public async Task<ActionResult<ApiResponse>> DeleteHoliday(long id)

@@ -83,4 +83,17 @@ namespace SchoolERP.Domain.Entities
 
         public virtual School? School { get; set; }
     }
+
+    public class LandingEnquiry : BaseEntity
+    {
+        public string Name { get; set; } = string.Empty;
+        public string SchoolName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? Message { get; set; }
+        public bool IsRead { get; set; } = false;
+        public string Status { get; set; } = "New"; // New, FollowUp, Converted, Rejected
+        public string? Remarks { get; set; }
+        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+    }
 }

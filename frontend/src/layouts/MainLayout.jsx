@@ -12,6 +12,7 @@ import { useAcademicYear } from '../hooks/useAcademicYear';
 import { AppThemeSwitcher } from '../components/common/AppThemeSwitcher';
 import { AppFontSizeScaler } from '../components/common/AppFontSizeScaler';
 import { AppBreadcrumb } from '../components/common/AppBreadcrumb';
+import { AppNotifications } from '../components/common/AppNotifications';
 import { academicYearApi } from '../features/masters/api';
 import { ImpersonationBanner } from '../features/superadmin/components/ImpersonationBanner';
 import apiClient from '../api/client';
@@ -38,13 +39,14 @@ const navItems = [
     menuKey: 'Masters',
     icon: 'pi pi-cog',
     children: [
-      { title: 'School & Branch', path: '/masters/branch', menuKey: 'Branch' },
+      { title: 'School & Branch', path: '/masters/branch', menuKey: 'NumberingSeries' },
       { title: 'Academic Years', path: '/masters/academic-years', menuKey: 'AcademicYears' },
       { title: 'Classes & Sections', path: '/masters/classes', menuKey: 'Classes' },
       { title: 'Subjects', path: '/masters/subjects', menuKey: 'Subjects' },
       { title: 'Class-Subject Mapping', path: '/masters/class-subjects', menuKey: 'ClassSubjects' },
       { title: 'Simple Masters', path: '/masters/simple', menuKey: 'SimpleMasters' },
-      { title: 'Numbering Series', path: '/masters/numbering', menuKey: 'Branch' },
+      { title: 'Numbering Series', path: '/masters/numbering', menuKey: 'NumberingSeries' },
+        { title: 'Bulk Student Upload', path: '/students/bulk-operations', menuKey: 'BulkStudentUpload' },
     ],
   },
   {
@@ -57,6 +59,8 @@ const navItems = [
       { title: 'Student Directory', path: '/students', menuKey: 'Students' },
       { title: 'Roll Numbers', path: '/students/roll-numbers', menuKey: 'RollNumbers' },
       { title: 'Section Change', path: '/students/section-change', menuKey: 'SectionChange' },
+      { title: 'ID Card Settings', path: '/students/id-card-design', menuKey: 'IDCardSettings' },
+      { title: 'Print ID Cards', path: '/students/id-card-print', menuKey: 'PrintIDCards' },
     ],
   },
   {
@@ -74,9 +78,9 @@ const navItems = [
     icon: 'pi pi-wallet',
     children: [
       { title: 'Fee Structure', path: '/fees/structure', menuKey: 'FeeStructure' },
-      { title: 'Fee Assignment', path: '/fees/assignment', menuKey: 'FeeStructure' },
+      { title: 'Fee Assignment', path: '/fees/assignment', menuKey: 'FeeAssignment' },
       { title: 'Fee Collection', path: '/fees/collection', menuKey: 'FeeCollection' },
-      { title: 'Demand Bill', path: '/fees/demand-bills', menuKey: 'FeeCollection' },
+      { title: 'Demand Bill', path: '/fees/demand-bills', menuKey: 'DemandBill' },
       { title: 'Fee Concessions', path: '/fees/concessions', menuKey: 'FeeConcessions' },
       { title: 'Fee Reports', path: '/fees/reports', menuKey: 'FeeReports' },
     ],
@@ -88,12 +92,12 @@ const navItems = [
     children: [
       { title: 'Student Attendance', path: '/attendance/student', menuKey: 'StudentAttendance' },
       { title: 'Staff Attendance', path: '/attendance/staff', menuKey: 'StaffAttendance' },
-      { title: 'Leave Management', path: '/attendance/leave', menuKey: 'StaffAttendance' },
-      { title: 'Attendance Reports', path: '/attendance/reports', menuKey: 'StudentAttendance' },
-      { title: 'Holiday Calendar', path: '/attendance/holidays', menuKey: 'StudentAttendance' },
-      { title: 'Class Timetable', path: '/timetable/class', menuKey: 'Timetable' },
-      { title: 'Teacher Timetable', path: '/timetable/teacher', menuKey: 'Timetable' },
-      { title: 'Substitutions', path: '/timetable/substitution', menuKey: 'Timetable' },
+      { title: 'Leave Management', path: '/attendance/leave', menuKey: 'LeaveManagement' },
+      { title: 'Attendance Reports', path: '/attendance/reports', menuKey: 'AttendanceReports' },
+      { title: 'Holiday Calendar', path: '/attendance/holidays', menuKey: 'HolidayCalendar' },
+      { title: 'Class Timetable', path: '/timetable/class', menuKey: 'ClassTimetable' },
+      { title: 'Teacher Timetable', path: '/timetable/teacher', menuKey: 'TeacherTimetable' },
+      { title: 'Substitutions', path: '/timetable/substitution', menuKey: 'Substitutions' },
     ],
   },
   {
@@ -106,8 +110,18 @@ const navItems = [
       { title: 'Report Cards', path: '/exams/report-cards', menuKey: 'ReportCards' },
     ],
   },
-  {
-    title: 'Promotion & TC',
+      {
+      title: 'Transport',
+      menuKey: 'Transport',
+      icon: 'pi pi-car',
+      children: [
+        { title: 'Vehicles', path: '/transport/vehicles', menuKey: 'Vehicles' },
+        { title: 'Routes & Stops', path: '/transport/routes', menuKey: 'RoutesStops' },
+        { title: 'Student Allocations', path: '/transport/allocations', menuKey: 'TransportAllocations' }
+      ],
+    },
+    {
+      title: 'Promotion & TC',
     menuKey: 'Promotion',
     icon: 'pi pi-arrow-up-right',
     children: [
@@ -120,22 +134,31 @@ const navItems = [
     menuKey: 'Inventory',
     icon: 'pi pi-box',
     children: [
-      { title: 'Inventory Overview', path: '/inventory', menuKey: 'Inventory' },
-      { title: 'Items Master', path: '/inventory/items', menuKey: 'Inventory' },
-      { title: 'Item Categories', path: '/inventory/categories', menuKey: 'Inventory' },
-      { title: 'Suppliers / Vendors', path: '/inventory/suppliers', menuKey: 'Inventory' },
-      { title: 'Stock Inward (Purchase)', path: '/inventory/purchases', menuKey: 'Inventory' },
-      { title: 'Stock Issue (Outward)', path: '/inventory/issues', menuKey: 'Inventory' },
-      { title: 'Stock Movement Ledger', path: '/inventory/ledger', menuKey: 'Inventory' },
+      { title: 'Inventory Overview', path: '/inventory', menuKey: 'InventoryOverview' },
+      { title: 'Items Master', path: '/inventory/items', menuKey: 'ItemsMaster' },
+      { title: 'Item Categories', path: '/inventory/categories', menuKey: 'ItemCategories' },
+      { title: 'Suppliers / Vendors', path: '/inventory/suppliers', menuKey: 'Suppliers' },
+      { title: 'Manufactures', path: '/inventory/manufactures', menuKey: 'Manufactures' },
+      { title: 'Stock Inward (Purchase)', path: '/inventory/purchases', menuKey: 'StockInward' },
+      { title: 'Stock Issue (Outward)', path: '/inventory/issues', menuKey: 'StockIssue' },
+      { title: 'Stock Movement Ledger', path: '/inventory/ledger', menuKey: 'StockLedger' },
     ],
   },
   {
-    title: 'Reports',
+    title: 'Expenses',
+      menuKey: 'Expenses',
+      icon: 'pi pi-wallet',
+      path: '/expense',
+    },
+    {
+      title: 'Reports',
     menuKey: 'Reports',
     icon: 'pi pi-chart-bar',
     path: '/reports',
   },
 ];
+
+import { BellScheduler } from '../components/common/BellScheduler';
 
 export const MainLayout = () => {
   const navigate = useNavigate();
@@ -323,6 +346,7 @@ export const MainLayout = () => {
         transition: 'background-color 0.2s ease, color 0.2s ease',
       }}
     >
+      <BellScheduler />
       <Toast ref={toastRef} position="bottom-right" />
 
       {/* Global Impersonation Alert Banner */}
@@ -380,6 +404,24 @@ export const MainLayout = () => {
 
         {/* Right side controls */}
         <div className="flex align-items-center gap-2 sm:gap-3">
+          {/* Test Bell Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const customDataUrl = localStorage.getItem('custom_bell_data_url');
+              const defaultBell = 'https://actions.google.com/sounds/v1/alarms/school_bell_ring.ogg';
+              const audio = new Audio(customDataUrl || defaultBell);
+              audio.volume = 1.0;
+              audio.play().catch(e => {
+                alert("Browser blocked audio. Please allow audio playback or interact with the page first.");
+              });
+            }}
+            className="p-button p-button-text text-white p-1 flex align-items-center cursor-pointer border-none"
+            style={{ background: 'transparent', fontSize: '13px' }}
+            title="Test Bell Sound"
+          >
+            🔔 Test Sound
+          </button>
           {/* Academic Year Selector */}
           <div className="hidden sm:block">
             <Dropdown
@@ -413,7 +455,10 @@ export const MainLayout = () => {
             </button>
           )}
 
-          {/* Font Size Scaler Widget */}
+          {/* App Notifications Bell */}
+            <AppNotifications />
+
+            {/* Font Size Scaler Widget */}
           <AppFontSizeScaler />
 
           {/* Theme Switcher Widget */}
@@ -636,3 +681,6 @@ export const MainLayout = () => {
 };
 
 export default MainLayout;
+
+
+

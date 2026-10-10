@@ -32,6 +32,9 @@ import {
   CalendarMonth as RegisterIcon,
 } from '@mui/icons-material';
 import api from '../../../api/client';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import {
   getAbsenteesToday,
   getStudentMonthlyRegister,
@@ -176,6 +179,159 @@ const AttendanceReportsPage = () => {
     document.body.removeChild(link);
   };
 
+  const exportStudentExcel = () => {
+    if (!studentRegister || !studentRegister.rows) return;
+    const wsData = [];
+    
+    // Header
+    const headerRow = ['Roll', 'Student Name', 'Work', '% (BR-6.2)'];
+    for (let i = 1; i <= studentRegister.daysInMonth; i++) headerRow.push(i.toString());
+    headerRow.push('P', 'A');
+    wsData.push(headerRow);
+
+    // Rows
+    studentRegister.rows.forEach(row => {
+      const dataRow = [row.rollNo || '-', row.fullName, row.totalWorkingDays, row.attendancePercentage + '%'];
+      for (let i = 1; i <= studentRegister.daysInMonth; i++) {
+        dataRow.push(row.dailyStatus[i] || '-');
+      }
+      dataRow.push(row.totalPresent, row.totalAbsent);
+      wsData.push(dataRow);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Student_Register');
+    XLSX.writeFile(wb, `Student_Monthly_Register_${month}_${year}.xlsx`);
+  };
+
+  const exportStudentPdf = () => {
+    if (!studentRegister || !studentRegister.rows) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    
+    doc.setFontSize(16);
+    doc.text(`Student Monthly Register - ${month} ${year}`, 14, 15);
+    
+    const headRow = ['Roll', 'Name', 'Work', '%'];
+    for (let i = 1; i <= studentRegister.daysInMonth; i++) headRow.push(i.toString());
+    headRow.push('P', 'A');
+
+    const bodyRows = studentRegister.rows.map(row => {
+      const dataRow = [row.rollNo || '-', row.fullName, row.totalWorkingDays, row.attendancePercentage + '%'];
+      for (let i = 1; i <= studentRegister.daysInMonth; i++) {
+        dataRow.push(row.dailyStatus[i] || '-');
+      }
+      dataRow.push(row.totalPresent, row.totalAbsent);
+      return dataRow;
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 20,
+      styles: { fontSize: 7, cellPadding: 1, halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'left' }
+      }
+    });
+
+    doc.save(`Student_Monthly_Register_${month}_${year}.pdf`);
+  };
+
+  const exportAbsenteesExcel = () => {
+    if (absentees.length === 0) return;
+    const wsData = [
+      ['Admission No', 'Student Name', 'Class', 'Section', 'Roll No', 'Guardian Name', 'Guardian Mobile', 'Status', 'Remarks']
+    ];
+    absentees.forEach(a => {
+      wsData.push([
+        a.admissionNo, a.studentName, a.className, a.sectionName, a.rollNo || '-',
+        a.guardianName, a.guardianMobile, a.status === 2 ? 'Absent' : 'Leave', a.remarks || ''
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Absentees');
+    XLSX.writeFile(wb, `absentees_${date}.xlsx`);
+  };
+
+  const exportAbsenteesPdf = () => {
+    if (absentees.length === 0) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(16);
+    doc.text(`Absentees Alert List - ${date}`, 14, 15);
+    
+    const headRow = ['Adm No', 'Student Name', 'Class', 'Sec', 'Roll', 'Guardian', 'Mobile', 'Status', 'Remarks'];
+    const bodyRows = absentees.map(a => [
+      a.admissionNo, a.studentName, a.className, a.sectionName, a.rollNo || '-',
+      a.guardianName || '-', a.guardianMobile || '-', a.status === 2 ? 'Absent' : 'Leave', a.remarks || '-'
+    ]);
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 20,
+      styles: { fontSize: 9 }
+    });
+    doc.save(`absentees_${date}.pdf`);
+  };
+
+  const exportStaffExcel = () => {
+    if (!staffRegister || !staffRegister.rows) return;
+    const wsData = [];
+    const headerRow = ['Emp Code', 'Employee Name', 'Department', 'Work'];
+    for (let i = 1; i <= staffRegister.daysInMonth; i++) headerRow.push(i.toString());
+    headerRow.push('P', 'A');
+    wsData.push(headerRow);
+
+    staffRegister.rows.forEach(row => {
+      const dataRow = [row.employeeCode, row.fullName, row.departmentName || '-', row.totalWorkingDays];
+      for (let i = 1; i <= staffRegister.daysInMonth; i++) {
+        dataRow.push(row.dailyStatus[i] || '-');
+      }
+      dataRow.push(row.totalPresent, row.totalAbsent);
+      wsData.push(dataRow);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff_Register');
+    XLSX.writeFile(wb, `Staff_Monthly_Register_${month}_${year}.xlsx`);
+  };
+
+  const exportStaffPdf = () => {
+    if (!staffRegister || !staffRegister.rows) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(16);
+    doc.text(`Staff Monthly Register - ${month} ${year}`, 14, 15);
+    
+    const headRow = ['Emp Code', 'Name', 'Dept', 'Work'];
+    for (let i = 1; i <= staffRegister.daysInMonth; i++) headRow.push(i.toString());
+    headRow.push('P', 'A');
+
+    const bodyRows = staffRegister.rows.map(row => {
+      const dataRow = [row.employeeCode, row.fullName, row.departmentName || '-', row.totalWorkingDays];
+      for (let i = 1; i <= staffRegister.daysInMonth; i++) {
+        dataRow.push(row.dailyStatus[i] || '-');
+      }
+      dataRow.push(row.totalPresent, row.totalAbsent);
+      return dataRow;
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 20,
+      styles: { fontSize: 7, cellPadding: 1, halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'left' },
+        2: { halign: 'left' }
+      }
+    });
+    doc.save(`Staff_Monthly_Register_${month}_${year}.pdf`);
+  };
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       {/* Header */}
@@ -189,14 +345,37 @@ const AttendanceReportsPage = () => {
           </Typography>
         </Box>
         {tabValue === 0 && absentees.length > 0 && (
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={exportAbsenteesCsv}
-            sx={{ px: 2.5 }}
-          >
-            Export Absentees CSV
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesCsv} sx={{ px: 2.5 }}>
+              CSV
+            </Button>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesExcel} sx={{ px: 2.5 }}>
+              Excel
+            </Button>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesPdf} sx={{ px: 2.5 }}>
+              PDF
+            </Button>
+          </Stack>
+        )}
+        {tabValue === 1 && studentRegister?.rows?.length > 0 && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStudentExcel} sx={{ px: 2.5 }}>
+              Excel
+            </Button>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStudentPdf} sx={{ px: 2.5 }}>
+              PDF
+            </Button>
+          </Stack>
+        )}
+        {tabValue === 2 && staffRegister?.rows?.length > 0 && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStaffExcel} sx={{ px: 2.5 }}>
+              Excel
+            </Button>
+            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStaffPdf} sx={{ px: 2.5 }}>
+              PDF
+            </Button>
+          </Stack>
         )}
       </Box>
 
@@ -475,6 +654,8 @@ const AttendanceReportsPage = () => {
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700, minWidth: 60 }}>Roll</TableCell>
                   <TableCell sx={{ fontWeight: 700, minWidth: 150 }}>Student Name</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>Work</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 70 }}>% (BR-6.2)</TableCell>
                   {Array.from({ length: studentRegister.daysInMonth }, (_, i) => i + 1).map((d) => {
                     const isSun = studentRegister.sundayDays.includes(d);
                     const isHol = studentRegister.holidayDays.includes(d);
@@ -495,8 +676,6 @@ const AttendanceReportsPage = () => {
                   })}
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>P</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>A</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>Work</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 70 }}>% (BR-6.2)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -504,6 +683,23 @@ const AttendanceReportsPage = () => {
                   <TableRow key={row.studentId} hover>
                     <TableCell sx={{ fontWeight: 600 }}>{row.rollNo ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.fullName}</TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 600 }}>
+                      {row.totalWorkingDays}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Chip
+                        size="small"
+                        label={`${row.attendancePercentage}%`}
+                        color={
+                          row.attendancePercentage >= 75
+                            ? 'success'
+                            : row.attendancePercentage >= 50
+                            ? 'warning'
+                            : 'error'
+                        }
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
                     {Array.from({ length: studentRegister.daysInMonth }, (_, i) => i + 1).map((d) => {
                       const st = row.dailyStatus[d] || '-';
                       const isSun = st === 'SUN';
@@ -544,23 +740,6 @@ const AttendanceReportsPage = () => {
                     </TableCell>
                     <TableCell sx={{ textAlign: 'center', fontWeight: 700, color: 'error.main' }}>
                       {row.totalAbsent}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 600 }}>
-                      {row.totalWorkingDays}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Chip
-                        size="small"
-                        label={`${row.attendancePercentage}%`}
-                        color={
-                          row.attendancePercentage >= 75
-                            ? 'success'
-                            : row.attendancePercentage >= 50
-                            ? 'warning'
-                            : 'error'
-                        }
-                        sx={{ fontWeight: 700 }}
-                      />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -170,6 +170,14 @@ namespace SchoolERP.Infrastructure.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("address");
 
+                    b.Property<string>("AuthorizedSignatureUrl")
+                        .HasColumnType("longtext")
+                        .HasColumnName("authorized_signature_url");
+
+                    b.Property<string>("CashierSignatureUrl")
+                        .HasColumnType("longtext")
+                        .HasColumnName("cashier_signature_url");
+
                     b.Property<string>("City")
                         .HasColumnType("longtext")
                         .HasColumnName("city");
@@ -220,6 +228,10 @@ namespace SchoolERP.Infrastructure.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("pincode");
 
+                    b.Property<string>("PrincipalSignatureUrl")
+                        .HasColumnType("longtext")
+                        .HasColumnName("principal_signature_url");
+
                     b.Property<string>("PrintHeader")
                         .HasColumnType("longtext")
                         .HasColumnName("print_header");
@@ -237,6 +249,65 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.HasIndex("SchoolId");
 
                     b.ToTable("branches");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("message");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<long>("ReceiverId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receiver_id");
+
+                    b.Property<long>("SenderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sender_id");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("sent_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("chat_messages");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.ClassMaster", b =>
@@ -911,6 +982,123 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.HasIndex("BranchId");
 
                     b.ToTable("exam_terms");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.Expense", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CategoryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("category_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("ExpenseDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("expense_date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<string>("ReceiptUrl")
+                        .HasColumnType("longtext")
+                        .HasColumnName("receipt_url");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("expenses");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.ExpenseCategory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.ToTable("expense_categories");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.FeeConcession", b =>
@@ -1860,6 +2048,10 @@ namespace SchoolERP.Infrastructure.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("modified_on");
 
+                    b.Property<string>("PaymentMode")
+                        .HasColumnType("longtext")
+                        .HasColumnName("payment_mode");
+
                     b.Property<string>("Remarks")
                         .HasColumnType("longtext")
                         .HasColumnName("remarks");
@@ -1990,6 +2182,10 @@ namespace SchoolERP.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("item_name");
+
+                    b.Property<string>("ManufacturedBy")
+                        .HasColumnType("longtext")
+                        .HasColumnName("manufactured_by");
 
                     b.Property<long?>("ModifiedBy")
                         .HasColumnType("bigint")
@@ -2376,6 +2572,80 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.ToTable("item_suppliers");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.LandingEnquiry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("longtext")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("longtext")
+                        .HasColumnName("message");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("longtext")
+                        .HasColumnName("remarks");
+
+                    b.Property<string>("SchoolName")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("school_name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("submitted_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("landing_enquiries");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.LeaveRequest", b =>
                 {
                     b.Property<long>("Id")
@@ -2730,9 +3000,17 @@ namespace SchoolERP.Infrastructure.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsBellEnabled")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_bell_enabled");
+
                     b.Property<bool>("IsBreak")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_break");
+
+                    b.Property<bool>("IsDismissalBell")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_dismissal_bell");
 
                     b.Property<long?>("ModifiedBy")
                         .HasColumnType("bigint")
@@ -2946,6 +3224,64 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("role_permissions");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.RouteStop", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<TimeSpan?>("DropTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("drop_time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<decimal>("MonthlyFare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("monthly_fare");
+
+                    b.Property<TimeSpan?>("PickUpTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("pick_up_time");
+
+                    b.Property<long>("RouteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("route_id");
+
+                    b.Property<string>("StopName")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("stop_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RouteId");
+
+                    b.ToTable("route_stops");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.School", b =>
@@ -4162,6 +4498,70 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.ToTable("substitutions");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.SystemNotification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CreatedById")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("message");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("sent_at");
+
+                    b.Property<long?>("TargetUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("target_user_id");
+
+                    b.Property<int?>("TargetUserType")
+                        .HasColumnType("int")
+                        .HasColumnName("target_user_type");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("system_notifications");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.TeacherAllocation", b =>
                 {
                     b.Property<long>("Id")
@@ -4623,6 +5023,132 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.ToTable("transfer_certificates");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.TransportAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AcademicYearId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("academic_year_id");
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<long>("RouteStopId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("route_stop_id");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<long>("StudentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("student_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicYearId");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("RouteStopId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("transport_allocations");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.TransportRoute", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<string>("RouteName")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("route_name");
+
+                    b.Property<long?>("VehicleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("vehicle_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("transport_routes");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.User", b =>
                 {
                     b.Property<long>("Id")
@@ -4780,6 +5306,83 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("user_refresh_tokens");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.Vehicle", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int")
+                        .HasColumnName("capacity");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_on");
+
+                    b.Property<long?>("DriverId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("driver_id");
+
+                    b.Property<string>("DriverName")
+                        .HasColumnType("longtext")
+                        .HasColumnName("driver_name");
+
+                    b.Property<string>("DriverPhone")
+                        .HasColumnType("longtext")
+                        .HasColumnName("driver_phone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("MakeAndModel")
+                        .HasColumnType("longtext")
+                        .HasColumnName("make_and_model");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("modified_by");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modified_on");
+
+                    b.Property<string>("RegistrationNo")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("registration_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<string>("VehicleType")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("vehicle_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("DriverId");
+
+                    b.ToTable("vehicles");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.AcademicYear", b =>
@@ -4962,6 +5565,36 @@ namespace SchoolERP.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AcademicYear");
+
+                    b.Navigation("Branch");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.Expense", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.ExpenseCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.ExpenseCategory", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Branch");
                 });
@@ -5423,6 +6056,17 @@ namespace SchoolERP.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.RouteStop", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.TransportRoute", "Route")
+                        .WithMany("Stops")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Route");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.Section", b =>
@@ -5954,6 +6598,58 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.TransportAllocation", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.AcademicYear", "AcademicYear")
+                        .WithMany()
+                        .HasForeignKey("AcademicYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.RouteStop", "RouteStop")
+                        .WithMany("Allocations")
+                        .HasForeignKey("RouteStopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AcademicYear");
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("RouteStop");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.TransportRoute", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany("Routes")
+                        .HasForeignKey("VehicleId");
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.User", b =>
                 {
                     b.HasOne("SchoolERP.Domain.Entities.Role", "Role")
@@ -5974,6 +6670,23 @@ namespace SchoolERP.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.Vehicle", b =>
+                {
+                    b.HasOne("SchoolERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolERP.Domain.Entities.Employee", "Driver")
+                        .WithMany()
+                        .HasForeignKey("DriverId");
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Driver");
                 });
 
             modelBuilder.Entity("SchoolERP.Domain.Entities.Branch", b =>
@@ -6054,6 +6767,11 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.RouteStop", b =>
+                {
+                    b.Navigation("Allocations");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.School", b =>
                 {
                     b.Navigation("Branches");
@@ -6072,9 +6790,19 @@ namespace SchoolERP.Infrastructure.Migrations
                     b.Navigation("Guardians");
                 });
 
+            modelBuilder.Entity("SchoolERP.Domain.Entities.TransportRoute", b =>
+                {
+                    b.Navigation("Stops");
+                });
+
             modelBuilder.Entity("SchoolERP.Domain.Entities.User", b =>
                 {
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("SchoolERP.Domain.Entities.Vehicle", b =>
+                {
+                    b.Navigation("Routes");
                 });
 #pragma warning restore 612, 618
         }

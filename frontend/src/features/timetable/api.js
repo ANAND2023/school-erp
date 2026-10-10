@@ -3,6 +3,7 @@ import api from '../../api/client';
 // Period Master
 export const getPeriods = () => api.get('/timetable/periods');
 export const createPeriod = (data) => api.post('/timetable/periods', data);
+export const updatePeriod = (id, data) => api.put(`/timetable/periods/${id}`, data);
 export const deletePeriod = (id) => api.delete(`/timetable/periods/${id}`);
 
 // Section Timetable

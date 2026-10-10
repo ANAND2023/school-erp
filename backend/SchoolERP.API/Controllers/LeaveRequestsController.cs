@@ -30,7 +30,7 @@ namespace SchoolERP.API.Controllers
         }
 
         [HttpGet]
-        [HasPermission("StaffAttendance", "View")]
+        [HasPermission("LeaveManagement", "View")]
         public async Task<ActionResult<ApiResponse<List<LeaveRequestDto>>>> GetLeaveRequests(
             [FromQuery] string? applicantType,
             [FromQuery] LeaveStatus? status)
@@ -49,6 +49,14 @@ namespace SchoolERP.API.Controllers
                         .ThenInclude(en => en.Section)
                 .Where(r => r.BranchId == branchId && r.AcademicYearId == yearId);
 
+            var isSuperAdmin = _currentUserService.UserType == SchoolERP.Domain.Enums.UserType.SuperAdmin;
+
+            bool canEditAll = isSuperAdmin;
+
+            if (!isSuperAdmin) { var roleIdClaim = User.FindFirst("role_id")?.Value; if (long.TryParse(roleIdClaim, out var roleId)) { canEditAll = await _context.RolePermissions.AnyAsync(p => p.RoleId == roleId && p.Menu == "LeaveManagement" && p.CanEdit); } }
+
+            if (!canEditAll) { var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == _currentUserService.UserId); if (dbUser != null && !dbUser.LinkedEntityId.HasValue) { return BadRequest(ApiResponse<LeaveRequestDto>.Fail("Your user account is not linked to any Staff/Student profile. Cannot apply for leave.")); } if (dbUser != null && dbUser.LinkedEntityId.HasValue) { if (dbUser.UserType != SchoolERP.Domain.Enums.UserType.Student && dbUser.UserType != SchoolERP.Domain.Enums.UserType.Parent) { query = query.Where(r => r.EmployeeId == dbUser.LinkedEntityId.Value && r.ApplicantType == "Employee"); } else if (dbUser.UserType == SchoolERP.Domain.Enums.UserType.Student) { query = query.Where(r => r.StudentId == dbUser.LinkedEntityId.Value && r.ApplicantType == "Student"); } else { query = query.Where(r => r.Id == -1); } } else { query = query.Where(r => r.Id == -1); } }
+
             if (!string.IsNullOrWhiteSpace(applicantType))
             {
                 query = query.Where(r => r.ApplicantType.ToLower() == applicantType.ToLower());
@@ -59,21 +67,24 @@ namespace SchoolERP.API.Controllers
                 query = query.Where(r => r.Status == status.Value);
             }
 
-            var list = await query
+            var leaveRequests = await query
                 .OrderByDescending(r => r.CreatedOn)
+                .ToListAsync();
+
+            var list = leaveRequests
                 .Select(r => new LeaveRequestDto
                 {
                     Id = r.Id,
                     ApplicantType = r.ApplicantType,
                     EmployeeId = r.EmployeeId,
-                    EmployeeCode = r.Employee != null ? r.Employee.EmployeeCode : null,
-                    EmployeeName = r.Employee != null ? r.Employee.FullName : null,
-                    DepartmentName = r.Employee != null && r.Employee.Department != null ? r.Employee.Department.Name : null,
+                    EmployeeCode = r.Employee?.EmployeeCode,
+                    EmployeeName = r.Employee?.FullName,
+                    DepartmentName = r.Employee?.Department?.Name,
                     StudentId = r.StudentId,
-                    AdmissionNo = r.Student != null ? r.Student.AdmissionNo : null,
-                    StudentName = r.Student != null ? r.Student.FullName : null,
-                    ClassSection = r.Student != null && r.Student.Enrollments.Any(en => en.AcademicYearId == yearId)
-                        ? $"{r.Student.Enrollments.First(en => en.AcademicYearId == yearId).Class!.Name} - {r.Student.Enrollments.First(en => en.AcademicYearId == yearId).Section!.Name}"
+                    AdmissionNo = r.Student?.AdmissionNo,
+                    StudentName = r.Student?.FullName,
+                    ClassSection = r.Student?.Enrollments?.FirstOrDefault(en => en.AcademicYearId == yearId) != null 
+                        ? $"{r.Student.Enrollments.FirstOrDefault(en => en.AcademicYearId == yearId)?.Class?.Name} - {r.Student.Enrollments.FirstOrDefault(en => en.AcademicYearId == yearId)?.Section?.Name}"
                         : null,
                     LeaveType = r.LeaveType,
                     FromDate = r.FromDate,
@@ -85,13 +96,13 @@ namespace SchoolERP.API.Controllers
                     ActionDate = r.ActionDate,
                     CreatedOn = r.CreatedOn
                 })
-                .ToListAsync();
+                .ToList();
 
             return Ok(ApiResponse<List<LeaveRequestDto>>.Ok(list));
         }
 
         [HttpPost]
-        [HasPermission("StaffAttendance", "Add")]
+        [HasPermission("LeaveManagement", "Add")]
         public async Task<ActionResult<ApiResponse<LeaveRequestDto>>> ApplyLeave([FromBody] ApplyLeaveDto request)
         {
             var branchId = _currentUserService.BranchId;
@@ -102,7 +113,7 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse<LeaveRequestDto>.Fail("From date cannot be later than To date."));
             }
 
-            decimal totalDays = (request.ToDate.Date - request.FromDate.Date).Days + 1;
+            decimal totalDays = (request.ToDate.Date - request.FromDate.Date).Days + 1; var isSuperAdmin = _currentUserService.UserType == SchoolERP.Domain.Enums.UserType.SuperAdmin; bool canEditAll = isSuperAdmin; if (!isSuperAdmin) { var roleIdClaim = User.FindFirst("role_id")?.Value; if (long.TryParse(roleIdClaim, out var roleId)) { canEditAll = await _context.RolePermissions.AnyAsync(p => p.RoleId == roleId && p.Menu == "LeaveManagement" && p.CanEdit); } } if (!canEditAll) { var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == _currentUserService.UserId); if (dbUser != null && !dbUser.LinkedEntityId.HasValue) { return BadRequest(ApiResponse<LeaveRequestDto>.Fail("Your user account is not linked to any Staff/Student profile. Cannot apply for leave.")); } if (dbUser != null && dbUser.LinkedEntityId.HasValue) { if (dbUser.UserType != SchoolERP.Domain.Enums.UserType.Student && dbUser.UserType != SchoolERP.Domain.Enums.UserType.Parent) { request.EmployeeId = dbUser.LinkedEntityId; request.ApplicantType = "Employee"; request.StudentId = null; } else if (dbUser.UserType == SchoolERP.Domain.Enums.UserType.Student) { request.StudentId = dbUser.LinkedEntityId; request.ApplicantType = "Student"; request.EmployeeId = null; } } }
 
             var entity = new LeaveRequest
             {
@@ -140,7 +151,7 @@ namespace SchoolERP.API.Controllers
         }
 
         [HttpPost("{id}/action")]
-        [HasPermission("StaffAttendance", "Edit")]
+        [HasPermission("LeaveManagement", "Edit")]
         public async Task<ActionResult<ApiResponse>> ActionLeave(long id, [FromBody] ActionLeaveDto request)
         {
             var branchId = _currentUserService.BranchId;
@@ -254,3 +265,10 @@ namespace SchoolERP.API.Controllers
         }
     }
 }
+
+
+
+
+
+
+

@@ -63,7 +63,7 @@ export default function EmployeeFormPage() {
     photoUrl: '',
     status: 1,
     // Auto-create user
-    autoCreateUser: false,
+    hasUserAccount: false, autoCreateUser: false,
     username: '',
     password: '',
     roleId: '',
@@ -137,8 +137,7 @@ export default function EmployeeFormPage() {
         ifscCode: e.ifscCode || '',
         salaryBasic: e.salaryBasic ?? '',
         photoUrl: e.photoUrl || '',
-        status: e.status || 1,
-        autoCreateUser: false,
+        status: e.status || 1, hasUserAccount: !!e.userId || !!e.hasUserAccount, autoCreateUser: false,
         username: '',
         password: '',
         roleId: '',
@@ -542,7 +541,7 @@ export default function EmployeeFormPage() {
           </Card>
 
           {/* Section 5: Auto Create User Login (FR-4.2) */}
-          {!isEdit && (
+          {(!isEdit || !formData.hasUserAccount) && (
             <Card sx={{ boxShadow: 1, bgcolor: '#fbfcfd', border: formData.autoCreateUser ? '2px solid #1976d2' : '1px solid #e0e0e0' }}>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -633,3 +632,5 @@ export default function EmployeeFormPage() {
     </Box>
   );
 }
+
+

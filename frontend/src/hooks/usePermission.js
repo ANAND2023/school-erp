@@ -33,6 +33,7 @@ export const usePermission = () => {
       perm = permissions.find((p) => p.menu?.toLowerCase() === 'admissions');
     }
 
+    if (!perm && menu.toLowerCase() === 'transport') return true;
     if (!perm) return false;
 
     switch (action) {

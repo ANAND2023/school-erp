@@ -88,6 +88,8 @@ namespace SchoolERP.Domain.Entities
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public bool IsBreak { get; set; } = false;
+        public bool IsBellEnabled { get; set; } = false;
+        public bool IsDismissalBell { get; set; } = false;
         public int DisplayOrder { get; set; }
 
         // Navigation

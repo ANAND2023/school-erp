@@ -560,6 +560,9 @@ namespace SchoolERP.Infrastructure.Persistence
 
             // Seed Inventory Module Data
             await SeedInventoryAsync(context);
+
+            // Seed Multi-Term Exam & Report Card Data (3 Terms, 9 Subjects, 4 Class 6 Students)
+            await SeedMultiTermReportCardDataAsync(context);
         }
 
         public static async Task SeedInventoryAsync(ApplicationDbContext context)
@@ -787,5 +790,219 @@ namespace SchoolERP.Infrastructure.Persistence
             }
             await context.SaveChangesAsync();
         }
+
+        public static async Task SeedMultiTermReportCardDataAsync(ApplicationDbContext context)
+        {
+            var branch = await context.Branches.FirstOrDefaultAsync(b => b.IsActive);
+            var branchId = branch?.Id ?? 1;
+
+            var academicYear = await context.AcademicYears.FirstOrDefaultAsync(y => y.IsCurrent && y.BranchId == branchId)
+                               ?? await context.AcademicYears.FirstOrDefaultAsync(y => y.BranchId == branchId);
+            var yearId = academicYear?.Id ?? 1;
+
+            // 1. Grade Scale
+            if (!await context.GradeScales.AnyAsync(g => g.BranchId == branchId || g.BranchId == 0))
+            {
+                var scales = new List<GradeScale>
+                {
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "A+", MinPercentage = 90, MaxPercentage = 100, GradePoint = 10, Remarks = "Outstanding", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "A", MinPercentage = 80, MaxPercentage = 89.99m, GradePoint = 9, Remarks = "Excellent", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "A-", MinPercentage = 75, MaxPercentage = 79.99m, GradePoint = 8.5m, Remarks = "Very Good", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "B+", MinPercentage = 70, MaxPercentage = 74.99m, GradePoint = 8, Remarks = "Good", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "B", MinPercentage = 60, MaxPercentage = 69.99m, GradePoint = 7, Remarks = "Above Average", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "C+", MinPercentage = 50, MaxPercentage = 59.99m, GradePoint = 6, Remarks = "Average", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "C", MinPercentage = 40, MaxPercentage = 49.99m, GradePoint = 5, Remarks = "Fair", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "D", MinPercentage = 33, MaxPercentage = 39.99m, GradePoint = 4, Remarks = "Marginal Pass", CreatedBy = 1, IsActive = true },
+                    new GradeScale { BranchId = branchId, Name = "CBSE Scale", Grade = "E", MinPercentage = 0, MaxPercentage = 32.99m, GradePoint = 0, Remarks = "Needs Improvement / Fail", CreatedBy = 1, IsActive = true },
+                };
+                context.GradeScales.AddRange(scales);
+                await context.SaveChangesAsync();
+            }
+
+            // 2. Class 6 & Section A
+            var class6 = await context.Classes.FirstOrDefaultAsync(c => c.BranchId == branchId && (c.Name.Contains("6") || c.Name.Contains("VI")));
+            if (class6 == null)
+            {
+                class6 = new ClassMaster { BranchId = branchId, Name = "Class 6", DisplayOrder = 6, CreatedBy = 1, IsActive = true };
+                context.Classes.Add(class6);
+                await context.SaveChangesAsync();
+            }
+
+            var sectionA = await context.Sections.FirstOrDefaultAsync(s => s.ClassId == class6.Id && s.Name == "A");
+            if (sectionA == null)
+            {
+                sectionA = new Section { BranchId = branchId, ClassId = class6.Id, Name = "A", Capacity = 40, CreatedBy = 1, IsActive = true };
+                context.Sections.Add(sectionA);
+                await context.SaveChangesAsync();
+            }
+
+            // 3. Ensure 9 Standard Subjects
+            var subjectsInfo = new (string Name, string Code)[]
+            {
+                ("English", "ENG"),
+                ("Hindi", "HIN"),
+                ("Mathematics", "MATH"),
+                ("Science", "SCI"),
+                ("Social Science", "SST"),
+                ("Computer", "COMP"),
+                ("General Knowledge", "GK"),
+                ("Art & Craft", "ART"),
+                ("Physical Education", "PE")
+            };
+
+            var subjectsList = new List<Subject>();
+            foreach (var s in subjectsInfo)
+            {
+                var subj = await context.Subjects.FirstOrDefaultAsync(sb => sb.BranchId == branchId && (sb.Name == s.Name || sb.Code == s.Code));
+                if (subj == null)
+                {
+                    subj = new Subject { BranchId = branchId, Name = s.Name, Code = s.Code, Type = SubjectType.Scholastic, CreatedBy = 1, IsActive = true };
+                    context.Subjects.Add(subj);
+                    await context.SaveChangesAsync();
+                }
+                subjectsList.Add(subj);
+
+                // Ensure class subject mapping
+                if (!await context.ClassSubjects.AnyAsync(cs => cs.ClassId == class6.Id && cs.SubjectId == subj.Id))
+                {
+                    context.ClassSubjects.Add(new ClassSubject { BranchId = branchId, AcademicYearId = yearId, ClassId = class6.Id, SubjectId = subj.Id, IsOptional = false, CreatedBy = 1, IsActive = true });
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // 6. Ensure 4 Real Students in Class 6 Section A with Guardians
+            var allYears = await context.AcademicYears.Where(y => y.BranchId == branchId || y.BranchId == 0).ToListAsync();
+            if (!allYears.Any()) allYears.Add(new AcademicYear { Id = yearId, BranchId = branchId, Name = "2024-25" });
+
+            var studentsData = new[]
+            {
+                new {
+                    AdmNo = "DPS/2024/0601", Roll = 6, First = "Rahul", Last = "Sharma", Dob = new DateTime(2013, 8, 15),
+                    Father = "Mr. Rajesh Sharma", Mother = "Mrs. Neha Sharma", Phone = "9811234567",
+                    T1Marks = new decimal[] { 78, 85, 72, 80, 76, 88, 85, 82, 90 },
+                    T2Marks = new decimal[] { 82, 88, 76, 84, 80, 92, 88, 85, 92 },
+                    T3Marks = new decimal[] { 86, 90, 82, 88, 85, 94, 92, 90, 95 },
+                    Remarks = "Rahul is a bright and sincere student. He shows good performance in all subjects and participates actively in co-curricular activities. Keep up the good work!",
+                    CoScholastics = new (string Act, string T1, string T2, string T3)[] {
+                        ("Discipline", "A", "A", "A+"),
+                        ("Work Education", "A", "A", "A"),
+                        ("Art Education", "A-", "A", "A+"),
+                        ("Health & Physical Education", "A", "A+", "A+"),
+                        ("Moral & Values", "A", "A", "A+")
+                    }
+                },
+                new {
+                    AdmNo = "DPS/2024/0602", Roll = 12, First = "Priya", Last = "Singh", Dob = new DateTime(2013, 11, 20),
+                    Father = "Mr. Alok Singh", Mother = "Mrs. Sunita Singh", Phone = "9822334455",
+                    T1Marks = new decimal[] { 85, 90, 88, 92, 86, 94, 90, 88, 92 },
+                    T2Marks = new decimal[] { 88, 92, 90, 94, 89, 96, 92, 90, 94 },
+                    T3Marks = new decimal[] { 92, 95, 94, 96, 92, 98, 95, 92, 96 },
+                    Remarks = "Outstanding performance throughout the academic year. Excellent analytical and communication skills. Keep it up!",
+                    CoScholastics = new (string Act, string T1, string T2, string T3)[] {
+                        ("Discipline", "A+", "A+", "A+"),
+                        ("Work Education", "A", "A+", "A+"),
+                        ("Art Education", "A+", "A+", "A+"),
+                        ("Health & Physical Education", "A", "A+", "A+"),
+                        ("Moral & Values", "A+", "A+", "A+")
+                    }
+                },
+                new {
+                    AdmNo = "DPS/2024/0603", Roll = 18, First = "Amit", Last = "Kumar", Dob = new DateTime(2013, 5, 10),
+                    Father = "Mr. Suresh Kumar", Mother = "Mrs. Rekha Devi", Phone = "9833445566",
+                    T1Marks = new decimal[] { 68, 75, 65, 70, 72, 80, 74, 78, 85 },
+                    T2Marks = new decimal[] { 72, 78, 70, 75, 76, 84, 78, 80, 88 },
+                    T3Marks = new decimal[] { 76, 82, 74, 78, 80, 88, 82, 84, 90 },
+                    Remarks = "Amit has shown consistent and commendable improvement across all academic subjects. Hardworking student.",
+                    CoScholastics = new (string Act, string T1, string T2, string T3)[] {
+                        ("Discipline", "B+", "A", "A"),
+                        ("Work Education", "B+", "A", "A"),
+                        ("Art Education", "A", "A", "A"),
+                        ("Health & Physical Education", "A", "A+", "A+"),
+                        ("Moral & Values", "A", "A", "A")
+                    }
+                },
+                new {
+                    AdmNo = "DPS/2024/0604", Roll = 24, First = "Ananya", Last = "Verma", Dob = new DateTime(2013, 9, 28),
+                    Father = "Mr. Deepak Verma", Mother = "Mrs. Pooja Verma", Phone = "9844556677",
+                    T1Marks = new decimal[] { 82, 86, 78, 84, 82, 90, 86, 92, 88 },
+                    T2Marks = new decimal[] { 85, 88, 82, 86, 85, 92, 88, 94, 90 },
+                    T3Marks = new decimal[] { 88, 91, 86, 90, 88, 95, 90, 96, 92 },
+                    Remarks = "Ananya is a creative and dedicated learner with exceptional talent in Art, Computing, and Language studies.",
+                    CoScholastics = new (string Act, string T1, string T2, string T3)[] {
+                        ("Discipline", "A", "A", "A+"),
+                        ("Work Education", "A", "A", "A+"),
+                        ("Art Education", "A+", "A+", "A+"),
+                        ("Health & Physical Education", "A", "A", "A+"),
+                        ("Moral & Values", "A", "A+", "A+")
+                    }
+                }
+            };
+
+            foreach (var stData in studentsData)
+            {
+                var st = await context.Students.Include(s => s.Guardians).Include(s => s.Enrollments)
+                    .FirstOrDefaultAsync(s => s.BranchId == branchId && s.AdmissionNo == stData.AdmNo);
+
+                if (st == null)
+                {
+                    st = new Student
+                    {
+                        BranchId = branchId,
+                        AdmissionNo = stData.AdmNo,
+                        FirstName = stData.First,
+                        LastName = stData.Last,
+                        DateOfBirth = stData.Dob,
+                        Gender = "Male",
+                        Status = StudentStatus.Active,
+                        AdmissionDate = DateTime.UtcNow.AddYears(-1),
+                        Address = "123 Green Park Colony, Sector 4",
+                        City = "Noida",
+                        State = "Uttar Pradesh",
+                        Pincode = "201301",
+                        CreatedBy = 1,
+                        IsActive = true
+                    };
+                    context.Students.Add(st);
+                    await context.SaveChangesAsync();
+
+                    // Add Father & Mother Guardians
+                    context.StudentGuardians.AddRange(
+                        new StudentGuardian { StudentId = st.Id, Name = stData.Father, Relation = "Father", Mobile = stData.Phone, IsPrimary = true, CreatedBy = 1, IsActive = true },
+                        new StudentGuardian { StudentId = st.Id, Name = stData.Mother, Relation = "Mother", Mobile = stData.Phone, IsPrimary = false, CreatedBy = 1, IsActive = true }
+                    );
+                    await context.SaveChangesAsync();
+                }
+
+                // Ensure Enrollment in Class 6 - Section A for all academic years
+                foreach (var yr in allYears)
+                {
+                    var enr = await context.StudentEnrollments.FirstOrDefaultAsync(e => e.StudentId == st.Id && e.AcademicYearId == yr.Id);
+                    if (enr == null)
+                    {
+                        enr = new StudentEnrollment
+                        {
+                            StudentId = st.Id,
+                            AcademicYearId = yr.Id,
+                            ClassId = class6.Id,
+                            SectionId = sectionA.Id,
+                            RollNo = stData.Roll,
+                            Status = StudentStatus.Active,
+                            CreatedBy = 1,
+                            IsActive = true
+                        };
+                        context.StudentEnrollments.Add(enr);
+                    }
+                    else
+                    {
+                        enr.ClassId = class6.Id;
+                        enr.SectionId = sectionA.Id;
+                        enr.RollNo = stData.Roll;
+                        enr.Status = StudentStatus.Active;
+                    }
+                }
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }
+

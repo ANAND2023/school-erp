@@ -68,7 +68,21 @@ export default function TeacherAllocationPage() {
     queryKey: ['teachers-dropdown-list'],
     queryFn: () => staffApi.getEmployees({ status: 1, pageSize: 200 }),
   });
-  const teachers = staffRes?.data?.data?.items || [];
+  const allStaff = staffRes?.data?.data?.items || [];
+  const teachers = allStaff.filter((emp) => {
+    const dept = (emp.departmentName || '').toLowerCase();
+    const desig = (emp.designationName || '').toLowerCase();
+    if (!dept && !desig) return true;
+    const isTeacher = 
+      dept.includes('teach') || dept.includes('faculty') || dept.includes('acad') || 
+      desig.includes('teach') || desig.includes('faculty') || desig.includes('acad') ||
+      desig.includes('prof') || desig.includes('lecturer') || desig.includes('tutor') || desig.includes('coach');
+    const isNonTeaching = 
+      dept.includes('account') || dept.includes('fin') || dept.includes('admin') || dept.includes('hr') || dept.includes('transport') ||
+      desig.includes('account') || desig.includes('clerk') || desig.includes('peon') || desig.includes('driver') || desig.includes('guard');
+    if (isNonTeaching && !isTeacher) return false;
+    return isTeacher;
+  });
 
   // Fetch Class Teachers
   const {

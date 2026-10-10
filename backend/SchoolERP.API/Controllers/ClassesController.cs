@@ -32,6 +32,31 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<List<ClassDto>>>> GetClasses()
         {
             var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+            var isStaff = _currentUserService.UserType == SchoolERP.Domain.Enums.UserType.Teacher;
+            
+            List<long> allowedClassIds = null;
+            List<long> allowedSectionIds = null;
+
+            if (isStaff)
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == _currentUserService.UserId);
+                if (employee != null)
+                {
+                    var allocations = await _context.TeacherAllocations
+                        .Where(t => t.BranchId == branchId && t.AcademicYearId == yearId && t.EmployeeId == employee.Id)
+                        .ToListAsync();
+                    
+                    allowedClassIds = allocations.Select(a => a.ClassId).Distinct().ToList();
+                    allowedSectionIds = allocations.Select(a => a.SectionId).Distinct().ToList();
+                }
+                else
+                {
+                    allowedClassIds = new List<long>();
+                    allowedSectionIds = new List<long>();
+                }
+            }
+
             var classes = await _context.Classes
                 .Where(c => c.BranchId == branchId)
                 .Include(c => c.Sections)
@@ -51,6 +76,18 @@ namespace SchoolERP.API.Controllers
                     }).ToList()
                 })
                 .ToListAsync();
+
+            if (isStaff && allowedClassIds != null && allowedSectionIds != null)
+            {
+                // Filter classes and sections in-memory since DTO mapping is done
+                classes = classes.Where(c => allowedClassIds.Contains(c.Id)).ToList();
+                foreach (var c in classes)
+                {
+                    c.Sections = c.Sections.Where(s => allowedSectionIds.Contains(s.Id)).ToList();
+                }
+                // Remove classes that ended up with no sections after filtering
+                classes = classes.Where(c => c.Sections.Any()).ToList();
+            }
 
             return Ok(ApiResponse<List<ClassDto>>.Ok(classes));
         }

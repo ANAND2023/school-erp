@@ -117,7 +117,7 @@ namespace SchoolERP.Application.DTOs
         public string? IfscCode { get; set; }
         public decimal? SalaryBasic { get; set; }
         public string? PhotoUrl { get; set; }
-        public EmployeeStatus Status { get; set; } = EmployeeStatus.Active;
+        public EmployeeStatus Status { get; set; } = EmployeeStatus.Active; public bool AutoCreateUser { get; set; } = false; public string? Username { get; set; } public string? Password { get; set; } public long? RoleId { get; set; }
     }
 
     public class EmployeeExitDto
@@ -182,3 +182,4 @@ namespace SchoolERP.Application.DTOs
         public long? EmployeeId { get; set; } // Nullable to remove allocation
     }
 }
+

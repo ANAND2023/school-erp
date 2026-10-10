@@ -53,6 +53,8 @@ namespace SchoolERP.API.Controllers
                 StartTime = p.StartTime.ToString(@"hh\:mm"),
                 EndTime = p.EndTime.ToString(@"hh\:mm"),
                 IsBreak = p.IsBreak,
+                IsBellEnabled = p.IsBellEnabled,
+                IsDismissalBell = p.IsDismissalBell,
                 DisplayOrder = p.DisplayOrder
             }).ToList();
 
@@ -66,33 +68,55 @@ namespace SchoolERP.API.Controllers
             var branchId = _currentUserService.BranchId;
             var yearId = _currentUserService.AcademicYearId;
 
-            var exists = await _context.Periods.AnyAsync(p =>
-                p.BranchId == branchId &&
-                p.AcademicYearId == yearId &&
-                p.PeriodNumber == request.PeriodNumber);
-
-            if (exists)
-            {
-                return BadRequest(ApiResponse<PeriodDto>.Fail($"Period #{request.PeriodNumber} already exists."));
-            }
-
             TimeSpan.TryParse(request.StartTime, out var startTime);
             TimeSpan.TryParse(request.EndTime, out var endTime);
 
-            var period = new PeriodMaster
-            {
-                BranchId = branchId,
-                AcademicYearId = yearId,
-                PeriodNumber = request.PeriodNumber,
-                Name = request.Name.Trim(),
-                StartTime = startTime,
-                EndTime = endTime,
-                IsBreak = request.IsBreak,
-                DisplayOrder = request.DisplayOrder,
-                IsActive = true
-            };
+            var existingPeriod = await _context.Periods
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p =>
+                    p.BranchId == branchId &&
+                    p.AcademicYearId == yearId &&
+                    p.PeriodNumber == request.PeriodNumber);
 
-            _context.Periods.Add(period);
+            PeriodMaster period;
+
+            if (existingPeriod != null)
+            {
+                if (existingPeriod.IsActive)
+                {
+                    return BadRequest(ApiResponse<PeriodDto>.Fail($"Period #{request.PeriodNumber} already exists."));
+                }
+                
+                // Restore and update
+                existingPeriod.IsActive = true;
+                existingPeriod.Name = request.Name.Trim();
+                existingPeriod.StartTime = startTime;
+                existingPeriod.EndTime = endTime;
+                existingPeriod.IsBreak = request.IsBreak;
+                existingPeriod.IsBellEnabled = request.IsBellEnabled;
+                existingPeriod.IsDismissalBell = request.IsDismissalBell;
+                existingPeriod.DisplayOrder = request.DisplayOrder;
+                
+                period = existingPeriod;
+            }
+            else
+            {
+                period = new PeriodMaster
+                {
+                    BranchId = branchId,
+                    AcademicYearId = yearId,
+                    PeriodNumber = request.PeriodNumber,
+                    Name = request.Name.Trim(),
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    IsBreak = request.IsBreak,
+                    IsBellEnabled = request.IsBellEnabled,
+                    IsDismissalBell = request.IsDismissalBell,
+                    DisplayOrder = request.DisplayOrder,
+                    IsActive = true
+                };
+                _context.Periods.Add(period);
+            }
             await _context.SaveChangesAsync();
 
             return Ok(ApiResponse<PeriodDto>.Ok(new PeriodDto
@@ -103,10 +127,60 @@ namespace SchoolERP.API.Controllers
                 StartTime = period.StartTime.ToString(@"hh\:mm"),
                 EndTime = period.EndTime.ToString(@"hh\:mm"),
                 IsBreak = period.IsBreak,
+                IsBellEnabled = period.IsBellEnabled,
+                IsDismissalBell = period.IsDismissalBell,
                 DisplayOrder = period.DisplayOrder
             }, "Period created successfully."));
         }
+        [HttpPut("periods/{id}")]
+        [HasPermission("Timetable", "Edit")]
+        public async Task<ActionResult<ApiResponse<PeriodDto>>> UpdatePeriod(long id, [FromBody] CreatePeriodDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
 
+            TimeSpan.TryParse(request.StartTime, out var startTime);
+            TimeSpan.TryParse(request.EndTime, out var endTime);
+
+            var period = await _context.Periods.FirstOrDefaultAsync(p => p.Id == id && p.BranchId == branchId);
+            if (period == null) return NotFound(ApiResponse.Fail("Period not found."));
+
+            var existingPeriod = await _context.Periods
+                .FirstOrDefaultAsync(p =>
+                    p.Id != id &&
+                    p.BranchId == branchId &&
+                    p.AcademicYearId == yearId &&
+                    p.PeriodNumber == request.PeriodNumber);
+
+            if (existingPeriod != null)
+            {
+                return BadRequest(ApiResponse<PeriodDto>.Fail($"Another period with #{request.PeriodNumber} already exists."));
+            }
+
+            period.PeriodNumber = request.PeriodNumber;
+            period.Name = request.Name.Trim();
+            period.StartTime = startTime;
+            period.EndTime = endTime;
+            period.IsBreak = request.IsBreak;
+            period.IsBellEnabled = request.IsBellEnabled;
+            period.IsDismissalBell = request.IsDismissalBell;
+            period.DisplayOrder = request.DisplayOrder;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<PeriodDto>.Ok(new PeriodDto
+            {
+                Id = period.Id,
+                PeriodNumber = period.PeriodNumber,
+                Name = period.Name,
+                StartTime = period.StartTime.ToString(@"hh\:mm"),
+                EndTime = period.EndTime.ToString(@"hh\:mm"),
+                IsBreak = period.IsBreak,
+                IsBellEnabled = period.IsBellEnabled,
+                IsDismissalBell = period.IsDismissalBell,
+                DisplayOrder = period.DisplayOrder
+            }, "Period updated successfully."));
+        }
         [HttpDelete("periods/{id}")]
         [HasPermission("Timetable", "Delete")]
         public async Task<ActionResult<ApiResponse>> DeletePeriod(long id)

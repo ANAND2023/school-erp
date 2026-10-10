@@ -1,0 +1,1 @@
+const mysql = require('mysql2/promise'); async function run() { const con = await mysql.createConnection({host:'localhost',user:'root',password:'123456',database:'school_erp'}); await con.query('ALTER TABLE expenses ADD COLUMN spender_name longtext CHARACTER SET utf8mb4 NULL;'); console.log('Column added'); process.exit(0); } run().catch(console.error);

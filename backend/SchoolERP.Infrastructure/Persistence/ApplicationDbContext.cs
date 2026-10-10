@@ -27,6 +27,8 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
         public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<SystemNotification> SystemNotifications => Set<SystemNotification>();
 
         public DbSet<School> Schools => Set<School>();
         public DbSet<Branch> Branches => Set<Branch>();
@@ -46,6 +48,10 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<StudentDocument> StudentDocuments => Set<StudentDocument>();
         public DbSet<StudentSectionHistory> StudentSectionHistories => Set<StudentSectionHistory>();
         public DbSet<StudentSibling> StudentSiblings => Set<StudentSibling>();
+
+        // Expenses
+        public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+        public DbSet<Expense> Expenses => Set<Expense>();
 
         public DbSet<Employee> Employees => Set<Employee>();
         public DbSet<TeacherAllocation> TeacherAllocations => Set<TeacherAllocation>();
@@ -100,6 +106,11 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<TenantModule> TenantModules => Set<TenantModule>();
         public DbSet<TenantGatewayConfig> TenantGatewayConfigs => Set<TenantGatewayConfig>();
         public DbSet<GlobalAuditLog> GlobalAuditLogs => Set<GlobalAuditLog>();
+        public DbSet<LandingEnquiry> LandingEnquiries => Set<LandingEnquiry>();
+        public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+        public DbSet<TransportRoute> TransportRoutes => Set<TransportRoute>();
+        public DbSet<RouteStop> RouteStops => Set<RouteStop>();
+        public DbSet<TransportAllocation> TransportAllocations => Set<TransportAllocation>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

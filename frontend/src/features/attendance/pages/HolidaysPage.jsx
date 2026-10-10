@@ -22,14 +22,20 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   EventAvailable as HolidayIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
-import { getHolidays, createHoliday, deleteHoliday } from '../api';
+import { getHolidays, createHoliday, updateHoliday, deleteHoliday } from '../api';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const HolidaysPage = () => {
   const [holidays, setHolidays] = useState([]);
@@ -38,6 +44,7 @@ const HolidaysPage = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
+    id: null,
     name: '',
     holidayDate: new Date().toISOString().split('T')[0],
     description: '',
@@ -64,9 +71,20 @@ const HolidaysPage = () => {
 
   const handleOpenAdd = () => {
     setForm({
+      id: null,
       name: '',
       holidayDate: new Date().toISOString().split('T')[0],
       description: '',
+    });
+    setDialogOpen(true);
+  };
+
+  const handleOpenEdit = (holiday) => {
+    setForm({
+      id: holiday.id,
+      name: holiday.name,
+      holidayDate: holiday.holidayDate.split('T')[0],
+      description: holiday.description || '',
     });
     setDialogOpen(true);
   };
@@ -78,13 +96,18 @@ const HolidaysPage = () => {
     }
     setSubmitting(true);
     try {
-      await createHoliday(form);
-      setAlert({ type: 'success', message: 'Holiday added successfully!' });
+      if (form.id) {
+        await updateHoliday(form.id, form);
+        setAlert({ type: 'success', message: 'Holiday updated successfully!' });
+      } else {
+        await createHoliday(form);
+        setAlert({ type: 'success', message: 'Holiday added successfully!' });
+      }
       setDialogOpen(false);
       loadHolidays();
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || 'Failed to add holiday.';
+      const msg = err.response?.data?.message || 'Failed to save holiday.';
       setAlert({ type: 'error', message: msg });
     } finally {
       setSubmitting(false);
@@ -104,6 +127,51 @@ const HolidaysPage = () => {
     }
   };
 
+  const exportExcel = () => {
+    if (holidays.length === 0) return;
+    const wsData = [['#', 'Holiday Name', 'Date', 'Day of Week', 'Description']];
+    holidays.forEach((h, idx) => {
+      const dateObj = new Date(h.holidayDate);
+      wsData.push([
+        idx + 1,
+        h.name,
+        dateObj.toLocaleDateString(),
+        dateObj.toLocaleDateString('en-US', { weekday: 'long' }),
+        h.description || '-'
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Holidays');
+    XLSX.writeFile(wb, 'Academic_Holiday_Calendar.xlsx');
+  };
+
+  const exportPdf = () => {
+    if (holidays.length === 0) return;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Academic Holiday Calendar', 14, 15);
+    
+    const headRow = ['#', 'Holiday Name', 'Date', 'Day of Week', 'Description'];
+    const bodyRows = holidays.map((h, idx) => {
+      const dateObj = new Date(h.holidayDate);
+      return [
+        idx + 1,
+        h.name,
+        dateObj.toLocaleDateString(),
+        dateObj.toLocaleDateString('en-US', { weekday: 'long' }),
+        h.description || '-'
+      ];
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 20,
+    });
+    doc.save('Academic_Holiday_Calendar.pdf');
+  };
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -115,9 +183,17 @@ const HolidaysPage = () => {
             Manage school holidays and vacations. Dates marked here block attendance marking (FR-6.2).
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd} sx={{ px: 3 }}>
-          Add Holiday
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportExcel} disabled={holidays.length === 0}>
+            Excel
+          </Button>
+          <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportPdf} disabled={holidays.length === 0}>
+            PDF
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd}>
+            Add Holiday
+          </Button>
+        </Stack>
       </Box>
 
       {alert && (
@@ -147,12 +223,16 @@ const HolidaysPage = () => {
                 <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Day of Week</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 100 }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 120 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {holidays.map((h, idx) => {
                 const dateObj = new Date(h.holidayDate);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const isPassed = dateObj < today;
+                
                 return (
                   <TableRow key={h.id} hover>
                     <TableCell>{idx + 1}</TableCell>
@@ -163,15 +243,28 @@ const HolidaysPage = () => {
                     </TableCell>
                     <TableCell>{h.description || '-'}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>
-                      <Tooltip title="Delete Holiday">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(h.id, h.name)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {!isPassed && (
+                        <>
+                          <Tooltip title="Edit Holiday">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleOpenEdit(h)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Holiday">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDelete(h.id, h.name)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -181,9 +274,9 @@ const HolidaysPage = () => {
         </TableContainer>
       )}
 
-      {/* Add Holiday Dialog */}
+      {/* Add/Edit Holiday Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add School Holiday</DialogTitle>
+        <DialogTitle>{form.id ? 'Edit School Holiday' : 'Add School Holiday'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12}>
@@ -220,7 +313,7 @@ const HolidaysPage = () => {
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? 'Adding...' : 'Save Holiday'}
+            {submitting ? 'Saving...' : 'Save Holiday'}
           </Button>
         </DialogActions>
       </Dialog>

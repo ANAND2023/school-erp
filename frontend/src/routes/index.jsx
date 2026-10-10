@@ -6,6 +6,11 @@ import { LoginPage } from '../features/auth/pages/LoginPage';
 import { ChangePasswordPage } from '../features/auth/pages/ChangePasswordPage';
 import { UnauthorizedPage } from '../features/auth/pages/UnauthorizedPage';
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
+import { TransportVehiclesPage } from '../features/transport/pages/TransportVehiclesPage';
+import { TransportRoutesPage } from '../features/transport/pages/TransportRoutesPage';
+import { TransportAllocationsPage } from '../features/transport/pages/TransportAllocationsPage';
+import { CommunicationPage } from '../features/communication/pages/CommunicationPage';
+import { LandingPage } from '../features/public/pages/LandingPage';
 
 // Module 1: Auth & Users
 import { UsersPage } from '../features/auth/pages/UsersPage';
@@ -28,6 +33,9 @@ import StudentsPage from '../features/students/pages/StudentsPage';
 import StudentProfilePage from '../features/students/pages/StudentProfilePage';
 import RollNumbersPage from '../features/students/pages/RollNumbersPage';
 import SectionChangePage from '../features/students/pages/SectionChangePage';
+import BulkOperationsPage from '../features/students/pages/BulkOperationsPage';
+import IdCardDesignPage from '../features/students/pages/IdCardDesignPage';
+import IdCardPrintPage from '../features/students/pages/IdCardPrintPage';
 
 // Module 4: Staff & HR
 import StaffDirectoryPage from '../features/staff/pages/StaffDirectoryPage';
@@ -63,12 +71,14 @@ import TransferCertificatePage from '../features/promotion/pages/TransferCertifi
 
 // Central Reports Hub
 import ReportsHubPage from '../features/reports/pages/ReportsHubPage';
+import { ExpensePage } from '../features/expense/pages/ExpensePage';
 
 // Module: Inventory Management
 import InventoryDashboardPage from '../features/inventory/pages/InventoryDashboardPage';
 import ItemMasterPage from '../features/inventory/pages/ItemMasterPage';
 import ItemCategoriesPage from '../features/inventory/pages/ItemCategoriesPage';
 import ItemSuppliersPage from '../features/inventory/pages/ItemSuppliersPage';
+import ManufactureMasterPage from '../features/inventory/pages/ManufactureMasterPage';
 import StockInwardPage from '../features/inventory/pages/StockInwardPage';
 import StockIssuePage from '../features/inventory/pages/StockIssuePage';
 import StockLedgerPage from '../features/inventory/pages/StockLedgerPage';
@@ -82,6 +92,7 @@ import { TenantDetailPage } from '../features/superadmin/pages/TenantDetailPage'
 import { SubscriptionPlansPage } from '../features/superadmin/pages/SubscriptionPlansPage';
 import { GatewaysPage } from '../features/superadmin/pages/GatewaysPage';
 import { GlobalAuditLogsPage } from '../features/superadmin/pages/GlobalAuditLogsPage';
+import { LandingEnquiriesPage } from '../features/superadmin/pages/LandingEnquiriesPage';
 import { ModuleCatalogPage } from '../features/superadmin/pages/ModuleCatalogPage';
 import { useAuthStore } from '../store/authStore';
 import { usePermission } from '../hooks/usePermission';
@@ -106,20 +117,25 @@ export const AppRoutes = () => {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       {/* Protected routes within MainLayout */}
       <Route
-        path="/"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="expense" element={<ProtectedRoute requiredMenu="Expenses"><ExpensePage /></ProtectedRoute>} />
+        <Route path="communication" element={<CommunicationPage />} />
+            <Route path="transport/vehicles" element={<ProtectedRoute requiredMenu="Vehicles"><TransportVehiclesPage /></ProtectedRoute>} />
+            <Route path="transport/routes" element={<ProtectedRoute requiredMenu="RoutesStops"><TransportRoutesPage /></ProtectedRoute>} />
+            <Route path="transport/allocations" element={<ProtectedRoute requiredMenu="TransportAllocations"><TransportAllocationsPage /></ProtectedRoute>} />
         <Route path="change-password" element={<ChangePasswordPage />} />
 
         {/* Module 1: Auth & User Management */}
@@ -303,6 +319,30 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="students/bulk-operations"
+          element={
+            <ProtectedRoute requiredMenu="Students">
+              <BulkOperationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="students/id-card-design"
+          element={
+            <ProtectedRoute requiredMenu="IDCardSettings">
+              <IdCardDesignPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="students/id-card-print"
+          element={
+            <ProtectedRoute requiredMenu="PrintIDCards">
+              <IdCardPrintPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Module 4: Staff & HR */}
         <Route
@@ -358,7 +398,7 @@ export const AppRoutes = () => {
         <Route
           path="fees/assignment"
           element={
-            <ProtectedRoute requiredMenu="FeeStructure">
+            <ProtectedRoute requiredMenu="FeeAssignment">
               <FeeAssignmentPage />
             </ProtectedRoute>
           }
@@ -382,7 +422,7 @@ export const AppRoutes = () => {
         <Route
           path="fees/demand-bills"
           element={
-            <ProtectedRoute requiredMenu={['FeeCollection', 'FeeReports']}>
+            <ProtectedRoute requiredMenu="DemandBill">
               <DemandBillPage />
             </ProtectedRoute>
           }
@@ -390,7 +430,7 @@ export const AppRoutes = () => {
         <Route
           path="fees/demand-notice"
           element={
-            <ProtectedRoute requiredMenu={['FeeCollection', 'FeeReports']}>
+            <ProtectedRoute requiredMenu="DemandBill">
               <DemandBillPage />
             </ProtectedRoute>
           }
@@ -424,7 +464,7 @@ export const AppRoutes = () => {
         <Route
           path="attendance/leave"
           element={
-            <ProtectedRoute requiredMenu="StaffAttendance">
+            <ProtectedRoute requiredMenu="LeaveManagement">
               <LeaveManagementPage />
             </ProtectedRoute>
           }
@@ -432,7 +472,7 @@ export const AppRoutes = () => {
         <Route
           path="attendance/reports"
           element={
-            <ProtectedRoute requiredMenu="StudentAttendance">
+            <ProtectedRoute requiredMenu="AttendanceReports">
               <AttendanceReportsPage />
             </ProtectedRoute>
           }
@@ -440,7 +480,7 @@ export const AppRoutes = () => {
         <Route
           path="attendance/holidays"
           element={
-            <ProtectedRoute requiredMenu="StudentAttendance">
+            <ProtectedRoute requiredMenu="HolidayCalendar">
               <HolidaysPage />
             </ProtectedRoute>
           }
@@ -448,7 +488,7 @@ export const AppRoutes = () => {
         <Route
           path="timetable"
           element={
-            <ProtectedRoute requiredMenu="Timetable">
+            <ProtectedRoute requiredMenu="ClassTimetable">
               <ClassTimetablePage />
             </ProtectedRoute>
           }
@@ -456,7 +496,7 @@ export const AppRoutes = () => {
         <Route
           path="timetable/class"
           element={
-            <ProtectedRoute requiredMenu="Timetable">
+            <ProtectedRoute requiredMenu="ClassTimetable">
               <ClassTimetablePage />
             </ProtectedRoute>
           }
@@ -464,7 +504,7 @@ export const AppRoutes = () => {
         <Route
           path="timetable/teacher"
           element={
-            <ProtectedRoute requiredMenu="Timetable">
+            <ProtectedRoute requiredMenu="TeacherTimetable">
               <TeacherTimetablePage />
             </ProtectedRoute>
           }
@@ -472,7 +512,7 @@ export const AppRoutes = () => {
         <Route
           path="timetable/substitution"
           element={
-            <ProtectedRoute requiredMenu="Timetable">
+            <ProtectedRoute requiredMenu="Substitutions">
               <SubstitutionPage />
             </ProtectedRoute>
           }
@@ -536,7 +576,7 @@ export const AppRoutes = () => {
         <Route
           path="inventory"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="InventoryOverview">
               <InventoryDashboardPage />
             </ProtectedRoute>
           }
@@ -544,7 +584,7 @@ export const AppRoutes = () => {
         <Route
           path="inventory/items"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="ItemsMaster">
               <ItemMasterPage />
             </ProtectedRoute>
           }
@@ -552,7 +592,7 @@ export const AppRoutes = () => {
         <Route
           path="inventory/categories"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="ItemCategories">
               <ItemCategoriesPage />
             </ProtectedRoute>
           }
@@ -560,15 +600,23 @@ export const AppRoutes = () => {
         <Route
           path="inventory/suppliers"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="Suppliers">
               <ItemSuppliersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="inventory/manufactures"
+          element={
+            <ProtectedRoute requiredMenu="Manufactures">
+              <ManufactureMasterPage />
             </ProtectedRoute>
           }
         />
         <Route
           path="inventory/purchases"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="StockInward">
               <StockInwardPage />
             </ProtectedRoute>
           }
@@ -576,7 +624,7 @@ export const AppRoutes = () => {
         <Route
           path="inventory/issues"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="StockIssue">
               <StockIssuePage />
             </ProtectedRoute>
           }
@@ -584,7 +632,7 @@ export const AppRoutes = () => {
         <Route
           path="inventory/ledger"
           element={
-            <ProtectedRoute requiredMenu="Inventory">
+            <ProtectedRoute requiredMenu="StockLedger">
               <StockLedgerPage />
             </ProtectedRoute>
           }
@@ -609,6 +657,7 @@ export const AppRoutes = () => {
         <Route path="modules" element={<ModuleCatalogPage />} />
         <Route path="gateways" element={<GatewaysPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
+        <Route path="enquiries" element={<LandingEnquiriesPage />} />
       </Route>
 
       {/* Catch-all */}
@@ -616,3 +665,9 @@ export const AppRoutes = () => {
     </Routes>
   );
 };
+
+
+
+
+
+

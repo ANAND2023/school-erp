@@ -95,6 +95,7 @@ namespace SchoolERP.Application.DTOs
         public int CurrentStock { get; set; }
         public string? RackNumber { get; set; }
         public string? Description { get; set; }
+        public string? ManufacturedBy { get; set; }
         public string StockStatus { get; set; } = "In Stock"; // "In Stock", "Low Stock", "Out of Stock"
         public bool IsActive { get; set; }
     }
@@ -111,6 +112,7 @@ namespace SchoolERP.Application.DTOs
         public int OpeningStock { get; set; } = 0;
         public string? RackNumber { get; set; }
         public string? Description { get; set; }
+        public string? ManufacturedBy { get; set; }
     }
 
     public class UpdateInventoryItemDto
@@ -124,6 +126,7 @@ namespace SchoolERP.Application.DTOs
         public int ReorderLevel { get; set; } = 5;
         public string? RackNumber { get; set; }
         public string? Description { get; set; }
+        public string? ManufacturedBy { get; set; }
         public bool IsActive { get; set; } = true;
     }
 
@@ -195,6 +198,7 @@ namespace SchoolERP.Application.DTOs
         public DateTime? ReturnDueDate { get; set; }
         public string Status { get; set; } = "Issued";
         public string? Remarks { get; set; }
+        public string? PaymentMode { get; set; }
         public int TotalItems { get; set; }
         public List<InventoryIssueItemDto> Items { get; set; } = new();
     }
@@ -224,6 +228,7 @@ namespace SchoolERP.Application.DTOs
         public bool IsReturnable { get; set; } = false;
         public DateTime? ReturnDueDate { get; set; }
         public string? Remarks { get; set; }
+        public string? PaymentMode { get; set; }
         public List<CreateInventoryIssueItemDto> Items { get; set; } = new();
     }
 
@@ -269,7 +274,20 @@ namespace SchoolERP.Application.DTOs
         public decimal TotalStockValue { get; set; }
         public int TotalPurchasesThisMonth { get; set; }
         public int TotalIssuesThisMonth { get; set; }
+        public decimal TodaySalesAmount { get; set; }
+        public decimal TodayProfit { get; set; }
+        public decimal MonthlySalesAmount { get; set; }
+        public decimal MonthlyProfit { get; set; }
+        public List<DailySalesDataDto> WeeklySalesGraph { get; set; } = new();
         public List<InventoryItemDto> LowStockAlerts { get; set; } = new();
         public List<InventoryStockLogDto> RecentActivities { get; set; } = new();
     }
+
+    public class DailySalesDataDto
+    {
+        public string Date { get; set; } = string.Empty;
+        public decimal SalesAmount { get; set; }
+        public decimal Profit { get; set; }
+    }
 }
+

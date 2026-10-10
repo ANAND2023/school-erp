@@ -95,7 +95,33 @@ namespace SchoolERP.API.Helpers
                             d.StudentId == studentId)
                 .ToListAsync();
 
+            // Filter out any transport/bus fees from normal class fee structure
+            var transportHeadIds = await context.FeeHeads
+                .Where(f => f.BranchId == branchId && (f.Name.Contains("Transport") || f.Name.Contains("Bus")))
+                .Select(f => f.Id)
+                .ToListAsync();
+
+            structures = structures.Where(s => !transportHeadIds.Contains(s.FeeHeadId)).ToList();
+
             int newDuesCount = 0;
+
+            var transportAllocation = await context.TransportAllocations
+                .Include(a => a.RouteStop)
+                .FirstOrDefaultAsync(a => a.BranchId == branchId && a.AcademicYearId == yearId && a.StudentId == studentId && a.IsActive && a.Status == "Active");
+            
+            Console.WriteLine($"Transport allocation for student {studentId}: {(transportAllocation != null ? "FOUND" : "NULL")}");
+
+            FeeHead transportHead = null;
+            if (transportAllocation != null && transportAllocation.RouteStop != null)
+            {
+                transportHead = await context.FeeHeads.FirstOrDefaultAsync(f => f.BranchId == branchId && f.Name.Contains("Transport"));
+                if (transportHead == null)
+                {
+                    transportHead = new FeeHead { BranchId = branchId, Name = "Transport Fee", Description = "Auto-generated transport fee", IsActive = true };
+                    context.FeeHeads.Add(transportHead);
+                    await context.SaveChangesAsync();
+                }
+            }
 
             foreach (var st in structures)
             {
@@ -153,6 +179,45 @@ namespace SchoolERP.API.Helpers
                 }
             }
 
+            if (transportAllocation != null && transportHead != null)
+            {
+                var installments = await context.FeeInstallments.Where(i => i.BranchId == branchId && i.AcademicYearId == yearId).ToListAsync();
+                foreach(var inst in installments)
+                {
+                    var exTrans = existingDues.FirstOrDefault(d => d.FeeHeadId == transportHead.Id && d.InstallmentId == inst.Id);
+                    decimal tAmt = transportAllocation.RouteStop.MonthlyFare;
+                    if (exTrans == null)
+                    {
+                        var due = new StudentFeeDue
+                        {
+                            BranchId = branchId, AcademicYearId = yearId, StudentId = studentId, ClassId = classId,
+                            FeeHeadId = transportHead.Id, InstallmentId = inst.Id,
+                            OriginalAmount = tAmt, ConcessionAmount = 0, PaidAmount = 0, BalanceAmount = tAmt,
+                            Status = tAmt <= 0 ? DueStatus.Paid : DueStatus.Unpaid, IsActive = true
+                        };
+                        context.StudentFeeDues.Add(due);
+                        newDuesCount++;
+                    }
+                    else if (exTrans.PaidAmount == 0)
+                    {
+                        exTrans.OriginalAmount = tAmt;
+                        exTrans.BalanceAmount = tAmt;
+                        exTrans.Status = tAmt <= 0 ? DueStatus.Paid : DueStatus.Unpaid;
+                    }
+                }
+            }
+            else
+            {
+                // If no transport allocation, zero out any unpaid transport dues
+                Console.WriteLine("Transport allocation is NULL. Zeroing out transport dues...");
+                foreach (var ex in existingDues.Where(d => transportHeadIds.Contains(d.FeeHeadId) && d.PaidAmount == 0))
+                {
+                    Console.WriteLine("Removing due ID: " + ex.Id);
+                    context.StudentFeeDues.Remove(ex);
+                    newDuesCount++; // hack to force SaveChanges
+                }
+            }
+
             if (newDuesCount > 0 || context.ChangeTracker.HasChanges())
             {
                 await context.SaveChangesAsync();
@@ -162,3 +227,10 @@ namespace SchoolERP.API.Helpers
         }
     }
 }
+
+
+
+
+
+
+

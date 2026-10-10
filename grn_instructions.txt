@@ -1,0 +1,42 @@
+1. We are redesigning `d:\erp\frontend\src\features\inventory\pages\StockInwardPage.jsx`.
+2. The user provided screenshots for a GRN (Good Receipt Note) screen and wants to rebuild the `StockInwardPage` UI to look exactly like the "GRN" screenshot (4th image).
+3. The user explicitly mentioned: "usme add krna hai selling price table me aise bnao". This means the table needs an MRP / Selling Price column.
+4. The user has crossed out some fields in the screenshot, so omit those.
+5. In `StockInwardPage.jsx`, find the Dialog for "Record New Purchase Modal".
+6. Change `style={{ width: '820px', maxWidth: '95vw' }}` to `style={{ width: '98vw', maxWidth: '100vw', height: '95vh' }}`.
+7. Top Header Section of Dialog should contain:
+   - Supplier (Dropdown)
+   - Payment Type (Credit, Cash, etc.)
+   - Invoice No (Text)
+   - Invoice Date (Calendar)
+   - Delivery Date (Calendar)
+   - Delivery No (Text)
+8. Item Details Section:
+   - Needs a row of pink buttons at the top right: "CREATE ITEM STORE", "CREATE MANUFACTURE MASTER", "CREATE SUPPLIER MASTER", "CREATE GENERIC MASTER" (You can just render them as simple PrimeReact buttons that don't do anything for now).
+   - Below it, a wide horizontal scrollable layout containing the rows of items.
+   - For each item row, we need these inputs (arranged horizontally like a spreadsheet row):
+     1. Item Name (Dropdown - mapping to `items`)
+     2. Rate (InputNumber) (This maps to `unitCost`)
+     3. Mrp / Selling Price (InputNumber) <- **CRITICAL user requirement**
+     4. Qty (InputNumber)
+     5. Batch (InputText)
+     6. DISC(%) (InputNumber)
+     7. Disc Amt (InputNumber)
+     8. HSN CODE (InputText)
+     9. Tax % (Dropdown - e.g. 5, 12, 18, 28)
+     10. TAX AMT (Computed or InputNumber)
+     11. Net Amt (Computed or InputNumber)
+     12. Exp Date (InputText or Calendar)
+     13. Action (Delete Button)
+9. Bottom Summary Section (Sticky at bottom or just below the table):
+   - Grid layout of disabled summary boxes:
+     - Gross Amount
+     - Bill Disc
+     - Bill Disc Amt
+     - Round Off
+     - Freight Charges
+     - GRN Amt (Grand Total)
+     - CREDIT NOTE AMOUNT
+     - Narration (Textarea/InputText)
+10. Update the `formData` state object in `StockInwardPage.jsx` to include these new item row fields.
+11. Be careful not to break the `handleSubmit` or data fetching logic, just enhance the UI and state structure. Keep existing state handling for fetching items/suppliers.
