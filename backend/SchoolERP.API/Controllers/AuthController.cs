@@ -9,6 +9,7 @@ using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Application.Common.Models;
 using SchoolERP.Application.DTOs;
 using SchoolERP.Domain.Entities;
+using SchoolERP.Domain.Enums;
 using SchoolERP.Infrastructure.Persistence;
 
 namespace SchoolERP.API.Controllers
@@ -40,14 +41,90 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse<LoginResponseDto>.Fail("Username and password are required."));
             }
 
+            var usernameInput = request.Username.Trim();
+
             var user = await _context.Users
                 .Include(u => u.Role)
                 .ThenInclude(r => r!.Permissions)
-                .FirstOrDefaultAsync(u => u.Username == request.Username);
+                .FirstOrDefaultAsync(u => u.Username == usernameInput || u.Email == usernameInput || u.Mobile == usernameInput);
+
+            // If user not explicitly in Users table, check if it's a student (AdmissionNo) or Parent (Guardian Mobile)
+            if (user == null)
+            {
+                // 1. Check Student by Admission Number or First Name
+                var studentMatch = await _context.Students
+                    .FirstOrDefaultAsync(s => s.AdmissionNo == usernameInput || s.AdmissionNo.Replace("/", "").ToLower() == usernameInput.Replace("/", "").ToLower());
+
+                if (studentMatch != null)
+                {
+                    // Create or find student user
+                    var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+                    if (studentRole == null)
+                    {
+                        studentRole = new Role { Name = "Student", Description = "Student Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                        _context.Roles.Add(studentRole);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    user = new User
+                    {
+                        Username = studentMatch.AdmissionNo,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                        FullName = studentMatch.FullName,
+                        UserType = UserType.Student,
+                        RoleId = studentRole.Id,
+                        BranchId = studentMatch.BranchId,
+                        LinkedEntityId = studentMatch.Id,
+                        MustChangePassword = false,
+                        IsActive = true,
+                        CreatedBy = 1,
+                        CreatedOn = DateTime.UtcNow
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    // 2. Check Parent / Guardian by Mobile number
+                    var guardianMatch = await _context.Set<StudentGuardian>()
+                        .Include(g => g.Student)
+                        .FirstOrDefaultAsync(g => g.Mobile == usernameInput || (g.Email != null && g.Email == usernameInput));
+
+                    if (guardianMatch != null)
+                    {
+                        var parentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Parent");
+                        if (parentRole == null)
+                        {
+                            parentRole = new Role { Name = "Parent", Description = "Parent Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                            _context.Roles.Add(parentRole);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        user = new User
+                        {
+                            Username = !string.IsNullOrWhiteSpace(guardianMatch.Mobile) ? guardianMatch.Mobile : guardianMatch.Name.Replace(" ", "").ToLower(),
+                            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                            FullName = guardianMatch.Name,
+                            Mobile = guardianMatch.Mobile,
+                            Email = guardianMatch.Email,
+                            UserType = UserType.Parent,
+                            RoleId = parentRole.Id,
+                            BranchId = guardianMatch.Student?.BranchId ?? 1,
+                            LinkedEntityId = guardianMatch.StudentId,
+                            MustChangePassword = false,
+                            IsActive = true,
+                            CreatedBy = 1,
+                            CreatedOn = DateTime.UtcNow
+                        };
+                        _context.Users.Add(user);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
 
             if (user == null)
             {
-                return Unauthorized(ApiResponse<LoginResponseDto>.Fail("Invalid username or password."));
+                return Unauthorized(ApiResponse<LoginResponseDto>.Fail("Invalid username, mobile, or admission number."));
             }
 
             // BR-1.2: 5 consecutive wrong attempts lock the account for 15 minutes

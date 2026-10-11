@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -56,9 +57,38 @@ export const StudentPortalDashboardPage = () => {
 
   const [wards, setWards] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [portalData, setPortalData] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab = tabParam ? (
+    tabParam === 'timetable' ? 2 :
+    tabParam === 'attendance' ? 1 :
+    tabParam === 'exams' ? 3 :
+    tabParam === 'fees' ? 4 :
+    tabParam === 'notices' ? 5 :
+    !isNaN(Number(tabParam)) ? Number(tabParam) : 0
+  ) : 0;
+
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (tabParam) {
+      const resolved = (
+        tabParam === 'timetable' ? 2 :
+        tabParam === 'attendance' ? 1 :
+        tabParam === 'exams' ? 3 :
+        tabParam === 'fees' ? 4 :
+        tabParam === 'notices' ? 5 :
+        !isNaN(Number(tabParam)) ? Number(tabParam) : 0
+      );
+      setActiveTab(resolved);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (_, val) => {
+    setActiveTab(val);
+    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'notices'];
+    setSearchParams({ tab: tabKeys[val] || String(val) });
+  };
 
   const isParent = user?.userType === 6;
 
@@ -286,7 +316,7 @@ export const StudentPortalDashboardPage = () => {
       <Paper sx={{ mb: 3, borderRadius: 2, bgcolor: isDarkMode ? '#1e293b' : '#ffffff', boxShadow: 1 }}>
         <Tabs
           value={activeTab}
-          onChange={(_, val) => setActiveTab(val)}
+          onChange={handleTabChange}
           indicatorColor="primary"
           textColor="primary"
           variant="scrollable"

@@ -508,14 +508,15 @@ export const MainLayout = () => {
             {/* If user is Student or Parent, show their specialized portal menu */}
             {(user?.userType === 6 || user?.userType === 7) ? (
               [
-                { title: 'Portal Overview', path: '/dashboard', icon: 'pi pi-th-large' },
-                { title: 'Class Timetable', path: '/dashboard', icon: 'pi pi-calendar' },
-                { title: 'Attendance Log', path: '/dashboard', icon: 'pi pi-check-circle' },
-                { title: 'Exams & Marks Cards', path: '/dashboard', icon: 'pi pi-file-edit' },
-                { title: 'Fee Receipts & Dues', path: '/dashboard', icon: 'pi pi-wallet' },
-                { title: 'Notices & Circulars', path: '/dashboard', icon: 'pi pi-bell' },
+                { title: 'Portal Overview', path: '/dashboard?tab=overview', key: 'overview', icon: 'pi pi-th-large' },
+                { title: 'Class Timetable', path: '/dashboard?tab=timetable', key: 'timetable', icon: 'pi pi-calendar' },
+                { title: 'Attendance Log', path: '/dashboard?tab=attendance', key: 'attendance', icon: 'pi pi-check-circle' },
+                { title: 'Exams & Marks Cards', path: '/dashboard?tab=exams', key: 'exams', icon: 'pi pi-file-edit' },
+                { title: 'Fee Receipts & Dues', path: '/dashboard?tab=fees', key: 'fees', icon: 'pi pi-wallet' },
+                { title: 'Notices & Circulars', path: '/dashboard?tab=notices', key: 'notices', icon: 'pi pi-bell' },
               ].map((item, idx) => {
-                const isSelected = location.pathname === item.path && idx === 0;
+                const searchTab = new URLSearchParams(location.search).get('tab') || 'overview';
+                const isSelected = searchTab === item.key;
                 return (
                   <button
                     key={idx}
@@ -528,6 +529,7 @@ export const MainLayout = () => {
                         : 'transparent',
                       color: isSelected ? currentColorHex : (isDarkMode ? '#cbd5e1' : '#334155'),
                       borderLeft: isSelected ? `3px solid ${currentColorHex}` : '3px solid transparent',
+                      fontWeight: isSelected ? 800 : 600,
                     }}
                   >
                     <i className={`${item.icon} text-base`} />
