@@ -109,15 +109,54 @@ export const PhotoCaptureUpload = ({
     }
   };
 
-  // Handle file upload
-  const handleFileInputChange = (e) => {
+  // Helper to compress images client-side before sending to server
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle file upload with automatic compression
+  const handleFileInputChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        onChange(event.target.result);
-      };
-      reader.readAsDataURL(file);
+      if (file.type.startsWith('image/')) {
+        const compressed = await compressImage(file);
+        onChange(compressed);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          onChange(event.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
     }
     // reset input
     if (fileInputRef.current) {

@@ -596,7 +596,7 @@ namespace SchoolERP.API.Controllers
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    try { await transaction.RollbackAsync(); } catch { }
                     return StatusCode(500, ApiResponse<StudentDetailDto>.Fail($"Admission failed: {ex.Message}"));
                 }
             });
