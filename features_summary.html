@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School ERP - Full Features Summary</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --dark: #0f172a;
+      --slate: #475569;
+      --border: #e2e8f0;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --accent: #0ea5e9;
+      --success: #10b981;
+      --purple: #8b5cf6;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--dark);
+      padding: 2.5rem 1.5rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+      color: #ffffff;
+      padding: 2.5rem 2rem;
+      border-radius: 1rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    header p {
+      color: #c7d2fe;
+      font-size: 1.05rem;
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.75rem;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 0.85rem 1.25rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .stat-num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .stat-label {
+      font-size: 0.825rem;
+      color: #e0e7ff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 0.85rem;
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .icon-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 0.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--slate);
+      margin-bottom: 1rem;
+    }
+
+    .features-list {
+      list-style: none;
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .features-list li {
+      font-size: 0.88rem;
+      color: #334155;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .check {
+      color: var(--success);
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.5rem;
+      background: #f1f5f9;
+      color: #475569;
+      border-radius: 0.35rem;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>School ERP System — Features Summary</h1>
+      <p>Modern Full-Stack Enterprise School & Multi-Branch Management Software</p>
+      
+      <div class="stats-bar">
+        <div class="stat-pill">
+          <div class="stat-num">13+ Modules</div>
+          <div class="stat-label">Core Capabilities</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-num">Multi-Tenant</div>
+          <div class="stat-label">SaaS & Single Campus</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-num">Role Based</div>
+          <div class="stat-label">Granular RBAC Security</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-num">Centralized</div>
+          <div class="stat-label">Reports & Analytics Hub</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="modules-grid">
+
+      <!-- 1. Super Admin Ecosystem -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#fef3c7; color:#b45309;">🏛️</div>
+          <div>
+            <div class="card-title">Super Admin Portal (Multi-Tenant SaaS)</div>
+          </div>
+          <span class="tag">Platform</span>
+        </div>
+        <div class="card-desc">SaaS platform level controls jisse multiple schools create aur manage hote hain.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Tenants Wizard:</b> Naye schools ko onboard karna aur database setup karna.</li>
+          <li><span class="check">✔</span> <b>Subscription Plans:</b> Pricing packages, limits aur validity control.</li>
+          <li><span class="check">✔</span> <b>Module Catalog:</b> Har school ke liye feature enable/disable switch.</li>
+          <li><span class="check">✔</span> <b>Payment Gateways:</b> Centralized gateway settings & impersonation login.</li>
+          <li><span class="check">✔</span> <b>Global Audit Logs:</b> Platform level par saari audit activities track karna.</li>
+        </ul>
+      </div>
+
+      <!-- 2. Auth & RBAC -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#fee2e2; color:#b91c1c;">🔐</div>
+          <div>
+            <div class="card-title">Auth & Role-Based Access (RBAC)</div>
+          </div>
+          <span class="tag">Security</span>
+        </div>
+        <div class="card-desc">Users, passwords, aur fine-grained screen-level permission controls.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>JWT Secure Auth:</b> Access & Refresh token rotation workflow.</li>
+          <li><span class="check">✔</span> <b>Custom Roles:</b> View, Add, Edit, Delete, Export, Print rights per menu.</li>
+          <li><span class="check">✔</span> <b>Audit Trail Logs:</b> Har user ke login aur DB modifications ka IP-stamped log.</li>
+          <li><span class="check">✔</span> <b>Password Security:</b> Force password change on first login.</li>
+        </ul>
+      </div>
+
+      <!-- 3. Masters & Configuration -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#e0e7ff; color:#4338ca;">⚙️</div>
+          <div>
+            <div class="card-title">School Masters & Configuration</div>
+          </div>
+          <span class="tag">Core</span>
+        </div>
+        <div class="card-desc">School architecture aur fundamental academic base setup.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Multi-Branch:</b> Schools, branches, addresses, logo & signature configuration.</li>
+          <li><span class="check">✔</span> <b>Academic Sessions:</b> Academic Year transitions aur current year tracking.</li>
+          <li><span class="check">✔</span> <b>Classes & Sections:</b> Standards, sections aur capacity management.</li>
+          <li><span class="check">✔</span> <b>Subjects Mapping:</b> Class-wise compulsory & optional subject link.</li>
+          <li><span class="check">✔</span> <b>Numbering Series:</b> Admission number, Bill/Invoice, TC prefix/suffix auto-numbering.</li>
+        </ul>
+      </div>
+
+      <!-- 4. Students & Admissions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#e0f2fe; color:#0369a1;">🎓</div>
+          <div>
+            <div class="card-title">Students & Admissions</div>
+          </div>
+          <span class="tag">Academics</span>
+        </div>
+        <div class="card-desc">Complete lifecycle: Enquiry se lekar Admission aur Profile management.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Enquiry Management:</b> Leads track karna, follow-ups aur enquiry-to-admission convert.</li>
+          <li><span class="check">✔</span> <b>Admission Form:</b> Multi-step student, parents, address, medical & document upload.</li>
+          <li><span class="check">✔</span> <b>Student Directory & Profile:</b> 360° student details, academic aur fee summary.</li>
+          <li><span class="check">✔</span> <b>Roll Numbers & Section Shuffling:</b> Quick bulk roll generator aur section transfer.</li>
+          <li><span class="check">✔</span> <b>ID Card Studio:</b> Live customizable ID card designer & bulk printing.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Staff & HR -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#f3e8ff; color:#7e22ce;">👨‍🏫</div>
+          <div>
+            <div class="card-title">Staff & Teacher Allocation</div>
+          </div>
+          <span class="tag">HR</span>
+        </div>
+        <div class="card-desc">Teaching and Non-teaching staff ki records aur responsibility mapping.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Staff Directory:</b> Qualification, designation, salary category aur documents.</li>
+          <li><span class="check">✔</span> <b>Staff Profile:</b> Teaching schedule, contact details aur employment timeline.</li>
+          <li><span class="check">✔</span> <b>Teacher Allocation:</b> Class-Teacher assignment aur Subject-to-Class faculty mapping.</li>
+        </ul>
+      </div>
+
+      <!-- 6. Fees Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#dcfce7; color:#15803d;">💰</div>
+          <div>
+            <div class="card-title">Fees & Accounts Management</div>
+          </div>
+          <span class="tag">Finance</span>
+        </div>
+        <div class="card-desc">Fee structure se collection, concession aur multi-installment billing.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Fee Structure & Heads:</b> Tuition, Transport, Lab, Exam fees aur frequency setup.</li>
+          <li><span class="check">✔</span> <b>Student Fee Assignment:</b> Concession, discounts aur scholarship waivers.</li>
+          <li><span class="check">✔</span> <b>POS / Collection Counter:</b> Instant cash/cheque/online receipt generation & printout.</li>
+          <li><span class="check">✔</span> <b>Demand Bills & Notices:</b> Bulk reminder notices aur pending ledger generation.</li>
+          <li><span class="check">✔</span> <b>Fee Reports:</b> Daily collection, head-wise break-up aur class-wise defaulters list.</li>
+        </ul>
+      </div>
+
+      <!-- 7. Attendance & Timetable -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#ffedd5; color:#c2410c;">📅</div>
+          <div>
+            <div class="card-title">Attendance, Leaves & Timetable</div>
+          </div>
+          <span class="tag">Daily Ops</span>
+        </div>
+        <div class="card-desc">Student/Staff daily tracking, leaves workflow aur schedule maker.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Student Attendance:</b> Class-wise quick marked attendance & monthly percentages.</li>
+          <li><span class="check">✔</span> <b>Staff Attendance & Leaves:</b> Daily check-in/out aur leave approvals system.</li>
+          <li><span class="check">✔</span> <b>Holiday Calendar:</b> Academic annual holiday & events scheduler.</li>
+          <li><span class="check">✔</span> <b>Timetable Builder:</b> Class-wise weekly period grids with bell schedules.</li>
+          <li><span class="check">✔</span> <b>Teacher Substitution:</b> Absent teacher ki proxy automatically suggest/assign karna.</li>
+        </ul>
+      </div>
+
+      <!-- 8. Examination & Report Cards -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#fce7f3; color:#be185d;">📝</div>
+          <div>
+            <div class="card-title">Examinations & Marksheets</div>
+          </div>
+          <span class="tag">Assessment</span>
+        </div>
+        <div class="card-desc">Exams conduct karna, online marks feeding aur auto grade report cards.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Exam Scheduling:</b> Terms (Unit Test, Half Yearly, Annual) date-sheet creation.</li>
+          <li><span class="check">✔</span> <b>Marks Entry Portal:</b> Subject teachers dwara class-wise marksheet feeding.</li>
+          <li><span class="check">✔</span> <b>Report Cards:</b> Grading scale, rank, percentage aur printable marks card sheets.</li>
+        </ul>
+      </div>
+
+      <!-- 9. Promotion & TC -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#fef9c3; color:#a16207;">📜</div>
+          <div>
+            <div class="card-title">Promotion & Transfer Certificates</div>
+          </div>
+          <span class="tag">Session End</span>
+        </div>
+        <div class="card-desc">Year-end academic progression aur school leaving formal certificates.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Bulk Promotion:</b> Students ko unke results ke hisab se next class me upgrade karna.</li>
+          <li><span class="check">✔</span> <b>Transfer Certificate (TC):</b> Conduct, reason of leaving ke saath verified TC print.</li>
+        </ul>
+      </div>
+
+      <!-- 10. Transport Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#e0f2fe; color:#0284c7;">🚌</div>
+          <div>
+            <div class="card-title">Transport Fleet & Logistics</div>
+          </div>
+          <span class="tag">Logistics</span>
+        </div>
+        <div class="card-desc">Buses, routes, pickup points, driver allocation aur student tracking.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Vehicles & Drivers:</b> Registration, driver license, vehicle details & fuel track.</li>
+          <li><span class="check">✔</span> <b>Routes & Stops:</b> Pickup/Drop stops, timings aur fare distance slabs.</li>
+          <li><span class="check">✔</span> <b>Transport Allocations:</b> Students & staff ko specific bus aur route allot karna.</li>
+        </ul>
+      </div>
+
+      <!-- 11. Inventory Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#ecfdf5; color:#059669;">📦</div>
+          <div>
+            <div class="card-title">Inventory & Stock Management</div>
+          </div>
+          <span class="tag">Supply Chain</span>
+        </div>
+        <div class="card-desc">Uniforms, books, stationery, labs items aur school assets management.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Items & Categories:</b> Master categories, units (PCS, KG), manufacturer details.</li>
+          <li><span class="check">✔</span> <b>Suppliers & Vendors:</b> Vendor ledger, contact information aur purchasing.</li>
+          <li><span class="check">✔</span> <b>Stock Inward (Purchases):</b> Purchase bills, lot rate aur quantity additions.</li>
+          <li><span class="check">✔</span> <b>Stock Issue:</b> Staff, department ya students ko items issue karna.</li>
+          <li><span class="check">✔</span> <b>Stock Ledger & Realtime Balances:</b> Current balance stock aur reorder alert tracking.</li>
+        </ul>
+      </div>
+
+      <!-- 12. Expense Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#fee2e2; color:#dc2626;">📉</div>
+          <div>
+            <div class="card-title">Expense Management</div>
+          </div>
+          <span class="tag">Finance</span>
+        </div>
+        <div class="card-desc">School day-to-day kharche aur operational vouchers record karna.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Expense Categories:</b> Utilities, maintenance, events, marketing, salaries.</li>
+          <li><span class="check">✔</span> <b>Payment Vouchers:</b> Payee details, receipt bills attachment, payment mode.</li>
+          <li><span class="check">✔</span> <b>Branch-Wise Auditing:</b> Branch-level kharche aur P&L clarity.</li>
+        </ul>
+      </div>
+
+      <!-- 13. Communication & Public Landing -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-badge" style="background:#f1f5f9; color:#334155;">📣</div>
+          <div>
+            <div class="card-title">Communication & Public Website</div>
+          </div>
+          <span class="tag">Engagement</span>
+        </div>
+        <div class="card-desc">Notice board, SMS/Email broadcast aur direct customer conversion page.</div>
+        <ul class="features-list">
+          <li><span class="check">✔</span> <b>Communication Hub:</b> Students, parents aur staff ko announcements bhejna.</li>
+          <li><span class="check">✔</span> <b>Public Landing Page:</b> Modern responsive school homepage with direct admission enquiry form.</li>
+          <li><span class="check">✔</span> <b>Lead Pipeline:</b> Public website se aane wali enquiries seedhe ERP pipeline me sync hona.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <footer>
+      Generated for <b>School ERP System</b> • Complete Architecture & Feature Catalog
+    </footer>
+  </div>
+
+</body>
+</html>

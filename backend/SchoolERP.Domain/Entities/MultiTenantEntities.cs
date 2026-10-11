@@ -96,4 +96,13 @@ namespace SchoolERP.Domain.Entities
         public string? Remarks { get; set; }
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     }
+
+    public class LandingPageSetting
+    {
+        public long Id { get; set; }
+        public string SettingKey { get; set; } = string.Empty;
+        public string? SettingValue { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
 }

@@ -107,6 +107,7 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<TenantGatewayConfig> TenantGatewayConfigs => Set<TenantGatewayConfig>();
         public DbSet<GlobalAuditLog> GlobalAuditLogs => Set<GlobalAuditLog>();
         public DbSet<LandingEnquiry> LandingEnquiries => Set<LandingEnquiry>();
+        public DbSet<LandingPageSetting> LandingPageSettings => Set<LandingPageSetting>();
         public DbSet<Vehicle> Vehicles => Set<Vehicle>();
         public DbSet<TransportRoute> TransportRoutes => Set<TransportRoute>();
         public DbSet<RouteStop> RouteStops => Set<RouteStop>();

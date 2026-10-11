@@ -24,6 +24,7 @@ export const SuperAdminLayout = () => {
     { label: 'Gateways & APIs', path: '/superadmin/gateways', icon: 'pi pi-sliders-h' },
     { label: 'Global Audit Trail', path: '/superadmin/audit-logs', icon: 'pi pi-history' },
     { label: 'SaaS Leads', path: '/superadmin/enquiries', icon: 'pi pi-envelope', badge: 'New' },
+    { label: 'Website CMS', path: '/superadmin/website-cms', icon: 'pi pi-globe', badge: 'Manage' },
   ];
 
   return (

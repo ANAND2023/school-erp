@@ -94,6 +94,7 @@ import { GatewaysPage } from '../features/superadmin/pages/GatewaysPage';
 import { GlobalAuditLogsPage } from '../features/superadmin/pages/GlobalAuditLogsPage';
 import { LandingEnquiriesPage } from '../features/superadmin/pages/LandingEnquiriesPage';
 import { ModuleCatalogPage } from '../features/superadmin/pages/ModuleCatalogPage';
+import { WebsiteCmsPage } from '../features/superadmin/pages/WebsiteCmsPage';
 import { useAuthStore } from '../store/authStore';
 import { usePermission } from '../hooks/usePermission';
 
@@ -658,6 +659,7 @@ export const AppRoutes = () => {
         <Route path="gateways" element={<GatewaysPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
         <Route path="enquiries" element={<LandingEnquiriesPage />} />
+        <Route path="website-cms" element={<WebsiteCmsPage />} />
       </Route>
 
       {/* Catch-all */}
