@@ -38,6 +38,7 @@ namespace SchoolERP.Application.DTOs
         public string? BranchName { get; set; }
         public long AcademicYearId { get; set; }
         public string? AcademicYearName { get; set; }
+        public long? LinkedEntityId { get; set; }
         public bool MustChangePassword { get; set; }
     }
 

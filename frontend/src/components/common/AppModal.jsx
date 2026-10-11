@@ -4,14 +4,13 @@ import { AppButton } from './AppButton';
 
 /**
  * Common AppModal component wrapping PrimeReact Dialog
- * 
- * Supports custom footer, automatic Save/Cancel footer actions,
- * responsive breakpoints, maximizable mode, and backdrop click dismiss.
+ * Styled with gorgeous Crimson/Pink gradient header matching ERP sample!
  */
 export const AppModal = ({
   visible,
   onHide,
   header,
+  icon,
   children,
   footer,
   onSubmit,
@@ -20,11 +19,13 @@ export const AppModal = ({
   submitSeverity = 'primary',
   submitIcon = 'pi pi-check',
   loading = false,
-  width = '550px',
+  width = '600px',
   breakpoints = { '960px': '75vw', '641px': '95vw' },
   maximizable = false,
   closable = true,
   dismissableMask = false,
+  headerGradient,
+  headerColor,
   className = '',
   style,
   ...rest
@@ -51,11 +52,27 @@ export const AppModal = ({
     </div>
   );
 
+  const headerBg = headerColor || headerGradient || 'var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, #1d4ed8 100%))';
+
+  // Custom styled header element
+  const customHeader = header ? (
+    <div className="flex align-items-center gap-2 w-full text-white">
+      {icon && (
+        <span className="text-xl flex align-items-center">
+          {typeof icon === 'string' ? <i className={icon} /> : icon}
+        </span>
+      )}
+      <span className="font-bold text-lg tracking-wide text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+        {header}
+      </span>
+    </div>
+  ) : null;
+
   return (
     <Dialog
       visible={visible}
       onHide={onHide}
-      header={header}
+      header={customHeader || header}
       footer={footer !== undefined ? footer : (onSubmit ? defaultFooter : null)}
       style={{ width, ...style }}
       breakpoints={breakpoints}
@@ -63,7 +80,7 @@ export const AppModal = ({
       closable={closable}
       maximizable={maximizable}
       dismissableMask={dismissableMask}
-      className={`app-modal ${className}`}
+      className={`app-modal app-pink-modal ${className}`}
       {...rest}
     >
       <div className="pt-2">{children}</div>

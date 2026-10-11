@@ -143,6 +143,7 @@ namespace SchoolERP.API.Controllers
                     BranchId = user.BranchId,
                     BranchName = branch?.Name,
                     AcademicYearId = 1,
+                    LinkedEntityId = user.LinkedEntityId,
                     MustChangePassword = user.MustChangePassword
                 },
                 Permissions = permissions

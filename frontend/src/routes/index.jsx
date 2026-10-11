@@ -11,6 +11,7 @@ import { TransportRoutesPage } from '../features/transport/pages/TransportRoutes
 import { TransportAllocationsPage } from '../features/transport/pages/TransportAllocationsPage';
 import { CommunicationPage } from '../features/communication/pages/CommunicationPage';
 import { LandingPage } from '../features/public/pages/LandingPage';
+import { StudentPortalDashboardPage } from '../features/portal/pages/StudentPortalDashboardPage';
 
 // Module 1: Auth & Users
 import { UsersPage } from '../features/auth/pages/UsersPage';
@@ -132,6 +133,7 @@ export const AppRoutes = () => {
       >
         
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="portal" element={<StudentPortalDashboardPage />} />
         <Route path="expense" element={<ProtectedRoute requiredMenu="Expenses"><ExpensePage /></ProtectedRoute>} />
         <Route path="communication" element={<CommunicationPage />} />
             <Route path="transport/vehicles" element={<ProtectedRoute requiredMenu="Vehicles"><TransportVehiclesPage /></ProtectedRoute>} />

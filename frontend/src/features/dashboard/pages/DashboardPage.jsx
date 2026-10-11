@@ -53,12 +53,18 @@ import { useThemeStore } from '../../../store/themeStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { dashboardApi } from '../api';
 import InventoryDashboardPage from '../../inventory/pages/InventoryDashboardPage';
+import StudentPortalDashboardPage from '../../portal/pages/StudentPortalDashboardPage';
 
 export const DashboardPage = () => {
   const { user, activeAcademicYearId, activeAcademicYearName, academicYears } = useAuthStore();
   const { isDarkMode, currentColorHex } = useThemeStore();
   const { hasPermission } = usePermission();
   const navigate = useNavigate();
+
+  // If logged in as Parent (6) or Student (7), render dedicated Student/Parent Portal Dashboard
+  if (user?.userType === 6 || user?.userType === 7) {
+    return <StudentPortalDashboardPage />;
+  }
 
   // Role detection
   const isSuperAdmin = user?.userType === 1;

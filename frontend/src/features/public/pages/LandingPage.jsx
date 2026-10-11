@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, Container, Grid, CardMedia, 
   Paper, AppBar, Toolbar, IconButton, TextField, 
-  Snackbar, Alert, Chip
+  Snackbar, Alert, Chip, Drawer, List, ListItem, ListItemButton, ListItemText, Divider
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -14,6 +14,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../../../api/client';
 
 export const LandingPage = () => {
@@ -23,6 +24,7 @@ export const LandingPage = () => {
   const [openFaq, setOpenFaq] = useState(null);
   const [formData, setFormData] = useState({ name: '', school: '', phone: '', email: '', message: '' });
   const [toastOpen, setToastOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Dynamic CMS Settings state
   const [cms, setCms] = useState({
@@ -235,20 +237,23 @@ export const LandingPage = () => {
     <Box sx={{ minHeight: '100vh', bgcolor: '#fdfefe', color: '#12233f', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
       
       {/* Top Banner Ribbon */}
-      <Box sx={{ bgcolor: '#071834', color: '#ffffff', py: 1, px: 2, fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <Container maxWidth="xl" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ bgcolor: '#071834', color: '#ffffff', py: 0.8, px: 2, fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <Container maxWidth="xl" sx={{ display: 'flex', justifyContent: { xs: 'center', md: 'space-between' }, alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          {/* Desktop trust badges - hidden on mobile */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: goldColor, fontWeight: 700 }}>
               <VerifiedIcon sx={{ fontSize: 16 }} /> ISO 27001 Certified & Bank-Grade Cloud Security
             </span>
             <span style={{ color: '#94a3b8' }}>•</span>
             <span style={{ color: '#cbd5e1' }}>Trusted by 550+ Schools & Colleges Across India</span>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <a href={`tel:${cms.contactInfo?.phone?.split(',')[0] || '9873993957'}`} style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
-              <PhoneInTalkIcon sx={{ fontSize: 15, color: goldColor }} /> {cms.contactInfo?.phone?.split(',')[0] || '9873993957'}
+
+          {/* Contact / Phone: On mobile, only show phone number cleanly */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2.5, width: { xs: '100%', md: 'auto' } }}>
+            <a href={`tel:${cms.contactInfo?.phone?.split(',')[0] || '9873993957'}`} style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontWeight: 700, fontSize: '0.85rem' }}>
+              <PhoneInTalkIcon sx={{ fontSize: 16, color: goldColor }} /> {cms.contactInfo?.phone?.split(',')[0] || '9873993957'}
             </a>
-            <a href="#contact" style={{ color: goldColor, fontWeight: 700, textDecoration: 'none' }}>
+            <a href="#contact" style={{ display: { xs: 'none', sm: 'inline' }, color: goldColor, fontWeight: 700, textDecoration: 'none' }}>
               Get Instant Quote &rarr;
             </a>
           </Box>
@@ -258,29 +263,31 @@ export const LandingPage = () => {
       {/* Main Sticky Navbar */}
       <AppBar position="sticky" sx={{ bgcolor: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(12px)', color: '#12233f', boxShadow: '0 4px 20px rgba(10,56,124,0.06)' }}>
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ display: 'flex', justifyContent: 'space-between', py: 1.2 }}>
+          <Toolbar disableGutters sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 0.8, md: 1.2 } }}>
             
-            {/* Brand Logo */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => window.scrollTo(0,0)}>
+            {/* Brand Logo (Left Side) */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, cursor: 'pointer' }} onClick={() => window.scrollTo(0,0)}>
               <Box sx={{ 
-                width: 44, height: 44, borderRadius: 2.5, 
+                width: { xs: 38, sm: 44 }, 
+                height: { xs: 38, sm: 44 }, 
+                borderRadius: 2, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, #071834 100%)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff',
                 boxShadow: `0 8px 18px -4px ${primaryColor}60`
               }}>
-                <i className="pi pi-graduation-cap" style={{ fontSize: '1.5rem', color: goldColor }}></i>
+                <i className="pi pi-graduation-cap" style={{ fontSize: '1.35rem', color: goldColor }}></i>
               </Box>
               <Box>
-                <Typography variant="h6" fontWeight="900" sx={{ color: '#0a387c', lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: '1.25rem' }}>
+                <Typography variant="h6" fontWeight="900" sx={{ color: '#0a387c', lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                   DVS <span style={{ color: '#12233f' }}>School ERP</span>
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.68rem', display: 'block' }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: { xs: '0.62rem', sm: '0.68rem' }, display: 'block' }}>
                   Enterprise School Management
                 </Typography>
               </Box>
             </Box>
 
-            {/* Navigation Links */}
+            {/* Desktop Navigation Links */}
             <Box sx={{ display: { xs: 'none', lg: 'flex' }, gap: 3.5, alignItems: 'center' }}>
               <a href="#" style={{ textDecoration: 'none', color: '#12233f', fontWeight: 700, fontSize: '0.92rem' }}>Home</a>
               <a href="#slider-preview" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>Product Tour</a>
@@ -290,8 +297,8 @@ export const LandingPage = () => {
               <a href="#contact" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>Contact</a>
             </Box>
 
-            {/* Header Action Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Desktop Action Buttons */}
+            <Box sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', gap: 2 }}>
               <Button 
                 variant="outlined" 
                 sx={{ 
@@ -326,14 +333,137 @@ export const LandingPage = () => {
               >
                 Book Free Demo &rarr;
               </Button>
-              <IconButton sx={{ display: { xs: 'flex', lg: 'none' } }}>
-                <MenuIcon />
-              </IconButton>
             </Box>
+
+            {/* Mobile Hamburger Menu Icon (Right Side) */}
+            <IconButton 
+              sx={{ 
+                display: { xs: 'flex', lg: 'none' },
+                color: '#0a387c',
+                bgcolor: '#f1f5f9',
+                p: 1,
+                borderRadius: 2,
+                '&:hover': { bgcolor: '#e2e8f0' }
+              }}
+              onClick={() => setMobileDrawerOpen(true)}
+              aria-label="open mobile menu"
+            >
+              <MenuIcon sx={{ fontSize: 28 }} />
+            </IconButton>
 
           </Toolbar>
         </Container>
       </AppBar>
+
+      {/* Mobile Slide-out Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        PaperProps={{
+          sx: { width: '82%', maxWidth: 340, bgcolor: '#ffffff', p: 2.5 }
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ 
+              width: 32, height: 32, borderRadius: 1.5, 
+              background: `linear-gradient(135deg, ${primaryColor} 0%, #071834 100%)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff'
+            }}>
+              <i className="pi pi-graduation-cap" style={{ fontSize: '1.1rem', color: goldColor }}></i>
+            </Box>
+            <Typography variant="subtitle1" fontWeight={800} color="#0a387c">
+              DVS ERP Menu
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setMobileDrawerOpen(false)} size="small" sx={{ bgcolor: '#f1f5f9' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {/* Navigation list */}
+        <List sx={{ p: 0, mb: 3 }}>
+          {[
+            { label: 'Home', href: '#' },
+            { label: 'Product Tour', href: '#slider-preview' },
+            { label: '65+ ERP Modules', href: '#modules-suite' },
+            { label: 'Why DVS ERP', href: '#why-us' },
+            { label: 'Frequently Asked Questions', href: '#faq' },
+            { label: 'Contact Us', href: '#contact' },
+          ].map((item, idx) => (
+            <ListItem key={idx} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton 
+                component="a" 
+                href={item.href} 
+                onClick={() => setMobileDrawerOpen(false)}
+                sx={{ borderRadius: 1.5, py: 1 }}
+              >
+                <ListItemText 
+                  primary={item.label} 
+                  primaryTypographyProps={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }} 
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        <Divider sx={{ mb: 3 }} />
+
+        {/* Action Buttons in Drawer */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button 
+            variant="contained" 
+            href="#contact"
+            onClick={() => setMobileDrawerOpen(false)}
+            fullWidth
+            sx={{ 
+              borderRadius: 99, 
+              py: 1.2, 
+              fontWeight: 800, 
+              fontSize: '0.92rem',
+              textTransform: 'none',
+              background: 'linear-gradient(120deg, #ffb000 30%, #ffd47e 48%, #ffb000 62%)',
+              color: '#12233f',
+              boxShadow: '0 8px 20px -6px rgba(255, 176, 0, 0.65)'
+            }}
+          >
+            Book Free Demo &rarr;
+          </Button>
+
+          <Button 
+            variant="outlined" 
+            fullWidth
+            sx={{ 
+              borderRadius: 99, 
+              py: 1.1, 
+              fontWeight: 800, 
+              fontSize: '0.92rem',
+              borderColor: '#0a387c', 
+              color: '#0a387c',
+              textTransform: 'none'
+            }} 
+            onClick={() => {
+              setMobileDrawerOpen(false);
+              navigate('/login');
+            }}
+          >
+            Portal Login
+          </Button>
+
+          <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
+              Direct Helpline
+            </Typography>
+            <a href={`tel:${cms.contactInfo?.phone?.split(',')[0] || '9873993957'}`} style={{ color: '#0a387c', fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <PhoneInTalkIcon sx={{ fontSize: 16, color: '#ffb000' }} />
+              {cms.contactInfo?.phone?.split(',')[0] || '9873993957'}
+            </a>
+          </Box>
+        </Box>
+      </Drawer>
 
       {/* Hero Section (Edumarshal Split Layout) */}
       <Box sx={{ 

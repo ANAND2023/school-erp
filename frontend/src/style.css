@@ -825,3 +825,137 @@ input[type="number"] {
     display: table-header-group;
   }
 }
+
+/* ==========================================================================
+/* ==========================================================================
+   Universal Dynamic Modal / Dialog Styling
+   Automatically inherits Active Theme Color & Gradient (via CSS Variables)
+   ========================================================================== */
+.p-dialog.app-pink-modal,
+.p-dialog {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(59, 130, 246, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Header with Dynamic Theme Gradient */
+.p-dialog .p-dialog-header {
+  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, var(--app-theme-darker, #1d4ed8) 100%)) !important;
+  color: #ffffff !important;
+  padding: 0.85rem 1.25rem !important;
+  border-top-left-radius: 11px !important;
+  border-top-right-radius: 11px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.p-dialog .p-dialog-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  letter-spacing: 0.2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Header Close Button */
+.p-dialog .p-dialog-header-icons .p-dialog-header-icon {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-dialog .p-dialog-header-icons .p-dialog-header-icon:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: rotate(90deg) !important;
+}
+
+/* Content Area */
+.p-dialog .p-dialog-content {
+  padding: 1.25rem 1.5rem !important;
+  background-color: #ffffff !important;
+}
+
+/* Footer Area */
+.p-dialog .p-dialog-footer {
+  padding: 0.85rem 1.25rem !important;
+  border-top: 1px solid #f1f5f9 !important;
+  background-color: #f8fafc !important;
+  border-bottom-left-radius: 11px !important;
+  border-bottom-right-radius: 11px !important;
+}
+
+/* Dark Mode Overrides */
+html.app-dark-mode .p-dialog .p-dialog-content {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.app-dark-mode .p-dialog .p-dialog-footer {
+  background-color: #1e293b !important;
+  border-top-color: #334155 !important;
+}
+
+/* ==========================================================================
+   MUI Dialog Global Overrides for Dynamic Theme Header
+   Applies across ALL pages using standard MUI Dialog / DialogTitle
+   ========================================================================== */
+.MuiDialog-paper {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(59, 130, 246, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.MuiDialog-paper .MuiDialogTitle-root {
+  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, var(--app-theme-darker, #1d4ed8) 100%)) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  padding: 0.85rem 1.25rem !important;
+  letter-spacing: 0.2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.MuiDialog-paper .MuiDialogTitle-root .MuiTypography-root {
+  color: #ffffff !important;
+}
+
+.MuiDialog-paper .MuiDialogTitle-root .MuiIconButton-root {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  width: 28px !important;
+  height: 28px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiDialog-paper .MuiDialogTitle-root .MuiIconButton-root:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  transform: rotate(90deg) !important;
+}
+
+.MuiDialog-paper .MuiDialogActions-root {
+  background-color: #f8fafc !important;
+  border-top: 1px solid #f1f5f9 !important;
+  padding: 0.85rem 1.25rem !important;
+}
+
+html.app-dark-mode .MuiDialog-paper {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.app-dark-mode .MuiDialog-paper .MuiDialogContent-root {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.app-dark-mode .MuiDialog-paper .MuiDialogActions-root {
+  background-color: #1e293b !important;
+  border-top-color: #334155 !important;
+}

@@ -80,6 +80,8 @@ import { examApi } from '../api';
 import api from '../../../api/client';
 import { printWithTitle } from '../../../utils/printUtils';
 import { usePermission } from '../../../hooks/usePermission';
+import { AppDatePicker } from '../../../components/common';
+import { Modal } from '../../../components/Modal';
 
 export const ExamSchedulesPage = () => {
   const { hasPermission, can } = usePermission();
@@ -2609,195 +2611,200 @@ export const ExamSchedulesPage = () => {
       </Dialog>
 
       {/* ===================== MODAL: CREATE / EDIT EXAM (TERM WISE) ===================== */}
-      <Dialog
+      <Modal
         open={examModal}
         onClose={() => setExamModal(false)}
+        title={editingExam ? 'Edit Examination Master' : 'Create Examination Master'}
         maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 2, p: 1 } }}
+        actions={
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, width: '100%' }}>
+            <Button onClick={() => setExamModal(false)} sx={{ fontWeight: 700, color: '#475569' }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSaveExam}
+              sx={{ 
+                background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, #1d4ed8 100%))', 
+                '&:hover': { opacity: 0.95 }, 
+                fontWeight: 700, 
+                px: 3,
+                boxShadow: 'var(--app-modal-shadow, 0 4px 14px rgba(59, 130, 246, 0.35))'
+              }}
+            >
+              {editingExam ? 'Update Exam' : 'Save Exam'}
+            </Button>
+          </Box>
+        }
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f2b48', fontSize: '1.25rem', pb: 1 }}>
-          {editingExam ? 'Edit Examination Master' : 'Create Examination Master'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            {/* Exam Name (Dropdown + Custom Input) */}
-            <Grid item xs={12} sm={7}>
-              <Autocomplete
-                freeSolo
-                options={examTitleDropdownOptions}
-                value={examForm.name}
-                onInputChange={(event, newInputValue) => {
-                  setExamForm((prev) => ({ ...prev, name: newInputValue || '' }));
-                }}
-                onChange={(event, newValue) => {
-                  if (typeof newValue === 'string') {
-                    setExamForm((prev) => ({ ...prev, name: newValue }));
-                  }
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    size="small"
-                    label="Exam Name *"
-                    placeholder="e.g. Periodic Test - 1, Half Yearly Examination"
-                  />
-                )}
-              />
-            </Grid>
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          {/* Exam Name (Dropdown + Custom Input) */}
+          <Grid item xs={12} sm={7}>
+            <Autocomplete
+              freeSolo
+              options={examTitleDropdownOptions}
+              value={examForm.name}
+              onInputChange={(event, newInputValue) => {
+                setExamForm((prev) => ({ ...prev, name: newInputValue || '' }));
+              }}
+              onChange={(event, newValue) => {
+                if (typeof newValue === 'string') {
+                  setExamForm((prev) => ({ ...prev, name: newValue }));
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  label="Exam Name *"
+                  placeholder="e.g. Periodic Test - 1, Half Yearly Examination"
+                />
+              )}
+            />
+          </Grid>
 
-            {/* Academic Term (TERMS) */}
-            <Grid item xs={12} sm={5}>
+          {/* Academic Term (TERMS) */}
+          <Grid item xs={12} sm={5}>
+            <FormControl fullWidth size="small">
+              <InputLabel>TERMS *</InputLabel>
+              <Select
+                value={examForm.termId}
+                label="TERMS *"
+                onChange={(e) => setExamForm({ ...examForm, termId: e.target.value })}
+              >
+                {terms.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name} ({t.termCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Start Date */}
+          <Grid item xs={12} sm={4}>
+            <AppDatePicker
+              label="Start Date"
+              value={examForm.startDate}
+              onChange={(e) => {
+                const val = e.value instanceof Date 
+                  ? `${e.value.getFullYear()}-${String(e.value.getMonth() + 1).padStart(2, '0')}-${String(e.value.getDate()).padStart(2, '0')}`
+                  : (e.value || '');
+                setExamForm({ ...examForm, startDate: val });
+              }}
+            />
+          </Grid>
+
+          {/* End Date */}
+          <Grid item xs={12} sm={4}>
+            <AppDatePicker
+              label="End Date"
+              value={examForm.endDate}
+              onChange={(e) => {
+                const val = e.value instanceof Date 
+                  ? `${e.value.getFullYear()}-${String(e.value.getMonth() + 1).padStart(2, '0')}-${String(e.value.getDate()).padStart(2, '0')}`
+                  : (e.value || '');
+                setExamForm({ ...examForm, endDate: val });
+              }}
+            />
+          </Grid>
+
+          {/* Result Publish Date */}
+          <Grid item xs={12} sm={4}>
+            <AppDatePicker
+              label="Result Publish Date"
+              value={examForm.resultPublishDate}
+              onChange={(e) => {
+                const val = e.value instanceof Date 
+                  ? `${e.value.getFullYear()}-${String(e.value.getMonth() + 1).padStart(2, '0')}-${String(e.value.getDate()).padStart(2, '0')}`
+                  : (e.value || '');
+                setExamForm({ ...examForm, resultPublishDate: val });
+              }}
+            />
+          </Grid>
+
+          {/* Target Classes Mapping */}
+          {editingExam ? (
+            <Grid item xs={12}>
               <FormControl fullWidth size="small">
-                <InputLabel>TERMS *</InputLabel>
+                <InputLabel>Target Class</InputLabel>
                 <Select
-                  value={examForm.termId}
-                  label="TERMS *"
-                  onChange={(e) => setExamForm({ ...examForm, termId: e.target.value })}
+                  value={examForm.classId}
+                  label="Target Class"
+                  onChange={(e) => setExamForm({ ...examForm, classId: e.target.value })}
                 >
-                  {terms.map((t) => (
-                    <MenuItem key={t.id} value={t.id}>
-                      {t.name} ({t.termCode})
+                  {classes.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-
-            {/* Start Date */}
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
-                label="Start Date"
-                InputLabelProps={{ shrink: true }}
-                value={examForm.startDate}
-                onChange={(e) => setExamForm({ ...examForm, startDate: e.target.value })}
-              />
-            </Grid>
-
-            {/* End Date */}
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
-                label="End Date"
-                InputLabelProps={{ shrink: true }}
-                value={examForm.endDate}
-                onChange={(e) => setExamForm({ ...examForm, endDate: e.target.value })}
-              />
-            </Grid>
-
-            {/* Result Publish Date */}
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
-                label="Result Publish Date"
-                InputLabelProps={{ shrink: true }}
-                value={examForm.resultPublishDate}
-                onChange={(e) => setExamForm({ ...examForm, resultPublishDate: e.target.value })}
-              />
-            </Grid>
-
-            {/* Target Classes Mapping */}
-            {editingExam ? (
-              <Grid item xs={12}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Target Class</InputLabel>
-                  <Select
-                    value={examForm.classId}
-                    label="Target Class"
-                    onChange={(e) => setExamForm({ ...examForm, classId: e.target.value })}
-                  >
-                    {classes.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            ) : (
-              <Grid item xs={12}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Map to Classes</InputLabel>
-                  <Select
-                    multiple
-                    value={examForm.classIds}
-                    onChange={(e) => {
-                      const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
-                      setExamForm({ ...examForm, classIds: val });
-                    }}
-                    input={<OutlinedInput label="Map to Classes" />}
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((val) => {
-                          const cObj = classes.find((c) => c.id === val);
-                          return <Chip key={val} label={cObj?.name || val} size="small" />;
-                        })}
-                      </Box>
-                    )}
-                  >
-                    {classes.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        <Checkbox checked={examForm.classIds.indexOf(c.id) > -1} />
-                        <ListItemText primary={c.name} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box sx={{ mt: 0.5, display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    onClick={() => setExamForm({ ...examForm, classIds: classes.map((c) => c.id) })}
-                    sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0 }}
-                  >
-                    Select All Classes ({classes.length})
-                  </Button>
-                  <Typography variant="caption" sx={{ color: 'text.disabled' }}>|</Typography>
-                  <Button
-                    size="small"
-                    onClick={() => setExamForm({ ...examForm, classIds: [] })}
-                    sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary', p: 0 }}
-                  >
-                    Clear Selection
-                  </Button>
-                </Box>
-              </Grid>
-            )}
-
-            {/* Description / Instructions */}
+          ) : (
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Description & Instructions"
-                multiline
-                rows={2}
-                placeholder="e.g. Conducted as per CBSE Term evaluation guidelines"
-                value={examForm.description}
-                onChange={(e) => setExamForm({ ...examForm, description: e.target.value })}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Map to Classes</InputLabel>
+                <Select
+                  multiple
+                  value={examForm.classIds}
+                  onChange={(e) => {
+                    const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
+                    setExamForm({ ...examForm, classIds: val });
+                  }}
+                  input={<OutlinedInput label="Map to Classes" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((val) => {
+                        const cObj = classes.find((c) => c.id === val);
+                        return <Chip key={val} label={cObj?.name || val} size="small" />;
+                      })}
+                    </Box>
+                  )}
+                >
+                  {classes.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      <Checkbox checked={examForm.classIds.indexOf(c.id) > -1} />
+                      <ListItemText primary={c.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Box sx={{ mt: 0.5, display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={() => setExamForm({ ...examForm, classIds: classes.map((c) => c.id) })}
+                  sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0 }}
+                >
+                  Select All Classes ({classes.length})
+                </Button>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>|</Typography>
+                <Button
+                  size="small"
+                  onClick={() => setExamForm({ ...examForm, classIds: [] })}
+                  sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary', p: 0 }}
+                >
+                  Clear Selection
+                </Button>
+              </Box>
             </Grid>
+          )}
+
+          {/* Description / Instructions */}
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Description & Instructions"
+              multiline
+              rows={2}
+              placeholder="e.g. Conducted as per CBSE Term evaluation guidelines"
+              value={examForm.description}
+              onChange={(e) => setExamForm({ ...examForm, description: e.target.value })}
+            />
           </Grid>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
-          <Button onClick={() => setExamModal(false)} sx={{ fontWeight: 700 }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveExam}
-            sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700, px: 3 }}
-          >
-            {editingExam ? 'Update Exam' : 'Save Exam'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Grid>
+      </Modal>
     </Box>
   );
 };

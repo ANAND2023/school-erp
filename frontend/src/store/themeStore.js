@@ -31,7 +31,42 @@ export function applyFontSize(size) {
   }
 }
 
-export function applyThemeLink(themeId) {
+// Helper to adjust color brightness/darkness for subtle gradient
+function shadeColor(color, percent) {
+  let num = parseInt(color.replace('#', ''), 16);
+  let amt = Math.round(2.55 * percent);
+  let R = (num >> 16) + amt;
+  let G = (num >> 8 & 0x00FF) + amt;
+  let B = (num & 0x0000FF) + amt;
+  return '#' + (
+    0x1000000 +
+    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+    (B < 255 ? (B < 1 ? 0 : B) : 255)
+  ).toString(16).slice(1);
+}
+
+export function updateThemeCssVariables(colorHex) {
+  if (typeof document === 'undefined') return;
+  const hex = colorHex || '#3B82F6';
+  const darker = shadeColor(hex, -20);
+  const muchDarker = shadeColor(hex, -35);
+  const lighter = shadeColor(hex, 15);
+
+  document.documentElement.style.setProperty('--app-theme-primary', hex);
+  document.documentElement.style.setProperty('--app-theme-darker', darker);
+  document.documentElement.style.setProperty('--app-theme-lighter', lighter);
+  document.documentElement.style.setProperty(
+    '--app-modal-header-bg',
+    `linear-gradient(135deg, ${hex} 0%, ${darker} 60%, ${muchDarker} 100%)`
+  );
+  document.documentElement.style.setProperty(
+    '--app-modal-shadow',
+    `0 25px 50px -12px ${hex}40, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`
+  );
+}
+
+export function applyThemeLink(themeId, colorHex) {
   if (typeof document === 'undefined') return;
 
   const isDark = themeId.includes('dark');
@@ -49,6 +84,11 @@ export function applyThemeLink(themeId) {
     link.rel = 'stylesheet';
     link.href = themeUrl;
     document.head.appendChild(link);
+  }
+
+  // Set dynamic CSS variables for modals and theme headers
+  if (colorHex) {
+    updateThemeCssVariables(colorHex);
   }
 
   // Update root HTML and body classes & color scheme
@@ -85,7 +125,7 @@ const selectedPalette = THEME_PALETTES.find((p) => p.name === initialColorName) 
 const initialThemeId = initialDarkMode ? selectedPalette.darkId : selectedPalette.lightId;
 
 // Apply immediately on module load
-applyThemeLink(initialThemeId);
+applyThemeLink(initialThemeId, selectedPalette.color);
 applyFontSize(initialFontSize);
 
 export const useThemeStore = create((set, get) => ({
@@ -130,7 +170,7 @@ export const useThemeStore = create((set, get) => ({
 
     localStorage.setItem(STORAGE_COLOR_KEY, palette.name);
     localStorage.setItem(STORAGE_THEME_KEY, nextThemeId);
-    applyThemeLink(nextThemeId);
+    applyThemeLink(nextThemeId, palette.color);
 
     set({
       currentTheme: nextThemeId,
@@ -148,7 +188,7 @@ export const useThemeStore = create((set, get) => ({
 
     localStorage.setItem(STORAGE_DARK_KEY, String(nextDarkMode));
     localStorage.setItem(STORAGE_THEME_KEY, nextThemeId);
-    applyThemeLink(nextThemeId);
+    applyThemeLink(nextThemeId, palette.color);
 
     set({
       isDarkMode: nextDarkMode,
@@ -169,7 +209,7 @@ export const useThemeStore = create((set, get) => ({
     localStorage.setItem(STORAGE_THEME_KEY, themeId);
     localStorage.setItem(STORAGE_DARK_KEY, String(isDark));
     localStorage.setItem(STORAGE_COLOR_KEY, matchedPalette.name);
-    applyThemeLink(themeId);
+    applyThemeLink(themeId, matchedPalette.color);
 
     set({
       currentTheme: themeId,

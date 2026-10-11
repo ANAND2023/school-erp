@@ -505,7 +505,38 @@ export const MainLayout = () => {
           }}
         >
           <nav className="p-2 flex flex-column gap-1">
-            {navItems.map((item) => {
+            {/* If user is Student or Parent, show their specialized portal menu */}
+            {(user?.userType === 6 || user?.userType === 7) ? (
+              [
+                { title: 'Portal Overview', path: '/dashboard', icon: 'pi pi-th-large' },
+                { title: 'Class Timetable', path: '/dashboard', icon: 'pi pi-calendar' },
+                { title: 'Attendance Log', path: '/dashboard', icon: 'pi pi-check-circle' },
+                { title: 'Exams & Marks Cards', path: '/dashboard', icon: 'pi pi-file-edit' },
+                { title: 'Fee Receipts & Dues', path: '/dashboard', icon: 'pi pi-wallet' },
+                { title: 'Notices & Circulars', path: '/dashboard', icon: 'pi pi-bell' },
+              ].map((item, idx) => {
+                const isSelected = location.pathname === item.path && idx === 0;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex align-items-center gap-3 p-2 border-round text-left cursor-pointer border-none transition-all"
+                    style={{
+                      backgroundColor: isSelected
+                        ? (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : `${currentColorHex}18`)
+                        : 'transparent',
+                      color: isSelected ? currentColorHex : (isDarkMode ? '#cbd5e1' : '#334155'),
+                      borderLeft: isSelected ? `3px solid ${currentColorHex}` : '3px solid transparent',
+                    }}
+                  >
+                    <i className={`${item.icon} text-base`} />
+                    <span className="text-sm font-semibold">{item.title}</span>
+                  </button>
+                );
+              })
+            ) : (
+              navItems.map((item) => {
               if (item.children) {
                 const allowedChildren = item.children.filter(
                   (child) => isSuperAdmin || hasPermission(child.menuKey, 'View')
@@ -581,7 +612,7 @@ export const MainLayout = () => {
                   <span className="text-sm font-semibold">{item.title}</span>
                 </button>
               );
-            })}
+            }))}
           </nav>
         </aside>
 
