@@ -57,6 +57,8 @@ export const StudentPortalDashboardPage = () => {
 
   const [wards, setWards] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [portalData, setPortalData] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const initialTab = tabParam ? (
