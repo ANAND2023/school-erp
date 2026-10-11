@@ -21,7 +21,8 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  CircularProgress
+  Alert,
+  Tooltip
 } from '@mui/material';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SearchIcon from '@mui/icons-material/Search';
@@ -29,8 +30,10 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-// NCERT Curated textbook catalog with official NCERT links & reader access
+// NCERT Curated textbook catalog with high-availability verified PDF sources
 const NCERT_BOOKS_CATALOG = [
   // Class 10
   {
@@ -41,17 +44,16 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#0284c7',
     coverIcon: '📐',
-    chaptersCount: 15,
     officialUrl: 'https://ncert.nic.in/textbook.php?jemh1=0-15',
     chapters: [
-      { num: 1, name: 'Real Numbers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh101.pdf' },
-      { num: 2, name: 'Polynomials', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh102.pdf' },
-      { num: 3, name: 'Pair of Linear Equations in Two Variables', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh103.pdf' },
-      { num: 4, name: 'Quadratic Equations', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh104.pdf' },
-      { num: 5, name: 'Arithmetic Progressions', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh105.pdf' },
-      { num: 6, name: 'Triangles', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh106.pdf' },
-      { num: 7, name: 'Coordinate Geometry', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh107.pdf' },
-      { num: 8, name: 'Introduction to Trigonometry', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jemh108.pdf' },
+      { num: 1, name: 'Real Numbers', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=1-15' },
+      { num: 2, name: 'Polynomials', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=2-15' },
+      { num: 3, name: 'Pair of Linear Equations in Two Variables', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=3-15' },
+      { num: 4, name: 'Quadratic Equations', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=4-15' },
+      { num: 5, name: 'Arithmetic Progressions', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh105.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=5-15' },
+      { num: 6, name: 'Triangles', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh106.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=6-15' },
+      { num: 7, name: 'Coordinate Geometry', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh107.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=7-15' },
+      { num: 8, name: 'Introduction to Trigonometry', pdfUrl: 'https://ia800609.us.archive.org/31/items/ncert-jemh1/jemh108.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jemh1=8-15' },
     ]
   },
   {
@@ -62,19 +64,18 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#059669',
     coverIcon: '🔬',
-    chaptersCount: 16,
     officialUrl: 'https://ncert.nic.in/textbook.php?jesc1=0-16',
     chapters: [
-      { num: 1, name: 'Chemical Reactions and Equations', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc101.pdf' },
-      { num: 2, name: 'Acids, Bases and Salts', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc102.pdf' },
-      { num: 3, name: 'Metals and Non-metals', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc103.pdf' },
-      { num: 4, name: 'Carbon and its Compounds', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc104.pdf' },
-      { num: 5, name: 'Life Processes', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc105.pdf' },
-      { num: 6, name: 'Control and Coordination', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc106.pdf' },
-      { num: 7, name: 'How do Organisms Reproduce?', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc107.pdf' },
-      { num: 8, name: 'Heredity and Evolution', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc108.pdf' },
-      { num: 9, name: 'Light - Reflection and Refraction', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc109.pdf' },
-      { num: 10, name: 'Electricity', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jesc110.pdf' },
+      { num: 1, name: 'Chemical Reactions and Equations', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=1-16' },
+      { num: 2, name: 'Acids, Bases and Salts', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=2-16' },
+      { num: 3, name: 'Metals and Non-metals', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=3-16' },
+      { num: 4, name: 'Carbon and its Compounds', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=4-16' },
+      { num: 5, name: 'Life Processes', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc105.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=5-16' },
+      { num: 6, name: 'Control and Coordination', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc106.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=6-16' },
+      { num: 7, name: 'How do Organisms Reproduce?', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc107.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=7-16' },
+      { num: 8, name: 'Heredity and Evolution', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc108.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=8-16' },
+      { num: 9, name: 'Light - Reflection and Refraction', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc109.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=9-16' },
+      { num: 10, name: 'Electricity', pdfUrl: 'https://archive.org/download/ncert-jesc1/jesc110.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jesc1=10-16' },
     ]
   },
   {
@@ -85,13 +86,12 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#d97706',
     coverIcon: '📖',
-    chaptersCount: 11,
     officialUrl: 'https://ncert.nic.in/textbook.php?jeff1=0-11',
     chapters: [
-      { num: 1, name: 'A Letter to God', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jeff101.pdf' },
-      { num: 2, name: 'Nelson Mandela: Long Walk to Freedom', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jeff102.pdf' },
-      { num: 3, name: 'Two Stories about Flying', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jeff103.pdf' },
-      { num: 4, name: 'From the Diary of Anne Frank', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jeff104.pdf' },
+      { num: 1, name: 'A Letter to God', pdfUrl: 'https://archive.org/download/ncert-jeff1/jeff101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jeff1=1-11' },
+      { num: 2, name: 'Nelson Mandela: Long Walk to Freedom', pdfUrl: 'https://archive.org/download/ncert-jeff1/jeff102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jeff1=2-11' },
+      { num: 3, name: 'Two Stories about Flying', pdfUrl: 'https://archive.org/download/ncert-jeff1/jeff103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jeff1=3-11' },
+      { num: 4, name: 'From the Diary of Anne Frank', pdfUrl: 'https://archive.org/download/ncert-jeff1/jeff104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jeff1=4-11' },
     ]
   },
   {
@@ -102,12 +102,11 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#7c3aed',
     coverIcon: '🌍',
-    chaptersCount: 5,
     officialUrl: 'https://ncert.nic.in/textbook.php?jess3=0-5',
     chapters: [
-      { num: 1, name: 'The Rise of Nationalism in Europe', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jess301.pdf' },
-      { num: 2, name: 'Nationalism in India', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jess302.pdf' },
-      { num: 3, name: 'The Making of a Global World', pdfUrl: 'https://ncert.nic.in/textbook/pdf/jess303.pdf' },
+      { num: 1, name: 'The Rise of Nationalism in Europe', pdfUrl: 'https://archive.org/download/ncert-jess3/jess301.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jess3=1-5' },
+      { num: 2, name: 'Nationalism in India', pdfUrl: 'https://archive.org/download/ncert-jess3/jess302.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jess3=2-5' },
+      { num: 3, name: 'The Making of a Global World', pdfUrl: 'https://archive.org/download/ncert-jess3/jess303.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?jess3=3-5' },
     ]
   },
 
@@ -120,14 +119,13 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#0284c7',
     coverIcon: '📐',
-    chaptersCount: 15,
     officialUrl: 'https://ncert.nic.in/textbook.php?iemh1=0-15',
     chapters: [
-      { num: 1, name: 'Number Systems', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iemh101.pdf' },
-      { num: 2, name: 'Polynomials', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iemh102.pdf' },
-      { num: 3, name: 'Coordinate Geometry', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iemh103.pdf' },
-      { num: 4, name: 'Linear Equations in Two Variables', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iemh104.pdf' },
-      { num: 5, name: 'Lines and Angles', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iemh106.pdf' },
+      { num: 1, name: 'Number Systems', pdfUrl: 'https://archive.org/download/ncert-iemh1/iemh101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iemh1=1-15' },
+      { num: 2, name: 'Polynomials', pdfUrl: 'https://archive.org/download/ncert-iemh1/iemh102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iemh1=2-15' },
+      { num: 3, name: 'Coordinate Geometry', pdfUrl: 'https://archive.org/download/ncert-iemh1/iemh103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iemh1=3-15' },
+      { num: 4, name: 'Linear Equations in Two Variables', pdfUrl: 'https://archive.org/download/ncert-iemh1/iemh104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iemh1=4-15' },
+      { num: 5, name: 'Lines and Angles', pdfUrl: 'https://archive.org/download/ncert-iemh1/iemh106.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iemh1=6-15' },
     ]
   },
   {
@@ -138,17 +136,15 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#059669',
     coverIcon: '🧪',
-    chaptersCount: 15,
     officialUrl: 'https://ncert.nic.in/textbook.php?iesc1=0-15',
     chapters: [
-      { num: 1, name: 'Matter in Our Surroundings', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc101.pdf' },
-      { num: 2, name: 'Is Matter Around Us Pure', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc102.pdf' },
-      { num: 3, name: 'Atoms and Molecules', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc103.pdf' },
-      { num: 4, name: 'Structure of the Atom', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc104.pdf' },
-      { num: 5, name: 'The Fundamental Unit of Life', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc105.pdf' },
-      { num: 6, name: 'Tissues', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc106.pdf' },
-      { num: 7, name: 'Motion', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc108.pdf' },
-      { num: 8, name: 'Force and Laws of Motion', pdfUrl: 'https://ncert.nic.in/textbook/pdf/iesc109.pdf' },
+      { num: 1, name: 'Matter in Our Surroundings', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=1-15' },
+      { num: 2, name: 'Is Matter Around Us Pure', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=2-15' },
+      { num: 3, name: 'Atoms and Molecules', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=3-15' },
+      { num: 4, name: 'Structure of the Atom', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=4-15' },
+      { num: 5, name: 'The Fundamental Unit of Life', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc105.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=5-15' },
+      { num: 6, name: 'Tissues', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc106.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=6-15' },
+      { num: 7, name: 'Motion', pdfUrl: 'https://archive.org/download/ncert-iesc1/iesc108.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?iesc1=8-15' },
     ]
   },
 
@@ -161,14 +157,12 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#0284c7',
     coverIcon: '📐',
-    chaptersCount: 16,
     officialUrl: 'https://ncert.nic.in/textbook.php?hemh1=0-16',
     chapters: [
-      { num: 1, name: 'Rational Numbers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hemh101.pdf' },
-      { num: 2, name: 'Linear Equations in One Variable', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hemh102.pdf' },
-      { num: 3, name: 'Understanding Quadrilaterals', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hemh103.pdf' },
-      { num: 4, name: 'Data Handling', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hemh105.pdf' },
-      { num: 5, name: 'Squares and Square Roots', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hemh106.pdf' },
+      { num: 1, name: 'Rational Numbers', pdfUrl: 'https://archive.org/download/ncert-hemh1/hemh101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hemh1=1-16' },
+      { num: 2, name: 'Linear Equations in One Variable', pdfUrl: 'https://archive.org/download/ncert-hemh1/hemh102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hemh1=2-16' },
+      { num: 3, name: 'Understanding Quadrilaterals', pdfUrl: 'https://archive.org/download/ncert-hemh1/hemh103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hemh1=3-16' },
+      { num: 4, name: 'Data Handling', pdfUrl: 'https://archive.org/download/ncert-hemh1/hemh105.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hemh1=5-16' },
     ]
   },
   {
@@ -179,14 +173,11 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#059669',
     coverIcon: '🌱',
-    chaptersCount: 18,
     officialUrl: 'https://ncert.nic.in/textbook.php?hesc1=0-18',
     chapters: [
-      { num: 1, name: 'Crop Production and Management', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hesc101.pdf' },
-      { num: 2, name: 'Microorganisms : Friend and Foe', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hesc102.pdf' },
-      { num: 3, name: 'Synthetic Fibres and Plastics', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hesc103.pdf' },
-      { num: 4, name: 'Materials : Metals and Non-Metals', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hesc104.pdf' },
-      { num: 5, name: 'Coal and Petroleum', pdfUrl: 'https://ncert.nic.in/textbook/pdf/hesc105.pdf' },
+      { num: 1, name: 'Crop Production and Management', pdfUrl: 'https://archive.org/download/ncert-hesc1/hesc101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hesc1=1-18' },
+      { num: 2, name: 'Microorganisms : Friend and Foe', pdfUrl: 'https://archive.org/download/ncert-hesc1/hesc102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hesc1=2-18' },
+      { num: 3, name: 'Synthetic Fibres and Plastics', pdfUrl: 'https://archive.org/download/ncert-hesc1/hesc103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?hesc1=3-18' },
     ]
   },
 
@@ -199,13 +190,11 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#0284c7',
     coverIcon: '📐',
-    chaptersCount: 15,
     officialUrl: 'https://ncert.nic.in/textbook.php?gemh1=0-15',
     chapters: [
-      { num: 1, name: 'Integers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gemh101.pdf' },
-      { num: 2, name: 'Fractions and Decimals', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gemh102.pdf' },
-      { num: 3, name: 'Data Handling', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gemh103.pdf' },
-      { num: 4, name: 'Simple Equations', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gemh104.pdf' },
+      { num: 1, name: 'Integers', pdfUrl: 'https://archive.org/download/ncert-gemh1/gemh101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gemh1=1-15' },
+      { num: 2, name: 'Fractions and Decimals', pdfUrl: 'https://archive.org/download/ncert-gemh1/gemh102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gemh1=2-15' },
+      { num: 3, name: 'Data Handling', pdfUrl: 'https://archive.org/download/ncert-gemh1/gemh103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gemh1=3-15' },
     ]
   },
   {
@@ -216,13 +205,11 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#059669',
     coverIcon: '🍃',
-    chaptersCount: 18,
     officialUrl: 'https://ncert.nic.in/textbook.php?gesc1=0-18',
     chapters: [
-      { num: 1, name: 'Nutrition in Plants', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gesc101.pdf' },
-      { num: 2, name: 'Nutrition in Animals', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gesc102.pdf' },
-      { num: 3, name: 'Heat', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gesc104.pdf' },
-      { num: 4, name: 'Acids, Bases and Salts', pdfUrl: 'https://ncert.nic.in/textbook/pdf/gesc105.pdf' },
+      { num: 1, name: 'Nutrition in Plants', pdfUrl: 'https://archive.org/download/ncert-gesc1/gesc101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gesc1=1-18' },
+      { num: 2, name: 'Nutrition in Animals', pdfUrl: 'https://archive.org/download/ncert-gesc1/gesc102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gesc1=2-18' },
+      { num: 3, name: 'Heat', pdfUrl: 'https://archive.org/download/ncert-gesc1/gesc104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?gesc1=4-18' },
     ]
   },
 
@@ -235,29 +222,27 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#0284c7',
     coverIcon: '🔢',
-    chaptersCount: 14,
     officialUrl: 'https://ncert.nic.in/textbook.php?femh1=0-14',
     chapters: [
-      { num: 1, name: 'Knowing Our Numbers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/femh101.pdf' },
-      { num: 2, name: 'Whole Numbers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/femh102.pdf' },
-      { num: 3, name: 'Playing With Numbers', pdfUrl: 'https://ncert.nic.in/textbook/pdf/femh103.pdf' },
-      { num: 4, name: 'Basic Geometrical Ideas', pdfUrl: 'https://ncert.nic.in/textbook/pdf/femh104.pdf' },
+      { num: 1, name: 'Knowing Our Numbers', pdfUrl: 'https://archive.org/download/ncert-femh1/femh101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?femh1=1-14' },
+      { num: 2, name: 'Whole Numbers', pdfUrl: 'https://archive.org/download/ncert-femh1/femh102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?femh1=2-14' },
+      { num: 3, name: 'Playing With Numbers', pdfUrl: 'https://archive.org/download/ncert-femh1/femh103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?femh1=3-14' },
+      { num: 4, name: 'Basic Geometrical Ideas', pdfUrl: 'https://archive.org/download/ncert-femh1/femh104.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?femh1=4-14' },
     ]
   },
   {
     id: 'c6-sci',
     classLevel: '6',
     subject: 'Science',
-    title: 'Curiosity: Science (Class 6)',
+    title: 'Science (NCERT Class 6)',
     medium: 'English',
     color: '#059669',
     coverIcon: '🌿',
-    chaptersCount: 12,
     officialUrl: 'https://ncert.nic.in/textbook.php?fesc1=0-12',
     chapters: [
-      { num: 1, name: 'The Wonderful World of Science', pdfUrl: 'https://ncert.nic.in/textbook/pdf/fesc101.pdf' },
-      { num: 2, name: 'Diversity in the Living World', pdfUrl: 'https://ncert.nic.in/textbook/pdf/fesc102.pdf' },
-      { num: 3, name: 'Mindful Eating: A Path to a Healthy Body', pdfUrl: 'https://ncert.nic.in/textbook/pdf/fesc103.pdf' },
+      { num: 1, name: 'Food: Where Does It Come From?', pdfUrl: 'https://archive.org/download/ncert-fesc1/fesc101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?fesc1=1-12' },
+      { num: 2, name: 'Components of Food', pdfUrl: 'https://archive.org/download/ncert-fesc1/fesc102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?fesc1=2-12' },
+      { num: 3, name: 'Fibre to Fabric', pdfUrl: 'https://archive.org/download/ncert-fesc1/fesc103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?fesc1=3-12' },
     ]
   },
 
@@ -270,13 +255,11 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#2563eb',
     coverIcon: '⚡',
-    chaptersCount: 8,
     officialUrl: 'https://ncert.nic.in/textbook.php?keph1=0-8',
     chapters: [
-      { num: 1, name: 'Units and Measurements', pdfUrl: 'https://ncert.nic.in/textbook/pdf/keph101.pdf' },
-      { num: 2, name: 'Motion in a Straight Line', pdfUrl: 'https://ncert.nic.in/textbook/pdf/keph102.pdf' },
-      { num: 3, name: 'Motion in a Plane', pdfUrl: 'https://ncert.nic.in/textbook/pdf/keph103.pdf' },
-      { num: 4, name: 'Laws of Motion', pdfUrl: 'https://ncert.nic.in/textbook/pdf/keph104.pdf' },
+      { num: 1, name: 'Units and Measurements', pdfUrl: 'https://archive.org/download/ncert-keph1/keph101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?keph1=1-8' },
+      { num: 2, name: 'Motion in a Straight Line', pdfUrl: 'https://archive.org/download/ncert-keph1/keph102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?keph1=2-8' },
+      { num: 3, name: 'Motion in a Plane', pdfUrl: 'https://archive.org/download/ncert-keph1/keph103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?keph1=3-8' },
     ]
   },
   {
@@ -287,19 +270,16 @@ const NCERT_BOOKS_CATALOG = [
     medium: 'English',
     color: '#2563eb',
     coverIcon: '⚛️',
-    chaptersCount: 8,
     officialUrl: 'https://ncert.nic.in/textbook.php?leph1=0-8',
     chapters: [
-      { num: 1, name: 'Electric Charges and Fields', pdfUrl: 'https://ncert.nic.in/textbook/pdf/leph101.pdf' },
-      { num: 2, name: 'Electrostatic Potential and Capacitance', pdfUrl: 'https://ncert.nic.in/textbook/pdf/leph102.pdf' },
-      { num: 3, name: 'Current Electricity', pdfUrl: 'https://ncert.nic.in/textbook/pdf/leph103.pdf' },
-      { num: 4, name: 'Moving Charges and Magnetism', pdfUrl: 'https://ncert.nic.in/textbook/pdf/leph104.pdf' },
+      { num: 1, name: 'Electric Charges and Fields', pdfUrl: 'https://archive.org/download/ncert-leph1/leph101.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?leph1=1-8' },
+      { num: 2, name: 'Electrostatic Potential and Capacitance', pdfUrl: 'https://archive.org/download/ncert-leph1/leph102.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?leph1=2-8' },
+      { num: 3, name: 'Current Electricity', pdfUrl: 'https://archive.org/download/ncert-leph1/leph103.pdf', ncertUrl: 'https://ncert.nic.in/textbook.php?leph1=3-8' },
     ]
   }
 ];
 
 export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => {
-  // Extract number from student class if present (e.g. "Class 10th" -> "10")
   const defaultClass = (() => {
     if (!student?.className) return '10';
     const match = student.className.match(/\d+/);
@@ -328,6 +308,12 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
   });
 
   const availableSubjects = ['All', ...new Set(NCERT_BOOKS_CATALOG.map((b) => b.subject))];
+
+  const handleOpenReader = (chapter, book) => {
+    setSelectedBook(null);
+    setActivePdfUrl(chapter.pdfUrl);
+    setActivePdfTitle(`${book.title} — Ch ${chapter.num}: ${chapter.name}`);
+  };
 
   return (
     <Box>
@@ -529,10 +515,7 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
                     {book.chapters.slice(0, 4).map((ch) => (
                       <Box
                         key={ch.num}
-                        onClick={() => {
-                          setActivePdfUrl(ch.pdfUrl);
-                          setActivePdfTitle(`${book.title} — Ch ${ch.num}: ${ch.name}`);
-                        }}
+                        onClick={() => handleOpenReader(ch, book)}
                         sx={{
                           p: 1,
                           borderRadius: 1.5,
@@ -617,7 +600,7 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
               {selectedBook?.title}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Class {selectedBook?.classLevel} • {selectedBook?.subject} • Official NCERT PDFs
+              Class {selectedBook?.classLevel} • {selectedBook?.subject} • Official NCERT Curriculum
             </Typography>
           </Box>
           <IconButton onClick={() => setSelectedBook(null)} size="small">
@@ -642,7 +625,7 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
                     '&:hover': { borderColor: primaryColor }
                   }}
                 >
-                  <Box sx={{ maxWidth: '70%' }}>
+                  <Box sx={{ maxWidth: '62%' }}>
                     <Typography variant="caption" fontWeight={700} color={primaryColor}>
                       Chapter {ch.num}
                     </Typography>
@@ -650,37 +633,50 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
                       {ch.name}
                     </Typography>
                   </Box>
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={0.8} alignItems="center">
                     <Button
                       size="small"
                       variant="contained"
-                      onClick={() => {
-                        setSelectedBook(null);
-                        setActivePdfUrl(ch.pdfUrl);
-                        setActivePdfTitle(`${selectedBook.title} — Ch ${ch.num}: ${ch.name}`);
-                      }}
+                      onClick={() => handleOpenReader(ch, selectedBook)}
                       sx={{
                         textTransform: 'none',
                         bgcolor: primaryColor,
                         borderRadius: 1.5,
                         fontSize: '0.72rem',
                         px: 1.2,
-                        minWidth: 'unset'
+                        minWidth: 'unset',
+                        fontWeight: 700
                       }}
                     >
                       Read
                     </Button>
-                    <IconButton
-                      size="small"
-                      component="a"
-                      href={ch.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open in new window / Download"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <DownloadForOfflineIcon fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Direct Download PDF">
+                      <IconButton
+                        size="small"
+                        component="a"
+                        href={ch.pdfUrl}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        <DownloadForOfflineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {ch.ncertUrl && (
+                      <Tooltip title="View on Official NCERT Portal">
+                        <IconButton
+                          size="small"
+                          component="a"
+                          href={ch.ncertUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <OpenInNewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Stack>
                 </Paper>
               </Grid>
@@ -702,41 +698,54 @@ export const StudentNcertReaderTab = ({ student, isDarkMode, primaryColor }) => 
         fullWidth
         PaperProps={{
           sx: {
-            height: '90vh',
+            height: '92vh',
             borderRadius: 3,
             bgcolor: isDarkMode ? '#0f172a' : '#ffffff'
           }
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
-          <Box sx={{ maxWidth: '80%' }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, borderBottom: '1px solid', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }}>
+          <Box sx={{ maxWidth: '70%' }}>
             <Typography variant="subtitle1" fontWeight={800} noWrap>
               {activePdfTitle}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              NCERT Digital Reader • Official Textbook PDF
+              NCERT Digital Reader • Fast High-Res PDF
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
             <Button
               size="small"
+              variant="outlined"
               startIcon={<OpenInNewIcon />}
               href={activePdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none', borderRadius: 1.5 }}
             >
-              Open in Tab
+              Open Direct PDF
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<DownloadForOfflineIcon />}
+              href={activePdfUrl}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ textTransform: 'none', bgcolor: primaryColor, borderRadius: 1.5 }}
+            >
+              Download
             </Button>
             <IconButton onClick={() => setActivePdfUrl(null)} size="small">
               <CloseIcon />
             </IconButton>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ p: 0, height: '100%', bgcolor: '#334155' }}>
+        <DialogContent sx={{ p: 0, height: '100%', bgcolor: '#1e293b', position: 'relative' }}>
           {activePdfUrl && (
             <iframe
-              src={activePdfUrl}
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(activePdfUrl)}&embedded=true`}
               title={activePdfTitle}
               width="100%"
               height="100%"
