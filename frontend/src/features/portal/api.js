@@ -7,4 +7,5 @@ export const portalApi = {
   getTimetable: (studentId) => apiClient.get('/portal/timetable', { params: { studentId } }),
   getExams: (studentId) => apiClient.get('/portal/exams', { params: { studentId } }),
   getFees: (studentId) => apiClient.get('/portal/fees', { params: { studentId } }),
+  askAi: (data) => apiClient.post('/portal/ai-study-chat', data),
 };

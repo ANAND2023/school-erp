@@ -21,6 +21,7 @@ import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
 import TranslateIcon from '@mui/icons-material/Translate';
+import { portalApi } from '../api';
 
 export const StudentAiChatTab = ({ student, isDarkMode, primaryColor }) => {
   const [messages, setMessages] = useState([
@@ -68,21 +69,50 @@ export const StudentAiChatTab = ({ student, isDarkMode, primaryColor }) => {
     try {
       const studentClass = student?.className ? `Class ${student.className}` : 'school student';
       const systemInstruction = `You are an encouraging, polite, and educational AI Study Tutor for a ${studentClass}. Give clear, concise, step-by-step answers that are easy to understand for school children. Use bullet points and simple language. Keep explanations educational, accurate, and safe.`;
-      
-      const promptParam = encodeURIComponent(`${systemInstruction}\n\nStudent asks: ${userQuery}`);
-      // Pollinations AI text endpoint - completely free, no key needed, fast response
-      const response = await fetch(`https://text.pollinations.ai/${promptParam}?model=openai&seed=42`);
-      
-      if (!response.ok) {
-        throw new Error('Network error from AI engine');
+
+      let replyText = '';
+
+      // Try 1: Call through backend portal proxy endpoint (No CORS, reliable)
+      try {
+        const res = await portalApi.askAi({
+          message: userQuery,
+          systemPrompt: systemInstruction
+        });
+        if (res.data?.success && res.data?.data) {
+          replyText = res.data.data;
+        }
+      } catch (backendErr) {
+        console.warn('Backend AI proxy failed, attempting direct fallback...', backendErr);
       }
 
-      const replyText = await response.text();
+      // Try 2: Direct browser POST fallback if backend proxy was unavailable
+      if (!replyText) {
+        const fallbackRes = await fetch('https://text.pollinations.ai/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user', content: userQuery }
+            ],
+            model: 'openai',
+            seed: 42
+          })
+        });
+
+        if (fallbackRes.ok) {
+          replyText = await fallbackRes.text();
+        }
+      }
+
+      if (!replyText) {
+        throw new Error('No response from AI services');
+      }
 
       const aiMsg = {
         id: Date.now() + 1,
         sender: 'ai',
-        text: replyText || 'Sorry, I could not generate a response. Please try asking again!',
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
@@ -92,7 +122,7 @@ export const StudentAiChatTab = ({ student, isDarkMode, primaryColor }) => {
       const fallbackMsg = {
         id: Date.now() + 1,
         sender: 'ai',
-        text: `⚠️ I'm currently unable to connect to the study tutor network. Please check your internet connection or try again in a few moments.`,
+        text: `⚠️ I'm currently unable to connect to the study tutor network. Please try asking again in a few moments!`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, fallbackMsg]);

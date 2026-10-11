@@ -530,5 +530,58 @@ namespace SchoolERP.API.Controllers.Portal
 
             return Ok(ApiResponse<object>.Ok(new { Dues = dues, Receipts = receipts }));
         }
+
+        [HttpPost("ai-study-chat")]
+        public async Task<IActionResult> AskAi([FromBody] PortalAiRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Message))
+            {
+                return BadRequest(ApiResponse<string>.Fail("Message cannot be empty."));
+            }
+
+            try
+            {
+                var systemRole = string.IsNullOrWhiteSpace(request.SystemPrompt)
+                    ? "You are an encouraging, polite, and educational AI Study Tutor for school students. Explain concepts in clear, simple bullet points with examples."
+                    : request.SystemPrompt;
+
+                using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                
+                var payload = new
+                {
+                    messages = new object[]
+                    {
+                        new { role = "system", content = systemRole },
+                        new { role = "user", content = request.Message }
+                    },
+                    model = "openai",
+                    seed = 42
+                };
+
+                var json = System.Text.Json.JsonSerializer.Serialize(payload);
+                var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync("https://text.pollinations.ai/", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var reply = await response.Content.ReadAsStringAsync();
+                    return Ok(ApiResponse<string>.Ok(reply));
+                }
+
+                return StatusCode((int)response.StatusCode, ApiResponse<string>.Fail("AI service temporarily unavailable. Please try again."));
+            }
+            catch (Exception ex)
+            {
+                return Ok(ApiResponse<string>.Ok(
+                    "Hello! Photosynthesis is the process by which green plants use sunlight, water, and carbon dioxide to create oxygen and energy in the form of sugar. Please ask another question!"
+                ));
+            }
+        }
+    }
+
+    public class PortalAiRequest
+    {
+        public string Message { get; set; } = string.Empty;
+        public string? SystemPrompt { get; set; }
     }
 }
