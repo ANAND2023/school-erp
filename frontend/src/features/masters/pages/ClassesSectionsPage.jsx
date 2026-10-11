@@ -1,26 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Paper,
-  Button,
   TextField,
-  Chip,
-  IconButton,
-  Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Grid,
-  Divider,
+  Button as MuiButton,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Class as ClassIcon,
-} from '@mui/icons-material';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Tag } from 'primereact/tag';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
 import { Modal } from '../../../components/Modal';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { classApi } from '../api';
@@ -33,6 +22,8 @@ export const ClassesSectionsPage = () => {
 
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [expandedRows, setExpandedRows] = useState(null);
 
   // Class Modal
   const [classModalOpen, setClassModalOpen] = useState(false);
@@ -76,8 +67,7 @@ export const ClassesSectionsPage = () => {
     setClassModalOpen(true);
   };
 
-  const handleOpenEditClass = (cls, e) => {
-    e.stopPropagation();
+  const handleOpenEditClass = (cls) => {
     setEditingClass(cls);
     setClassName(cls.name);
     setDisplayOrder(cls.displayOrder);
@@ -161,135 +151,475 @@ export const ClassesSectionsPage = () => {
   const canEdit = hasPermission('Classes', 'Edit');
   const canDelete = hasPermission('Classes', 'Delete');
 
+  // Filtered classes by search term
+  const filteredClasses = useMemo(() => {
+    if (!search.trim()) return classes;
+    const term = search.trim().toLowerCase();
+    return classes.filter(
+      (c) =>
+        c.name?.toLowerCase().includes(term) ||
+        c.sections?.some((s) => s.name?.toLowerCase().includes(term))
+    );
+  }, [classes, search]);
+
+  // Statistics calculation
+  const totalClassesCount = classes.length;
+  const totalSectionsCount = useMemo(
+    () => classes.reduce((sum, c) => sum + (c.sections?.length || 0), 0),
+    [classes]
+  );
+  const totalCapacityCount = useMemo(
+    () =>
+      classes.reduce(
+        (sum, c) =>
+          sum + (c.sections?.reduce((sSum, s) => sSum + (s.capacity || 0), 0) || 0),
+        0
+      ),
+    [classes]
+  );
+
+  const toggleExpandAll = () => {
+    if (expandedRows && Object.keys(expandedRows).length > 0) {
+      setExpandedRows(null);
+    } else {
+      const all = {};
+      classes.forEach((c) => {
+        all[c.id] = true;
+      });
+      setExpandedRows(all);
+    }
+  };
+
+  // Expanded row sub-table for sections
+  const rowExpansionTemplate = (data) => {
+    const sections = data.sections || [];
+    return (
+      <div className="p-3 surface-50 border-round-lg m-2 border-1 surface-border">
+        <div className="flex align-items-center justify-content-between mb-2 pb-2 border-bottom-1 surface-border">
+          <div className="flex align-items-center gap-2">
+            <span className="text-base">🏫</span>
+            <span className="font-bold text-sm text-900">
+              Sections for Class: <span className="text-primary font-bold">{data.name}</span>
+            </span>
+            <Tag
+              value={`${sections.length} ${sections.length === 1 ? 'Section' : 'Sections'}`}
+              severity="info"
+              style={{ fontSize: '10px' }}
+            />
+          </div>
+          {canAdd && (
+            <Button
+              label="Add Section"
+              icon="pi pi-plus"
+              size="small"
+              className="p-button-sm py-1 px-2 text-xs"
+              onClick={() => handleOpenAddSection(data.id)}
+            />
+          )}
+        </div>
+
+        {sections.length === 0 ? (
+          <div className="text-center p-3 text-500 text-xs font-italic">
+            No sections defined for this class. Click "+ Add Section" above to add one.
+          </div>
+        ) : (
+          <DataTable value={sections} size="small" responsiveLayout="scroll" className="p-datatable-sm shadow-none">
+            <Column
+              header="#"
+              body={(_, options) => (
+                <span className="text-xs text-slate-500 font-semibold">{options.rowIndex + 1}</span>
+              )}
+              style={{ width: '50px', textAlign: 'center' }}
+            />
+            <Column
+              field="name"
+              header="Section Name"
+              body={(sec) => (
+                <div className="flex align-items-center gap-2">
+                  <span className="inline-flex align-items-center justify-content-center border-round font-bold bg-indigo-100 text-indigo-700" style={{ width: '26px', height: '26px', fontSize: '12px' }}>
+                    {sec.name}
+                  </span>
+                  <span className="font-bold text-xs text-slate-800">Section {sec.name}</span>
+                </div>
+              )}
+              style={{ width: '200px' }}
+            />
+            <Column
+              field="capacity"
+              header="Student Capacity"
+              body={(sec) => (
+                <div className="flex align-items-center gap-2">
+                  <span className="font-semibold text-xs text-slate-800">{sec.capacity} Students</span>
+                  <span className="text-xs text-slate-400 font-mono">(Max Limit BR-3.2)</span>
+                </div>
+              )}
+            />
+            <Column
+              header="Status"
+              body={() => <Tag value="Active" severity="success" style={{ fontSize: '9px', padding: '1px 6px' }} />}
+              style={{ width: '100px' }}
+            />
+            <Column
+              header="Actions"
+              body={(sec) => (
+                <div className="flex align-items-center justify-content-center gap-1">
+                  {canEdit && (
+                    <Button
+                      icon="pi pi-pencil"
+                      text
+                      rounded
+                      size="small"
+                      severity="info"
+                      className="p-button-sm"
+                      style={{ width: '28px', height: '28px' }}
+                      title="Edit Section"
+                      onClick={() => handleOpenEditSection(data.id, sec)}
+                    />
+                  )}
+                  {canDelete && (
+                    <Button
+                      icon="pi pi-trash"
+                      text
+                      rounded
+                      size="small"
+                      severity="danger"
+                      className="p-button-sm"
+                      style={{ width: '28px', height: '28px' }}
+                      title="Delete Section"
+                      onClick={() => {
+                        setDeleteTarget({ type: 'section', id: sec.id });
+                        setDeleteConfirmOpen(true);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+              style={{ width: '120px', textAlign: 'center' }}
+            />
+          </DataTable>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Box>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Top Header Card */}
+      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-4 border-round-lg shadow-1 border-1 surface-border mb-3">
         <div>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            Classes & Sections Master
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <h2 className="text-xl font-bold text-slate-800 m-0">Classes & Sections Master</h2>
+          <p className="text-xs text-slate-500 m-0 mt-1">
             Define grade levels with display ordering and classroom sections with maximum capacity (FR-2.4 & BR-2.3)
-          </Typography>
+          </p>
         </div>
-        {canAdd && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddClass}>
-            Add Class
-          </Button>
-        )}
-      </Box>
+        <div className="flex align-items-center gap-2">
+          {canAdd && (
+            <Button
+              label="Add Class"
+              icon="pi pi-plus"
+              size="small"
+              className="bg-pink-600 border-pink-600 hover:bg-pink-700 font-semibold"
+              onClick={handleOpenAddClass}
+            />
+          )}
+        </div>
+      </div>
 
-      {classes.map((cls) => (
-        <Accordion key={cls.id} defaultExpanded sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: '#fafafa', px: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <ClassIcon color="primary" />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  {cls.name}
-                </Typography>
-                <Chip label={`Display Order: ${cls.displayOrder}`} size="small" variant="outlined" />
-                <Chip
-                  label={`${cls.sections?.length || 0} Sections`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              </Box>
+      {/* KPI Summary Cards */}
+      <div className="grid mb-3">
+        <div className="col-12 sm:col-4">
+          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+            <div>
+              <span className="text-xs text-slate-500 block mb-1">Total Classes</span>
+              <span className="text-2xl font-bold text-indigo-700">{totalClassesCount}</span>
+            </div>
+            <div className="flex align-items-center justify-content-center bg-indigo-50 text-indigo-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-building text-xl" />
+            </div>
+          </div>
+        </div>
+        <div className="col-12 sm:col-4">
+          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+            <div>
+              <span className="text-xs text-slate-500 block mb-1">Total Sections</span>
+              <span className="text-2xl font-bold text-pink-600">{totalSectionsCount}</span>
+            </div>
+            <div className="flex align-items-center justify-content-center bg-pink-50 text-pink-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-book text-xl" />
+            </div>
+          </div>
+        </div>
+        <div className="col-12 sm:col-4">
+          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+            <div>
+              <span className="text-xs text-slate-500 block mb-1">Total Student Capacity</span>
+              <span className="text-2xl font-bold text-emerald-600">{totalCapacityCount} Seats</span>
+            </div>
+            <div className="flex align-items-center justify-content-center bg-emerald-50 text-emerald-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
+              <i className="pi pi-users text-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-                {canAdd && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenAddSection(cls.id);
-                    }}
-                  >
-                    Add Section
-                  </Button>
-                )}
-                {canEdit && (
-                  <IconButton size="small" onClick={(e) => handleOpenEditClass(cls, e)}>
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                )}
-                {canDelete && (
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget({ type: 'class', id: cls.id });
-                      setDeleteConfirmOpen(true);
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Box>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 3 }}>
-            {cls.sections?.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                No sections defined for this class. Click "Add Section" above.
-              </Typography>
-            ) : (
-              <Grid container spacing={2}>
-                {cls.sections.map((sec) => (
-                  <Grid item xs={12} sm={6} md={4} key={sec.id}>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderRadius: 2,
-                      }}
+      {/* Main Classes & Sections Table Card */}
+      <div className="bg-white border-round-lg shadow-1 border-1 surface-border p-3">
+        {/* Table Search & Control Bar */}
+        <div className="flex flex-column sm:flex-row align-items-stretch sm:align-items-center justify-content-between gap-2 mb-3">
+          <div className="flex align-items-center gap-2">
+            <span className="p-input-icon-left w-full sm:w-20rem">
+              <i className="pi pi-search" />
+              <InputText
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by Class or Section..."
+                className="p-inputtext-sm w-full"
+              />
+            </span>
+            {search && (
+              <Button
+                icon="pi pi-times"
+                text
+                rounded
+                size="small"
+                severity="secondary"
+                onClick={() => setSearch('')}
+                title="Clear Search"
+              />
+            )}
+          </div>
+          <div className="flex align-items-center gap-2">
+            <Button
+              label={expandedRows && Object.keys(expandedRows).length > 0 ? 'Collapse All' : 'Expand All'}
+              icon={expandedRows && Object.keys(expandedRows).length > 0 ? 'pi pi-chevron-up' : 'pi pi-chevron-down'}
+              size="small"
+              outlined
+              severity="secondary"
+              className="p-button-sm text-xs"
+              onClick={toggleExpandAll}
+            />
+          </div>
+        </div>
+
+        {/* PrimeReact DataTable */}
+        <DataTable
+          value={filteredClasses}
+          dataKey="id"
+          loading={loading}
+          expandedRows={expandedRows}
+          onRowToggle={(e) => setExpandedRows(e.data)}
+          rowExpansionTemplate={rowExpansionTemplate}
+          stripedRows
+          responsiveLayout="scroll"
+          className="p-datatable-sm"
+          emptyMessage="No classes or sections found."
+        >
+          <Column expander style={{ width: '3.5rem' }} />
+
+          {/* Order Column */}
+          <Column
+            field="displayOrder"
+            header="Order"
+            sortable
+            body={(row) => (
+              <div className="flex align-items-center justify-content-center">
+                <span className="inline-flex align-items-center justify-content-center border-round font-bold bg-slate-100 text-slate-700 border-1 surface-border" style={{ width: '28px', height: '28px', fontSize: '12px' }}>
+                  {row.displayOrder}
+                </span>
+              </div>
+            )}
+            style={{ width: '90px', textAlign: 'center' }}
+          />
+
+          {/* Class Name Column */}
+          <Column
+            field="name"
+            header="Class Name"
+            sortable
+            body={(row) => (
+              <div className="flex align-items-center gap-2">
+                <div
+                  className="flex align-items-center justify-content-center border-round font-bold text-white shadow-1"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                    fontSize: '11px',
+                  }}
+                >
+                  {row.name.slice(0, 3).toUpperCase()}
+                </div>
+                <div className="flex flex-column">
+                  <span className="font-bold text-sm text-slate-800">{row.name}</span>
+                  <span className="text-xs text-slate-400">Order: {row.displayOrder}</span>
+                </div>
+              </div>
+            )}
+            style={{ minWidth: '160px' }}
+          />
+
+          {/* Sections List Column */}
+          <Column
+            header="Sections & Capacity"
+            body={(row) => {
+              const sections = row.sections || [];
+              if (sections.length === 0) {
+                return (
+                  <div className="flex align-items-center gap-2">
+                    <span className="text-xs text-slate-400 italic">No sections</span>
+                    {canAdd && (
+                      <Button
+                        label="Add Section"
+                        icon="pi pi-plus"
+                        size="small"
+                        text
+                        className="p-0 text-xs text-indigo-600 hover:underline"
+                        onClick={() => handleOpenAddSection(row.id)}
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-wrap align-items-center gap-2 py-1">
+                  {sections.map((sec) => (
+                    <div
+                      key={sec.id}
+                      className="flex align-items-center gap-2 px-2 py-1 bg-slate-50 hover:bg-slate-100 border-1 surface-border border-round transition-colors"
                     >
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          Section: {sec.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Capacity: {sec.capacity} Students (BR-3.2)
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <div className="flex align-items-center gap-1">
+                        <span className="font-bold text-xs text-indigo-800">Sec {sec.name}</span>
+                        <span className="text-xs text-slate-500">({sec.capacity} seats)</span>
+                      </div>
+                      <div className="flex align-items-center gap-1 border-left-1 surface-border pl-1 ml-1">
                         {canEdit && (
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleOpenEditSection(cls.id, sec)}
+                          <button
+                            type="button"
+                            title="Edit Section"
+                            className="p-0 border-none bg-transparent cursor-pointer text-slate-400 hover:text-indigo-600 flex align-items-center"
+                            onClick={() => handleOpenEditSection(row.id, sec)}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                            <i className="pi pi-pencil" style={{ fontSize: '10px' }} />
+                          </button>
                         )}
                         {canDelete && (
-                          <IconButton
-                            size="small"
-                            color="error"
+                          <button
+                            type="button"
+                            title="Delete Section"
+                            className="p-0 border-none bg-transparent cursor-pointer text-slate-400 hover:text-red-600 flex align-items-center"
                             onClick={() => {
                               setDeleteTarget({ type: 'section', id: sec.id });
                               setDeleteConfirmOpen(true);
                             }}
                           >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                            <i className="pi pi-trash" style={{ fontSize: '10px' }} />
+                          </button>
                         )}
-                      </Box>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
+                      </div>
+                    </div>
+                  ))}
+
+                  {canAdd && (
+                    <button
+                      type="button"
+                      title="Add another section to this class"
+                      className="flex align-items-center gap-1 px-2 py-1 border-1 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-round text-xs cursor-pointer transition-colors"
+                      onClick={() => handleOpenAddSection(row.id)}
+                    >
+                      <i className="pi pi-plus" style={{ fontSize: '9px' }} />
+                      <span className="font-semibold">Add</span>
+                    </button>
+                  )}
+                </div>
+              );
+            }}
+            style={{ minWidth: '320px' }}
+          />
+
+          {/* Total Sections Badge */}
+          <Column
+            header="Sections"
+            body={(row) => {
+              const count = row.sections?.length || 0;
+              return (
+                <Tag
+                  value={`${count} ${count === 1 ? 'Sec' : 'Secs'}`}
+                  severity={count > 0 ? 'info' : 'warning'}
+                  style={{ fontSize: '10px', padding: '2px 6px' }}
+                />
+              );
+            }}
+            style={{ width: '100px', textAlign: 'center' }}
+          />
+
+          {/* Total Seats Capacity Badge */}
+          <Column
+            header="Capacity"
+            body={(row) => {
+              const capacity = row.sections?.reduce((sum, s) => sum + (s.capacity || 0), 0) || 0;
+              return (
+                <div className="flex flex-column align-items-center">
+                  <span className="font-bold text-xs text-slate-700">{capacity}</span>
+                  <span className="text-xs text-slate-400">Seats</span>
+                </div>
+              );
+            }}
+            style={{ width: '100px', textAlign: 'center' }}
+          />
+
+          {/* Actions Column */}
+          <Column
+            header="Actions"
+            body={(row) => (
+              <div className="flex align-items-center justify-content-center gap-1">
+                {canAdd && (
+                  <Button
+                    icon="pi pi-plus"
+                    size="small"
+                    outlined
+                    severity="primary"
+                    className="p-button-sm py-1 px-2 text-xs"
+                    label="Section"
+                    title="Add Section to this class"
+                    onClick={() => handleOpenAddSection(row.id)}
+                  />
+                )}
+                {canEdit && (
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    rounded
+                    size="small"
+                    severity="secondary"
+                    className="p-0 text-slate-500 hover:text-indigo-600"
+                    style={{ width: '28px', height: '28px' }}
+                    title="Edit Class"
+                    onClick={() => handleOpenEditClass(row)}
+                  />
+                )}
+                {canDelete && (
+                  <Button
+                    icon="pi pi-trash"
+                    text
+                    rounded
+                    size="small"
+                    severity="danger"
+                    className="p-0 text-slate-400 hover:text-red-600"
+                    style={{ width: '28px', height: '28px' }}
+                    title="Delete Class"
+                    onClick={() => {
+                      setDeleteTarget({ type: 'class', id: row.id });
+                      setDeleteConfirmOpen(true);
+                    }}
+                  />
+                )}
+              </div>
             )}
-          </AccordionDetails>
-        </Accordion>
-      ))}
+            style={{ width: '170px', textAlign: 'center' }}
+          />
+        </DataTable>
+      </div>
 
       {/* Class Modal */}
       <Modal
@@ -317,12 +647,12 @@ export const ClassesSectionsPage = () => {
             sx={{ mb: 2 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={() => setClassModalOpen(false)} color="inherit">
+            <MuiButton onClick={() => setClassModalOpen(false)} color="inherit">
               Cancel
-            </Button>
-            <Button type="submit" variant="contained">
+            </MuiButton>
+            <MuiButton type="submit" variant="contained">
               Save Class
-            </Button>
+            </MuiButton>
           </Box>
         </Box>
       </Modal>
@@ -354,12 +684,12 @@ export const ClassesSectionsPage = () => {
             sx={{ mb: 2 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={() => setSectionModalOpen(false)} color="inherit">
+            <MuiButton onClick={() => setSectionModalOpen(false)} color="inherit">
               Cancel
-            </Button>
-            <Button type="submit" variant="contained">
+            </MuiButton>
+            <MuiButton type="submit" variant="contained">
               Save Section
-            </Button>
+            </MuiButton>
           </Box>
         </Box>
       </Modal>
@@ -376,3 +706,5 @@ export const ClassesSectionsPage = () => {
     </Box>
   );
 };
+
+export default ClassesSectionsPage;

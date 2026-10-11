@@ -30,6 +30,7 @@ namespace SchoolERP.Domain.Entities
         public string? Description { get; set; }
         public bool IsPublished { get; set; } = false;
         public bool IsLocked { get; set; } = false;
+        public DateTime? PublishDate { get; set; }
 
         // Navigation
         public virtual Branch? Branch { get; set; }

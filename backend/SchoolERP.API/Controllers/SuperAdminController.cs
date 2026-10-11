@@ -293,6 +293,8 @@ namespace SchoolERP.API.Controllers
                     AdminUsername = adminUser?.Username,
                     AdminEmail = adminUser?.Email,
                     AdminPassword = s.InitialAdminPassword ?? "Admin@123",
+                    AllowStudentLogin = s.AllowStudentLogin,
+                    AllowParentLogin = s.AllowParentLogin,
                     CreatedOn = s.CreatedOn
                 });
             }
@@ -429,6 +431,8 @@ namespace SchoolERP.API.Controllers
                 Status = school.Status ?? (school.IsActive ? "Active" : "Suspended"),
                 IsActive = school.IsActive,
                 InitialAdminPassword = school.InitialAdminPassword ?? "Admin@123",
+                AllowStudentLogin = school.AllowStudentLogin,
+                AllowParentLogin = school.AllowParentLogin,
                 CreatedOn = school.CreatedOn,
                 CurrentSubscription = currentSub,
                 SubscriptionHistory = subHistory,
@@ -516,6 +520,8 @@ namespace SchoolERP.API.Controllers
                         AffiliationNumber = request.AffiliationNumber,
                         InitialAdminPassword = request.AdminPassword,
                         Status = string.IsNullOrWhiteSpace(request.SubscriptionStatus) ? "Active" : request.SubscriptionStatus,
+                        AllowStudentLogin = request.AllowStudentLogin,
+                        AllowParentLogin = request.AllowParentLogin,
                         CreatedBy = actorId,
                         CreatedOn = DateTime.UtcNow,
                         IsActive = true
@@ -711,6 +717,14 @@ namespace SchoolERP.API.Controllers
             school.AffiliationNumber = request.AffiliationNumber;
             school.Status = request.Status;
             school.IsActive = request.IsActive && request.Status != "Suspended";
+            if (request.AllowStudentLogin.HasValue)
+            {
+                school.AllowStudentLogin = request.AllowStudentLogin.Value;
+            }
+            if (request.AllowParentLogin.HasValue)
+            {
+                school.AllowParentLogin = request.AllowParentLogin.Value;
+            }
             school.ModifiedBy = _currentUserService.UserId;
             school.ModifiedOn = DateTime.UtcNow;
 
@@ -837,6 +851,42 @@ namespace SchoolERP.API.Controllers
             }).ToList();
 
             return Ok(ApiResponse<List<TenantModuleStatusDto>>.Ok(updatedList, "Tenant modules configured successfully."));
+        }
+
+        // ==========================================
+        // 5B. STUDENT & PARENT PORTAL ACCESS CONTROL
+        // ==========================================
+        [HttpPut("tenants/{id}/portal-access")]
+        public async Task<ActionResult<ApiResponse<bool>>> UpdateTenantPortalAccess(
+            long id,
+            [FromBody] UpdateTenantPortalAccessRequestDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var school = await _context.Schools.FindAsync(id);
+            if (school == null)
+                return NotFound(ApiResponse<bool>.Fail("School tenant not found."));
+
+            var oldStudentAccess = school.AllowStudentLogin;
+            var oldParentAccess = school.AllowParentLogin;
+
+            school.AllowStudentLogin = request.AllowStudentLogin;
+            school.AllowParentLogin = request.AllowParentLogin;
+            school.ModifiedBy = _currentUserService.UserId;
+            school.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                id,
+                "PORTAL_ACCESS_UPDATED",
+                "School",
+                id.ToString(),
+                new { AllowStudentLogin = oldStudentAccess, AllowParentLogin = oldParentAccess },
+                new { school.AllowStudentLogin, school.AllowParentLogin, school.Name });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Student & Parent login permissions updated successfully."));
         }
 
         // ==========================================

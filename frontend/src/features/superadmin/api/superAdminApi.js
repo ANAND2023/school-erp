@@ -33,6 +33,11 @@ export const superAdminApi = {
     return res.data;
   },
 
+  updateTenantPortalAccess: async (id, payload) => {
+    const res = await apiClient.put(`/superadmin/tenants/${id}/portal-access`, payload);
+    return res.data;
+  },
+
   // 3. Module Management
   updateTenantModules: async (id, enabledModuleCodes) => {
     const res = await apiClient.put(`/superadmin/tenants/${id}/modules`, { enabledModuleCodes });

@@ -22,6 +22,8 @@ namespace SchoolERP.Domain.Entities
         public string? CustomDomain { get; set; } // e.g. "portal.dpsrohini.in"
         public string Status { get; set; } = "Active"; // Active, Trial, Suspended, Archived
         public string? InitialAdminPassword { get; set; }
+        public bool AllowStudentLogin { get; set; } = true;
+        public bool AllowParentLogin { get; set; } = true;
 
         public virtual ICollection<Branch> Branches { get; set; } = new List<Branch>();
         public virtual ICollection<TenantSubscription> Subscriptions { get; set; } = new List<TenantSubscription>();

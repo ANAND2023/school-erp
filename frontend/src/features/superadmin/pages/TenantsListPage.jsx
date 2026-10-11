@@ -222,6 +222,106 @@ export const TenantsListPage = () => {
     }
   };
 
+  const handleTogglePortalAccess = async (school, field, newValue) => {
+    const updatedStudentLogin = field === 'student' ? newValue : (school.allowStudentLogin !== false);
+    const updatedParentLogin = field === 'parent' ? newValue : (school.allowParentLogin !== false);
+
+    // Optimistic UI update
+    setTenants((prev) =>
+      prev.map((t) =>
+        t.id === school.id
+          ? { ...t, allowStudentLogin: updatedStudentLogin, allowParentLogin: updatedParentLogin }
+          : t
+      )
+    );
+
+    if (selectedSchool && selectedSchool.id === school.id) {
+      setSelectedSchool((prev) => ({
+        ...prev,
+        allowStudentLogin: updatedStudentLogin,
+        allowParentLogin: updatedParentLogin,
+      }));
+    }
+
+    try {
+      const res = await superAdminApi.updateTenantPortalAccess(school.id, {
+        allowStudentLogin: updatedStudentLogin,
+        allowParentLogin: updatedParentLogin,
+      });
+
+      if (res.success) {
+        toastRef.current?.show({
+          severity: 'success',
+          summary: 'Portal Access Updated',
+          detail: `${field === 'student' ? 'Student' : 'Parent'} login for "${school.name}" is now ${newValue ? 'ACTIVE' : 'INACTIVE'}.`,
+        });
+      }
+    } catch (err) {
+      // Revert on error
+      setTenants((prev) =>
+        prev.map((t) =>
+          t.id === school.id
+            ? { ...t, allowStudentLogin: school.allowStudentLogin, allowParentLogin: school.allowParentLogin }
+            : t
+        )
+      );
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Update Failed',
+        detail: err.response?.data?.message || 'Failed to update portal access.',
+      });
+    }
+  };
+
+  const portalAccessBodyTemplate = (rowData) => {
+    const studentActive = rowData.allowStudentLogin !== false;
+    const parentActive = rowData.allowParentLogin !== false;
+
+    return (
+      <div className="flex flex-column gap-2" style={{ minWidth: '160px' }}>
+        {/* Student Login Switch */}
+        <div className="flex align-items-center justify-content-between p-1 px-2 border-round border-1 surface-border bg-slate-50">
+          <div className="flex align-items-center gap-1">
+            <span className="text-xs">🎓</span>
+            <span className="text-xs font-semibold text-slate-700">Student:</span>
+            <Tag
+              value={studentActive ? 'Active' : 'Inactive'}
+              severity={studentActive ? 'success' : 'danger'}
+              style={{ fontSize: '9px', padding: '1px 4px' }}
+            />
+          </div>
+          <InputSwitch
+            checked={studentActive}
+            onChange={(e) => handleTogglePortalAccess(rowData, 'student', e.value)}
+            className="p-inputswitch-sm"
+            style={{ transform: 'scale(0.8)' }}
+            title={studentActive ? 'Click to disable Student Login for this school' : 'Click to enable Student Login for this school'}
+          />
+        </div>
+
+        {/* Parent Login Switch */}
+        <div className="flex align-items-center justify-content-between p-1 px-2 border-round border-1 surface-border bg-slate-50">
+          <div className="flex align-items-center gap-1">
+            <span className="text-xs">👨‍👩‍👧</span>
+            <span className="text-xs font-semibold text-slate-700">Parent:</span>
+            <Tag
+              value={parentActive ? 'Active' : 'Inactive'}
+              severity={parentActive ? 'success' : 'danger'}
+              style={{ fontSize: '9px', padding: '1px 4px' }}
+            />
+          </div>
+          <InputSwitch
+            checked={parentActive}
+            onChange={(e) => handleTogglePortalAccess(rowData, 'parent', e.value)}
+            className="p-inputswitch-sm"
+            style={{ transform: 'scale(0.8)' }}
+            title={parentActive ? 'Click to disable Parent Login for this school' : 'Click to enable Parent Login for this school'}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const exportCsv = () => {
     if (!tenants || tenants.length === 0) return;
     const headers = ['School Name', 'Code', 'Subdomain/Slug', 'Admin Username (ID)', 'Admin Password', 'Admin Email', 'City', 'Status', 'Plan', 'Expiry', 'Students', 'Staff'];
@@ -471,6 +571,11 @@ export const TenantsListPage = () => {
           />
           <Column header="Status" body={statusBodyTemplate} style={{ width: '90px' }} />
           <Column
+            header="Portal Access (Student / Parent)"
+            body={portalAccessBodyTemplate}
+            style={{ width: '180px' }}
+          />
+          <Column
             header="Admin Login (ID & Password)"
             body={(row) => {
               const isVisible = !!visiblePasswords[row.id];
@@ -602,6 +707,58 @@ export const TenantsListPage = () => {
         }
       >
         <div className="flex flex-column gap-3 py-2">
+          {/* Portal Access Controls */}
+          {selectedSchool && (
+            <div className="p-3 border-round border-1 surface-border bg-indigo-50 flex flex-column gap-2">
+              <div className="flex align-items-center justify-content-between">
+                <div>
+                  <span className="font-bold text-xs text-indigo-900 block">Student & Parent Portal Permissions</span>
+                  <span className="text-xs text-slate-500">Enable or disable portal sign-in specifically for this school</span>
+                </div>
+              </div>
+              <div className="grid mt-1">
+                <div className="col-12 sm:col-6">
+                  <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 surface-border">
+                    <div className="flex align-items-center gap-2">
+                      <span className="text-base">🎓</span>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">Student Login</span>
+                        <Tag
+                          value={selectedSchool.allowStudentLogin !== false ? 'Enabled' : 'Disabled'}
+                          severity={selectedSchool.allowStudentLogin !== false ? 'success' : 'danger'}
+                          style={{ fontSize: '9px', padding: '0 4px' }}
+                        />
+                      </div>
+                    </div>
+                    <InputSwitch
+                      checked={selectedSchool.allowStudentLogin !== false}
+                      onChange={(e) => handleTogglePortalAccess(selectedSchool, 'student', e.value)}
+                    />
+                  </div>
+                </div>
+                <div className="col-12 sm:col-6">
+                  <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 surface-border">
+                    <div className="flex align-items-center gap-2">
+                      <span className="text-base">👨‍👩‍👧</span>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">Parent Login</span>
+                        <Tag
+                          value={selectedSchool.allowParentLogin !== false ? 'Enabled' : 'Disabled'}
+                          severity={selectedSchool.allowParentLogin !== false ? 'success' : 'danger'}
+                          style={{ fontSize: '9px', padding: '0 4px' }}
+                        />
+                      </div>
+                    </div>
+                    <InputSwitch
+                      checked={selectedSchool.allowParentLogin !== false}
+                      onChange={(e) => handleTogglePortalAccess(selectedSchool, 'parent', e.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <p className="text-xs text-slate-500 m-0">
             Control which feature modules are accessible to this school's users. Core modules cannot be disabled.
           </p>

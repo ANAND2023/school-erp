@@ -146,6 +146,8 @@ export const TenantDetailPage = () => {
           affiliationNumber: res.data.affiliationNumber || '',
           status: res.data.status,
           isActive: res.data.isActive,
+          allowStudentLogin: res.data.allowStudentLogin !== false,
+          allowParentLogin: res.data.allowParentLogin !== false,
         });
         setModulesList(res.data.modules);
       }
@@ -157,6 +159,42 @@ export const TenantDetailPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePortalAccess = async (field, newValue) => {
+    const updatedStudentLogin = field === 'student' ? newValue : (profileForm.allowStudentLogin !== false);
+    const updatedParentLogin = field === 'parent' ? newValue : (profileForm.allowParentLogin !== false);
+
+    setProfileForm((prev) => ({
+      ...prev,
+      allowStudentLogin: updatedStudentLogin,
+      allowParentLogin: updatedParentLogin,
+    }));
+    setTenant((prev) => ({
+      ...prev,
+      allowStudentLogin: updatedStudentLogin,
+      allowParentLogin: updatedParentLogin,
+    }));
+
+    try {
+      const res = await superAdminApi.updateTenantPortalAccess(id, {
+        allowStudentLogin: updatedStudentLogin,
+        allowParentLogin: updatedParentLogin,
+      });
+      if (res.success) {
+        toastRef.current?.show({
+          severity: 'success',
+          summary: 'Portal Access Updated',
+          detail: `${field === 'student' ? 'Student' : 'Parent'} portal login is now ${newValue ? 'ACTIVE' : 'INACTIVE'}.`,
+        });
+      }
+    } catch (err) {
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to update portal access.',
+      });
     }
   };
 
@@ -448,6 +486,58 @@ export const TenantDetailPage = () => {
                     onChange={(e) => setProfileForm({ ...profileForm, status: e.value })}
                     className="p-inputtext-sm w-full"
                   />
+                </div>
+
+                {/* Portal Access Permissions */}
+                <div className="col-12">
+                  <div className="p-3 border-round border-1 surface-border bg-slate-50 flex flex-column gap-3">
+                    <div>
+                      <span className="font-bold text-sm text-slate-800 block">Student & Parent Portal Permissions</span>
+                      <span className="text-xs text-slate-500">
+                        Enable or disable portal sign-in specifically for students or parents belonging to this school.
+                      </span>
+                    </div>
+                    <div className="grid">
+                      <div className="col-12 sm:col-6">
+                        <div className="flex align-items-center justify-content-between p-3 bg-white border-round border-1 surface-border">
+                          <div className="flex align-items-center gap-2">
+                            <span className="text-xl">🎓</span>
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">Student Portal Login</span>
+                              <Tag
+                                value={profileForm.allowStudentLogin ? 'Active / Allowed' : 'Inactive / Blocked'}
+                                severity={profileForm.allowStudentLogin ? 'success' : 'danger'}
+                                style={{ fontSize: '10px' }}
+                              />
+                            </div>
+                          </div>
+                          <InputSwitch
+                            checked={profileForm.allowStudentLogin}
+                            onChange={(e) => handleTogglePortalAccess('student', e.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="col-12 sm:col-6">
+                        <div className="flex align-items-center justify-content-between p-3 bg-white border-round border-1 surface-border">
+                          <div className="flex align-items-center gap-2">
+                            <span className="text-xl">👨‍👩‍👧</span>
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">Parent Portal Login</span>
+                              <Tag
+                                value={profileForm.allowParentLogin ? 'Active / Allowed' : 'Inactive / Blocked'}
+                                severity={profileForm.allowParentLogin ? 'success' : 'danger'}
+                                style={{ fontSize: '10px' }}
+                              />
+                            </div>
+                          </div>
+                          <InputSwitch
+                            checked={profileForm.allowParentLogin}
+                            onChange={(e) => handleTogglePortalAccess('parent', e.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

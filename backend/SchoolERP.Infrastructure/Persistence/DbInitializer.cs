@@ -35,6 +35,19 @@ namespace SchoolERP.Infrastructure.Persistence
             }
             catch { }
 
+            // Ensure portal login columns exist on schools table
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN allow_student_login TINYINT(1) NOT NULL DEFAULT 1;");
+            }
+            catch { }
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN allow_parent_login TINYINT(1) NOT NULL DEFAULT 1;");
+            }
+            catch { }
+
             // Ensure signature columns exist on branches table
             try
             {

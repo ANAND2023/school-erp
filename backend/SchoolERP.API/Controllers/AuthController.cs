@@ -152,6 +152,28 @@ namespace SchoolERP.API.Controllers
             user.IsLocked = false;
             user.LockoutEndUtc = null;
 
+            // Check School-level Student & Parent Portal Permissions
+            if (user.UserType == UserType.Student || user.UserType == UserType.Parent)
+            {
+                var userBranch = await _context.Branches
+                    .Include(b => b.School)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.Id == user.BranchId);
+
+                if (userBranch?.School != null)
+                {
+                    if (user.UserType == UserType.Student && !userBranch.School.AllowStudentLogin)
+                    {
+                        return StatusCode(403, ApiResponse<LoginResponseDto>.Fail("Student portal login has been disabled for your school. Please contact your school administration."));
+                    }
+
+                    if (user.UserType == UserType.Parent && !userBranch.School.AllowParentLogin)
+                    {
+                        return StatusCode(403, ApiResponse<LoginResponseDto>.Fail("Parent portal login has been disabled for your school. Please contact your school administration."));
+                    }
+                }
+            }
+
             // Generate JWT tokens
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();

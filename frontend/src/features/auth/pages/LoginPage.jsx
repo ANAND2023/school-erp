@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Container,
   Box,
   Typography,
   TextField,
@@ -11,8 +10,37 @@ import {
   CircularProgress,
   InputAdornment,
   IconButton,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
+  Stack,
+  Container
 } from '@mui/material';
-import { Visibility, VisibilityOff, School as SchoolIcon } from '@mui/icons-material';
+import {
+  VisibilityOutlined,
+  VisibilityOffOutlined,
+  PersonOutlineOutlined,
+  LockOutlined,
+  Login as LoginIcon,
+  SupportAgentOutlined,
+  SchoolOutlined,
+  GroupsOutlined,
+  ReceiptLongOutlined,
+  EventAvailableOutlined,
+  AssessmentOutlined,
+  BarChartOutlined,
+  LocalLibraryOutlined,
+  ForumOutlined,
+  Close as CloseIcon,
+  PhoneInTalk as PhoneIcon,
+  EmailOutlined as EmailIcon,
+  ScheduleOutlined as ClockIcon
+} from '@mui/icons-material';
 import { useAuthStore } from '../../../store/authStore';
 import apiClient from '../../../api/client';
 
@@ -24,12 +52,23 @@ export const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [portalType, setPortalType] = useState('staff'); // 'staff', 'student', 'parent'
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
+
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const [portalType, setPortalType] = useState('staff'); // 'staff', 'student', 'parent'
+  // Load remembered username if exists
+  useEffect(() => {
+    const savedUser = localStorage.getItem('dvs_remembered_user');
+    if (savedUser) {
+      setUsername(savedUser);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,6 +81,13 @@ export const LoginPage = () => {
 
     try {
       setLoading(true);
+
+      if (rememberMe) {
+        localStorage.setItem('dvs_remembered_user', username.trim());
+      } else {
+        localStorage.removeItem('dvs_remembered_user');
+      }
+
       const res = await apiClient.post('/auth/login', { username, password });
       if (res.data.success) {
         const { user, accessToken, refreshToken, permissions } = res.data.data;
@@ -55,227 +101,746 @@ export const LoginPage = () => {
           navigate(from, { replace: true });
         }
       } else {
-        setErrorMessage(res.data.message || 'Login failed.');
+        setErrorMessage(res.data.message || 'Login failed. Please verify credentials.');
       }
     } catch (err) {
       setErrorMessage(
-        err.response?.data?.message || 'Invalid credentials. Please verify your login details.'
+        err.response?.data?.message || 'Invalid credentials. Please verify your username and password.'
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // 8 Highlights matching the exact reference UI mockup
+  const features = [
+    {
+      title: 'Student\nManagement',
+      icon: <SchoolOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Faculty &\nStaff',
+      icon: <GroupsOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Fees &\nAccounts',
+      icon: <ReceiptLongOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Attendance\n& Leaves',
+      icon: <EventAvailableOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Exams &\nResults',
+      icon: <AssessmentOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Reports &\nAnalytics',
+      icon: <BarChartOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Library\nManagement',
+      icon: <LocalLibraryOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    },
+    {
+      title: 'Communication\n& Circulars',
+      icon: <ForumOutlined sx={{ fontSize: 32, color: '#0284c7' }} />
+    }
+  ];
+
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
+        maxHeight: '100vh',
+        width: '100%',
+        maxWidth: '100vw',
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: '#f0f2f5',
-        p: 2,
+        background: 'radial-gradient(circle at 85% 15%, #083c79 0%, #041c3e 40%, #021124 100%)',
+        overflow: 'hidden', // Completely eliminate scrollbars
+        fontFamily: '"Inter", "Segoe UI", -apple-system, sans-serif',
+        p: { xs: 1.5, sm: 2, md: 3 },
+        boxSizing: 'border-box',
+        // Ambient background glow effects
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-10%',
+          right: '-5%',
+          width: '550px',
+          height: '550px',
+          background: 'radial-gradient(circle, rgba(2, 132, 199, 0.25) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: '-15%',
+          left: '-10%',
+          width: '650px',
+          height: '650px',
+          backgroundImage: 'url(/dvs-logo.png)',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          opacity: 0.12,
+          filter: 'brightness(1.4) blur(1px)',
+          pointerEvents: 'none'
+        }
       }}
     >
-      <Container maxWidth="xs">
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            borderRadius: 3,
-          }}
-        >
-          <Box
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 5, py: 1, px: { xs: 1.5, md: 3 } }}>
+        <Grid container spacing={{ xs: 2, lg: 4 }} alignItems="center" justifyContent="center">
+          
+          {/* ========================================================================= */}
+          {/* LEFT COLUMN: FROSTED GLASS / CYBER DARK LOGIN CARD (NO WHITE BG) */}
+          {/* ========================================================================= */}
+          <Grid item xs={12} md={5.5} lg={5} xl={4.2} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={16}
+              sx={{
+                width: '100%',
+                maxWidth: '430px',
+                p: { xs: 2.5, sm: 3.5 },
+                borderRadius: '22px',
+                // Glassmorphism - No white background
+                bgcolor: 'rgba(6, 26, 56, 0.72)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1.5px solid rgba(56, 189, 248, 0.28)',
+                boxShadow: '0 25px 60px -10px rgba(0, 0, 0, 0.75), 0 0 25px rgba(2, 132, 199, 0.2)',
+                position: 'relative',
+                color: '#ffffff'
+              }}
+            >
+              {/* Card Header matching reference */}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    color: '#94a3b8',
+                    letterSpacing: 0.2
+                  }}
+                >
+                  Welcome to
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontSize: { xs: '1.55rem', sm: '1.85rem' },
+                    fontWeight: 900,
+                    color: '#38bdf8', // Glowing cyan blue
+                    textShadow: '0 2px 12px rgba(56, 189, 248, 0.3)',
+                    lineHeight: 1.2,
+                    mt: 0.2,
+                    mb: 0.5,
+                    letterSpacing: -0.5
+                  }}
+                >
+                  Digital Vidya
+                  <Box component="span" sx={{ display: 'block', color: '#ffffff' }}>
+                    Saarthi ERP
+                  </Box>
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#cbd5e1',
+                    fontSize: '0.82rem',
+                    fontWeight: 500,
+                    lineHeight: 1.35
+                  }}
+                >
+                  Manage your institution with one connected platform
+                </Typography>
+              </Box>
+
+              {/* Role Switcher Pill Tabs (Staff / Admin, Student, Parent) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  bgcolor: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  p: 0.5,
+                  borderRadius: '12px',
+                  mb: 2,
+                  gap: 0.5
+                }}
+              >
+                {[
+                  { id: 'staff', label: 'Staff / Admin' },
+                  { id: 'student', label: '🎓 Student' },
+                  { id: 'parent', label: '👨‍👩‍👧 Parent' }
+                ].map((tab) => {
+                  const active = portalType === tab.id;
+                  return (
+                    <Button
+                      key={tab.id}
+                      size="small"
+                      onClick={() => {
+                        setPortalType(tab.id);
+                        setErrorMessage('');
+                      }}
+                      sx={{
+                        flex: 1,
+                        py: 0.6,
+                        fontSize: '0.78rem',
+                        fontWeight: active ? 800 : 600,
+                        borderRadius: '10px',
+                        textTransform: 'none',
+                        bgcolor: active ? '#0284c7' : 'transparent',
+                        color: active ? '#ffffff' : '#94a3b8',
+                        boxShadow: active ? '0 2px 10px rgba(2, 132, 199, 0.45)' : 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: active ? '#0369a1' : 'rgba(255, 255, 255, 0.1)',
+                          color: '#ffffff'
+                        }
+                      }}
+                    >
+                      {tab.label}
+                    </Button>
+                  );
+                })}
+              </Box>
+
+              {errorMessage && (
+                <Alert
+                  severity="error"
+                  sx={{
+                    mb: 1.5,
+                    borderRadius: '10px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    bgcolor: 'rgba(239, 68, 68, 0.15)',
+                    color: '#fca5a5',
+                    border: '1px solid rgba(239, 68, 68, 0.3)'
+                  }}
+                >
+                  {errorMessage}
+                </Alert>
+              )}
+
+              {/* Form */}
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                {/* Input 1: Email or Username */}
+                <Box sx={{ mb: 1.8 }}>
+                  <TextField
+                    required
+                    fullWidth
+                    id="username"
+                    name="username"
+                    placeholder={
+                      portalType === 'student'
+                        ? 'Student Admission No. (e.g. DPS/2024/0604)'
+                        : portalType === 'parent'
+                        ? 'Parent Mobile Number'
+                        : 'Email or Username'
+                    }
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
+                    autoFocus
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonOutlineOutlined sx={{ color: '#38bdf8', fontSize: 22 }} />
+                        </InputAdornment>
+                      )
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(255, 255, 255, 0.07)',
+                        color: '#ffffff',
+                        fontSize: '0.9rem',
+                        '& fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.18)'
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(56, 189, 248, 0.5)'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#38bdf8',
+                          borderWidth: '2px'
+                        },
+                        '& input::placeholder': {
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          opacity: 1
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+
+                {/* Input 2: Password */}
+                <Box sx={{ mb: 1.2 }}>
+                  <TextField
+                    required
+                    fullWidth
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    placeholder="Password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlined sx={{ color: '#38bdf8', fontSize: 22 }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            size="small"
+                            sx={{ color: '#94a3b8' }}
+                          >
+                            {showPassword ? <VisibilityOffOutlined fontSize="small" /> : <VisibilityOutlined fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(255, 255, 255, 0.07)',
+                        color: '#ffffff',
+                        fontSize: '0.9rem',
+                        '& fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.18)'
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(56, 189, 248, 0.5)'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#38bdf8',
+                          borderWidth: '2px'
+                        },
+                        '& input::placeholder': {
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          opacity: 1
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+
+                {/* Row: Remember me + Forgot password? */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 2
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        size="small"
+                        sx={{
+                          color: '#64748b',
+                          '&.Mui-checked': { color: '#38bdf8' },
+                          p: 0.5
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>
+                        Remember me
+                      </Typography>
+                    }
+                    sx={{ m: 0 }}
+                  />
+
+                  <Typography
+                    variant="body2"
+                    onClick={() => setForgotDialogOpen(true)}
+                    sx={{
+                      fontSize: '0.8rem',
+                      color: '#38bdf8',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      '&:hover': { textDecoration: 'underline', color: '#7dd3fc' }
+                    }}
+                  >
+                    Forgot password?
+                  </Typography>
+                </Box>
+
+                {/* Blue Main Login Button */}
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={loading}
+                  startIcon={!loading && <LoginIcon sx={{ fontSize: 20 }} />}
+                  sx={{
+                    py: 1.15,
+                    borderRadius: '12px',
+                    fontSize: '0.92rem',
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    boxShadow: '0 8px 24px -4px rgba(2, 132, 199, 0.55)',
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 100%)',
+                      boxShadow: '0 12px 28px -4px rgba(2, 132, 199, 0.75)',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : portalType === 'student' ? (
+                    'Login to Student Portal'
+                  ) : portalType === 'parent' ? (
+                    'Login to Parent Portal'
+                  ) : (
+                    'Login'
+                  )}
+                </Button>
+
+                {/* Divider with 'or' */}
+                <Divider
+                  sx={{
+                    my: 1.8,
+                    color: '#64748b',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    '&::before, &::after': { borderColor: 'rgba(255, 255, 255, 0.12)' }
+                  }}
+                >
+                  or
+                </Divider>
+
+                {/* Contact Admin Action Button */}
+                <Button
+                  fullWidth
+                  variant="text"
+                  startIcon={<SupportAgentOutlined sx={{ color: '#38bdf8', fontSize: 20 }} />}
+                  onClick={() => setContactDialogOpen(true)}
+                  sx={{
+                    py: 0.8,
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    color: '#38bdf8',
+                    textTransform: 'none',
+                    bgcolor: 'rgba(56, 189, 248, 0.08)',
+                    border: '1px solid rgba(56, 189, 248, 0.22)',
+                    '&:hover': {
+                      bgcolor: 'rgba(56, 189, 248, 0.16)',
+                      borderColor: 'rgba(56, 189, 248, 0.4)'
+                    }
+                  }}
+                >
+                  Contact Admin
+                </Button>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* ========================================================================= */}
+          {/* RIGHT COLUMN: BRAND LOGO + 8 FEATURE CARDS */}
+          {/* ========================================================================= */}
+          <Grid
+            item
+            xs={12}
+            md={6.5}
+            lg={7}
+            xl={7.5}
             sx={{
-              background: portalType === 'student' 
-                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
-                : portalType === 'parent' 
-                ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' 
-                : 'linear-gradient(135deg, #1976d2 0%, #0a387c 100%)',
-              color: 'white',
-              p: 1.5,
-              borderRadius: '50%',
-              mb: 1.5,
-              boxShadow: '0 4px 14px rgba(0,0,0,0.18)'
+              display: { xs: 'none', md: 'flex' },
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            <SchoolIcon fontSize="large" />
-          </Box>
-          <Typography component="h1" variant="h5" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '0.2px' }}>
-            DVS ERP
-          </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 700, color: '#f59e0b', mb: 0.5 }}>
-            Digital Vidya Sarthi
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-            {portalType === 'student' 
-              ? 'Student Portal: View Timetable, Attendance, Results & Notices'
-              : portalType === 'parent'
-              ? 'Parent Portal: Monitor Child Progress, Dues, Results & Daily Presence'
-              : 'School Management & Staff ERP Portal'}
-          </Typography>
+            <Box sx={{ width: '100%', maxWidth: '680px' }}>
+              {/* Official Brand Logo with Glowing 3D Badge (Clean transparent logo) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: { xs: 2.5, lg: 3.5 },
+                  gap: 2.5
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/dvs-logo.png"
+                  alt="Digital Vidya Saarthi"
+                  sx={{
+                    height: { md: 95, lg: 115, xl: 125 },
+                    width: 'auto',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 8px 25px rgba(2, 132, 199, 0.45))'
+                  }}
+                />
 
-          {/* Portal Switcher Buttons */}
-          <Box sx={{ display: 'flex', width: '100%', mb: 2.5, bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
-            <Button
-              size="small"
-              onClick={() => { setPortalType('staff'); setErrorMessage(''); }}
-              sx={{
-                flex: 1,
-                py: 0.8,
-                borderRadius: 1.5,
-                fontWeight: 800,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                bgcolor: portalType === 'staff' ? '#ffffff' : 'transparent',
-                color: portalType === 'staff' ? '#0a387c' : '#64748b',
-                boxShadow: portalType === 'staff' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-              }}
-            >
-              Staff / Admin
-            </Button>
-            <Button
-              size="small"
-              onClick={() => { setPortalType('student'); setErrorMessage(''); }}
-              sx={{
-                flex: 1,
-                py: 0.8,
-                borderRadius: 1.5,
-                fontWeight: 800,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                bgcolor: portalType === 'student' ? '#0284c7' : 'transparent',
-                color: portalType === 'student' ? '#ffffff' : '#64748b',
-                boxShadow: portalType === 'student' ? '0 2px 6px rgba(2, 132, 199, 0.3)' : 'none'
-              }}
-            >
-              🎓 Student
-            </Button>
-            <Button
-              size="small"
-              onClick={() => { setPortalType('parent'); setErrorMessage(''); }}
-              sx={{
-                flex: 1,
-                py: 0.8,
-                borderRadius: 1.5,
-                fontWeight: 800,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                bgcolor: portalType === 'parent' ? '#10b981' : 'transparent',
-                color: portalType === 'parent' ? '#ffffff' : '#64748b',
-                boxShadow: portalType === 'parent' ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'none'
-              }}
-            >
-              👨‍👩‍👧 Parent
-            </Button>
-          </Box>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#ffffff',
+                    px: 2,
+                    py: 0.8,
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: { md: '1.2rem', lg: '1.35rem' },
+                    letterSpacing: 2,
+                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.45)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                >
+                  ERP
+                </Box>
+              </Box>
 
-          {errorMessage && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-              {errorMessage}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label={
-                portalType === 'student'
-                  ? 'Admission No. or Student Username'
-                  : portalType === 'parent'
-                  ? 'Registered Parent Mobile / Email'
-                  : 'Username or Email'
-              }
-              name="username"
-              autoComplete="username"
-              autoFocus
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              placeholder={
-                portalType === 'student'
-                  ? 'e.g. ADM2026001'
-                  : portalType === 'parent'
-                  ? 'e.g. 9873993957'
-                  : 'admin'
-              }
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
+              {/* 8 Feature Cards Grid (2 rows x 4 columns) */}
+              <Grid container spacing={1.8}>
+                {features.map((item, idx) => (
+                  <Grid item xs={6} sm={3} key={idx}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.8,
+                        height: '115px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        borderRadius: '16px',
+                        bgcolor: 'rgba(255, 255, 255, 0.96)',
+                        border: '1px solid rgba(255, 255, 255, 0.6)',
+                        boxShadow: '0 8px 25px rgba(0, 8, 25, 0.25)',
+                        transition: 'all 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                        cursor: 'default',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          bgcolor: '#ffffff',
+                          boxShadow: '0 16px 35px rgba(2, 132, 199, 0.45)',
+                          border: '1.5px solid #38bdf8',
+                          '& .feature-icon': {
+                            transform: 'scale(1.15)'
+                          }
+                        }
+                      }}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+                      <Box
+                        className="feature-icon"
+                        sx={{
+                          mb: 0.8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.25s ease'
+                        }}
+                      >
+                        {item.icon}
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 800,
+                          color: '#0f172a',
+                          fontSize: '0.78rem',
+                          lineHeight: 1.25,
+                          whiteSpace: 'pre-line'
+                        }}
+                      >
+                        {item.title}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ 
-                mt: 3, 
-                mb: 2, 
-                py: 1.2, 
-                fontWeight: 800,
-                bgcolor: portalType === 'student' 
-                  ? '#0284c7' 
-                  : portalType === 'parent' 
-                  ? '#10b981' 
-                  : '#1976d2',
-                '&:hover': {
-                  bgcolor: portalType === 'student' 
-                    ? '#0369a1' 
-                    : portalType === 'parent' 
-                    ? '#059669' 
-                    : '#1565c0',
-                }
-              }}
-              disabled={loading}
-            >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                portalType === 'student'
-                  ? 'Login to Student Portal'
-                  : portalType === 'parent'
-                  ? 'Login to Parent Portal'
-                  : 'Sign In to Management ERP'
-              )}
-            </Button>
-          </Box>
+              {/* Bottom Subtle Trustline */}
+              <Box sx={{ mt: 2.8, textAlign: 'center' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#93c5fd',
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                  }}
+                >
+                  ⚡ Enterprise Cloud Education Management System • Trusted by Leading Institutions
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
 
-          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e2e8f0', width: '100%', textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Powered by <strong>Digital Vidya Sarthi</strong> • DVS ERP
+        </Grid>
+      </Container>
+
+      {/* ========================================================================= */}
+      {/* DIALOG 1: CONTACT ADMIN MODAL */}
+      {/* ========================================================================= */}
+      <Dialog
+        open={contactDialogOpen}
+        onClose={() => setContactDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SupportAgentOutlined sx={{ color: '#0284c7', fontSize: 26 }} />
+            <Typography variant="h6" fontWeight={800} color="#0f172a">
+              Contact School Admin
             </Typography>
           </Box>
-        </Paper>
-      </Container>
+          <IconButton size="small" onClick={() => setContactDialogOpen(false)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ py: 2.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+            Agar aapko login karne mein koi samasya aa rahi hai ya credentials bhool gaye hain, toh kripya school office ya IT desk se contact karein:
+          </Typography>
+
+          <Stack spacing={2}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: '#f8fafc', borderRadius: '12px' }}>
+              <PhoneIcon sx={{ color: '#0284c7' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                  Helpdesk Helpline
+                </Typography>
+                <Typography variant="body2" fontWeight={800} color="#0f172a">
+                  +91 98765 43210 / +91 11 2345 6789
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: '#f8fafc', borderRadius: '12px' }}>
+              <EmailIcon sx={{ color: '#0284c7' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                  Official Support Email
+                </Typography>
+                <Typography variant="body2" fontWeight={800} color="#0f172a">
+                  support@digitalvidyasaarthi.in
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: '#f8fafc', borderRadius: '12px' }}>
+              <ClockIcon sx={{ color: '#0284c7' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                  Office Hours
+                </Typography>
+                <Typography variant="body2" fontWeight={800} color="#0f172a">
+                  Monday to Saturday: 8:00 AM – 4:00 PM
+                </Typography>
+              </Box>
+            </Box>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setContactDialogOpen(false)}
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 800,
+              bgcolor: '#0284c7',
+              '&:hover': { bgcolor: '#0369a1' }
+            }}
+          >
+            Got it, Thank You
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========================================================================= */}
+      {/* DIALOG 2: FORGOT PASSWORD MODAL */}
+      {/* ========================================================================= */}
+      <Dialog
+        open={forgotDialogOpen}
+        onClose={() => setForgotDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+          <Typography variant="h6" fontWeight={800} color="#0f172a">
+            Password Recovery
+          </Typography>
+          <IconButton size="small" onClick={() => setForgotDialogOpen(false)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ py: 2.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Security policy ke tehat passwords Central School Administrator dwara reset kiye jaate hain:
+          </Typography>
+
+          <Stack spacing={1.5}>
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#f8fafc' }}>
+              <Typography variant="subtitle2" fontWeight={800} color="#0284c7">
+                🎓 Students & Parents:
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Aapka default password <strong>Admin@123</strong> hai. Yadi aapne change kiya tha aur bhool gaye hain, toh class teacher ya school office se reset karwayen.
+              </Typography>
+            </Paper>
+
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#f8fafc' }}>
+              <Typography variant="subtitle2" fontWeight={800} color="#0284c7">
+                👨‍🏫 Faculty & Staff:
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                School Principal ya IT Admin apne dashboard (Users & Roles) se aapka password instant reset kar sakte hain.
+              </Typography>
+            </Paper>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setForgotDialogOpen(false)}
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 800,
+              bgcolor: '#0284c7',
+              '&:hover': { bgcolor: '#0369a1' }
+            }}
+          >
+            Understood
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
+
+export default LoginPage;

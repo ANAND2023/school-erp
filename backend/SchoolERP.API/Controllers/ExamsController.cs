@@ -156,6 +156,7 @@ namespace SchoolERP.API.Controllers
                     ClassName = e.Class != null ? e.Class.Name : "",
                     e.IsPublished,
                     e.IsLocked,
+                    e.PublishDate,
                     ScheduleCount = e.Schedules.Count
                 })
                 .ToListAsync();
@@ -192,6 +193,8 @@ namespace SchoolERP.API.Controllers
                     Description = !string.IsNullOrWhiteSpace(dto.Code) 
                         ? $"[{dto.Code}] {dto.Description}".Trim()
                         : dto.Description,
+                    PublishDate = dto.PublishDate,
+                    IsPublished = dto.IsPublished ?? (dto.PublishDate.HasValue && dto.PublishDate.Value.Date <= DateTime.UtcNow.Date),
                     CreatedBy = _currentUserService.UserId ?? 1,
                     CreatedOn = DateTime.UtcNow,
                     IsActive = true
@@ -251,11 +254,17 @@ namespace SchoolERP.API.Controllers
             exam.Description = !string.IsNullOrWhiteSpace(dto.Code)
                 ? $"[{dto.Code}] {dto.Description}".Trim()
                 : dto.Description;
+            if (dto.PublishDate.HasValue)
+            {
+                exam.PublishDate = dto.PublishDate;
+                if (exam.PublishDate.Value.Date <= DateTime.UtcNow.Date) exam.IsPublished = true;
+            }
+            if (dto.IsPublished.HasValue) exam.IsPublished = dto.IsPublished.Value;
             exam.ModifiedBy = _currentUserService.UserId ?? 1;
             exam.ModifiedOn = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.Ok(new { exam.Id, exam.Name }, "Exam updated successfully."));
+            return Ok(ApiResponse<object>.Ok(new { exam.Id, exam.Name, exam.PublishDate, exam.IsPublished }, "Exam updated successfully."));
         }
 
         [HttpDelete("{id}")]
@@ -1794,6 +1803,8 @@ namespace SchoolERP.API.Controllers
         public string Name { get; set; } = string.Empty;
         public string? Code { get; set; }
         public string? Description { get; set; }
+        public DateTime? PublishDate { get; set; }
+        public bool? IsPublished { get; set; }
         public List<CreateExamScheduleItemDto>? SubjectSchedules { get; set; }
     }
 

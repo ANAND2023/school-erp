@@ -55,6 +55,8 @@ namespace SchoolERP.Application.DTOs
         public string? AdminUsername { get; set; }
         public string? AdminEmail { get; set; }
         public string? AdminPassword { get; set; }
+        public bool AllowStudentLogin { get; set; } = true;
+        public bool AllowParentLogin { get; set; } = true;
         public DateTime CreatedOn { get; set; }
     }
 
@@ -77,6 +79,8 @@ namespace SchoolERP.Application.DTOs
         public string Status { get; set; } = "Active";
         public bool IsActive { get; set; }
         public string? InitialAdminPassword { get; set; }
+        public bool AllowStudentLogin { get; set; } = true;
+        public bool AllowParentLogin { get; set; } = true;
         public DateTime CreatedOn { get; set; }
 
         public TenantSubscriptionDto? CurrentSubscription { get; set; }
@@ -183,6 +187,10 @@ namespace SchoolERP.Application.DTOs
         public decimal AmountPaid { get; set; }
         public string SubscriptionStatus { get; set; } = "Active"; // Active, Trial, Suspended
 
+        // Portal Access Permissions
+        public bool AllowStudentLogin { get; set; } = true;
+        public bool AllowParentLogin { get; set; } = true;
+
         // Modules Selected
         public List<string> EnabledModuleCodes { get; set; } = new();
 
@@ -211,6 +219,14 @@ namespace SchoolERP.Application.DTOs
         public string? AffiliationNumber { get; set; }
         public string Status { get; set; } = "Active";
         public bool IsActive { get; set; } = true;
+        public bool? AllowStudentLogin { get; set; }
+        public bool? AllowParentLogin { get; set; }
+    }
+
+    public class UpdateTenantPortalAccessRequestDto
+    {
+        public bool AllowStudentLogin { get; set; }
+        public bool AllowParentLogin { get; set; }
     }
 
     public class UpdateTenantModulesRequestDto
