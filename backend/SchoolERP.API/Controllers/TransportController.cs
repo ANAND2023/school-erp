@@ -270,7 +270,7 @@ namespace SchoolERP.API.Controllers
             return Ok(new { success = true, data = fees });
         }
             
-         
+        [HttpPost("clean-duplicates")]
         public async Task<IActionResult> CleanDuplicates()
         {
             var duplicates = await _context.TransportAllocations
