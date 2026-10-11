@@ -57,6 +57,20 @@ export const LandingPage = () => {
         description: 'End-to-end fee structures, installment planning, instant computer-generated A4/thermal receipts, payment gateway integrations, and automatic fee reminder notices.',
         image: '/images/erp_fees.jpg',
         stats: 'Zero Reconciliation Errors • 1-Click Receipts'
+      },
+      {
+        badge: 'Smart Learning & AI',
+        title: 'NCERT E-Books Reader & 24/7 AI Study Buddy Tutor',
+        description: 'Empower students with a free in-portal digital NCERT textbook library (Classes 6-12) and an interactive AI Homework & Concept Doubt Solver powered by instant study tutoring.',
+        image: '/images/erp_dashboard.jpg',
+        stats: 'Zero-Cost Digital Library • 24/7 Homework Assistance'
+      },
+      {
+        badge: 'Parent & Student Portals',
+        title: 'Dedicated Multi-Child Mobile & Web Portals',
+        description: 'Parents switch between siblings with 1-click to view live timetable schedules, attendance logs, exam report cards, digital fee receipts, and school circulars in real time.',
+        image: '/images/erp_attendance.jpg',
+        stats: 'Multi-Child Switcher • 100% Real-Time Sync'
       }
     ],
     contactInfo: {
@@ -203,6 +217,27 @@ export const LandingPage = () => {
       icon: 'pi pi-chart-bar',
       tag: 'Analytics',
       desc: 'Consolidated multi-branch reporting covering fee collection trends, defaulters, daily attendance ratios, and institutional growth.'
+    },
+    {
+      category: 'portal',
+      title: 'Student & Parent Self-Service Portal',
+      icon: 'pi pi-user',
+      tag: 'Portals',
+      desc: 'Dedicated login for students and parents featuring multi-child switching, live period timetables, attendance tracking, and instant fee receipts.'
+    },
+    {
+      category: 'portal',
+      title: 'NCERT E-Books Digital Reader (Class 6-12)',
+      icon: 'pi pi-book',
+      tag: 'E-Learning',
+      desc: 'Complete syllabus textbooks for Mathematics, Science, English, Social Science & Physics with embedded HD reader, chapters breakdown, and direct PDF downloads.'
+    },
+    {
+      category: 'portal',
+      title: 'AI Study Buddy (24/7 Doubt Solver)',
+      icon: 'pi pi-sparkles',
+      tag: 'AI Tutor',
+      desc: 'Smart interactive study buddy providing instantaneous, curriculum-aligned homework explanations, mathematical concept breakdowns, and grammar practice.'
     }
   ];
 
@@ -226,6 +261,14 @@ export const LandingPage = () => {
     {
       q: 'Does it send automated attendance alerts to parents?',
       a: 'Yes. The moment student attendance is marked through biometric devices, RFID cards, or the teacher app, an automated WhatsApp/SMS notification is triggered immediately to parents if their child is absent or late.'
+    },
+    {
+      q: 'Is there a dedicated Portal for Students & Parents?',
+      a: 'Yes! Students and parents have a specialized login portal with a multi-child switcher, live daily period timetable grids, attendance calendars, term exam report cards, digital fee receipts, and school circulars.'
+    },
+    {
+      q: 'What is the NCERT Digital E-Books Reader and AI Study Buddy?',
+      a: 'The student portal includes a built-in digital library with official NCERT textbooks (Classes 6 to 12) featuring chapter-wise online reading and direct PDF downloads, plus a 24/7 AI Study Buddy tutor that explains concepts, solves homework doubts, and guides students step-by-step.'
     },
     {
       q: 'Can Super Admin customize this landing page directly?',
@@ -841,6 +884,7 @@ export const LandingPage = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap', mt: 4 }}>
               {[
                 { id: 'all', label: 'All Modules' },
+                { id: 'portal', label: 'Student, Parent & AI' },
                 { id: 'finance', label: 'Fees & Accounts' },
                 { id: 'academics', label: 'Academics & Attendance' },
                 { id: 'admissions', label: 'Admissions & CRM' },
