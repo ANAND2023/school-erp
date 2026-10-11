@@ -44,11 +44,15 @@ import {
   LocationOn as LocationIcon,
   Refresh as RefreshIcon,
   CheckCircle as CheckIcon,
-  Cancel as AbsentIcon
+  Cancel as AbsentIcon,
+  AutoAwesome as AiIcon,
+  LocalLibrary as NcertIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../../store/authStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { portalApi } from '../api';
+import { StudentAiChatTab } from '../components/StudentAiChatTab';
+import { StudentNcertReaderTab } from '../components/StudentNcertReaderTab';
 
 export const StudentPortalDashboardPage = () => {
   const { user } = useAuthStore();
@@ -61,34 +65,32 @@ export const StudentPortalDashboardPage = () => {
   const [portalData, setPortalData] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam ? (
-    tabParam === 'timetable' ? 2 :
-    tabParam === 'attendance' ? 1 :
-    tabParam === 'exams' ? 3 :
-    tabParam === 'fees' ? 4 :
-    tabParam === 'notices' ? 5 :
-    !isNaN(Number(tabParam)) ? Number(tabParam) : 0
-  ) : 0;
+  const resolveTab = (param) => {
+    if (!param) return 0;
+    switch (param) {
+      case 'attendance': return 1;
+      case 'timetable': return 2;
+      case 'exams': return 3;
+      case 'fees': return 4;
+      case 'notices': return 5;
+      case 'ncert': return 6;
+      case 'ai-tutor': return 7;
+      default: return !isNaN(Number(param)) ? Number(param) : 0;
+    }
+  };
 
+  const initialTab = resolveTab(tabParam);
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     if (tabParam) {
-      const resolved = (
-        tabParam === 'timetable' ? 2 :
-        tabParam === 'attendance' ? 1 :
-        tabParam === 'exams' ? 3 :
-        tabParam === 'fees' ? 4 :
-        tabParam === 'notices' ? 5 :
-        !isNaN(Number(tabParam)) ? Number(tabParam) : 0
-      );
-      setActiveTab(resolved);
+      setActiveTab(resolveTab(tabParam));
     }
   }, [tabParam]);
 
   const handleTabChange = (_, val) => {
     setActiveTab(val);
-    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'notices'];
+    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'notices', 'ncert', 'ai-tutor'];
     setSearchParams({ tab: tabKeys[val] || String(val) });
   };
 
@@ -336,6 +338,8 @@ export const StudentPortalDashboardPage = () => {
           <Tab icon={<ExamIcon />} iconPosition="start" label="Exams & Report Cards" />
           <Tab icon={<FeesIcon />} iconPosition="start" label="Fee Receipts & Dues" />
           <Tab icon={<NoticeIcon />} iconPosition="start" label="Notice Board" />
+          <Tab icon={<NcertIcon />} iconPosition="start" label="NCERT E-Books Reader" />
+          <Tab icon={<AiIcon />} iconPosition="start" label="AI Study Buddy" />
         </Tabs>
       </Paper>
 
@@ -719,6 +723,24 @@ export const StudentPortalDashboardPage = () => {
             </Stack>
           )}
         </Paper>
+      )}
+
+      {/* TAB 6: NCERT E-BOOKS READER */}
+      {activeTab === 6 && (
+        <StudentNcertReaderTab
+          student={student}
+          isDarkMode={isDarkMode}
+          primaryColor={primaryColor}
+        />
+      )}
+
+      {/* TAB 7: AI STUDY BUDDY & HOMEWORK TUTOR */}
+      {activeTab === 7 && (
+        <StudentAiChatTab
+          student={student}
+          isDarkMode={isDarkMode}
+          primaryColor={primaryColor}
+        />
       )}
 
     </Box>

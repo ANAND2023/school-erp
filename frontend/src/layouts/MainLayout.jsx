@@ -514,6 +514,8 @@ export const MainLayout = () => {
                 { title: 'Exams & Marks Cards', path: '/dashboard?tab=exams', key: 'exams', icon: 'pi pi-file-edit' },
                 { title: 'Fee Receipts & Dues', path: '/dashboard?tab=fees', key: 'fees', icon: 'pi pi-wallet' },
                 { title: 'Notices & Circulars', path: '/dashboard?tab=notices', key: 'notices', icon: 'pi pi-bell' },
+                { title: 'NCERT E-Books Reader', path: '/dashboard?tab=ncert', key: 'ncert', icon: 'pi pi-book' },
+                { title: 'AI Study Buddy (Chat)', path: '/dashboard?tab=ai-tutor', key: 'ai-tutor', icon: 'pi pi-sparkles' },
               ].map((item, idx) => {
                 const searchTab = new URLSearchParams(location.search).get('tab') || 'overview';
                 const isSelected = searchTab === item.key;
