@@ -73,6 +73,19 @@ namespace SchoolERP.Infrastructure.Persistence
             }
             catch { }
 
+            // Ensure ID card template columns exist on schools table
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN id_card_front LONGTEXT NULL;");
+            }
+            catch { }
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN id_card_back LONGTEXT NULL;");
+            }
+            catch { }
+
             // Ensure student_siblings table exists
             try
             {

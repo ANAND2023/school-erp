@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -72,10 +72,95 @@ const ACADEMIC_MONTHS = [
 import { feesApi } from '../api';
 import { classesApi } from '../../masters/api';
 import { usePermission } from '../../../hooks/usePermission';
+import { useThemeStore } from '../../../store/themeStore';
+
+// Custom hook: Drag-to-scroll with mouse cursor & Mouse Wheel horizontal scroll
+function useHorizontalScroll() {
+  const elRef = useRef(null);
+
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+
+    // 1. Mouse wheel horizontal scroll (translate vertical deltaY to horizontal scrollLeft)
+    const onWheel = (e) => {
+      if (el.scrollWidth > el.clientWidth) {
+        if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaY * 1.2;
+        }
+      }
+    };
+
+    // 2. Drag to scroll with mouse cursor (click & drag left to right)
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const onMouseDown = (e) => {
+      // Don't drag if clicking directly on input, textarea, button, or checkbox
+      if (e.target.closest('input, textarea, button, select, [role="button"], .MuiCheckbox-root, .MuiSwitch-root')) {
+        return;
+      }
+      isDown = true;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none';
+    };
+
+    const onMouseLeave = () => {
+      if (isDown) {
+        isDown = false;
+        el.style.cursor = 'grab';
+        el.style.userSelect = '';
+      }
+    };
+
+    const onMouseUp = () => {
+      if (isDown) {
+        isDown = false;
+        el.style.cursor = 'grab';
+        el.style.userSelect = '';
+      }
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      el.scrollLeft = scrollLeft - walk;
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('mousedown', onMouseDown);
+    el.addEventListener('mouseleave', onMouseLeave);
+    window.addEventListener('mouseup', onMouseUp);
+    el.addEventListener('mousemove', onMouseMove);
+
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('mousedown', onMouseDown);
+      el.removeEventListener('mouseleave', onMouseLeave);
+      window.removeEventListener('mouseup', onMouseUp);
+      el.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
+
+  return elRef;
+}
 
 export default function FeeStructurePage() {
   const queryClient = useQueryClient();
   const { can } = usePermission();
+  const { currentColorHex } = useThemeStore();
+  const primaryThemeColor = currentColorHex || '#8B5CF6';
+
+  // Drag-and-wheel horizontal scroll refs for tables
+  const monthMappingLayout1Ref = useHorizontalScroll();
+  const monthMappingLayout2Ref = useHorizontalScroll();
+  const structureMatrixRef = useHorizontalScroll();
 
   const [activeTab, setActiveTab] = useState(0);
 
@@ -684,83 +769,99 @@ export default function FeeStructurePage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-
-
+    <Box sx={{ p: { xs: 1.5, sm: 2.5 } }}>
       {/* Tabs */}
-      <Card sx={{ mb: 3, boxShadow: 1 }}>
+      <Card sx={{ mb: 2, boxShadow: 1, borderRadius: 2 }}>
         <Tabs
           value={activeTab}
           onChange={(e, val) => setActiveTab(val)}
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            px: 1.5,
+            minHeight: 42,
+            '& .MuiTab-root': {
+              minHeight: 42,
+              py: 0.8,
+              px: 1.8,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              textTransform: 'none',
+              letterSpacing: '0.2px',
+            },
+          }}
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab icon={<FolderIcon fontSize="small" sx={{ color: '#d97706' }} />} iconPosition="start" label="Month Mapping" />
-          <Tab icon={<FireIcon fontSize="small" color="primary" />} iconPosition="start" label="Structure Matrix" />
-          <Tab icon={<HeadIcon fontSize="small" />} iconPosition="start" label={`Fee Heads / Items (${heads.length})`} />
-          <Tab icon={<GroupIcon fontSize="small" />} iconPosition="start" label={`Fee Groups (${groups.length})`} />
-          <Tab icon={<InstallmentIcon fontSize="small" />} iconPosition="start" label={`Month Types & Schedule (${installments.length})`} />
+          <Tab icon={<FolderIcon sx={{ color: '#d97706', fontSize: 18 }} />} iconPosition="start" label="Month Mapping" />
+          <Tab icon={<FireIcon color="primary" sx={{ fontSize: 18 }} />} iconPosition="start" label="Structure Matrix" />
+          <Tab icon={<HeadIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Fee Heads (${heads.length})`} />
+          <Tab icon={<GroupIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Fee Groups (${groups.length})`} />
+          <Tab icon={<InstallmentIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Month Types & Schedule (${installments.length})`} />
         </Tabs>
       </Card>
 
       {/* Tab 0: Monthly Fee Setup */}
       {activeTab === 0 && (
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           {/* Card 1: 12-Month Academic Installment Schedule */}
-          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #1976d2' }}>
-            <CardContent sx={{ pb: 2 }}>
+          <Card sx={{ boxShadow: 1, borderRadius: 2, borderLeft: '3.5px solid #0b63ce' }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Stack
                 direction={{ xs: 'column', md: 'row' }}
                 justifyContent="space-between"
                 alignItems={{ xs: 'flex-start', md: 'center' }}
-                spacing={2}
-                sx={{ mb: 2 }}
+                spacing={1.5}
+                sx={{ mb: 1.5 }}
               >
                 <Box>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <CalendarMonthIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
+                    <CalendarMonthIcon sx={{ color: '#0b63ce', fontSize: 20 }} />
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '14px', color: '#0f172a' }}>
                       12-Month Academic Schedule
                     </Typography>
                     {monthlyStatus?.isScheduleReady ? (
                       <Chip
-                        icon={<CheckCircleIcon />}
+                        icon={<CheckCircleIcon sx={{ '&&': { fontSize: 14 } }} />}
                         label="12 Months Configured"
                         color="success"
                         size="small"
-                        sx={{ fontWeight: 700 }}
+                        sx={{ fontWeight: 600, fontSize: '11px', height: 22 }}
                       />
                     ) : (
                       <Chip
                         label="Needs Schedule Setup"
                         color="warning"
                         size="small"
-                        sx={{ fontWeight: 700 }}
+                        sx={{ fontWeight: 600, fontSize: '11px', height: 22 }}
                       />
                     )}
                   </Stack>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11.5px', mt: 0.2, display: 'block' }}>
                     Academic Year Session (April to March). Configure default monthly due date for student fee collection.
                   </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1} alignItems="center">
                   <TextField
                     size="small"
                     type="number"
-                    label="Due Day of Month"
-                    sx={{ width: 140 }}
+                    label="Due Day"
+                    sx={{
+                      width: 110,
+                      '& .MuiInputBase-input': { fontSize: '12px', py: 0.8 },
+                      '& .MuiInputLabel-root': { fontSize: '11.5px' },
+                    }}
                     inputProps={{ min: 1, max: 28 }}
                     value={monthlyDueDay}
                     onChange={(e) => setMonthlyDueDay(Number(e.target.value))}
-                    helperText="e.g. 10th of every month"
                   />
                   {can('FeeStructure', 'Add') && (
                     <Button
                       variant="outlined"
                       color="primary"
-                      startIcon={<AutorenewIcon />}
+                      size="small"
+                      startIcon={<AutorenewIcon sx={{ fontSize: 16 }} />}
                       loading={generateScheduleMutation.isPending}
                       onClick={() =>
                         generateScheduleMutation.mutate({
@@ -768,7 +869,15 @@ export default function FeeStructurePage() {
                           formatWithYear: true,
                         })
                       }
-                      sx={{ height: 40 }}
+                      sx={{
+                        height: 34,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '12px',
+                        borderRadius: 1.5,
+                        px: 1.5,
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       Generate / Sync 12 Months
                     </Button>
@@ -780,12 +889,12 @@ export default function FeeStructurePage() {
               <Box
                 sx={{
                   display: 'flex',
-                  gap: 1,
+                  gap: 0.8,
                   overflowX: 'auto',
-                  pb: 1,
-                  pt: 0.5,
-                  '&::-webkit-scrollbar': { height: 6 },
-                  '&::-webkit-scrollbar-thumb': { bgcolor: '#ccc', borderRadius: 3 },
+                  pb: 0.5,
+                  pt: 0.2,
+                  '&::-webkit-scrollbar': { height: 5 },
+                  '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: 3 },
                 }}
               >
                 {ACADEMIC_MONTHS.map((m) => {
@@ -796,21 +905,24 @@ export default function FeeStructurePage() {
                       key={m.index}
                       variant="outlined"
                       sx={{
-                        p: 1.2,
-                        minWidth: 95,
+                        py: 0.8,
+                        px: 1,
+                        minWidth: 80,
+                        flex: '1 0 auto',
                         textAlign: 'center',
                         bgcolor: isPresent ? '#f0f9ff' : '#fafafa',
-                        borderColor: isPresent ? '#90caf9' : '#e0e0e0',
-                        borderRadius: 2,
+                        borderColor: isPresent ? '#bae6fd' : '#e2e8f0',
+                        borderRadius: 1.5,
+                        transition: 'all 0.15s ease',
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
-                        Month #{m.index}
+                      <Typography variant="caption" sx={{ fontSize: '10px', color: '#64748b', fontWeight: 600, display: 'block' }}>
+                        #{m.index}
                       </Typography>
-                      <Typography variant="body2" fontWeight={700} color={isPresent ? 'primary.main' : 'text.primary'}>
+                      <Typography variant="body2" sx={{ fontSize: '12px', fontWeight: 700, color: isPresent ? '#0284c7' : '#334155' }}>
                         {m.name}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography variant="caption" sx={{ fontSize: '10px', color: '#94a3b8', display: 'block' }}>
                         Due: {inst ? dayjs(inst.dueDate).format('DD MMM') : `${monthlyDueDay}th`}
                       </Typography>
                     </Paper>
@@ -820,21 +932,21 @@ export default function FeeStructurePage() {
             </CardContent>
           </Card>
 
-          {/* Card 2: Month Mapping Matrix (matching media_1790830901883.png) */}
-          <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-            <CardContent sx={{ pb: 3 }}>
+          {/* Card 2: Month Mapping Matrix */}
+          <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               {/* Header Title & Subtitle */}
               <Stack
                 direction={{ xs: 'column', md: 'row' }}
                 justifyContent="space-between"
                 alignItems={{ xs: 'flex-start', md: 'center' }}
-                spacing={2}
-                sx={{ mb: 2.5 }}
+                spacing={1.5}
+                sx={{ mb: 1.5 }}
               >
                 <Box>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <FolderIcon sx={{ color: '#0b63ce', fontSize: 28 }} />
-                    <Typography variant="h6" fontWeight={800} color="#0f172a">
+                    <FolderIcon sx={{ color: '#0b63ce', fontSize: 20 }} />
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '14px', color: '#0f172a' }}>
                       Month Mapping Matrix
                     </Typography>
                     <Chip
@@ -842,28 +954,30 @@ export default function FeeStructurePage() {
                       size="small"
                       color="primary"
                       variant="outlined"
-                      sx={{ fontWeight: 700, ml: 1 }}
+                      sx={{ fontWeight: 600, fontSize: '10.5px', height: 20, ml: 0.5 }}
                     />
                   </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11.5px', mt: 0.2, display: 'block' }}>
                     Select which fee heads are applicable for each month. Unchecked months will not generate dues for students.
                   </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                   <Button
                     variant="outlined"
-                    startIcon={<CopyIcon />}
+                    size="small"
+                    startIcon={<CopyIcon sx={{ fontSize: 16 }} />}
                     onClick={() => {
                       setTargetCopyClasses([]);
                       setCopyDialogOpen(true);
                     }}
                     sx={{
-                      fontWeight: 700,
-                      height: 40,
+                      fontWeight: 600,
+                      height: 34,
+                      fontSize: '12px',
                       textTransform: 'none',
                       borderRadius: 1.5,
-                      borderColor: '#94a3b8',
+                      borderColor: '#cbd5e1',
                       color: '#334155',
                       '&:hover': { borderColor: '#0b63ce', bgcolor: '#f0f9ff' },
                     }}
@@ -874,20 +988,20 @@ export default function FeeStructurePage() {
                   {can('FeeStructure', 'Edit') && (
                     <Button
                       variant="contained"
-                      startIcon={<SaveIcon />}
+                      size="small"
+                      startIcon={<SaveIcon sx={{ fontSize: 16 }} />}
                       onClick={handleSaveMonthMapping}
                       loading={saveMonthlyStructureMutation.isPending}
                       sx={{
                         bgcolor: '#0b63ce',
                         '&:hover': { bgcolor: '#094fad' },
-                        fontWeight: 700,
-                        px: 3,
-                        py: 1,
-                        height: 40,
+                        fontWeight: 600,
+                        px: 2,
+                        height: 34,
                         textTransform: 'none',
-                        fontSize: 14,
+                        fontSize: '12px',
                         borderRadius: 1.5,
-                        boxShadow: '0 2px 6px rgba(11, 99, 206, 0.35)',
+                        boxShadow: '0 2px 4px rgba(11, 99, 206, 0.25)',
                       }}
                     >
                       Save Mapping
@@ -896,25 +1010,25 @@ export default function FeeStructurePage() {
                 </Stack>
               </Stack>
 
-              {/* Top Controls Bar matching Screenshot: SELECT CLASS dropdown + FEE GROUP + Options */}
+              {/* Top Controls Bar: SELECT CLASS dropdown + FEE GROUP + Options */}
               <Paper
                 elevation={0}
                 variant="outlined"
                 sx={{
-                  p: 2,
-                  mb: 2.5,
+                  p: 1.5,
+                  mb: 1.5,
                   bgcolor: '#f8fafc',
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   borderColor: '#e2e8f0',
                 }}
               >
-                <Grid container spacing={2} alignItems="center">
+                <Grid container spacing={1.5} alignItems="center">
                   <Grid item xs={12} sm={6} md={3}>
                     <Typography
                       variant="caption"
-                      fontWeight={800}
+                      fontWeight={700}
                       color="#475569"
-                      sx={{ textTransform: 'uppercase', letterSpacing: 0.6, mb: 0.5, display: 'block' }}
+                      sx={{ textTransform: 'uppercase', fontSize: '10.5px', letterSpacing: 0.4, mb: 0.3, display: 'block' }}
                     >
                       SELECT CLASS
                     </Typography>
@@ -925,10 +1039,13 @@ export default function FeeStructurePage() {
                       value={monthlyClassId}
                       onChange={(e) => setMonthlyClassId(e.target.value)}
                       disabled={applyToAllClasses}
-                      sx={{ bgcolor: '#ffffff' }}
+                      sx={{
+                        bgcolor: '#ffffff',
+                        '& .MuiInputBase-input': { fontSize: '12px', py: 0.8 },
+                      }}
                     >
                       {classes.map((c) => (
-                        <MenuItem key={c.id} value={c.id}>
+                        <MenuItem key={c.id} value={c.id} sx={{ fontSize: '12px' }}>
                           {c.name}
                         </MenuItem>
                       ))}
@@ -938,9 +1055,9 @@ export default function FeeStructurePage() {
                   <Grid item xs={12} sm={6} md={3}>
                     <Typography
                       variant="caption"
-                      fontWeight={800}
+                      fontWeight={700}
                       color="#475569"
-                      sx={{ textTransform: 'uppercase', letterSpacing: 0.6, mb: 0.5, display: 'block' }}
+                      sx={{ textTransform: 'uppercase', fontSize: '10.5px', letterSpacing: 0.4, mb: 0.3, display: 'block' }}
                     >
                       FEE GROUP
                     </Typography>
@@ -950,10 +1067,13 @@ export default function FeeStructurePage() {
                       size="small"
                       value={monthlyGroupId}
                       onChange={(e) => setMonthlyGroupId(e.target.value)}
-                      sx={{ bgcolor: '#ffffff' }}
+                      sx={{
+                        bgcolor: '#ffffff',
+                        '& .MuiInputBase-input': { fontSize: '12px', py: 0.8 },
+                      }}
                     >
                       {groups.map((g) => (
-                        <MenuItem key={g.id} value={g.id}>
+                        <MenuItem key={g.id} value={g.id} sx={{ fontSize: '12px' }}>
                           {g.name}
                         </MenuItem>
                       ))}
@@ -961,7 +1081,7 @@ export default function FeeStructurePage() {
                   </Grid>
 
                   <Grid item xs={12} sm={12} md={6}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mt: { xs: 0, md: 2.2 } }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mt: { xs: 0, md: 2 } }}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -969,10 +1089,11 @@ export default function FeeStructurePage() {
                             onChange={(e) => setMonthlyAutoAssign(e.target.checked)}
                             color="primary"
                             size="small"
+                            sx={{ p: 0.5 }}
                           />
                         }
                         label={
-                          <Typography variant="body2" fontWeight={600} color="#1e293b">
+                          <Typography variant="body2" fontWeight={600} color="#1e293b" sx={{ fontSize: '12px' }}>
                             Auto-assign & sync dues for students
                           </Typography>
                         }
@@ -985,10 +1106,11 @@ export default function FeeStructurePage() {
                             onChange={(e) => setApplyToAllClasses(e.target.checked)}
                             color="primary"
                             size="small"
+                            sx={{ p: 0.5 }}
                           />
                         }
                         label={
-                          <Typography variant="body2" fontWeight={600} color="#1e293b">
+                          <Typography variant="body2" fontWeight={600} color="#1e293b" sx={{ fontSize: '12px' }}>
                             Apply to all classes
                           </Typography>
                         }
@@ -1064,6 +1186,7 @@ export default function FeeStructurePage() {
                   {/* LAYOUT 1: Fee Heads as Rows, Months as Columns (Matching user's uploaded screenshot) */}
                   {matrixLayout === 'heads-as-rows' ? (
                     <TableContainer
+                      ref={monthMappingLayout1Ref}
                       component={Paper}
                       variant="outlined"
                       sx={{
@@ -1071,20 +1194,38 @@ export default function FeeStructurePage() {
                         borderColor: '#cbd5e1',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
                         overflowX: 'auto',
+                        cursor: 'grab',
+                        '& input': { cursor: 'text' },
+                        '& button, & a, & [role="button"]': { cursor: 'pointer' },
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: `${primaryThemeColor} #f1f5f9`,
+                        '&::-webkit-scrollbar': {
+                          height: '8px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          bgcolor: '#f1f5f9',
+                          borderRadius: '4px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          bgcolor: '#cbd5e1',
+                          borderRadius: '4px',
+                          '&:hover': { bgcolor: primaryThemeColor },
+                        },
                       }}
                     >
-                      <Table size="small" sx={{ minWidth: 950 }}>
-                        {/* Table Header: Royal Blue */}
-                        <TableHead sx={{ bgcolor: '#0b63ce' }}>
-                          <TableRow>
+                      <Table size="small" sx={{ minWidth: 1050 }}>
+                        {/* Table Header: Dynamically matches Active ERP Theme Color */}
+                        <TableHead sx={{ bgcolor: `${primaryThemeColor} !important`, '& th': { bgcolor: `${primaryThemeColor} !important` } }}>
+                          <TableRow sx={{ bgcolor: `${primaryThemeColor} !important` }}>
                             {/* Fee Type / Head Header */}
                             <TableCell
                               sx={{
-                                color: '#ffffff',
+                                bgcolor: `${primaryThemeColor} !important`,
+                                color: '#ffffff !important',
                                 fontWeight: 800,
-                                py: 1.5,
-                                px: 2,
-                                minWidth: 220,
+                                py: 1.2,
+                                px: 1.5,
+                                minWidth: 200,
                                 borderRight: '1px solid rgba(255,255,255,0.2)',
                               }}
                             >
@@ -1101,13 +1242,13 @@ export default function FeeStructurePage() {
                                   }
                                   onChange={handleToggleAllMatrix}
                                   sx={{
-                                    color: 'rgba(255,255,255,0.85)',
+                                    color: 'rgba(255,255,255,0.9) !important',
                                     p: 0,
-                                    '&.Mui-checked': { color: '#ffffff' },
-                                    '&.MuiCheckbox-indeterminate': { color: '#ffffff' },
+                                    '&.Mui-checked': { color: '#ffffff !important' },
+                                    '&.MuiCheckbox-indeterminate': { color: '#ffffff !important' },
                                   }}
                                 />
-                                <Typography variant="subtitle2" fontWeight={800} color="#ffffff">
+                                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#ffffff !important', fontSize: '13px' }}>
                                   Fee Type
                                 </Typography>
                               </Stack>
@@ -1117,15 +1258,16 @@ export default function FeeStructurePage() {
                             <TableCell
                               align="center"
                               sx={{
-                                color: '#ffffff',
+                                bgcolor: `${primaryThemeColor} !important`,
+                                color: '#ffffff !important',
                                 fontWeight: 800,
-                                py: 1.5,
+                                py: 1.2,
                                 px: 1,
-                                minWidth: 100,
+                                minWidth: 90,
                                 borderRight: '1px solid rgba(255,255,255,0.2)',
                               }}
                             >
-                              <Typography variant="subtitle2" fontWeight={800} color="#ffffff">
+                              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#ffffff !important', fontSize: '12.5px' }}>
                                 Amount (₹)
                               </Typography>
                             </TableCell>
@@ -1140,10 +1282,11 @@ export default function FeeStructurePage() {
                                   key={m.index}
                                   align="center"
                                   sx={{
-                                    color: '#ffffff',
-                                    py: 1,
+                                    bgcolor: `${primaryThemeColor} !important`,
+                                    color: '#ffffff !important',
+                                    py: 0.8,
                                     px: 0.5,
-                                    minWidth: 58,
+                                    minWidth: 52,
                                     borderRight: '1px solid rgba(255,255,255,0.2)',
                                   }}
                                 >
@@ -1155,14 +1298,14 @@ export default function FeeStructurePage() {
                                       onChange={() => handleToggleRow(m.index)}
                                       title={`Toggle all fees for ${m.name}`}
                                       sx={{
-                                        color: 'rgba(255,255,255,0.85)',
+                                        color: 'rgba(255,255,255,0.9) !important',
                                         p: 0,
-                                        mb: 0.3,
-                                        '&.Mui-checked': { color: '#ffffff' },
-                                        '&.MuiCheckbox-indeterminate': { color: '#ffffff' },
+                                        mb: 0.2,
+                                        '&.Mui-checked': { color: '#ffffff !important' },
+                                        '&.MuiCheckbox-indeterminate': { color: '#ffffff !important' },
                                       }}
                                     />
-                                    <Typography variant="caption" fontWeight={800} color="#ffffff" sx={{ fontSize: '11px' }}>
+                                    <Typography variant="caption" fontWeight={800} sx={{ color: '#ffffff !important', fontSize: '11px', letterSpacing: '0.3px' }}>
                                       {m.short}
                                     </Typography>
                                   </Box>
@@ -1174,14 +1317,15 @@ export default function FeeStructurePage() {
                             <TableCell
                               align="right"
                               sx={{
-                                color: '#ffffff',
+                                bgcolor: `${primaryThemeColor} !important`,
+                                color: '#ffffff !important',
                                 fontWeight: 800,
-                                py: 1.5,
-                                px: 2,
-                                minWidth: 120,
+                                py: 1.2,
+                                px: 1.5,
+                                minWidth: 110,
                               }}
                             >
-                              <Typography variant="subtitle2" fontWeight={800} color="#ffffff">
+                              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#ffffff !important', fontSize: '12.5px' }}>
                                 Annual Total
                               </Typography>
                             </TableCell>
@@ -1367,6 +1511,7 @@ export default function FeeStructurePage() {
                   ) : (
                     /* LAYOUT 2: Months as Rows, Fee Heads as Columns */
                     <TableContainer
+                      ref={monthMappingLayout2Ref}
                       component={Paper}
                       variant="outlined"
                       sx={{
@@ -1374,17 +1519,35 @@ export default function FeeStructurePage() {
                         borderColor: '#cbd5e1',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
                         overflowX: 'auto',
+                        cursor: 'grab',
+                        '& input': { cursor: 'text' },
+                        '& button, & a, & [role="button"]': { cursor: 'pointer' },
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: `${primaryThemeColor} #f1f5f9`,
+                        '&::-webkit-scrollbar': {
+                          height: '8px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          bgcolor: '#f1f5f9',
+                          borderRadius: '4px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          bgcolor: '#cbd5e1',
+                          borderRadius: '4px',
+                          '&:hover': { bgcolor: primaryThemeColor },
+                        },
                       }}
                     >
-                      <Table size="small" sx={{ minWidth: 800 }}>
-                        <TableHead sx={{ bgcolor: '#0b63ce' }}>
-                          <TableRow>
+                      <Table size="small" sx={{ minWidth: Math.max(880, 180 + heads.length * 120 + 140) }}>
+                        <TableHead sx={{ bgcolor: `${primaryThemeColor} !important`, '& th': { bgcolor: `${primaryThemeColor} !important` } }}>
+                          <TableRow sx={{ bgcolor: `${primaryThemeColor} !important` }}>
                             <TableCell
                               sx={{
-                                color: '#ffffff',
+                                bgcolor: `${primaryThemeColor} !important`,
+                                color: '#ffffff !important',
                                 fontWeight: 800,
-                                py: 1.5,
-                                px: 2,
+                                py: 1.2,
+                                px: 1.5,
                                 width: 170,
                                 borderRight: '1px solid rgba(255,255,255,0.2)',
                               }}
@@ -1402,13 +1565,13 @@ export default function FeeStructurePage() {
                                   }
                                   onChange={handleToggleAllMatrix}
                                   sx={{
-                                    color: 'rgba(255,255,255,0.85)',
+                                    color: 'rgba(255,255,255,0.9) !important',
                                     p: 0,
-                                    '&.Mui-checked': { color: '#ffffff' },
-                                    '&.MuiCheckbox-indeterminate': { color: '#ffffff' },
+                                    '&.Mui-checked': { color: '#ffffff !important' },
+                                    '&.MuiCheckbox-indeterminate': { color: '#ffffff !important' },
                                   }}
                                 />
-                                <Typography variant="subtitle2" fontWeight={800} color="#ffffff">
+                                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#ffffff !important', fontSize: '13px' }}>
                                   Month
                                 </Typography>
                               </Stack>
@@ -1423,7 +1586,8 @@ export default function FeeStructurePage() {
                                   key={h.id}
                                   align="center"
                                   sx={{
-                                    color: '#ffffff',
+                                    bgcolor: `${primaryThemeColor} !important`,
+                                    color: '#ffffff !important',
                                     py: 1.2,
                                     px: 1.5,
                                     minWidth: 130,
@@ -1901,26 +2065,31 @@ export default function FeeStructurePage() {
 
       {/* Tab 1: Fee Structure Matrix */}
       {activeTab === 1 && (
-        <Card sx={{ boxShadow: 2 }}>
-          <CardContent sx={{ pb: 2 }}>
+        <Card sx={{ boxShadow: 2, borderRadius: 2 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               justifyContent="space-between"
               alignItems={{ xs: 'flex-start', md: 'center' }}
-              spacing={2}
-              sx={{ mb: 2.5 }}
+              spacing={1.5}
+              sx={{ mb: 2 }}
             >
-              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
                 <TextField
                   select
                   size="small"
-                  label="Class"
-                  sx={{ width: 180 }}
+                  label="Select Class"
+                  sx={{
+                    width: 160,
+                    bgcolor: '#ffffff',
+                    '& .MuiInputBase-input': { fontSize: '12.5px', py: 0.8 },
+                    '& .MuiInputLabel-root': { fontSize: '12px' },
+                  }}
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
                 >
                   {classes.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                    <MenuItem key={c.id} value={c.id} sx={{ fontSize: '12px' }}>{c.name}</MenuItem>
                   ))}
                 </TextField>
 
@@ -1928,28 +2097,42 @@ export default function FeeStructurePage() {
                   select
                   size="small"
                   label="Fee Group"
-                  sx={{ width: 220 }}
+                  sx={{
+                    width: 180,
+                    bgcolor: '#ffffff',
+                    '& .MuiInputBase-input': { fontSize: '12.5px', py: 0.8 },
+                    '& .MuiInputLabel-root': { fontSize: '12px' },
+                  }}
                   value={selectedGroupId}
                   onChange={(e) => setSelectedGroupId(e.target.value)}
                 >
                   {groups.map((g) => (
-                    <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
+                    <MenuItem key={g.id} value={g.id} sx={{ fontSize: '12px' }}>{g.name}</MenuItem>
                   ))}
                 </TextField>
 
-                <Typography variant="caption" color="text.secondary">
-                  Rule BR-5.3: Once fee collection begins for a class, its fee structure cannot be modified.
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11px', maxWidth: 300 }}>
+                  Rule BR-5.3: Once collection starts for a class, structure is locked.
                 </Typography>
               </Stack>
 
               {can('FeeStructure', 'Edit') && (
                 <Button
                   variant="contained"
-                  color="primary"
-                  startIcon={<SaveIcon />}
+                  size="small"
+                  startIcon={<SaveIcon sx={{ fontSize: 16 }} />}
                   onClick={handleSaveMatrix}
                   disabled={!matrixDirty}
                   loading={saveMatrixMutation.isPending}
+                  sx={{
+                    bgcolor: `${primaryThemeColor} !important`,
+                    '&:hover': { opacity: 0.9 },
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    height: 34,
+                    px: 2,
+                    borderRadius: 1.5,
+                  }}
                 >
                   Save Fee Matrix
                 </Button>
@@ -1958,53 +2141,106 @@ export default function FeeStructurePage() {
 
             {isLoadingMatrix ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
+                <CircularProgress size={32} />
               </Box>
             ) : matrixData.length > 0 ? (
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead sx={{ bgcolor: '#f4f6f8' }}>
-                    <TableRow>
-                      <TableCell width={200}><b>Fee Head</b></TableCell>
-                      <TableCell width={110}><b>Type</b></TableCell>
+              <TableContainer
+                ref={structureMatrixRef}
+                component={Paper}
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  borderColor: '#cbd5e1',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  width: '100%',
+                  overflowX: 'auto',
+                  cursor: 'grab',
+                  '& input': { cursor: 'text' },
+                  '& button, & a, & [role="button"]': { cursor: 'pointer' },
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: `${primaryThemeColor} #f1f5f9`,
+                  '&::-webkit-scrollbar': {
+                    height: '8px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    bgcolor: '#f1f5f9',
+                    borderRadius: '4px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    bgcolor: '#cbd5e1',
+                    borderRadius: '4px',
+                    '&:hover': { bgcolor: primaryThemeColor },
+                  },
+                }}
+              >
+                <Table size="small" sx={{ minWidth: Math.max(900, 320 + installments.length * 115), tableLayout: 'auto' }}>
+                  <TableHead sx={{ bgcolor: `${primaryThemeColor} !important`, '& th': { bgcolor: `${primaryThemeColor} !important` } }}>
+                    <TableRow sx={{ bgcolor: `${primaryThemeColor} !important` }}>
+                      <TableCell sx={{ color: '#ffffff !important', fontWeight: 700, py: 1, px: 1.5, fontSize: '12px', minWidth: 160 }}>
+                        Fee Head
+                      </TableCell>
+                      <TableCell sx={{ color: '#ffffff !important', fontWeight: 700, py: 1, px: 1, fontSize: '12px', width: 90 }}>
+                        Type
+                      </TableCell>
                       {installments.map((inst) => (
-                        <TableCell key={inst.id} align="center" width={140}>
-                          <b>{inst.name}</b>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            Due: {dayjs(inst.dueDate).format('DD MMM')}
+                        <TableCell key={inst.id} align="center" sx={{ color: '#ffffff !important', fontWeight: 700, py: 0.8, px: 0.8, fontSize: '11.5px', minWidth: 100 }}>
+                          <span style={{ display: 'block', lineHeight: 1.1 }}>{inst.name}</span>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '9.5px', display: 'block' }}>
+                            {dayjs(inst.dueDate).format('DD MMM')}
                           </Typography>
                         </TableCell>
                       ))}
-                      <TableCell align="right" width={140}><b>Total (₹)</b></TableCell>
+                      <TableCell align="right" sx={{ color: '#ffffff !important', fontWeight: 700, py: 1, px: 1.5, fontSize: '12px', width: 110, minWidth: 110 }}>
+                        Total (₹)
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {matrixData.map((row, headIdx) => (
-                      <TableRow key={row.feeHeadId} hover>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight={600}>
+                      <TableRow key={row.feeHeadId} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#f8fafc' } }}>
+                        <TableCell sx={{ py: 0.8, px: 1.5 }}>
+                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '12.5px', color: '#1e293b' }}>
                             {row.feeHeadName}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Code: {row.feeHeadCode}
-                          </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 0.8, px: 1 }}>
                           <Chip
-                            label={row.type === 1 ? 'One-Time' : row.type === 2 ? 'Recurring' : 'Refundable'}
+                            label={row.type === 1 ? 'One-Time' : row.type === 2 ? 'Recurring' : 'Refund'}
                             size="small"
                             variant="outlined"
-                            color={row.type === 1 ? 'secondary' : 'default'}
+                            sx={{
+                              height: 20,
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              borderColor: row.type === 1 ? '#a855f7' : '#94a3b8',
+                              color: row.type === 1 ? '#7e22ce' : '#475569',
+                              bgcolor: row.type === 1 ? '#faf5ff' : '#f8fafc',
+                            }}
                           />
                         </TableCell>
                         {installments.map((inst) => {
                           const amt = row.installmentAmounts[inst.id] ?? 0;
                           return (
-                            <TableCell key={inst.id} align="center">
+                            <TableCell key={inst.id} align="center" sx={{ py: 0.5, px: 0.6 }}>
                               <TextField
                                 type="number"
                                 size="small"
-                                sx={{ width: 110 }}
+                                sx={{
+                                  width: '100%',
+                                  maxWidth: 82,
+                                  '& .MuiInputBase-input': {
+                                    fontSize: '12px',
+                                    py: 0.5,
+                                    px: 0.8,
+                                    textAlign: 'center',
+                                    fontWeight: 600,
+                                  },
+                                  '& .MuiOutlinedInput-root': {
+                                    borderRadius: 1,
+                                    bgcolor: amt > 0 ? '#eff6ff' : '#ffffff',
+                                    '&.Mui-focused fieldset': { borderColor: primaryThemeColor },
+                                  },
+                                }}
                                 value={amt === 0 ? '' : amt}
                                 placeholder="0"
                                 inputProps={{ min: 0, step: '50' }}
@@ -2013,32 +2249,32 @@ export default function FeeStructurePage() {
                             </TableCell>
                           );
                         })}
-                        <TableCell align="right">
-                          <Typography variant="body2" fontWeight={700} color="primary.main">
+                        <TableCell align="right" sx={{ py: 0.8, px: 1.5 }}>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: primaryThemeColor, fontSize: '13px' }}>
                             ₹{row.totalAmount.toLocaleString()}
                           </Typography>
                         </TableCell>
                       </TableRow>
                     ))}
                     {/* Grand Total Row */}
-                    <TableRow sx={{ bgcolor: '#fafafa', borderTop: '2px solid #ccc' }}>
-                      <TableCell colSpan={2}>
-                        <Typography variant="subtitle2" fontWeight={800}>
+                    <TableRow sx={{ bgcolor: '#f1f5f9', borderTop: '2px solid #cbd5e1' }}>
+                      <TableCell colSpan={2} sx={{ py: 1, px: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: '12px', color: '#0f172a' }}>
                           GRAND TOTAL PER STUDENT (₹)
                         </Typography>
                       </TableCell>
                       {installments.map((inst) => {
                         const colTotal = matrixData.reduce((sum, r) => sum + (Number(r.installmentAmounts[inst.id]) || 0), 0);
                         return (
-                          <TableCell key={inst.id} align="center">
-                            <Typography variant="body2" fontWeight={700}>
+                          <TableCell key={inst.id} align="center" sx={{ py: 1, px: 0.8 }}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '12px', color: '#0f172a' }}>
                               ₹{colTotal.toLocaleString()}
                             </Typography>
                           </TableCell>
                         );
                       })}
-                      <TableCell align="right">
-                        <Typography variant="subtitle2" fontWeight={800} color="success.main">
+                      <TableCell align="right" sx={{ py: 1, px: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight={800} color="success.main" sx={{ fontSize: '13.5px' }}>
                           ₹{matrixData.reduce((sum, r) => sum + r.totalAmount, 0).toLocaleString()}
                         </Typography>
                       </TableCell>
@@ -2047,7 +2283,7 @@ export default function FeeStructurePage() {
                 </Table>
               </TableContainer>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ fontSize: '12.5px' }}>
                 No fee heads or installments configured yet. Please configure Fee Heads and Installments in the tabs above first.
               </Alert>
             )}

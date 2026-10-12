@@ -358,19 +358,24 @@ export default function StaffDirectoryPage() {
       >
         <Box>
           <Typography variant="h5" fontWeight={700} color="text.primary">
-            Staff & HR Directory (Module 4)
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage teachers, administrative employees, profiles, and subject allocations
+            Staff Directory
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} flexWrap="wrap">
+        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
           <Button
             variant="outlined"
+            size="medium"
             startIcon={<FileDownloadIcon />}
             onClick={handleExportCSV}
             disabled={!employees.length}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 2,
+              height: 40,
+            }}
           >
             Export CSV
           </Button>
@@ -379,8 +384,16 @@ export default function StaffDirectoryPage() {
             <Button
               variant="outlined"
               color="secondary"
+              size="medium"
               startIcon={<AllocationIcon />}
               onClick={() => navigate('/staff/allocation')}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 2,
+                height: 40,
+              }}
             >
               Teacher Allocation
             </Button>
@@ -390,10 +403,19 @@ export default function StaffDirectoryPage() {
             <Button
               variant="contained"
               color="primary"
+              size="medium"
               startIcon={<AddIcon />}
               onClick={() => navigate('/staff/new')}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 2.5,
+                height: 40,
+                boxShadow: 2,
+              }}
             >
-              Add Employee
+              Add Staff Member
             </Button>
           )}
         </Stack>

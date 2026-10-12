@@ -13,6 +13,9 @@ export const branchApi = {
   getBranch: (id) => apiClient.get(`/branches/${id}`),
   createBranch: (data) => apiClient.post('/branches', data),
   updateBranch: (id, data) => apiClient.put(`/branches/${id}`, data),
+  getCurrentBranch: () => apiClient.get('/branches/current'),
+  getIdCardTemplate: () => apiClient.get('/branches/current/id-card-template'),
+  saveIdCardTemplate: (data) => apiClient.post('/branches/current/id-card-template', data),
 };
 
 export const academicYearApi = {

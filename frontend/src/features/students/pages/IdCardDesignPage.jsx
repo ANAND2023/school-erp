@@ -6,6 +6,8 @@ import { Toast } from 'primereact/toast';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { InputNumber } from 'primereact/inputnumber';
 import { AppSelect, AppInput } from '../../../components/common';
+import { branchApi } from '../../masters/api';
+import { useAuthStore } from '../../../store/authStore';
 
 const AVAILABLE_FIELDS = [
     { label: 'Student Name', value: 'studentName' },
@@ -20,9 +22,170 @@ const AVAILABLE_FIELDS = [
     { label: 'Static Text', value: 'staticText' }
 ];
 
+const createDefaultTemplate = (branch) => {
+    const schoolTitle = branch?.schoolName || branch?.name || 'School Name';
+    const address = branch?.address ? `${branch.address}${branch.city ? ', ' + branch.city : ''}` : '';
+    const phone = branch?.phone ? `Ph: ${branch.phone}` : '';
+
+    return {
+        bgImage: '',
+        orientation: 'vertical',
+        elements: [
+            {
+                id: 'school_title',
+                field: 'staticText',
+                label: 'School Name',
+                x: 10, y: 15,
+                fontSize: 12, color: '1e3a8a', fontWeight: 'bold',
+                text: schoolTitle.toUpperCase(),
+                width: 190, height: 20, isPhoto: false, prefix: ''
+            },
+            ...(address ? [{
+                id: 'school_address',
+                field: 'staticText',
+                label: 'Address',
+                x: 10, y: 35,
+                fontSize: 7, color: '475569', fontWeight: 'normal',
+                text: address,
+                width: 190, height: 16, isPhoto: false, prefix: ''
+            }] : []),
+            ...(phone ? [{
+                id: 'school_phone',
+                field: 'staticText',
+                label: 'Contact',
+                x: 10, y: 50,
+                fontSize: 7, color: '64748b', fontWeight: 'normal',
+                text: phone,
+                width: 190, height: 14, isPhoto: false, prefix: ''
+            }] : []),
+            {
+                id: 'std_photo',
+                field: 'photo',
+                label: 'Student Photo',
+                x: 135, y: 75,
+                fontSize: 10, color: '000000', fontWeight: 'normal',
+                text: 'PHOTO',
+                width: 60, height: 75, isPhoto: true, prefix: ''
+            },
+            {
+                id: 'std_name',
+                field: 'studentName',
+                label: 'Student Name',
+                x: 15, y: 80,
+                fontSize: 10, color: '0f172a', fontWeight: 'bold',
+                text: '[Student Name]',
+                width: 110, height: 18, isPhoto: false, prefix: 'Name:'
+            },
+            {
+                id: 'std_class',
+                field: 'classSection',
+                label: 'Class & Section',
+                x: 15, y: 105,
+                fontSize: 9, color: '334155', fontWeight: 'normal',
+                text: '[Class & Sec]',
+                width: 110, height: 18, isPhoto: false, prefix: 'Class:'
+            },
+            {
+                id: 'std_adm',
+                field: 'admissionNo',
+                label: 'Admission No',
+                x: 15, y: 130,
+                fontSize: 9, color: '334155', fontWeight: 'normal',
+                text: '[Admission No]',
+                width: 110, height: 18, isPhoto: false, prefix: 'Adm No:'
+            },
+            {
+                id: 'std_father',
+                field: 'fatherName',
+                label: 'Father Name',
+                x: 15, y: 155,
+                fontSize: 9, color: '334155', fontWeight: 'normal',
+                text: '[Father Name]',
+                width: 110, height: 18, isPhoto: false, prefix: 'Father:'
+            },
+            {
+                id: 'std_dob',
+                field: 'dob',
+                label: 'DOB',
+                x: 15, y: 180,
+                fontSize: 9, color: '334155', fontWeight: 'normal',
+                text: '[Date of Birth]',
+                width: 110, height: 18, isPhoto: false, prefix: 'DOB:'
+            },
+            {
+                id: 'std_phone',
+                field: 'phone',
+                label: 'Phone',
+                x: 15, y: 205,
+                fontSize: 9, color: '334155', fontWeight: 'normal',
+                text: '[Phone]',
+                width: 110, height: 18, isPhoto: false, prefix: 'Phone:'
+            },
+            {
+                id: 'std_principal',
+                field: 'staticText',
+                label: 'Principal Signature',
+                x: 130, y: 285,
+                fontSize: 8, color: '475569', fontWeight: 'bold',
+                text: 'Principal Sign',
+                width: 70, height: 16, isPhoto: false, prefix: ''
+            }
+        ]
+    };
+};
+
+const createDefaultBackTemplate = (branch) => {
+    return {
+        bgImage: '',
+        orientation: 'vertical',
+        elements: [
+            {
+                id: 'back_inst_title',
+                field: 'staticText',
+                label: 'Instructions',
+                x: 15, y: 20,
+                fontSize: 10, color: '1e3a8a', fontWeight: 'bold',
+                text: 'INSTRUCTIONS',
+                width: 180, height: 18, isPhoto: false, prefix: ''
+            },
+            {
+                id: 'back_inst_1',
+                field: 'staticText',
+                label: 'Instruction 1',
+                x: 15, y: 45,
+                fontSize: 8, color: '334155', fontWeight: 'normal',
+                text: '1. This card must be carried daily.',
+                width: 180, height: 16, isPhoto: false, prefix: ''
+            },
+            {
+                id: 'back_inst_2',
+                field: 'staticText',
+                label: 'Instruction 2',
+                x: 15, y: 65,
+                fontSize: 8, color: '334155', fontWeight: 'normal',
+                text: '2. In case of loss, inform school immediately.',
+                width: 180, height: 16, isPhoto: false, prefix: ''
+            },
+            {
+                id: 'std_address',
+                field: 'address',
+                label: 'Address',
+                x: 15, y: 95,
+                fontSize: 8, color: '334155', fontWeight: 'normal',
+                text: '[Residential Address]',
+                width: 180, height: 30, isPhoto: false, prefix: 'Address:'
+            }
+        ]
+    };
+};
+
 export const IdCardDesignPage = () => {
     const toast = useRef(null);
+    const { user } = useAuthStore();
     const [activeTab, setActiveTab] = useState(0);
+    const [branchInfo, setBranchInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     const [frontConfig, setFrontConfig] = useState({ bgImage: '', orientation: 'vertical', elements: [] });
     const [backConfig, setBackConfig] = useState({ bgImage: '', orientation: 'vertical', elements: [] });
@@ -34,16 +197,105 @@ export const IdCardDesignPage = () => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
-        const savedFront = localStorage.getItem('id_card_front');
-        const savedBack = localStorage.getItem('id_card_back');
-        if (savedFront) setFrontConfig({ orientation: 'vertical', ...JSON.parse(savedFront) });
-        if (savedBack) setBackConfig({ orientation: 'vertical', ...JSON.parse(savedBack) });
-    }, []);
+        // Clear obsolete global items so foreign backgrounds never leak across schools
+        localStorage.removeItem('id_card_front');
+        localStorage.removeItem('id_card_back');
 
-    const saveConfig = () => {
-        localStorage.setItem('id_card_front', JSON.stringify(frontConfig));
-        localStorage.setItem('id_card_back', JSON.stringify(backConfig));
-        toast.current.show({ severity: 'success', summary: 'Saved', detail: 'ID Card Template Saved successfully!' });
+        const loadBranchAndTemplate = async () => {
+            try {
+                setLoading(true);
+                const res = await branchApi.getIdCardTemplate();
+                if (res.data?.success && res.data?.data) {
+                    const data = res.data.data;
+                    setBranchInfo(data);
+                    const bId = data.branchId || user?.branchId || 1;
+                    const scopedFrontKey = `id_card_front_${bId}`;
+                    const scopedBackKey = `id_card_back_${bId}`;
+
+                    let front = null;
+                    let back = null;
+
+                    // 1. Try backend config
+                    if (data.frontConfig) {
+                        try { front = JSON.parse(data.frontConfig); } catch (e) {}
+                    }
+                    if (data.backConfig) {
+                        try { back = JSON.parse(data.backConfig); } catch (e) {}
+                    }
+
+                    // 2. Fallback to branch-scoped localStorage
+                    if (!front) {
+                        const localF = localStorage.getItem(scopedFrontKey);
+                        if (localF) try { front = JSON.parse(localF); } catch (e) {}
+                    }
+                    if (!back) {
+                        const localB = localStorage.getItem(scopedBackKey);
+                        if (localB) try { back = JSON.parse(localB); } catch (e) {}
+                    }
+
+                    // 3. Fallback to fresh school-specific default template
+                    if (!front) {
+                        front = createDefaultTemplate(data);
+                    }
+                    if (!back) {
+                        back = createDefaultBackTemplate(data);
+                    }
+
+                    setFrontConfig({ orientation: 'vertical', ...front });
+                    setBackConfig({ orientation: 'vertical', ...back });
+                }
+            } catch (err) {
+                console.error('Failed to load ID card template', err);
+                const fallbackData = {
+                    schoolName: user?.schoolName || 'School Name',
+                    branchName: user?.branchName || 'Main Campus',
+                    branchId: user?.branchId || 1,
+                    address: user?.schoolAddress || '',
+                    phone: user?.schoolPhone || ''
+                };
+                setBranchInfo(fallbackData);
+                setFrontConfig(createDefaultTemplate(fallbackData));
+                setBackConfig(createDefaultBackTemplate(fallbackData));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadBranchAndTemplate();
+    }, [user?.branchId]);
+
+    const saveConfig = async () => {
+        try {
+            setSaving(true);
+            const bId = branchInfo?.branchId || user?.branchId || 1;
+            const scopedFrontKey = `id_card_front_${bId}`;
+            const scopedBackKey = `id_card_back_${bId}`;
+
+            // Save to branch-scoped localStorage
+            localStorage.setItem(scopedFrontKey, JSON.stringify(frontConfig));
+            localStorage.setItem(scopedBackKey, JSON.stringify(backConfig));
+
+            // Save to Backend Database
+            await branchApi.saveIdCardTemplate({
+                frontConfig: JSON.stringify(frontConfig),
+                backConfig: JSON.stringify(backConfig)
+            });
+
+            toast.current.show({
+                severity: 'success',
+                summary: 'Saved',
+                detail: `ID Card Template saved for ${branchInfo?.schoolName || 'School'}!`
+            });
+        } catch (err) {
+            console.error('Error saving template:', err);
+            toast.current.show({
+                severity: 'success',
+                summary: 'Saved Locally',
+                detail: 'Template saved in browser storage for this branch.'
+            });
+        } finally {
+            setSaving(false);
+        }
     };
 
     const currentConfig = activeTab === 0 ? frontConfig : backConfig;
@@ -105,13 +357,14 @@ export const IdCardDesignPage = () => {
         e.stopPropagation();
         setSelectedElementId(el.id);
         setIsDragging(true);
-        const rect = e.target.getBoundingClientRect();
+        const rect = e.currentTarget.getBoundingClientRect();
         setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     };
 
     const handleMouseMove = (e) => {
         if (!isDragging || !selectedElementId) return;
         const container = document.getElementById('canvas-container');
+        if (!container) return;
         const rect = container.getBoundingClientRect();
         let newX = e.clientX - rect.left - dragOffset.x;
         let newY = e.clientY - rect.top - dragOffset.y;
@@ -137,32 +390,47 @@ export const IdCardDesignPage = () => {
                     <div 
                         id="canvas-container"
                         style={{
-                            width: `${canvasWidth}px`, height: `${canvasHeight}px`, border: '1px solid #ccc', position: 'relative',
-                            backgroundImage: `url(${currentConfig.bgImage})`, backgroundSize: 'cover',
+                            width: `${canvasWidth}px`, height: `${canvasHeight}px`, border: '1px solid #cbd5e1', position: 'relative',
+                            backgroundImage: currentConfig.bgImage ? `url(${currentConfig.bgImage})` : 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+                            backgroundSize: 'cover',
                             backgroundPosition: 'center', backgroundColor: '#fff', overflow: 'hidden',
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            borderRadius: '6px'
                         }}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseUp}
-                        onClick={() => setSelectedElementId(null)}
+                        onClick={(e) => {
+                            if (e.target.id === 'canvas-container') {
+                                setSelectedElementId(null);
+                            }
+                        }}
                     >
                         {currentConfig.elements.map(el => (
                             <div
                                 key={el.id}
                                 onMouseDown={(e) => handleMouseDown(e, el)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedElementId(el.id);
+                                }}
                                 style={{
                                     position: 'absolute', left: el.x, top: el.y,
-                                    fontSize: `${el.fontSize}px`, color: `#${el.color}`,
+                                    fontSize: `${el.fontSize}px`, color: el.color?.startsWith('#') ? el.color : `#${el.color}`,
                                     fontWeight: el.fontWeight, width: el.isPhoto ? el.width : 'auto',
                                     height: el.isPhoto ? el.height : 'auto',
-                                    border: selectedElementId === el.id ? '1px dashed red' : (el.isPhoto ? '1px solid #ddd' : 'none'),
-                                    cursor: 'move', backgroundColor: el.isPhoto ? '#eee' : 'transparent',
+                                    border: selectedElementId === el.id ? '1px dashed #ef4444' : (el.isPhoto ? '1px solid #cbd5e1' : 'none'),
+                                    cursor: 'move', backgroundColor: el.isPhoto ? '#e2e8f0' : 'transparent',
                                     display: 'flex', alignItems: 'center', justifyContent: el.isPhoto ? 'center' : 'flex-start',
-                                    userSelect: 'none', whiteSpace: 'nowrap', lineHeight: 1
+                                    userSelect: 'none', whiteSpace: 'nowrap', lineHeight: 1,
+                                    borderRadius: el.isPhoto ? '4px' : '0'
                                 }}
                             >
-                                {el.isPhoto ? 'PHOTO' : <>{el.prefix && <span style={{marginRight: '4px'}}>{el.prefix}</span>}{el.text}</>}
+                                {el.isPhoto ? (
+                                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>PHOTO</span>
+                                ) : (
+                                    <>{el.prefix && <span style={{ marginRight: '4px', fontWeight: 600 }}>{el.prefix}</span>}{el.text}</>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -182,10 +450,12 @@ export const IdCardDesignPage = () => {
                     <div className="p-fluid">
                         <label className="font-bold text-sm block mb-1">Upload Background</label>
                         <input type="file" accept="image/*" onChange={handleBgUpload} className="p-inputtext p-component p-2 text-sm" />
-                        {currentConfig.bgImage && (
-                            <div className="mt-1">
+                        {currentConfig.bgImage ? (
+                            <div className="mt-2">
                                 <Button label="Clear Background" icon="pi pi-trash" severity="danger" outlined size="small" onClick={() => setCurrentConfig(prev => ({...prev, bgImage: ''}))} />
                             </div>
+                        ) : (
+                            <small className="text-500 block mt-1">Default background is active for this school. Upload an image if you have a custom card design.</small>
                         )}
                     </div>
 
@@ -202,7 +472,15 @@ export const IdCardDesignPage = () => {
                     </div>
                     
                     <div className="mt-auto pt-3 border-top-1 surface-border">
-                        <Button label="Save All Templates" icon="pi pi-save" severity="success" onClick={saveConfig} className="w-full" size="large" />
+                        <Button 
+                            label={saving ? "Saving..." : "Save All Templates"} 
+                            icon="pi pi-save" 
+                            severity="success" 
+                            loading={saving}
+                            onClick={saveConfig} 
+                            className="w-full" 
+                            size="large" 
+                        />
                     </div>
                 </div>
 
@@ -284,7 +562,16 @@ export const IdCardDesignPage = () => {
         <div className="p-3 h-screen flex flex-column overflow-hidden" style={{ maxHeight: '100vh' }}>
             <Toast ref={toast} />
             <div className="flex justify-content-between align-items-center mb-3 flex-none">
-                <h2 className="text-xl font-bold m-0" style={{ color: '#1e293b' }}>ID Card Template Designer</h2>
+                <div>
+                    <h2 className="text-xl font-bold m-0" style={{ color: '#1e293b' }}>ID Card Template Designer</h2>
+                    {branchInfo && (
+                        <div className="text-xs text-600 mt-1 flex align-items-center gap-2">
+                            <span className="font-semibold text-primary"><i className="pi pi-building mr-1" />{branchInfo.schoolName}</span>
+                            <span>•</span>
+                            <span>Branch: <strong>{branchInfo.branchName}</strong></span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <Card className="flex-1 overflow-hidden flex flex-column" pt={{ body: { className: 'p-0 h-full flex flex-column overflow-hidden' }, content: { className: 'h-full overflow-hidden' } }}>
@@ -297,7 +584,6 @@ export const IdCardDesignPage = () => {
                     </TabPanel>
                 </TabView>
             </Card>
-
         </div>
     );
 };

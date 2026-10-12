@@ -87,4 +87,40 @@ export const superAdminApi = {
     const res = await apiClient.get('/superadmin/audit-logs', { params: { schoolId, limit } });
     return res.data;
   },
+
+  // 8. System Error Logs (Super Admin Diagnostics)
+  getErrorLogs: async (params = {}) => {
+    const res = await apiClient.get('/superadmin/error-logs', { params });
+    return res.data;
+  },
+
+  getErrorLogById: async (id) => {
+    const res = await apiClient.get(`/superadmin/error-logs/${id}`);
+    return res.data;
+  },
+
+  resolveErrorLog: async (id, payload = {}) => {
+    const res = await apiClient.post(`/superadmin/error-logs/${id}/resolve`, payload);
+    return res.data;
+  },
+
+  unresolveErrorLog: async (id) => {
+    const res = await apiClient.post(`/superadmin/error-logs/${id}/unresolve`);
+    return res.data;
+  },
+
+  deleteErrorLog: async (id) => {
+    const res = await apiClient.delete(`/superadmin/error-logs/${id}`);
+    return res.data;
+  },
+
+  clearResolvedLogs: async () => {
+    const res = await apiClient.post('/superadmin/error-logs/clear-resolved');
+    return res.data;
+  },
+
+  clearAllLogs: async (daysOld = 0) => {
+    const res = await apiClient.post('/superadmin/error-logs/clear-all', null, { params: { daysOld } });
+    return res.data;
+  },
 };

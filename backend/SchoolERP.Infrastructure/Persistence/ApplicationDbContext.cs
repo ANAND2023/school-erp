@@ -108,6 +108,7 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<GlobalAuditLog> GlobalAuditLogs => Set<GlobalAuditLog>();
         public DbSet<LandingEnquiry> LandingEnquiries => Set<LandingEnquiry>();
         public DbSet<LandingPageSetting> LandingPageSettings => Set<LandingPageSetting>();
+        public DbSet<SystemErrorLog> SystemErrorLogs => Set<SystemErrorLog>();
         public DbSet<Vehicle> Vehicles => Set<Vehicle>();
         public DbSet<TransportRoute> TransportRoutes => Set<TransportRoute>();
         public DbSet<RouteStop> RouteStops => Set<RouteStop>();
@@ -268,6 +269,16 @@ namespace SchoolERP.Infrastructure.Persistence
             modelBuilder.Entity<TenantGatewayConfig>(entity =>
             {
                 entity.HasIndex(gc => new { gc.SchoolId, gc.GatewayType, gc.Provider });
+            });
+
+            modelBuilder.Entity<SystemErrorLog>(entity =>
+            {
+                entity.ToTable("system_error_logs");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => e.StatusCode);
+                entity.HasIndex(e => e.IsResolved);
+                entity.HasIndex(e => e.ErrorId);
             });
         }
 

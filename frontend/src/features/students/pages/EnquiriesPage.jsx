@@ -36,7 +36,7 @@ import { useUiStore } from '../../../store/uiStore';
 import { useAuthStore } from '../../../store/authStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { EnquirySlipModal } from '../components/EnquirySlipModal';
-import { AppDatePicker } from '../../../components/common';
+import { AppDatePicker, AppInput, AppSelect } from '../../../components/common';
 
 const ENQUIRY_STATUSES = [
   { value: 1, label: 'Open', color: 'info' },
@@ -319,63 +319,63 @@ export const EnquiriesPage = () => {
     <Box>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          Student Enquiries & Follow-ups
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Track front-office student admission leads, schedule follow-ups, and convert enquiries to admissions (FR-3.1 & FR-3.2)
+          Student Enquiries
         </Typography>
       </Box>
 
       {/* Filter Toolbar */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
-            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search student, parent, phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <Button variant="contained" type="submit">
-                <SearchIcon />
+        <Grid container spacing={2} alignItems="flex-end">
+          <Grid item xs={12} sm={6} md={4}>
+            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1 }}>
+                <AppInput
+                  label="Search Enquiries"
+                  placeholder="Student, parent, phone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                type="submit"
+                startIcon={<SearchIcon />}
+                sx={{
+                  height: 30,
+                  minHeight: 30,
+                  minWidth: 90,
+                  px: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  flexShrink: 0,
+                  borderRadius: 1,
+                  mt: '1px',
+                }}
+              >
+                Search
               </Button>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              select
-              fullWidth
-              size="small"
+          <Grid item xs={12} sm={3} md={4}>
+            <AppSelect
               label="Class Sought"
+              placeholder="All Classes"
               value={selectedClass}
+              options={classes.map((c) => ({ label: c.name, value: c.id }))}
               onChange={(e) => setSelectedClass(e.target.value)}
-            >
-              <MenuItem value="">All Classes</MenuItem>
-              {classes.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </TextField>
+              showClear
+            />
           </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              select
-              fullWidth
-              size="small"
+          <Grid item xs={12} sm={3} md={4}>
+            <AppSelect
               label="Enquiry Status"
+              placeholder="All Statuses"
               value={selectedStatus}
+              options={ENQUIRY_STATUSES.map((s) => ({ label: s.label, value: s.value }))}
               onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <MenuItem value="">All Statuses</MenuItem>
-              {ENQUIRY_STATUSES.map((s) => (
-                <MenuItem key={s.value} value={s.value}>
-                  {s.label}
-                </MenuItem>
-              ))}
-            </TextField>
+              showClear
+            />
           </Grid>
         </Grid>
       </Paper>
@@ -401,94 +401,78 @@ export const EnquiriesPage = () => {
         maxWidth="sm"
       >
         <Box component="form" onSubmit={handleCreateEnquiry} sx={{ mt: 1 }}>
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                select
+              <AppSelect
                 required
-                fullWidth
                 label="Academic Session"
                 value={newEnquiry.academicYearId || activeAcademicYearId || ''}
+                options={academicYears.map((ay) => ({ label: ay.name || `Session ${ay.rawName}`, value: ay.id }))}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, academicYearId: e.target.value })}
-              >
-                {academicYears.map((ay) => (
-                  <MenuItem key={ay.id} value={ay.id}>
-                    {ay.name || `Session ${ay.rawName}`}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <AppInput
                 required
-                fullWidth
                 label="Student Name"
+                placeholder="Enter candidate name"
                 value={newEnquiry.studentName}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, studentName: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                select
+              <AppSelect
                 required
-                fullWidth
                 label="Class Sought"
+                placeholder="Select Class"
                 value={newEnquiry.classId}
+                options={classes.map((c) => ({ label: c.name, value: c.id }))}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, classId: e.target.value })}
-              >
-                {classes.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <AppInput
                 required
-                fullWidth
                 label="Parent / Guardian Name"
+                placeholder="Father or mother name"
                 value={newEnquiry.guardianName}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, guardianName: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <AppInput
                 required
-                fullWidth
                 label="Contact Mobile"
+                placeholder="10 digit mobile"
                 value={newEnquiry.mobile}
-                inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setNewEnquiry({ ...newEnquiry, mobile: val });
-                }}
+                maxLength={10}
+                onChange={(e) => setNewEnquiry({ ...newEnquiry, mobile: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
+              <AppInput
                 label="Email Address"
+                placeholder="parent@example.com"
                 value={newEnquiry.email}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, email: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                select
-                fullWidth
+              <AppSelect
                 label="Lead Source"
+                placeholder="Select source"
                 value={newEnquiry.source}
+                options={[
+                  { label: 'Walk-in Visit', value: 'Walk-in' },
+                  { label: 'Website Form', value: 'Website' },
+                  { label: 'Word of Mouth / Referral', value: 'Referral' },
+                  { label: 'Social Media (FB/IG)', value: 'Social Media' },
+                  { label: 'Newspaper Advertisement', value: 'Newspaper' },
+                ]}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, source: e.target.value })}
-              >
-                <MenuItem value="Walk-in">Walk-in Visit</MenuItem>
-                <MenuItem value="Website">Website Form</MenuItem>
-                <MenuItem value="Referral">Word of Mouth / Referral</MenuItem>
-                <MenuItem value="Social Media">Social Media (FB/IG)</MenuItem>
-                <MenuItem value="Newspaper">Newspaper Advertisement</MenuItem>
-              </TextField>
+              />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <AppDatePicker
                 label="Next Follow-up Date"
                 value={newEnquiry.nextFollowupDate}
@@ -502,17 +486,17 @@ export const EnquiriesPage = () => {
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
+              <AppInput
+                type="textarea"
                 rows={2}
                 label="Initial Discussion Notes"
+                placeholder="Inquiries raised, discussion summary..."
                 value={newEnquiry.notes}
                 onChange={(e) => setNewEnquiry({ ...newEnquiry, notes: e.target.value })}
               />
             </Grid>
           </Grid>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2.5 }}>
             <Button onClick={() => setAddModalOpen(false)} color="inherit">
               Cancel
             </Button>
@@ -569,12 +553,10 @@ export const EnquiriesPage = () => {
             Log New Follow-up
           </Typography>
           <Box component="form" id="followup-form" onSubmit={handleSaveFollowup}>
-            <Grid container spacing={2}>
+            <Grid container spacing={1.5}>
               <Grid item xs={12}>
-                <TextField
+                <AppInput
                   required
-                  fullWidth
-                  size="small"
                   label="Parent / Caller Response"
                   placeholder="e.g. Visited school, requested syllabus, will decide by Monday"
                   value={followupResponse}
@@ -592,26 +574,23 @@ export const EnquiriesPage = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
+                <AppSelect
                   label="Update Status"
                   value={updateStatus}
+                  options={[
+                    { label: 'Follow-up', value: 2 },
+                    { label: 'Converted to Admission', value: 3 },
+                    { label: 'Closed / Not Interested', value: 4 },
+                  ]}
                   onChange={(e) => setUpdateStatus(Number(e.target.value))}
-                >
-                  <MenuItem value={2}>Follow-up</MenuItem>
-                  <MenuItem value={3}>Converted to Admission</MenuItem>
-                  <MenuItem value={4}>Closed / Not Interested</MenuItem>
-                </TextField>
+                />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  multiline
+                <AppInput
+                  type="textarea"
                   rows={2}
                   label="Additional Internal Notes"
+                  placeholder="Internal counselor remarks..."
                   value={followupNotes}
                   onChange={(e) => setFollowupNotes(e.target.value)}
                 />

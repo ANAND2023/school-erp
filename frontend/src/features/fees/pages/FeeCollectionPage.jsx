@@ -738,22 +738,22 @@ export default function FeeCollectionPage() {
 
 
       {/* Student Search & Info Card */}
-      <Card sx={{ mb: 3, boxShadow: 2 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
+      <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.25 } }}>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={5}>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom sx={{ fontSize: 13 }}>
                 Search & Select Student
               </Typography>
               <TextField
                 fullWidth
                 size="small"
                 label="Search Student"
-                placeholder={duesSummary ? `${duesSummary.studentName} (${duesSummary.admissionNo || 'Selected'})` : "Enter Admission No, Student Name or Mobile..."}
+                placeholder={duesSummary ? `${duesSummary.studentName} (${duesSummary.admissionNo || 'Selected'})` : "Admission No, Name or Mobile..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1, fontSize: 20 }} />,
+                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1, fontSize: 18 }} />,
                   endAdornment: (
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       {(isSearching || isLoadingDues) && <CircularProgress size={16} />}
@@ -809,8 +809,8 @@ export default function FeeCollectionPage() {
             {/* Selected Student Banner */}
             <Grid item xs={12} md={7}>
               {isLoadingDues ? (
-                <Paper sx={{ p: 2, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <CircularProgress size={24} />
+                <Paper sx={{ p: 1.5, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <CircularProgress size={22} />
                   <Box>
                     <Typography variant="subtitle2" fontWeight={700} color="primary.main">
                       Loading Student Fee Profile...
@@ -821,37 +821,37 @@ export default function FeeCollectionPage() {
                   </Box>
                 </Paper>
               ) : duesSummary ? (
-                <Paper sx={{ p: 2, bgcolor: '#f7fafc', border: '1px solid #90caf9', borderRadius: 2 }}>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar sx={{ width: 50, height: 50, bgcolor: 'primary.main', fontSize: 22 }}>
+                <Paper sx={{ p: 1.5, px: 2, bgcolor: '#f8fafc', border: '1px solid #bfdbfe', borderRadius: 2 }}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center" justifyContent="space-between">
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar sx={{ width: 44, height: 44, bgcolor: 'primary.main', fontSize: 20, fontWeight: 700 }}>
                         {duesSummary.studentName ? duesSummary.studentName[0] : 'S'}
                       </Avatar>
                       <Box>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="subtitle1" fontWeight={700}>
+                          <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: 15 }}>
                             {duesSummary.studentName}
                           </Typography>
-                          <Chip label={duesSummary.admissionNo} color="primary" size="small" sx={{ fontWeight: 700 }} />
+                          <Chip label={duesSummary.admissionNo} color="primary" size="small" sx={{ fontWeight: 700, height: 20, fontSize: 10.5 }} />
                         </Stack>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" display="block">
                           Class: <b>{duesSummary.className} - {duesSummary.sectionName}</b> | Roll: <b>{duesSummary.rollNo ? '#' + duesSummary.rollNo : '—'}</b>
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" display="block">
                           Guardian: <b>{duesSummary.guardianName}</b> ({duesSummary.guardianMobile})
                         </Typography>
                       </Box>
                     </Stack>
 
-                    <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                    <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 0, sm: 1 } }}>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: 11 }}>
                         Total Outstanding Dues
                       </Typography>
-                      <Typography variant="h6" fontWeight={800} color={duesSummary.totalOutstanding > 0 ? 'error.main' : 'success.main'}>
+                      <Typography variant="h6" fontWeight={800} color={duesSummary.totalOutstanding > 0 ? 'error.main' : 'success.main'} sx={{ fontSize: '1.25rem', lineHeight: 1.2 }}>
                         ₹{duesSummary.totalOutstanding.toLocaleString()}
                       </Typography>
                       {duesSummary.totalFine > 0 && (
-                        <Typography variant="caption" color="error.main" fontWeight={600} display="block">
+                        <Typography variant="caption" color="error.main" fontWeight={600} display="block" sx={{ fontSize: 10.5 }}>
                           + ₹{duesSummary.totalFine} Overdue Fine
                         </Typography>
                       )}
@@ -873,165 +873,124 @@ export default function FeeCollectionPage() {
         <Grid container spacing={3}>
           {/* Left: Dues Selection Grid */}
           <Grid item xs={12} lg={8}>
-            <Card sx={{ boxShadow: 2 }}>
-              <CardContent sx={{ pb: 1 }}>
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: 'flex-start', md: 'center' }}
-                  spacing={2}
-                  sx={{ mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}
-                >
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Typography
-                        variant="h6"
-                        fontWeight={800}
-                        sx={{
-                          whiteSpace: 'nowrap',
-                          color: '#0f172a',
-                          letterSpacing: '-0.01em',
-                        }}
-                      >
-                        Student Fee Dues & Monthly Collection
+            <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+              <CardContent sx={{ p: { xs: 1.75, sm: 2.25 }, pb: 1 }}>
+                <Box sx={{ mb: 2, pb: 1.5, borderBottom: '1px solid #f1f5f9' }}>
+                  <Stack
+                    direction={{ xs: 'column', lg: 'row' }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'flex-start', lg: 'center' }}
+                    spacing={1}
+                  >
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="nowrap">
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={800}
+                          noWrap
+                          sx={{
+                            color: '#0f172a',
+                            fontSize: 14.5,
+                            letterSpacing: '-0.01em',
+                          }}
+                        >
+                          Student Fee Dues & Monthly Collection
+                        </Typography>
+                        <Chip
+                          label={`${visiblePayMonths.length} Selected`}
+                          color={visiblePayMonths.length > 0 ? 'primary' : 'default'}
+                          size="small"
+                          sx={{ fontWeight: 700, height: 20, fontSize: 10.5, flexShrink: 0 }}
+                        />
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, fontSize: 11 }}>
+                        Strict Sequential Dues (FIFO): Earlier pending months are cleared before subsequent months
                       </Typography>
-                      <Chip
-                        label={`${visiblePayMonths.length} Month(s) Selected`}
-                        color={visiblePayMonths.length > 0 ? 'primary' : 'default'}
-                        size="small"
-                        sx={{ fontWeight: 700, height: 24, fontSize: 11, flexShrink: 0 }}
-                      />
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                      Strict Sequential Dues (FIFO): Earlier pending months are cleared before subsequent months
-                    </Typography>
-                  </Box>
+                    </Box>
 
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-                    {paidMonths.length > 0 && (
-                      <Button
-                        size="small"
-                        variant={showPaidMonths ? "contained" : "outlined"}
-                        color="success"
-                        onClick={() => setShowPaidMonths(!showPaidMonths)}
-                        sx={{
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          fontSize: 12,
-                          px: 1.75,
-                          py: 0.6,
-                          whiteSpace: 'nowrap',
-                          minWidth: 'auto',
-                          borderRadius: 1.5,
-                        }}
-                      >
-                        {showPaidMonths ? `Hide Paid Months (${paidMonths.length})` : `Show Paid Months (${paidMonths.length})`}
-                      </Button>
-                    )}
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="secondary"
-                      onClick={handleSelectAllMonths}
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 700,
-                        fontSize: 12,
-                        px: 1.75,
-                        py: 0.6,
-                        whiteSpace: 'nowrap',
-                        minWidth: 'auto',
-                        borderRadius: 1.5,
-                      }}
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      alignItems="center"
+                      flexWrap="nowrap"
+                      sx={{ flexShrink: 0, mt: { xs: 1, lg: 0 } }}
                     >
-                      {selectedMonthIds.length === unpaidMonths.length
-                        ? 'Deselect All'
-                        : 'Select All Unpaid'}
-                    </Button>
-                  </Stack>
-                </Stack>
-
-                {/* FIFO Informational Notice */}
-                {infoNotice && (
-                  <Alert severity="info" variant="outlined" onClose={() => setInfoNotice('')} sx={{ mb: 2, borderRadius: 2 }}>
-                    {infoNotice}
-                  </Alert>
-                )}
-
-                {/* Monthly Quick Presets Bar */}
-                {duesList.length > 0 && (
-                  <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: '#fbfcfd', borderRadius: 2 }}>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                      ⚡ QUICK MONTHLY ACTIONS (FIFO):
-                    </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="primary"
-                        startIcon={<BoltIcon />}
-                        onClick={handleSelectOneMonth}
-                        sx={{ textTransform: 'none', fontWeight: 600 }}
-                      >
-                        Pay Next Unpaid ({unpaidMonths[0]?.installmentName || 'None'})
-                      </Button>
-
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                        startIcon={<DateRangeIcon />}
-                        onClick={handleSelectUpToCurrentMonth}
-                        sx={{ textTransform: 'none', fontWeight: 600 }}
-                      >
-                        Pay Up to Current Month
-                      </Button>
-
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleSelectNextMonths(3)}
-                        sx={{ textTransform: 'none' }}
-                      >
-                        Pay 3 Months (Quarterly)
-                      </Button>
-
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="secondary"
-                        onClick={handleSelectAllMonths}
-                        sx={{ textTransform: 'none' }}
-                      >
-                        {selectedMonthIds.length === unpaidMonths.length
-                          ? 'Deselect All'
-                          : 'Select All Unpaid'}
-                      </Button>
-
                       {selectedMonthIds.length > 0 && (
                         <Button
                           size="small"
                           variant="text"
                           color="error"
                           onClick={handleClearMonths}
-                          sx={{ textTransform: 'none' }}
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: 11,
+                            height: 28,
+                            px: 0.75,
+                            whiteSpace: 'nowrap',
+                          }}
                         >
                           Clear Selection
                         </Button>
                       )}
+                      {paidMonths.length > 0 && (
+                        <Button
+                          size="small"
+                          variant={showPaidMonths ? "contained" : "outlined"}
+                          color="success"
+                          onClick={() => setShowPaidMonths(!showPaidMonths)}
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: 11,
+                            height: 28,
+                            px: 1,
+                            whiteSpace: 'nowrap',
+                            borderRadius: 1.5,
+                          }}
+                        >
+                          {showPaidMonths ? `Hide Paid (${paidMonths.length})` : `Show Paid (${paidMonths.length})`}
+                        </Button>
+                      )}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleSelectAllMonths}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: 11,
+                          height: 28,
+                          px: 1,
+                          whiteSpace: 'nowrap',
+                          borderRadius: 1.5,
+                        }}
+                      >
+                        {selectedMonthIds.length === unpaidMonths.length
+                          ? 'Deselect All'
+                          : 'Select All Unpaid'}
+                      </Button>
                     </Stack>
-                  </Paper>
+                  </Stack>
+                </Box>
+
+                {/* FIFO Informational Notice */}
+                {infoNotice && (
+                  <Alert severity="info" variant="outlined" onClose={() => setInfoNotice('')} sx={{ mb: 2, borderRadius: 2, py: 0.5, fontSize: 12 }}>
+                    {infoNotice}
+                  </Alert>
                 )}
 
                 {/* 12 Months Interactive Visual Bar */}
                 {monthGroups.length > 0 && (
-                  <Box sx={{ mb: 2.5 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                      <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  <Box sx={{ mb: 2 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+                      <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ fontSize: 11 }}>
                         📅 ACADEMIC MONTHS (Click a month to toggle selection; earlier unpaid months automatically included):
                       </Typography>
                       {visiblePayMonths.length > 0 && (
-                        <Typography variant="caption" fontWeight={700} color="primary.main">
+                        <Typography variant="caption" fontWeight={700} color="primary.main" sx={{ fontSize: 11 }}>
                           ✓ {visiblePayMonths.length} Month(s) Active
                         </Typography>
                       )}
@@ -1039,12 +998,12 @@ export default function FeeCollectionPage() {
                     <Box
                       sx={{
                         display: 'flex',
-                        gap: 1.2,
+                        gap: 1,
                         overflowX: 'auto',
-                        pb: 1.5,
-                        pt: 0.5,
-                        '&::-webkit-scrollbar': { height: 6 },
-                        '&::-webkit-scrollbar-thumb': { bgcolor: '#ccc', borderRadius: 3 },
+                        pb: 1,
+                        pt: 0.25,
+                        '&::-webkit-scrollbar': { height: 5 },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: 3 },
                       }}
                     >
                       {monthGroups.map((m) => {
@@ -1056,28 +1015,28 @@ export default function FeeCollectionPage() {
                             variant="outlined"
                             onClick={() => handleToggleMonth(m.installmentId)}
                             sx={{
-                              p: 1.2,
-                              minWidth: 115,
+                              p: 1,
+                              minWidth: 102,
                               cursor: 'pointer',
                               textAlign: 'center',
                               bgcolor: isMonthSelected
-                                ? '#1565c0'
+                                ? '#1e40af'
                                 : m.isPaid
                                 ? '#f8fafc'
                                 : '#ffffff',
                               color: isMonthSelected ? '#ffffff' : 'inherit',
                               borderColor: isMonthSelected
-                                ? '#0d47a1'
+                                ? '#1d4ed8'
                                 : m.isPaid
                                 ? '#86efac'
-                                : '#90caf9',
+                                : '#bfdbfe',
                               borderWidth: isMonthSelected ? 2 : 1,
-                              borderRadius: 2,
-                              boxShadow: isMonthSelected ? '0 4px 12px rgba(21, 101, 192, 0.35)' : 0,
+                              borderRadius: 1.5,
+                              boxShadow: isMonthSelected ? '0 4px 10px rgba(30, 64, 175, 0.25)' : 0,
                               transition: 'all 0.15s ease-in-out',
                               '&:hover': {
-                                boxShadow: 3,
-                                borderColor: isMonthSelected ? '#0d47a1' : 'primary.main',
+                                boxShadow: 2,
+                                borderColor: isMonthSelected ? '#1d4ed8' : 'primary.main',
                               },
                             }}
                           >
@@ -1086,7 +1045,7 @@ export default function FeeCollectionPage() {
                               sx={{
                                 color: isMonthSelected ? 'rgba(255,255,255,0.85)' : 'text.secondary',
                                 display: 'block',
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: 600,
                               }}
                             >
@@ -1095,7 +1054,11 @@ export default function FeeCollectionPage() {
                             <Typography
                               variant="body2"
                               fontWeight={700}
-                              sx={{ color: isMonthSelected ? '#ffffff' : 'text.primary' }}
+                              sx={{
+                                color: isMonthSelected ? '#ffffff' : 'text.primary',
+                                fontSize: 12,
+                                mt: 0.1,
+                              }}
                               noWrap
                             >
                               {m.installmentName}
@@ -1104,27 +1067,27 @@ export default function FeeCollectionPage() {
                             <Box sx={{ mt: 0.5 }}>
                               {m.isPaid ? (
                                 <Chip
-                                  icon={<CheckIcon sx={{ fontSize: '13px !important' }} />}
+                                  icon={<CheckIcon sx={{ fontSize: '12px !important' }} />}
                                   label="PAID"
                                   color="success"
                                   size="small"
-                                  sx={{ height: 20, fontSize: 10, fontWeight: 700 }}
+                                  sx={{ height: 18, fontSize: 9.5, fontWeight: 700 }}
                                 />
                               ) : isMonthSelected ? (
                                 <Chip
-                                  icon={<CheckIcon sx={{ fontSize: '13px !important', color: '#1565c0 !important' }} />}
+                                  icon={<CheckIcon sx={{ fontSize: '12px !important', color: '#1e40af !important' }} />}
                                   label={`₹${m.totalPayable.toLocaleString()}`}
                                   size="small"
                                   sx={{
-                                    height: 20,
-                                    fontSize: 10,
+                                    height: 18,
+                                    fontSize: 9.5,
                                     fontWeight: 700,
                                     bgcolor: '#ffffff',
-                                    color: '#1565c0',
+                                    color: '#1e40af',
                                   }}
                                 />
                               ) : (
-                                <Typography variant="caption" fontWeight={700} color="error.main">
+                                <Typography variant="caption" fontWeight={700} color="error.main" sx={{ fontSize: 11 }}>
                                   ₹{m.totalPayable.toLocaleString()}
                                 </Typography>
                               )}
@@ -1454,21 +1417,21 @@ export default function FeeCollectionPage() {
 
                               {/* Dedicated Monthly Fee Structure Card (Compact & Clean) */}
                               <TableRow sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                                <TableCell colSpan={9} sx={{ py: 0.75, px: 2 }}>
+                                <TableCell colSpan={9} sx={{ py: 0.5, px: 1.5 }}>
                                   <Paper
                                     elevation={0}
                                     sx={{
-                                      p: 1.25,
+                                      p: 1,
                                       bgcolor: '#ffffff',
                                       border: '1px solid #e2e8f0',
                                       borderRadius: 1.5,
                                     }}
                                   >
                                     {/* Header Row */}
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1, pb: 0.5, borderBottom: '1px solid #f1f5f9' }}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75, pb: 0.4, borderBottom: '1px solid #f1f5f9' }}>
                                       <Stack direction="row" spacing={1} alignItems="center">
-                                        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: month.isPaid ? '#16a34a' : '#2563eb' }} />
-                                        <Typography variant="body2" fontWeight={700} color="text.primary">
+                                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: month.isPaid ? '#16a34a' : '#2563eb' }} />
+                                        <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontSize: 12 }}>
                                           Fee Details — {month.installmentName}
                                         </Typography>
                                       </Stack>
@@ -1476,22 +1439,22 @@ export default function FeeCollectionPage() {
                                         label={month.isPaid ? "Paid" : month.totalPaid > 0 ? "Partially Paid" : "Unpaid"}
                                         size="small"
                                         color={month.isPaid ? "success" : month.totalPaid > 0 ? "warning" : "default"}
-                                        sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                                        sx={{ height: 18, fontSize: 9.5, fontWeight: 700 }}
                                       />
                                     </Stack>
 
                                     {/* Compact 4-Card Metrics */}
-                                    <Grid container spacing={1} sx={{ mb: 0.75 }}>
+                                    <Grid container spacing={0.75} sx={{ mb: 0.5 }}>
                                       <Grid item xs={6} sm={3}>
-                                        <Box sx={{ p: 0.75, px: 1.25, bgcolor: '#f8fafc', borderRadius: 1, border: '1px solid #e2e8f0' }}>
-                                          <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" sx={{ fontSize: 10.5 }}>
+                                        <Box sx={{ p: 0.5, px: 1, bgcolor: '#f8fafc', borderRadius: 1, border: '1px solid #e2e8f0' }}>
+                                          <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" sx={{ fontSize: 10 }}>
                                             Total Fee
                                           </Typography>
-                                          <Typography variant="body2" fontWeight={800} color="text.primary" sx={{ fontSize: 13.5 }}>
+                                          <Typography variant="body2" fontWeight={800} color="text.primary" sx={{ fontSize: 12.5 }}>
                                             ₹{month.totalOriginal.toLocaleString()}
                                           </Typography>
                                           {month.totalConcession > 0 && (
-                                            <Typography variant="caption" sx={{ color: '#7e22ce', fontWeight: 700, fontSize: 10 }}>
+                                            <Typography variant="caption" sx={{ color: '#7e22ce', fontWeight: 700, fontSize: 9.5 }}>
                                               Concession: -₹{month.totalConcession.toLocaleString()}
                                             </Typography>
                                           )}
@@ -1499,26 +1462,26 @@ export default function FeeCollectionPage() {
                                       </Grid>
 
                                       <Grid item xs={6} sm={3}>
-                                        <Box sx={{ p: 0.75, px: 1.25, bgcolor: '#f0fdf4', borderRadius: 1, border: '1px solid #bbf7d0' }}>
-                                          <Typography variant="caption" sx={{ color: '#166534', fontWeight: 600, fontSize: 10.5 }} display="block">
+                                        <Box sx={{ p: 0.5, px: 1, bgcolor: '#f0fdf4', borderRadius: 1, border: '1px solid #bbf7d0' }}>
+                                          <Typography variant="caption" sx={{ color: '#166534', fontWeight: 600, fontSize: 10 }} display="block">
                                             Paid Amount
                                           </Typography>
-                                          <Typography variant="body2" fontWeight={800} sx={{ color: '#16a34a', fontSize: 13.5 }}>
+                                          <Typography variant="body2" fontWeight={800} sx={{ color: '#16a34a', fontSize: 12.5 }}>
                                             ₹{month.totalPaid.toLocaleString()}
                                           </Typography>
                                         </Box>
                                       </Grid>
 
                                       <Grid item xs={6} sm={3}>
-                                        <Box sx={{ p: 0.75, px: 1.25, bgcolor: '#fef2f2', borderRadius: 1, border: '1px solid #fecaca' }}>
-                                          <Typography variant="caption" sx={{ color: '#991b1b', fontWeight: 600, fontSize: 10.5 }} display="block">
+                                        <Box sx={{ p: 0.5, px: 1, bgcolor: '#fef2f2', borderRadius: 1, border: '1px solid #fecaca' }}>
+                                          <Typography variant="caption" sx={{ color: '#991b1b', fontWeight: 600, fontSize: 10 }} display="block">
                                             Remaining Dues
                                           </Typography>
-                                          <Typography variant="body2" fontWeight={800} sx={{ color: '#dc2626', fontSize: 13.5 }}>
+                                          <Typography variant="body2" fontWeight={800} sx={{ color: '#dc2626', fontSize: 12.5 }}>
                                             ₹{month.totalBalance.toLocaleString()}
                                           </Typography>
                                           {month.totalFine > 0 && (
-                                            <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 700, fontSize: 10 }}>
+                                            <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 700, fontSize: 9.5 }}>
                                               +₹{month.totalFine.toLocaleString()} Fine
                                             </Typography>
                                           )}
@@ -1534,14 +1497,14 @@ export default function FeeCollectionPage() {
                                           const monthBalAfterPay = Math.max(0, (month.totalBalance + month.totalFine) - monthPayingNow);
 
                                           return (
-                                            <Box sx={{ p: 0.75, px: 1.25, bgcolor: '#eff6ff', borderRadius: 1, border: '1px solid #bfdbfe' }}>
-                                              <Typography variant="caption" sx={{ color: '#1e40af', fontWeight: 600, fontSize: 10.5 }} display="block">
+                                            <Box sx={{ p: 0.5, px: 1, bgcolor: '#eff6ff', borderRadius: 1, border: '1px solid #bfdbfe' }}>
+                                              <Typography variant="caption" sx={{ color: '#1e40af', fontWeight: 600, fontSize: 10 }} display="block">
                                                 Paying Now
                                               </Typography>
-                                              <Typography variant="body2" fontWeight={800} sx={{ color: '#2563eb', fontSize: 13.5 }}>
+                                              <Typography variant="body2" fontWeight={800} sx={{ color: '#2563eb', fontSize: 12.5 }}>
                                                 ₹{monthPayingNow.toLocaleString()}
                                               </Typography>
-                                              <Typography variant="caption" sx={{ color: monthBalAfterPay > 0 ? '#b45309' : '#16a34a', fontWeight: 700, fontSize: 10 }}>
+                                              <Typography variant="caption" sx={{ color: monthBalAfterPay > 0 ? '#b45309' : '#16a34a', fontWeight: 700, fontSize: 9.5 }}>
                                                 {monthBalAfterPay > 0 ? `Carry Due: ₹${monthBalAfterPay.toLocaleString()}` : monthPayingNow > 0 ? 'Cleared' : 'No Allocation'}
                                               </Typography>
                                             </Box>
@@ -1553,11 +1516,11 @@ export default function FeeCollectionPage() {
                                     {/* Slim Calculation Strip */}
                                     <Box
                                       sx={{
-                                        py: 0.4,
-                                        px: 1,
+                                        py: 0.3,
+                                        px: 0.75,
                                         bgcolor: '#f1f5f9',
-                                        borderRadius: 1,
-                                        fontSize: 11,
+                                        borderRadius: 0.75,
+                                        fontSize: 10.5,
                                         color: '#334155',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -1639,21 +1602,24 @@ export default function FeeCollectionPage() {
 
           {/* Right: Payment Modes Split & Finalize Collection */}
           <Grid item xs={12} lg={4}>
-            <Card sx={{ boxShadow: 2, height: '100%', bgcolor: '#fbfcfd' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                  Payment Breakdown (FR-5.4)
+            <Card sx={{ boxShadow: 1, borderRadius: 2, height: '100%', bgcolor: '#fbfcfd' }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.25 } }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#0f172a" sx={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                  Payment Breakdown
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                  Review selected dues allocation and choose payment modes
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
 
-                {errorMsg && <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>}
+                {errorMsg && <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: 12 }}>{errorMsg}</Alert>}
 
                 {/* Amount Summary with Dues Breakdown */}
-                <Paper sx={{ p: 2, mb: 2.5, bgcolor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 2 }}>
+                <Paper sx={{ p: 1.75, mb: 2, bgcolor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 2 }}>
                   <Stack spacing={1.2}>
                     {selectedMonthNames.length > 0 && (
                       <Box sx={{ pb: 1, borderBottom: '1px dashed #e2e8f0' }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ fontSize: 11 }}>
                           Selected Months ({selectedMonthNames.length}):
                         </Typography>
                         <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5, mt: 0.5 }}>
@@ -1676,14 +1642,14 @@ export default function FeeCollectionPage() {
                     {previousDuesTotal > 0 && (
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Box>
-                          <Typography variant="body2" fontWeight={700} color="#b45309">
+                          <Typography variant="body2" fontWeight={700} color="#b45309" sx={{ fontSize: 12.5 }}>
                             Previous Dues (Arrears):
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: 10.5 }}>
                             {previousDuesMonths.map((m) => m.installmentName).join(', ')}
                           </Typography>
                         </Box>
-                        <Typography variant="body2" fontWeight={800} color="#b45309">
+                        <Typography variant="body2" fontWeight={800} color="#b45309" sx={{ fontSize: 13 }}>
                           ₹{previousDuesTotal.toLocaleString()}
                         </Typography>
                       </Stack>
@@ -1692,11 +1658,11 @@ export default function FeeCollectionPage() {
                     {currentTargetMonth && (
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Box>
-                          <Typography variant="body2" fontWeight={600} color="text.secondary">
+                          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: 12.5 }}>
                             Current Month Fee ({currentTargetMonth.installmentName}):
                           </Typography>
                         </Box>
-                        <Typography variant="body2" fontWeight={700}>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: 13 }}>
                           ₹{currentMonthDueTotal.toLocaleString()}
                         </Typography>
                       </Stack>
@@ -1704,16 +1670,16 @@ export default function FeeCollectionPage() {
 
                     {visiblePayMonths.reduce((s, m) => s + m.totalConcession, 0) > 0 && (
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" sx={{ color: '#7e22ce', fontWeight: 600 }}>Total Concession:</Typography>
-                        <Typography variant="body2" fontWeight={700} sx={{ color: '#7e22ce' }}>
+                        <Typography variant="body2" sx={{ color: '#7e22ce', fontWeight: 600, fontSize: 12.5 }}>Total Concession:</Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ color: '#7e22ce', fontSize: 13 }}>
                           - ₹{visiblePayMonths.reduce((s, m) => s + m.totalConcession, 0).toLocaleString()}
                         </Typography>
                       </Stack>
                     )}
 
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" color="text.secondary">Selected Late Fine:</Typography>
-                      <Typography variant="body2" fontWeight={600} color={totalFineSelected > 0 ? "error.main" : "text.secondary"}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12.5 }}>Selected Late Fine:</Typography>
+                      <Typography variant="body2" fontWeight={600} color={totalFineSelected > 0 ? "error.main" : "text.secondary"} sx={{ fontSize: 13 }}>
                         {totalFineSelected > 0 ? `+ ₹${totalFineSelected.toLocaleString()}` : '₹0'}
                       </Typography>
                     </Stack>
@@ -1747,14 +1713,14 @@ export default function FeeCollectionPage() {
                 </Paper>
 
                 {/* Multi Mode Payment Rows */}
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, fontSize: 13 }}>
                   Payment Modes (Cash, UPI, Card, Cheque)
                 </Typography>
 
-                <Stack spacing={2} sx={{ mb: 2 }}>
+                <Stack spacing={1.5} sx={{ mb: 2 }}>
                   {paymentSplits.map((item, index) => (
-                    <Paper key={index} sx={{ p: 1.5, border: '1px solid #e0e0e0', bgcolor: '#fff' }}>
-                      <Stack spacing={1.5}>
+                    <Paper key={index} sx={{ p: 1.25, border: '1px solid #e2e8f0', bgcolor: '#fff', borderRadius: 1.5 }}>
+                      <Stack spacing={1.25}>
                         <Stack direction="row" spacing={1} alignItems="center">
                           <TextField
                             select
@@ -1767,7 +1733,7 @@ export default function FeeCollectionPage() {
                             <MenuItem value={1}>Cash</MenuItem>
                             <MenuItem value={2}>UPI / QR</MenuItem>
                             <MenuItem value={3}>Card (POS)</MenuItem>
-                            <MenuItem value={4}>Cheque (BR-5.4)</MenuItem>
+                            <MenuItem value={4}>Cheque</MenuItem>
                             <MenuItem value={5}>Bank Transfer</MenuItem>
                           </TextField>
 

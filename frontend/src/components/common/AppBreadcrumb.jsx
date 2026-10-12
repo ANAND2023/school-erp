@@ -104,8 +104,8 @@ export const routeBreadcrumbMap = {
     module: 'Students & Admission',
     moduleIcon: 'pi pi-user-plus',
     modulePath: '/students',
-    title: 'Student Enquiries & Leads',
-    subtitle: 'Track prospective admissions, walk-in inquiries, follow-up calls, and conversion pipeline',
+    title: 'Student Enquiries',
+    subtitle: '',
     code: 'Module 3',
   },
   '/admissions/new': {
@@ -146,8 +146,8 @@ export const routeBreadcrumbMap = {
     module: 'Staff & HR',
     moduleIcon: 'pi pi-users',
     modulePath: '/staff',
-    title: 'Staff & HR Directory',
-    subtitle: 'Manage teachers, administrative employees, staff profiles, and departmental assignments',
+    title: 'Staff Directory',
+    subtitle: '',
     code: 'Module 4',
   },
   '/staff/allocation': {

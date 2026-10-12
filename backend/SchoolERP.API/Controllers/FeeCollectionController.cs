@@ -69,13 +69,20 @@ namespace SchoolERP.API.Controllers
             // Always synchronize/assign fees to catch new transport allocations or fee changes
             if (enrollment != null)
             {
-                await FeeAssignmentHelper.AutoAssignStudentDuesAsync(
-                    _context,
-                    branchId,
-                    yearId,
-                    student.Id,
-                    enrollment.ClassId,
-                    enrollment.FeeGroupId);
+                try
+                {
+                    await FeeAssignmentHelper.AutoAssignStudentDuesAsync(
+                        _context,
+                        branchId,
+                        yearId,
+                        student.Id,
+                        enrollment.ClassId,
+                        enrollment.FeeGroupId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[FeeCollectionController] AutoAssign error for student {studentId}: {ex.Message}");
+                }
 
                 dues = await _context.StudentFeeDues
                     .Include(d => d.FeeHead)

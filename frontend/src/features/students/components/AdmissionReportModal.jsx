@@ -230,55 +230,118 @@ export const AdmissionReportModal = ({
         {`
           @page {
             size: A4 portrait;
-            margin: 6mm 8mm;
+            margin: 6mm 6mm;
           }
           @media print {
             html, body {
-              width: 210mm !important;
-              height: 297mm !important;
+              width: 100% !important;
+              height: auto !important;
               margin: 0 !important;
               padding: 0 !important;
               background: #ffffff !important;
-              overflow: hidden !important;
+              overflow: visible !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            body * {
-              visibility: hidden !important;
+            /* Hide root and backdrop outside modal */
+            #root,
+            body > *:not(.MuiDialog-root) {
+              display: none !important;
             }
-            #printable-admission-report, #printable-admission-report * {
-              visibility: visible !important;
+            /* Unconstrain Dialog modal */
+            .MuiDialog-root {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+              z-index: auto !important;
+            }
+            .MuiBackdrop-root {
+              display: none !important;
+            }
+            .MuiDialog-container {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+            }
+            .MuiPaper-root.MuiDialog-paper,
+            .MuiDialogContent-root {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+            }
+            .MuiDialogTitle-root,
+            .MuiDialogActions-root,
+            [class*="MuiDialogTitle"],
+            .no-print {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
             }
             #printable-admission-report {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              position: static !important;
               width: 100% !important;
-              height: calc(297mm - 12mm) !important;
-              max-height: calc(297mm - 12mm) !important;
-              margin: 0 !important;
-              padding: 10px 14px !important;
+              max-width: 100% !important;
+              min-height: auto !important;
+              margin: 0 auto !important;
+              padding: 12px 16px !important;
               border: 2px solid #1e3a8a !important;
               border-radius: 4px !important;
               box-sizing: border-box !important;
               background: #ffffff !important;
               color: #000000 !important;
-              display: flex !important;
-              flex-direction: column !important;
-              justifyContent: space-between !important;
               page-break-inside: avoid !important;
-              page-break-after: avoid !important;
               break-inside: avoid !important;
-              overflow: hidden !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              overflow: visible !important;
             }
-            .no-print {
-              display: none !important;
+            #printable-admission-report * {
+              visibility: visible !important;
+            }
+            #printable-admission-report .MuiGrid-root {
+              display: flex !important;
+              flex-wrap: wrap !important;
+            }
+            #printable-admission-report .MuiGrid-item {
+              display: block !important;
             }
           }
         `}
       </style>
 
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          '@media print': {
+            '& .MuiDialogTitle-root': { display: 'none !important' },
+            '& .MuiDialogActions-root': { display: 'none !important' },
+          },
+        }}
+      >
         <DialogTitle
           className="no-print"
           sx={{
@@ -289,6 +352,9 @@ export const AdmissionReportModal = ({
             px: 3,
             bgcolor: isNewlyAdmitted ? '#f0fdf4' : 'inherit',
             borderBottom: '1px solid #e2e8f0',
+            '@media print': {
+              display: 'none !important',
+            },
           }}
         >
           <Stack direction="row" spacing={1.5} alignItems="center">

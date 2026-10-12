@@ -417,7 +417,7 @@ export default function StudentsPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 175,
+      width: 148,
       sortable: false,
       renderCell: (params) => (
         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -469,22 +469,6 @@ export default function StudentsPage() {
               onClick={() => handleOpenAdmissionReport(params.row)}
             >
               <ReceiptLongIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Print ID Card" arrow>
-            <IconButton
-              size="small"
-              sx={{
-                width: 26,
-                height: 26,
-                color: '#475569',
-                bgcolor: '#f1f5f9',
-                '&:hover': { bgcolor: '#e2e8f0' },
-                borderRadius: '6px',
-              }}
-              onClick={() => handleOpenIdCard(params.row)}
-            >
-              <BadgeIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Tooltip>
           {can('SectionChange', 'Edit') && (

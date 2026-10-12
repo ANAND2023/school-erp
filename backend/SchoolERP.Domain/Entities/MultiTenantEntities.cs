@@ -105,4 +105,30 @@ namespace SchoolERP.Domain.Entities
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
     }
+
+    public class SystemErrorLog
+    {
+        public long Id { get; set; }
+        public string ErrorId { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public int StatusCode { get; set; } = 500;
+        public string HttpMethod { get; set; } = "GET";
+        public string RequestPath { get; set; } = string.Empty;
+        public string? QueryString { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string ExceptionType { get; set; } = string.Empty;
+        public string? RootCause { get; set; }
+        public string? StackTrace { get; set; }
+        public long? UserId { get; set; }
+        public string? Username { get; set; }
+        public string? UserRole { get; set; }
+        public long? BranchId { get; set; }
+        public long? SchoolId { get; set; }
+        public string? IpAddress { get; set; }
+        public string? UserAgent { get; set; }
+        public bool IsResolved { get; set; } = false;
+        public string? ResolvedBy { get; set; }
+        public DateTime? ResolvedAt { get; set; }
+        public string? ResolutionNotes { get; set; }
+    }
 }

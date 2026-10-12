@@ -14,6 +14,8 @@ namespace SchoolERP.Application.DTOs
         public string? Address { get; set; }
         public string? ContactNumber { get; set; }
         public string? Email { get; set; }
+        public string? IdCardFront { get; set; }
+        public string? IdCardBack { get; set; }
         public string? Website { get; set; }
         public bool IsActive { get; set; } = true;
         public int BranchCount { get; set; }
@@ -70,6 +72,8 @@ namespace SchoolERP.Application.DTOs
         public string? Pincode { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
+        public string? IdCardFront { get; set; }
+        public string? IdCardBack { get; set; }
     }
 
     public class AcademicYearDto
@@ -128,3 +132,10 @@ namespace SchoolERP.Application.DTOs
         public int DisplayOrder { get; set; }
     }
 }
+
+
+    public class SaveIdCardTemplateRequestDto
+    {
+        public string? FrontConfig { get; set; }
+        public string? BackConfig { get; set; }
+    }

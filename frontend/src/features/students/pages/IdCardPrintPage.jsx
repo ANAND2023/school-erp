@@ -4,11 +4,13 @@ import { AppButton as Button } from '../../../components/common/AppButton';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Checkbox } from 'primereact/checkbox';
-import { classApi } from '../../masters/api';
+import { classApi, branchApi } from '../../masters/api';
+import { useAuthStore } from '../../../store/authStore';
 import { studentApi } from '../api';
 import { AppSelect } from '../../../components/common';
 
 export const IdCardPrintPage = () => {
+    const { user } = useAuthStore();
     const toast = useRef(null);
     const [classes, setClasses] = useState([]);
     const [selectedClassId, setSelectedClassId] = useState(null);
@@ -23,12 +25,49 @@ export const IdCardPrintPage = () => {
     const [backConfig, setBackConfig] = useState(null);
 
     useEffect(() => {
-        const savedFront = localStorage.getItem('id_card_front');
-        const savedBack = localStorage.getItem('id_card_back');
-        if (savedFront) setFrontConfig(JSON.parse(savedFront));
-        if (savedBack) setBackConfig(JSON.parse(savedBack));
+        // Clear obsolete global items
+        localStorage.removeItem('id_card_front');
+        localStorage.removeItem('id_card_back');
+
+        const loadBranchTemplate = async () => {
+            try {
+                const res = await branchApi.getIdCardTemplate();
+                if (res.data?.success && res.data?.data) {
+                    const data = res.data.data;
+                    const bId = data.branchId || user?.branchId || 1;
+                    const scopedFrontKey = `id_card_front_${bId}`;
+                    const scopedBackKey = `id_card_back_${bId}`;
+
+                    let front = null;
+                    let back = null;
+
+                    if (data.frontConfig) {
+                        try { front = JSON.parse(data.frontConfig); } catch (e) {}
+                    }
+                    if (data.backConfig) {
+                        try { back = JSON.parse(data.backConfig); } catch (e) {}
+                    }
+
+                    if (!front) {
+                        const localF = localStorage.getItem(scopedFrontKey);
+                        if (localF) try { front = JSON.parse(localF); } catch (e) {}
+                    }
+                    if (!back) {
+                        const localB = localStorage.getItem(scopedBackKey);
+                        if (localB) try { back = JSON.parse(localB); } catch (e) {}
+                    }
+
+                    if (front) setFrontConfig(front);
+                    if (back) setBackConfig(back);
+                }
+            } catch (e) {
+                console.error('Failed to load ID card template for print', e);
+            }
+        };
+
+        loadBranchTemplate();
         loadRefData();
-    }, []);
+    }, [user?.branchId]);
 
     const loadRefData = async () => {
         try {

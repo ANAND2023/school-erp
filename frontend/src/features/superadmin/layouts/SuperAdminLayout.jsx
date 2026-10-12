@@ -23,6 +23,7 @@ export const SuperAdminLayout = () => {
     { label: 'Module Catalog', path: '/superadmin/modules', icon: 'pi pi-th-large' },
     { label: 'Gateways & APIs', path: '/superadmin/gateways', icon: 'pi pi-sliders-h' },
     { label: 'Global Audit Trail', path: '/superadmin/audit-logs', icon: 'pi pi-history' },
+    { label: 'System Error Logs', path: '/superadmin/error-logs', icon: 'pi pi-exclamation-triangle', badge: 'Live' },
     { label: 'SaaS Leads', path: '/superadmin/enquiries', icon: 'pi pi-envelope', badge: 'New' },
     { label: 'Website CMS', path: '/superadmin/website-cms', icon: 'pi pi-globe', badge: 'Manage' },
   ];

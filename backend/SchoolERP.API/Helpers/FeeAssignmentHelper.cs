@@ -114,12 +114,39 @@ namespace SchoolERP.API.Helpers
             FeeHead transportHead = null;
             if (transportAllocation != null && transportAllocation.RouteStop != null)
             {
-                transportHead = await context.FeeHeads.FirstOrDefaultAsync(f => f.BranchId == branchId && f.Name.Contains("Transport"));
-                if (transportHead == null)
+                try
                 {
-                    transportHead = new FeeHead { BranchId = branchId, Name = "Transport Fee", Description = "Auto-generated transport fee", IsActive = true };
-                    context.FeeHeads.Add(transportHead);
-                    await context.SaveChangesAsync();
+                    transportHead = await context.FeeHeads
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(f => f.BranchId == branchId && (f.Name.Contains("Transport") || f.Name.Contains("Bus") || f.Code == "TRANS_FEE" || f.Code == "BUS_FEE"));
+                    
+                    if (transportHead == null)
+                    {
+                        transportHead = new FeeHead
+                        {
+                            BranchId = branchId,
+                            Name = "Transport Fee",
+                            Code = "TRANS_FEE",
+                            Type = FeeHeadType.Recurring,
+                            Description = "Auto-generated transport fee",
+                            IsActive = true
+                        };
+                        context.FeeHeads.Add(transportHead);
+                        await context.SaveChangesAsync();
+                    }
+                    else if (!transportHead.IsActive || string.IsNullOrWhiteSpace(transportHead.Code))
+                    {
+                        transportHead.IsActive = true;
+                        if (string.IsNullOrWhiteSpace(transportHead.Code))
+                        {
+                            transportHead.Code = "TRANS_FEE";
+                        }
+                        await context.SaveChangesAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[FeeAssignmentHelper] Error initializing transport fee head: {ex.Message}");
                 }
             }
 
@@ -181,6 +208,13 @@ namespace SchoolERP.API.Helpers
 
             if (transportAllocation != null && transportHead != null)
             {
+                // Remove unpaid dues from any obsolete/duplicate transport fee heads
+                foreach (var ex in existingDues.Where(d => transportHeadIds.Contains(d.FeeHeadId) && d.FeeHeadId != transportHead.Id && d.PaidAmount == 0))
+                {
+                    context.StudentFeeDues.Remove(ex);
+                    newDuesCount++;
+                }
+
                 var installments = await context.FeeInstallments.Where(i => i.BranchId == branchId && i.AcademicYearId == yearId).ToListAsync();
                 foreach(var inst in installments)
                 {

@@ -126,55 +126,119 @@ export const EnquirySlipModal = ({
         {`
           @page {
             size: A4 portrait;
-            margin: 8mm 10mm;
+            margin: 8mm 8mm;
           }
           @media print {
             html, body {
-              width: 210mm !important;
-              height: 297mm !important;
+              width: 100% !important;
+              height: auto !important;
               margin: 0 !important;
               padding: 0 !important;
               background: #ffffff !important;
-              overflow: hidden !important;
+              overflow: visible !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            body * {
-              visibility: hidden !important;
+            /* Hide root elements outside modal */
+            #root,
+            body > *:not(.MuiDialog-root) {
+              display: none !important;
             }
-            #printable-enquiry-slip, #printable-enquiry-slip * {
-              visibility: visible !important;
+            /* Unconstrain Dialog modal */
+            .MuiDialog-root {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+              z-index: auto !important;
+            }
+            .MuiBackdrop-root {
+              display: none !important;
+            }
+            .MuiDialog-container {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+            }
+            .MuiPaper-root.MuiDialog-paper,
+            .MuiDialogContent-root {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+            }
+            .MuiDialogTitle-root,
+            .MuiDialogActions-root,
+            [class*="MuiDialogTitle"],
+            .no-print {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
             }
             #printable-enquiry-slip {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              position: static !important;
               width: 100% !important;
-              height: calc(297mm - 16mm) !important;
-              max-height: calc(297mm - 16mm) !important;
-              margin: 0 !important;
-              padding: 14px 18px !important;
-              border: 2.5px solid #0f766e !important;
-              border-radius: 4px !important;
+              max-width: 100% !important;
+              min-height: auto !important;
+              margin: 0 auto !important;
+              padding: 16px 20px !important;
+              border: 2px solid #0f766e !important;
+              border-radius: 6px !important;
               box-sizing: border-box !important;
               background: #ffffff !important;
               color: #000000 !important;
-              display: flex !important;
-              flex-direction: column !important;
-              justify-content: space-between !important;
               page-break-inside: avoid !important;
-              page-break-after: avoid !important;
               break-inside: avoid !important;
-              overflow: hidden !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              overflow: visible !important;
             }
-            .no-print {
-              display: none !important;
+            #printable-enquiry-slip * {
+              visibility: visible !important;
+            }
+            /* Guarantee text and colored badges print with sharp contrast */
+            #printable-enquiry-slip .MuiGrid-root {
+              display: flex !important;
+              flex-wrap: wrap !important;
+            }
+            #printable-enquiry-slip .MuiGrid-item {
+              display: block !important;
             }
           }
         `}
       </style>
 
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          '@media print': {
+            '& .MuiDialogTitle-root': { display: 'none !important' },
+            '& .MuiDialogActions-root': { display: 'none !important' },
+          },
+        }}
+      >
         <DialogTitle
           className="no-print"
           sx={{
@@ -185,6 +249,9 @@ export const EnquirySlipModal = ({
             px: 3,
             bgcolor: isNew ? '#f0fdfa' : 'inherit',
             borderBottom: '1px solid #e2e8f0',
+            '@media print': {
+              display: 'none !important',
+            },
           }}
         >
           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -500,17 +567,12 @@ export const EnquirySlipModal = ({
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.78rem' }}>
-                      <span style={{ marginRight: 6, color: '#0f766e', fontWeight: 900 }}>&#x2714;</span> 4. Previous Year Academic Marksheet / Report Card
+                      <span style={{ marginRight: 6, color: '#0f766e', fontWeight: 900 }}>&#x2714;</span> 4. 4 Passport-size Photographs of Student & 2 of Parents
                     </Typography>
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={12}>
                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.78rem' }}>
-                      <span style={{ marginRight: 6, color: '#0f766e', fontWeight: 900 }}>&#x2714;</span> 5. 4 Passport-size Photographs of Student & 2 of Parents
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.78rem' }}>
-                      <span style={{ marginRight: 6, color: '#0f766e', fontWeight: 900 }}>&#x2714;</span> 6. Valid Address Proof (Electricity Bill / Voter ID / Passport)
+                      <span style={{ marginRight: 6, color: '#0f766e', fontWeight: 900 }}>&#x2714;</span> 5. Valid Address Proof (Electricity Bill / Voter ID / Passport)
                     </Typography>
                   </Grid>
                 </Grid>

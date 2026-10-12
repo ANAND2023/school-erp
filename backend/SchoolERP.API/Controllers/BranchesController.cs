@@ -29,6 +29,59 @@ namespace SchoolERP.API.Controllers
             _currentUserService = currentUserService;
         }
 
+        
+        [HttpGet("current/id-card-template")]
+        public async Task<ActionResult<ApiResponse<object>>> GetCurrentBranchIdCardTemplate()
+        {
+            var branchId = _currentUserService.BranchId;
+            Branch? branch = null;
+            if (branchId > 0)
+            {
+                branch = await _context.Branches.Include(b => b.School).AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId);
+            }
+            if (branch == null)
+            {
+                branch = await _context.Branches.Include(b => b.School).AsNoTracking().FirstOrDefaultAsync();
+            }
+            if (branch == null) return NotFound(ApiResponse.Fail("Branch not found."));
+
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                branchId = branch.Id,
+                schoolId = branch.SchoolId,
+                schoolName = branch.School?.Name ?? branch.Name,
+                branchName = branch.Name,
+                logoUrl = branch.LogoUrl ?? branch.School?.LogoUrl,
+                address = branch.Address ?? branch.School?.Address,
+                phone = branch.Phone ?? branch.School?.ContactNumber,
+                frontConfig = branch.IdCardFront,
+                backConfig = branch.IdCardBack
+            }));
+        }
+
+        [HttpPost("current/id-card-template")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveCurrentBranchIdCardTemplate([FromBody] SaveIdCardTemplateRequestDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            Branch? branch = null;
+            if (branchId > 0)
+            {
+                branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+            }
+            if (branch == null)
+            {
+                branch = await _context.Branches.FirstOrDefaultAsync();
+            }
+            if (branch == null) return NotFound(ApiResponse.Fail("Branch not found."));
+
+            branch.IdCardFront = request.FrontConfig;
+            branch.IdCardBack = request.BackConfig;
+            branch.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<bool>.Ok(true, "ID card template saved successfully."));
+        }
+
         [HttpGet("current")]
         public async Task<ActionResult<ApiResponse<BranchDto>>> GetCurrentBranch()
         {
@@ -63,7 +116,9 @@ namespace SchoolERP.API.Controllers
                 State = branch.State ?? branch.School?.State,
                 Pincode = branch.Pincode ?? branch.School?.Pincode,
                 Phone = branch.Phone ?? branch.School?.ContactNumber,
-                Email = branch.Email ?? branch.School?.Email
+                Email = branch.Email ?? branch.School?.Email,
+                IdCardFront = branch.IdCardFront,
+                IdCardBack = branch.IdCardBack
             }));
         }
 

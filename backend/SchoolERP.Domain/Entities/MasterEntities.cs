@@ -18,6 +18,8 @@ namespace SchoolERP.Domain.Entities
         public string? Pincode { get; set; }
         public string? ContactNumber { get; set; }
         public string? Email { get; set; }
+        public string? IdCardFront { get; set; }
+        public string? IdCardBack { get; set; }
         public string? Website { get; set; }
         public string? CustomDomain { get; set; } // e.g. "portal.dpsrohini.in"
         public string Status { get; set; } = "Active"; // Active, Trial, Suspended, Archived
@@ -46,6 +48,8 @@ namespace SchoolERP.Domain.Entities
         public string? Pincode { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
+        public string? IdCardFront { get; set; }
+        public string? IdCardBack { get; set; }
 
         public virtual School? School { get; set; }
         public virtual ICollection<AcademicYear> AcademicYears { get; set; } = new List<AcademicYear>();
