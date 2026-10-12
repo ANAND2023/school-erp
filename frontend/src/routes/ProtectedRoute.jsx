@@ -7,6 +7,7 @@ export const ProtectedRoute = ({
   children,
   requiredMenu,
   requiredAction = 'View',
+  superAdminOnly = false,
 }) => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuthStore();
@@ -19,6 +20,11 @@ export const ProtectedRoute = ({
   // FR-1.4: User must change password on first login and after admin reset
   if (user?.mustChangePassword && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" replace />;
+  }
+
+  // Strict SuperAdmin route protection
+  if (superAdminOnly && !isSuperAdmin) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   // Check action-level permission

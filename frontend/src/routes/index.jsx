@@ -161,7 +161,7 @@ export const AppRoutes = () => {
         <Route
           path="audit-logs"
           element={
-            <ProtectedRoute requiredMenu="AuditLogs">
+            <ProtectedRoute requiredMenu="AuditLogs" superAdminOnly={true}>
               <AuditLogsPage />
             </ProtectedRoute>
           }

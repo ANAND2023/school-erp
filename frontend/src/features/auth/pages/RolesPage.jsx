@@ -44,7 +44,6 @@ const ALL_MENUS = [
   // Auth & Access
   { key: 'Users', label: 'User Management' },
   { key: 'Roles', label: 'Roles & Permissions' },
-  { key: 'AuditLogs', label: 'Audit Logs' },
   
   // Masters
   { key: 'Branch', label: 'School & Branch Master' },

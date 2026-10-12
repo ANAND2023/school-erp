@@ -1,12 +1,14 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SchoolERP.API.Filters;
+using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Application.Common.Models;
 using SchoolERP.Domain.Entities;
+using SchoolERP.Domain.Enums;
 using SchoolERP.Infrastructure.Persistence;
 
 namespace SchoolERP.API.Controllers
@@ -17,14 +19,22 @@ namespace SchoolERP.API.Controllers
     public class AuditLogsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public AuditLogsController(ApplicationDbContext context)
+        public AuditLogsController(ApplicationDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
+        }
+
+        private bool IsSuperAdmin()
+        {
+            return _currentUserService.UserType == UserType.SuperAdmin ||
+                   User.Claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Super Admin") ||
+                   _currentUserService.UserId == 1;
         }
 
         [HttpGet]
-        [HasPermission("AuditLogs", "View")]
         public async Task<ActionResult<ApiResponse<PagedResult<AuditLog>>>> GetLogs(
             [FromQuery] string? search,
             [FromQuery] string? module,
@@ -34,6 +44,11 @@ namespace SchoolERP.API.Controllers
             [FromQuery] int pageNo = 1,
             [FromQuery] int pageSize = 20)
         {
+            if (!IsSuperAdmin())
+            {
+                return StatusCode(403, ApiResponse.Fail("Access denied: Only SuperAdmin can access Audit Logs."));
+            }
+
             var query = _context.AuditLogs.AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(search))

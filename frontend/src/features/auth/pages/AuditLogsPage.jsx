@@ -26,8 +26,15 @@ import { DataGrid } from '../../../components/DataGrid';
 import { auditLogApi } from '../api';
 import { useUiStore } from '../../../store/uiStore';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { Navigate } from 'react-router-dom';
+import { usePermission } from '../../../hooks/usePermission';
 
 export const AuditLogsPage = () => {
+  const { isSuperAdmin } = usePermission();
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/unauthorized" replace />;
+  }
   const { showSnackbar } = useUiStore();
 
   const [logs, setLogs] = useState([]);

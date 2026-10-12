@@ -31,7 +31,7 @@ const navItems = [
     children: [
       { title: 'Users', path: '/users', menuKey: 'Users' },
       { title: 'Roles & Permissions', path: '/roles', menuKey: 'Roles' },
-      { title: 'Audit Logs', path: '/audit-logs', menuKey: 'AuditLogs' },
+      { title: 'Audit Logs', path: '/audit-logs', menuKey: 'AuditLogs', superAdminOnly: true },
     ],
   },
   {
@@ -542,9 +542,12 @@ export const MainLayout = () => {
             ) : (
               navItems.map((item) => {
               if (item.children) {
-                const allowedChildren = item.children.filter(
-                  (child) => isSuperAdmin || hasPermission(child.menuKey, 'View')
-                );
+                const allowedChildren = item.children.filter((child) => {
+                  if (child.superAdminOnly) {
+                    return isSuperAdmin;
+                  }
+                  return isSuperAdmin || hasPermission(child.menuKey, 'View');
+                });
                 if (allowedChildren.length === 0 && !isSuperAdmin) return null;
 
                 const isChildActive = allowedChildren.some(

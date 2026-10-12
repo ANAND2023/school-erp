@@ -7,7 +7,6 @@ export const usePermission = () => {
     user?.userType === 'SuperAdmin' ||
     user?.userType === 1 ||
     user?.roleName?.toLowerCase() === 'super admin' ||
-    user?.username?.toLowerCase() === 'admin' ||
     user?.username?.toLowerCase() === 'superadmin';
 
   const hasPermission = (menu, action = 'View') => {
