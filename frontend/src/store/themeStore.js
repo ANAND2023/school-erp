@@ -26,6 +26,20 @@ export function applyFontSize(size) {
   const clampedSize = !isNaN(numSize) && numSize >= MIN_FONT_SIZE && numSize <= MAX_FONT_SIZE ? numSize : DEFAULT_FONT_SIZE;
   document.documentElement.style.fontSize = `${clampedSize}px`;
   document.documentElement.style.setProperty('--app-font-size', `${clampedSize}px`);
+  
+  // Set dynamic component-level font sizes
+  const inputSize = Math.max(11, Math.round(clampedSize * 0.86));
+  const labelSize = Math.max(9.5, Math.round(clampedSize * 0.72));
+  const tableSize = Math.max(10.5, Math.round(clampedSize * 0.82));
+  const tableHeaderSize = Math.max(10, Math.round(clampedSize * 0.78));
+  const datepickerSize = Math.max(11, Math.round(clampedSize * 0.86));
+
+  document.documentElement.style.setProperty('--app-input-font-size', `${inputSize}px`);
+  document.documentElement.style.setProperty('--app-label-font-size', `${labelSize}px`);
+  document.documentElement.style.setProperty('--app-table-font-size', `${tableSize}px`);
+  document.documentElement.style.setProperty('--app-table-header-font-size', `${tableHeaderSize}px`);
+  document.documentElement.style.setProperty('--app-datepicker-font-size', `${datepickerSize}px`);
+
   if (document.body) {
     document.body.style.fontSize = `${clampedSize}px`;
   }

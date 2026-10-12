@@ -55,7 +55,14 @@ import {
   Close as CloseIcon,
   Visibility as ViewIcon,
   ArrowForward as ArrowIcon,
-  PictureAsPdf as PdfIcon
+  PictureAsPdf as PdfIcon,
+  DirectionsBus as BusIcon,
+  Badge as BadgeIcon,
+  Print as PrintIcon,
+  Info as InfoIcon,
+  Discount as DiscountIcon,
+  WarningAmber as WarningIcon,
+  ContactPhone as ContactPhoneIcon
 } from '@mui/icons-material';
 import { useAuthStore } from '../../../store/authStore';
 import { useThemeStore } from '../../../store/themeStore';
@@ -66,6 +73,7 @@ import { StudentAiChatTab } from '../components/StudentAiChatTab';
 import { StudentNcertReaderTab } from '../components/StudentNcertReaderTab';
 import { CceProgressReportCardSlip } from '../../exams/components/CceProgressReportCardSlip';
 import FeeReceiptSlip from '../../fees/components/FeeReceiptSlip';
+import { SingleDemandSlip } from '../../fees/components/DemandBillSlip';
 
 export const StudentPortalDashboardPage = () => {
   const { user } = useAuthStore();
@@ -96,6 +104,17 @@ export const StudentPortalDashboardPage = () => {
     data: null
   });
 
+  // Demand Slip Modal state
+  const [demandSlipDialog, setDemandSlipDialog] = useState({
+    open: false,
+    loading: false,
+    data: null
+  });
+
+  // ID Card Modal / Download state
+  const [downloadingIdCard, setDownloadingIdCard] = useState(false);
+  const [downloadingDemandSlip, setDownloadingDemandSlip] = useState(false);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const resolveTab = (param) => {
@@ -105,9 +124,10 @@ export const StudentPortalDashboardPage = () => {
       case 'timetable': return 2;
       case 'exams': return 3;
       case 'fees': return 4;
-      case 'notices': return 5;
-      case 'ncert': return 6;
-      case 'ai-tutor': return 7;
+      case 'id-card': return 5;
+      case 'notices': return 6;
+      case 'ncert': return 7;
+      case 'ai-tutor': return 8;
       default: return !isNaN(Number(param)) ? Number(param) : 0;
     }
   };
@@ -123,7 +143,7 @@ export const StudentPortalDashboardPage = () => {
 
   const handleTabChange = (_, val) => {
     setActiveTab(val);
-    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'notices', 'ncert', 'ai-tutor'];
+    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'id-card', 'notices', 'ncert', 'ai-tutor'];
     setSearchParams({ tab: tabKeys[val] || String(val) });
   };
 
@@ -300,9 +320,69 @@ export const StudentPortalDashboardPage = () => {
     }
   };
 
+  const handleDownloadDemandSlipPdf = async () => {
+    try {
+      setDownloadingDemandSlip(true);
+      const fileName = `Demand_Slip_${student?.admissionNo || 'Bill'}`;
+      await downloadElementAsPdf('demand-slip-print-area', fileName);
+    } catch (err) {
+      console.error('Error downloading demand slip PDF:', err);
+    } finally {
+      setDownloadingDemandSlip(false);
+    }
+  };
+
+  const handleDownloadIdCardPdf = async () => {
+    try {
+      setDownloadingIdCard(true);
+      const fileName = `ID_Card_${student?.fullName || 'Student'}_${student?.admissionNo || ''}`;
+      await downloadElementAsPdf('id-card-print-container', fileName);
+    } catch (err) {
+      console.error('Error downloading ID Card PDF:', err);
+    } finally {
+      setDownloadingIdCard(false);
+    }
+  };
+
+  const handleOpenDemandSlip = () => {
+    const slipData = {
+      demandBillNo: `DB-${activeAcademicYearName || '2026'}-${student?.admissionNo || student?.id || '101'}`,
+      billDate: new Date().toISOString(),
+      dueDate: fees?.pendingDues?.[0]?.dueDate || new Date(Date.now() + 10 * 86400000).toISOString(),
+      studentName: student?.fullName || '',
+      admissionNo: student?.admissionNo || '',
+      rollNo: student?.rollNo || '-',
+      className: student?.className || '',
+      sectionName: student?.sectionName || '',
+      fatherName: student?.fatherName || '',
+      guardianMobile: student?.guardianPhone || student?.emergencyContact || '',
+      installmentNames: fees?.pendingDues?.map(d => d.installment) || ['Term Fee Installment'],
+      items: fees?.pendingDues?.map(d => ({
+        feeHeadName: d.headName,
+        amount: d.amount,
+        balance: d.balance
+      })) || [],
+      grossAmount: fees?.totalFee || 0,
+      concessionAmount: fees?.totalConcession || 0,
+      fineAmount: fees?.fineRules?.[0]?.lateFineAmount || 0,
+      netDemandAmount: fees?.totalPending || 0,
+      balanceAmount: fees?.totalPending || 0,
+      schoolName: portalData?.schoolInfo?.schoolName,
+      address: portalData?.schoolInfo?.address,
+      schoolPhone: portalData?.schoolInfo?.phone,
+      schoolEmail: portalData?.schoolInfo?.email,
+      logoUrl: portalData?.schoolInfo?.logoUrl
+    };
+    setDemandSlipDialog({ open: true, loading: false, data: slipData });
+  };
+
   const student = portalData?.student || {};
-  const attendance = portalData?.attendance || { percentage: 0, totalMarked: 0, present: 0, absent: 0, leave: 0 };
-  const fees = portalData?.fees || { totalFee: 0, totalPaid: 0, totalPending: 0, pendingDues: [], recentReceipts: [] };
+  const schoolInfo = portalData?.schoolInfo || {};
+  const classTeacher = portalData?.classTeacher || null;
+  const transport = portalData?.transport || null;
+  const holidays = portalData?.holidays || [];
+  const attendance = portalData?.attendance || { percentage: 0, totalMarked: 0, present: 0, absent: 0, leave: 0, monthlyBreakdown: [] };
+  const fees = portalData?.fees || { totalFee: 0, totalPaid: 0, totalPending: 0, totalConcession: 0, concessions: [], fineRules: [], pendingDues: [], recentReceipts: [] };
   const upcomingExams = portalData?.upcomingExams || [];
   const recentMarks = portalData?.recentMarks || [];
   const timetable = portalData?.todayTimetable || [];
@@ -524,6 +604,7 @@ export const StudentPortalDashboardPage = () => {
           <Tab icon={<TimetableIcon fontSize="small" />} iconPosition="start" label="Timetable" />
           <Tab icon={<ExamIcon fontSize="small" />} iconPosition="start" label="Exams & Report Cards" />
           <Tab icon={<FeesIcon fontSize="small" />} iconPosition="start" label="Fees & Receipts" />
+          <Tab icon={<BadgeIcon fontSize="small" />} iconPosition="start" label="Student ID Card" />
           <Tab icon={<NoticeIcon fontSize="small" />} iconPosition="start" label="Notices & Circulars" />
           <Tab icon={<NcertIcon fontSize="small" />} iconPosition="start" label="NCERT Book Reader" />
           <Tab icon={<AiIcon fontSize="small" />} iconPosition="start" label="AI Study Buddy" />
@@ -596,10 +677,102 @@ export const StudentPortalDashboardPage = () => {
                     <strong>{student?.emergencyContact || '—'}</strong>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Father's Name:</span>
+                    <strong>{student?.fatherName || '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#64748b' }}>Address:</span>
                     <strong style={{ textAlign: 'right' }}>{student?.address ? `${student.address}, ${student.city || ''}` : 'On School Record'}</strong>
                   </Box>
                 </Box>
+              </Paper>
+
+              {/* Class Teacher Details Widget (Item 8) */}
+              <Paper sx={{ p: 2.5, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff', borderLeft: `5px solid #10b981` }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#10b981" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ContactPhoneIcon fontSize="small" /> Class Teacher Details
+                </Typography>
+                {classTeacher ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.88rem' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Name:</span>
+                      <strong>{classTeacher.name}</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#64748b' }}>Contact No:</span>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PhoneIcon sx={{ fontSize: 16, color: '#10b981' }} />
+                        <strong>
+                          {classTeacher.phone ? (
+                            <a href={`tel:${classTeacher.phone}`} style={{ color: '#10b981', textDecoration: 'none' }}>
+                              {classTeacher.phone}
+                            </a>
+                          ) : 'Not Provided'}
+                        </strong>
+                      </Box>
+                    </Box>
+                    {classTeacher.email && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748b' }}>Email:</span>
+                        <strong>{classTeacher.email}</strong>
+                      </Box>
+                    )}
+                    <Chip label="Class Incharge" size="small" color="success" sx={{ alignSelf: 'flex-start', mt: 0.5, fontWeight: 700 }} />
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    Class teacher has not been assigned for this class yet.
+                  </Typography>
+                )}
+              </Paper>
+
+              {/* Transport & Driver Details Widget (Item 7) */}
+              <Paper sx={{ p: 2.5, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff', borderLeft: `5px solid #f59e0b` }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#f59e0b" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BusIcon fontSize="small" /> School Transport & Route Details
+                </Typography>
+                {transport && transport.hasTransport ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.88rem' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Route:</span>
+                      <strong>{transport.routeName}</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Pickup / Drop Stop:</span>
+                      <strong>{transport.stopName}</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Timings:</span>
+                      <strong>Pickup: {transport.pickUpTime || '—'} | Drop: {transport.dropTime || '—'}</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Vehicle:</span>
+                      <strong>{transport.vehicleNo} ({transport.vehicleType})</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#64748b' }}>Driver Name & Mobile:</span>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PhoneIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
+                        <strong>
+                          {transport.driverName} {transport.driverPhone ? `(${transport.driverPhone})` : ''}
+                        </strong>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Monthly Transport Fare:</span>
+                      <strong style={{ color: '#10b981' }}>₹ {Number(transport.monthlyFare || 0).toLocaleString('en-IN')}/mo</strong>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      No school transport bus service allocated for this student.
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Mode: Self / Parent Commute
+                    </Typography>
+                  </Box>
+                )}
               </Paper>
 
               {/* Recent Circulars */}
@@ -654,10 +827,11 @@ export const StudentPortalDashboardPage = () => {
             />
           </Stack>
           
-          <Grid container spacing={2} sx={{ mt: 1 }}>
+          {/* Monthly KPI Cards */}
+          <Grid container spacing={2} sx={{ mt: 1, mb: 3 }}>
             {attendance.monthlyBreakdown?.map((m, idx) => (
               <Grid item xs={12} sm={4} md={2} key={idx}>
-                <Card sx={{ p: 2, textAlign: 'center', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <Card sx={{ p: 2, textAlign: 'center', borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: isDarkMode ? '#1e293b' : '#fafafa' }}>
                   <Typography variant="subtitle2" fontWeight={800}>{m.month}</Typography>
                   <Typography variant="h5" fontWeight={900} color={m.percentage >= 75 ? "#10b981" : "#ef4444"} sx={{ my: 0.5 }}>
                     {m.percentage}%
@@ -669,6 +843,122 @@ export const StudentPortalDashboardPage = () => {
               </Grid>
             ))}
           </Grid>
+
+          {/* Detailed Monthly Attendance Report Table (Item 2) */}
+          <Typography variant="subtitle1" fontWeight={800} color={primaryColor} sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AttendanceIcon fontSize="small" /> Month-wise Attendance Register
+          </Typography>
+          <TableContainer component={Paper} variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <Table size="small">
+              <TableHead sx={{ bgcolor: isDarkMode ? '#334155' : '#f1f5f9' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 800 }}>Month & Year</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Total Working Days</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Days Present</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Days Absent</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Attendance %</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Eligibility Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {(!attendance.monthlyBreakdown || attendance.monthlyBreakdown.length === 0) ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                      No attendance log records found for current session.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  attendance.monthlyBreakdown.map((row, idx) => (
+                    <TableRow key={idx} hover>
+                      <TableCell sx={{ fontWeight: 800, color: primaryColor }}>{row.month}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>{row.total}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 800, color: '#10b981' }}>{row.present}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 800, color: '#ef4444' }}>{row.absent}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 900, color: row.percentage >= 75 ? '#10b981' : '#ef4444' }}>
+                        {row.percentage}%
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          size="small"
+                          label={row.percentage >= 75 ? "Eligible" : "Shortage"}
+                          color={row.percentage >= 75 ? "success" : "error"}
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Holiday Calendar List / Table (Item 1) */}
+          <Box sx={{ mt: 2 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle1" fontWeight={800} color={primaryColor} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarIcon fontSize="small" /> Official School Holiday Calendar ({activeAcademicYearName || '2026-27'})
+              </Typography>
+              <Chip label={`${holidays.length} Declared Holidays`} size="small" color="primary" sx={{ fontWeight: 700 }} />
+            </Stack>
+
+            {holidays.length === 0 ? (
+              <Alert severity="info">
+                No official declared holidays scheduled in the academic calendar for this session.
+              </Alert>
+            ) : (
+              <Grid container spacing={2}>
+                {holidays.map((h, i) => {
+                  const hDate = new Date(h.holidayDate);
+                  const isUpcoming = hDate >= new Date();
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={h.id || i}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          borderColor: isUpcoming ? `${primaryColor}44` : '#e2e8f0',
+                          bgcolor: isUpcoming ? (isDarkMode ? '#1e293b' : '#f0fdf4') : (isDarkMode ? '#0f172a' : '#f8fafc'),
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2
+                        }}
+                      >
+                        <Avatar
+                          sx={{
+                            bgcolor: isUpcoming ? '#10b981' : '#94a3b8',
+                            color: '#ffffff',
+                            width: 48,
+                            height: 48,
+                            fontWeight: 800,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          {hDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={800} color={isUpcoming ? primaryColor : 'text.primary'}>
+                            {h.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {hDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                          </Typography>
+                          {h.description && (
+                            <Typography variant="caption" sx={{ color: '#64748b', fontStyle: 'italic', display: 'block', mt: 0.5 }}>
+                              {h.description}
+                            </Typography>
+                          )}
+                        </Box>
+                        {isUpcoming && (
+                          <Chip label="Upcoming" size="small" color="success" sx={{ fontSize: '0.7rem', height: 20 }} />
+                        )}
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
+          </Box>
         </Paper>
       )}
 
@@ -938,6 +1228,143 @@ export const StudentPortalDashboardPage = () => {
             )}
           </Stack>
 
+          {/* Quick Actions Bar with Demand Slip Button (Item 4) */}
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              mb: 3,
+              borderRadius: 2,
+              bgcolor: isDarkMode ? '#1e293b' : '#f0f9ff',
+              borderColor: '#bae6fd',
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 2
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2" fontWeight={800} color={primaryColor}>
+                Official School Fee Demand Bill Notice / Slip
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Generate, view, and print official fee demand bill note with detailed fee head breakups, concessions, and due dates.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<ReceiptIcon />}
+              onClick={handleOpenDemandSlip}
+              sx={{ fontWeight: 800, px: 2.5, borderRadius: 2 }}
+            >
+              View & Print Demand Slip
+            </Button>
+          </Paper>
+
+          {/* Late Fine Rules Alert / Box (Item 5) */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <WarningIcon fontSize="small" sx={{ color: '#f59e0b' }} /> Late Fine Policies & Applicable Dates
+            </Typography>
+            {(!fees.fineRules || fees.fineRules.length === 0) ? (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                Standard Grace Period: 5 to 7 days after installment due date. No active custom fine rule penalties applied for current period.
+              </Alert>
+            ) : (
+              <Grid container spacing={2}>
+                {fees.fineRules.map((rule, idx) => {
+                  const dueDateStr = rule.dueDate && rule.dueDate !== '0001-01-01T00:00:00'
+                    ? new Date(rule.dueDate).toLocaleDateString('en-IN')
+                    : 'End of Term';
+                  const fineFromStr = rule.fineApplicableFrom && rule.fineApplicableFrom !== '0001-01-01T00:00:00'
+                    ? new Date(rule.fineApplicableFrom).toLocaleDateString('en-IN')
+                    : 'Due Date + Grace Days';
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={rule.id || idx}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          borderColor: '#fde68a',
+                          bgcolor: isDarkMode ? '#1e293b' : '#fffbeb'
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={800} color="#92400e">
+                            {rule.installmentName}
+                          </Typography>
+                          <Chip label={`Grace: ${rule.graceDays || 0} Days`} size="small" color="warning" sx={{ fontWeight: 700 }} />
+                        </Stack>
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', mb: 0.5 }}>
+                          Due Date: <strong>{dueDateStr}</strong>
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', mb: 0.5, color: '#b45309' }}>
+                          Late Fine Starts From: <strong>{fineFromStr}</strong>
+                        </Typography>
+                        <Typography variant="caption" fontWeight={800} sx={{ color: '#b91c1c' }}>
+                          Penalty Charge: ₹ {Number(rule.lateFineAmount || 0).toLocaleString('en-IN')} ({rule.fineType || 'Flat'})
+                        </Typography>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
+          </Box>
+
+          {/* Student Fee Concessions (Item 6) */}
+          <Box sx={{ mb: 4 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <DiscountIcon fontSize="small" sx={{ color: '#10b981' }} /> Approved Student Fee Concessions & Scholarships
+              </Typography>
+              {fees.totalConcession > 0 && (
+                <Chip label={`Total Saved: ₹ ${Number(fees.totalConcession).toLocaleString('en-IN')}`} color="success" size="small" sx={{ fontWeight: 800 }} />
+              )}
+            </Stack>
+
+            {(!fees.concessions || fees.concessions.length === 0) ? (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                No active fee concessions or fee waivers mapped to this student profile for current academic session.
+              </Alert>
+            ) : (
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: isDarkMode ? '#334155' : '#f1f5f9' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800 }}>Fee Head</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Concession Type</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800 }}>Value</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800 }}>Calculated Discount</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Remarks / Approval Reason</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {fees.concessions.map((c, idx) => (
+                      <TableRow key={c.id || idx} hover>
+                        <TableCell sx={{ fontWeight: 800, color: primaryColor }}>{c.feeHead}</TableCell>
+                        <TableCell>
+                          <Chip label={c.type} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {c.type === 'Percentage' ? `${c.value}%` : `₹ ${c.value}`}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 900, color: '#10b981' }}>
+                          ₹ {Number(c.calculatedAmount || c.value || 0).toLocaleString('en-IN')}
+                        </TableCell>
+                        <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>{c.reason}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+
           <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5, mt: 2, color: '#475569' }}>
             Fee Payment Receipts & Downloadable Slips
           </Typography>
@@ -1056,13 +1483,254 @@ export const StudentPortalDashboardPage = () => {
         </Paper>
       )}
 
-      {/* TAB 6: NCERT BOOK READER */}
+      {/* TAB 5: STUDENT ID CARD (Item 3) */}
+      {activeTab === 5 && (
+        <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 3 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={800} color={primaryColor} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BadgeIcon /> Official Student Identity Card
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                View, download, or print official student digital ID card issued for session {activeAcademicYearName || '2026-27'}.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<PrintIcon />}
+                onClick={() => printWithTitle('id-card-print-container', `ID_Card_${student?.fullName || 'Student'}`)}
+                sx={{ fontWeight: 800, borderRadius: 2 }}
+              >
+                Print ID Card
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={downloadingIdCard ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
+                onClick={handleDownloadIdCardPdf}
+                disabled={downloadingIdCard}
+                sx={{ fontWeight: 800, borderRadius: 2 }}
+              >
+                {downloadingIdCard ? 'Generating PDF...' : 'Download PDF'}
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Box
+            id="id-card-print-container"
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 4,
+              p: { xs: 1, sm: 4 },
+              bgcolor: isDarkMode ? '#0f172a' : '#f1f5f9',
+              borderRadius: 3
+            }}
+          >
+            {/* FRONT SIDE OF ID CARD */}
+            <Card
+              sx={{
+                width: 320,
+                height: 480,
+                borderRadius: 3,
+                boxShadow: 4,
+                bgcolor: '#ffffff',
+                border: `2px solid ${primaryColor}`,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative'
+              }}
+            >
+              {/* Card Header */}
+              <Box
+                sx={{
+                  bgcolor: primaryColor,
+                  color: '#ffffff',
+                  p: 2,
+                  textAlign: 'center',
+                  borderBottom: '3px solid #ffb000'
+                }}
+              >
+                {schoolInfo?.logoUrl ? (
+                  <img src={schoolInfo.logoUrl} alt="Logo" style={{ height: 38, objectFit: 'contain', marginBottom: 4 }} />
+                ) : (
+                  <StudentIcon sx={{ fontSize: 32, mb: 0.5, color: '#ffd47e' }} />
+                )}
+                <Typography variant="subtitle2" fontWeight={900} sx={{ letterSpacing: '0.04em', lineHeight: 1.2, textTransform: 'uppercase' }}>
+                  {schoolInfo?.schoolName || 'DIGITAL VIDYA SARTHI PUBLIC SCHOOL'}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', opacity: 0.9, display: 'block' }}>
+                  {schoolInfo?.address || 'Main Campus Road'}
+                </Typography>
+              </Box>
+
+              {/* Card Body */}
+              <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <Avatar
+                  src={student?.photoUrl}
+                  sx={{
+                    width: 90,
+                    height: 90,
+                    mb: 1.5,
+                    border: `3px solid ${primaryColor}`,
+                    boxShadow: 2,
+                    bgcolor: '#e2e8f0',
+                    color: primaryColor,
+                    fontSize: '2rem',
+                    fontWeight: 900
+                  }}
+                >
+                  {student?.fullName?.charAt(0) || 'S'}
+                </Avatar>
+
+                <Typography variant="subtitle1" fontWeight={900} color={primaryColor} sx={{ textAlign: 'center', lineHeight: 1.2 }}>
+                  {student?.fullName || 'STUDENT NAME'}
+                </Typography>
+                <Chip
+                  label={`CLASS: ${student?.className || '—'} (${student?.sectionName || 'A'})`}
+                  size="small"
+                  sx={{ bgcolor: '#eff6ff', color: primaryColor, fontWeight: 800, mt: 0.5, mb: 1.5 }}
+                />
+
+                <Box sx={{ width: '100%', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: 0.6, px: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Adm No:</span>
+                    <strong>{student?.admissionNo || '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Roll No:</span>
+                    <strong>{student?.rollNo || '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Father:</span>
+                    <strong>{student?.fatherName || '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>DOB:</span>
+                    <strong>{student?.dateOfBirth ? String(student.dateOfBirth).split('T')[0] : '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Blood Group:</span>
+                    <strong style={{ color: '#dc2626' }}>{student?.bloodGroup || '—'}</strong>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Emergency Contact:</span>
+                    <strong>{student?.guardianPhone || student?.emergencyContact || '—'}</strong>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Card Footer Badge */}
+              <Box sx={{ bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', p: 1, textAlign: 'center' }}>
+                <Typography variant="caption" fontWeight={800} color="text.secondary">
+                  SESSION: {activeAcademicYearName || '2026-27'} • STUDENT ID CARD
+                </Typography>
+              </Box>
+            </Card>
+
+            {/* BACK SIDE OF ID CARD */}
+            <Card
+              sx={{
+                width: 320,
+                height: 480,
+                borderRadius: 3,
+                boxShadow: 4,
+                bgcolor: '#ffffff',
+                border: `2px solid ${primaryColor}`,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                p: 2.5
+              }}
+            >
+              <Box>
+                <Typography variant="subtitle2" fontWeight={900} color={primaryColor} sx={{ textAlign: 'center', mb: 1, textTransform: 'uppercase' }}>
+                  Terms & General Instructions
+                </Typography>
+                <Divider sx={{ mb: 1.5 }} />
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mb: 1, lineHeight: 1.4 }}>
+                  1. This card is valid only for student tenure during Academic Session {activeAcademicYearName || '2026-27'}.
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mb: 1, lineHeight: 1.4 }}>
+                  2. Student must wear this ID card daily inside school campus, during bus transit, and examination days.
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mb: 1, lineHeight: 1.4 }}>
+                  3. If lost or damaged, immediately report to the school office for issuance of a duplicate card.
+                </Typography>
+
+                <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f8fafc', borderRadius: 1.5, border: '1px dashed #cbd5e1' }}>
+                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block' }}>
+                    RESIDENTIAL ADDRESS:
+                  </Typography>
+                  <Typography variant="caption" fontWeight={800} color="text.primary">
+                    {student?.address ? `${student.address}, ${student.city || ''} - ${student.pincode || ''}` : 'On Permanent School Register'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', px: 1 }}>
+                  <Box>
+                    <Box sx={{ borderBottom: '1px solid #94a3b8', width: 90, mb: 0.5 }} />
+                    <Typography variant="caption" fontWeight={700} color="text.secondary">Card Holder</Typography>
+                  </Box>
+                  <Box>
+                    <Box sx={{ borderBottom: '1px solid #0f2b48', width: 90, mb: 0.5 }} />
+                    <Typography variant="caption" fontWeight={800} color={primaryColor}>Principal</Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', mt: 2 }}>
+                  Emergency Helpline: {schoolInfo?.phone || 'School Office'}
+                </Typography>
+              </Box>
+            </Card>
+          </Box>
+        </Paper>
+      )}
+
+      {/* TAB 6: NOTICES & CIRCULARS */}
       {activeTab === 6 && (
+        <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
+          <Typography variant="h6" fontWeight={800} color={primaryColor} sx={{ mb: 2 }}>
+            Official School Notices, Circulars & Announcements
+          </Typography>
+          {notices.length === 0 ? (
+            <Alert severity="info">
+              No recent notifications on the school portal.
+            </Alert>
+          ) : (
+            <Stack spacing={2}>
+              {notices.map((n) => (
+                <Paper key={n.id} sx={{ p: 2.5, bgcolor: isDarkMode ? '#334155' : '#f8fafc', borderRadius: 2, borderLeft: `5px solid ${primaryColor}` }}>
+                  <Typography variant="subtitle1" fontWeight={800}>
+                    {n.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, color: isDarkMode ? '#e2e8f0' : '#334155', lineHeight: 1.6 }}>
+                    {n.message}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', mt: 1.5, display: 'block', fontWeight: 600 }}>
+                    Announced On: {new Date(n.sentAt).toLocaleString()}
+                  </Typography>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </Paper>
+      )}
+
+      {/* TAB 7: NCERT BOOK READER */}
+      {activeTab === 7 && (
         <StudentNcertReaderTab studentClassName={student?.className} />
       )}
 
-      {/* TAB 7: AI STUDY BUDDY */}
-      {activeTab === 7 && (
+      {/* TAB 8: AI STUDY BUDDY */}
+      {activeTab === 8 && (
         <StudentAiChatTab student={student} />
       )}
 
@@ -1238,6 +1906,104 @@ export const StudentPortalDashboardPage = () => {
             sx={{ fontWeight: 800 }}
           >
             {downloadingFeeSlip ? 'Downloading...' : 'Download Fee Slip'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: OFFICIAL DEMAND SLIP PRINT / VIEW DIALOG (Item 4) */}
+      {/* ========================================================================= */}
+      <Dialog
+        open={demandSlipDialog.open}
+        onClose={() => setDemandSlipDialog({ open: false, loading: false, data: null })}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: { xs: 1, sm: 2 },
+            bgcolor: '#ffffff',
+            '@media print': {
+              boxShadow: 'none',
+              p: 0,
+              m: 0,
+              width: '100% !important',
+              maxWidth: '100% !important'
+            }
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+          <Box>
+            <Typography variant="h6" fontWeight={900} color={primaryColor}>
+              Official Fee Demand Bill Notice / Slip
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Student: {student?.fullName} ({student?.admissionNo}) • Academic Session: {activeAcademicYearName || '2026-27'}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<PrintIcon />}
+              onClick={() => printWithTitle('demand-slip-print-area', `Demand_Slip_${student?.admissionNo || 'Bill'}`)}
+              sx={{ fontWeight: 800, borderRadius: 2 }}
+            >
+              Print
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={downloadingDemandSlip ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
+              onClick={handleDownloadDemandSlipPdf}
+              disabled={downloadingDemandSlip || !demandSlipDialog.data}
+              sx={{ fontWeight: 800, borderRadius: 2 }}
+            >
+              {downloadingDemandSlip ? 'Downloading...' : 'Download PDF'}
+            </Button>
+            <IconButton onClick={() => setDemandSlipDialog({ open: false, loading: false, data: null })} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: { xs: 1, sm: 2 } }}>
+          {demandSlipDialog.loading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 2 }}>
+              <CircularProgress size={48} />
+              <Typography variant="body2" color="text.secondary">
+                Compiling official demand slip notice...
+              </Typography>
+            </Box>
+          ) : !demandSlipDialog.data ? (
+            <Alert severity="warning" sx={{ my: 3 }}>
+              Demand slip details could not be generated.
+            </Alert>
+          ) : (
+            <div id="demand-slip-print-area">
+              <SingleDemandSlip
+                data={demandSlipDialog.data}
+                copyTitle="STUDENT / PARENT FEE DEMAND COPY"
+                schoolInfo={schoolInfo}
+              />
+            </div>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDemandSlipDialog({ open: false, loading: false, data: null })} sx={{ fontWeight: 700 }}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={downloadingDemandSlip ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
+            onClick={handleDownloadDemandSlipPdf}
+            disabled={downloadingDemandSlip || !demandSlipDialog.data}
+            sx={{ fontWeight: 800 }}
+          >
+            {downloadingDemandSlip ? 'Downloading...' : 'Download PDF'}
           </Button>
         </DialogActions>
       </Dialog>

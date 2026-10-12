@@ -295,21 +295,104 @@ export const WebsiteCmsPage = () => {
                   </div>
 
                   <div className="col-12 md:col-4">
-                    <label className="block text-900 font-semibold mb-2">Image URL / Path</label>
-                    <InputText 
-                      value={slide.image} 
-                      onChange={e => handleSlideChange(idx, 'image', e.target.value)} 
-                      className="w-full mb-2"
-                      placeholder="/images/erp_dashboard.jpg"
-                    />
-                    {slide.image && (
-                      <div className="border-round overflow-hidden shadow-1" style={{ height: '110px' }}>
+                    <label className="block text-900 font-semibold mb-2">Slide Screenshot / Banner Image</label>
+                    
+                    {/* Image Upload Box & File Selector */}
+                    <div className="flex flex-column gap-2 mb-2">
+                      <div className="flex gap-2 align-items-center">
+                        <label 
+                          htmlFor={`slide-file-upload-${idx}`}
+                          className="p-button p-button-sm p-button-outlined p-button-primary cursor-pointer flex align-items-center gap-2 m-0"
+                          style={{ padding: '6px 14px' }}
+                        >
+                          <i className="pi pi-upload"></i>
+                          <span>Choose / Upload Image</span>
+                        </label>
+                        <input
+                          id={`slide-file-upload-${idx}`}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 5 * 1024 * 1024) {
+                                toastRef.current?.show({
+                                  severity: 'warn',
+                                  summary: 'Image Too Large',
+                                  detail: 'Please choose an image under 5 MB.',
+                                  life: 4000
+                                });
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = (uploadEvent) => {
+                                handleSlideChange(idx, 'image', uploadEvent.target?.result);
+                                toastRef.current?.show({
+                                  severity: 'success',
+                                  summary: 'Image Loaded',
+                                  detail: `Image "${file.name}" loaded for Slide #${idx + 1}. Remember to click Save & Publish!`,
+                                  life: 3000
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+
+                        {slide.image && (
+                          <Button
+                            type="button"
+                            icon="pi pi-times"
+                            className="p-button-sm p-button-rounded p-button-text p-button-danger"
+                            tooltip="Remove Image"
+                            onClick={() => handleSlideChange(idx, 'image', '')}
+                          />
+                        )}
+                      </div>
+
+                      {/* Optional URL input for online images */}
+                      <div className="p-inputgroup">
+                        <span className="p-inputgroup-addon" style={{ padding: '0 8px' }}>
+                          <i className="pi pi-link text-xs"></i>
+                        </span>
+                        <InputText 
+                          value={slide.image?.startsWith('data:') ? 'Image uploaded (Base64 file)' : slide.image} 
+                          onChange={e => handleSlideChange(idx, 'image', e.target.value)} 
+                          className="p-inputtext-sm"
+                          placeholder="Or enter image URL / /images/name.jpg"
+                          disabled={slide.image?.startsWith('data:')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Image Preview Box */}
+                    {slide.image ? (
+                      <div 
+                        className="border-round overflow-hidden shadow-1 relative border-1 border-300" 
+                        style={{ height: '140px', backgroundColor: '#071834' }}
+                      >
                         <img 
                           src={slide.image} 
-                          alt="preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          alt="Slide preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                           onError={(e) => { e.target.src = '/images/erp_dashboard.jpg'; }}
                         />
+                        <span 
+                          className="absolute bottom-0 left-0 right-0 p-1 text-center text-xs font-semibold"
+                          style={{ background: 'rgba(0,0,0,0.65)', color: '#ffffff' }}
+                        >
+                          Live Preview for Slide #{idx + 1}
+                        </span>
+                      </div>
+                    ) : (
+                      <div 
+                        className="border-round border-2 border-dashed border-300 flex flex-column align-items-center justify-content-center p-3 text-center"
+                        style={{ height: '140px', background: '#f8fafc' }}
+                      >
+                        <i className="pi pi-image text-400 text-3xl mb-1"></i>
+                        <span className="text-500 text-xs font-semibold">No Image Selected</span>
+                        <span className="text-400 text-xs">Click Choose / Upload Image above</span>
                       </div>
                     )}
                   </div>

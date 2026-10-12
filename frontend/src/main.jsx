@@ -6,6 +6,7 @@ import App from './App';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
+import 'aos/dist/aos.css';
 import './style.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

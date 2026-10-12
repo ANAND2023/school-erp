@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AOS from 'aos';
 import { 
   Box, Typography, Button, Container, Grid, CardMedia, 
   Paper, AppBar, Toolbar, IconButton, TextField, 
@@ -32,7 +33,7 @@ export const LandingPage = () => {
     accentColor: '#ffb000', // Edumarshal Signature Shimmer Gold
     heroBadge: 'RATED 4.9/5 • TRUSTED BY 550+ INSTITUTES NATIONWIDE',
     heroTitle: 'School ERP Software & Complete Institutional Management System',
-    heroSubtitle: 'One unified cloud platform running Admissions, Fee POS Counters, Biometric Attendance, Exam Marks Cards, GPS Transport, and Teacher & Parent Portals across all your campuses.',
+    heroSubtitle: 'One unified cloud platform running Admissions, Fee POS Counters, Student & Staff Attendance, Exam Marks Cards, GPS Transport, and Teacher & Parent Portals across all your campuses.',
     ctaPrimaryText: 'Book A Free 30-Min Demo',
     ctaSecondaryText: 'Explore 65+ Modules',
     sliderIntervalSeconds: 4,
@@ -45,9 +46,9 @@ export const LandingPage = () => {
         stats: 'Real-Time Insights • 100% Automated'
       },
       {
-        badge: 'Zero-Proxy Attendance',
-        title: 'Smart Attendance with Instant WhatsApp / SMS Alerts',
-        description: 'Biometric, RFID, app-based and QR attendance marking that automatically notifies parents the moment a student is absent or late, complete with monthly percentage analytics.',
+        badge: 'Daily Academic Ops',
+        title: 'Smart Daily Student & Staff Attendance System',
+        description: 'Class-wise student attendance registers and staff presence tracking with monthly percentage analytics and instant parent communication.',
         image: '/images/erp_attendance.jpg',
         stats: 'Instant Parent Sync • Zero Manual Registers'
       },
@@ -96,6 +97,16 @@ export const LandingPage = () => {
     loadCms();
   }, []);
 
+  // Initialize AOS (Animate on Scroll) like eduerp.ai
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      easing: 'ease-out-cubic',
+      once: false,
+      offset: 50,
+    });
+  }, []);
+
   // Slider auto-rotate
   useEffect(() => {
     if (!cms.slides || cms.slides.length === 0) return;
@@ -139,7 +150,7 @@ export const LandingPage = () => {
       title: 'Smart Attendance & Leaves',
       icon: 'pi pi-check-circle',
       tag: 'Daily Ops',
-      desc: 'Biometric, RFID & teacher app attendance with instant automated parent SMS/WhatsApp notification and staff leave approvals.'
+      desc: 'Class-wise daily student roll-call attendance registers, monthly percentage reports, staff presence logs, and leave approval workflows.'
     },
     {
       category: 'academics',
@@ -248,7 +259,7 @@ export const LandingPage = () => {
   const edumarshalFaqs = [
     {
       q: 'What is a School ERP software & Management System?',
-      a: 'A School ERP is a unified cloud platform that connects every department of your institution — admissions, academics, biometric attendance, fee counter POS, examinations, report cards, transport, and inventory — onto a single real-time database instead of disjointed Excel registers.'
+      a: 'A School ERP is a unified cloud platform that connects every department of your institution — admissions, academics, daily attendance, fee counter POS, examinations, report cards, transport, and inventory — onto a single real-time database instead of disjointed Excel registers.'
     },
     {
       q: 'Can this ERP handle multiple schools and branch campuses?',
@@ -260,7 +271,7 @@ export const LandingPage = () => {
     },
     {
       q: 'Does it send automated attendance alerts to parents?',
-      a: 'Yes. The moment student attendance is marked through biometric devices, RFID cards, or the teacher app, an automated WhatsApp/SMS notification is triggered immediately to parents if their child is absent or late.'
+      a: 'Yes. When student attendance is recorded in the portal by teachers, automated parent communication and absent/leave tracking keep families instantly informed.'
     },
     {
       q: 'Is there a dedicated Portal for Students & Parents?',
@@ -508,14 +519,26 @@ export const LandingPage = () => {
         </Box>
       </Drawer>
 
-      {/* Hero Section (Edumarshal Split Layout) */}
+      {/* Hero Section (Edumarshal Split Layout with EduERP.ai modern animations) */}
       <Box sx={{ 
         pt: { xs: 6, md: 10 }, pb: { xs: 8, md: 12 }, px: 2, 
-        background: 'linear-gradient(180deg, #0a387c 0%, #072554 45%, #051b3d 100%)',
+        background: 'linear-gradient(180deg, #071e42 0%, #0a387c 40%, #051937 100%)',
         color: '#ffffff',
         position: 'relative',
         overflow: 'hidden'
       }}>
+        {/* Ambient Glowing Orbs (EduERP Glow Effect) */}
+        <Box className="eduerp-ambient-glow" sx={{
+          position: 'absolute', top: '-10%', left: '15%', width: 450, height: 450,
+          borderRadius: '50%', background: 'radial-gradient(circle, rgba(14,165,233,0.22) 0%, rgba(14,165,233,0) 70%)',
+          filter: 'blur(50px)', pointerEvents: 'none'
+        }} />
+        <Box className="eduerp-ambient-glow" sx={{
+          position: 'absolute', bottom: '5%', right: '5%', width: 500, height: 500,
+          borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,176,0,0.18) 0%, rgba(255,176,0,0) 70%)',
+          filter: 'blur(60px)', pointerEvents: 'none'
+        }} />
+
         {/* Subtle grid pattern background */}
         <Box sx={{ 
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -531,34 +554,50 @@ export const LandingPage = () => {
             {/* Hero Left Content */}
             <Grid item xs={12} md={7}>
               
-              {/* Kick Badge */}
-              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                <Box sx={{ width: 22, height: 4, borderRadius: 2, bgcolor: goldColor }} />
+              {/* Kick Badge with pulse dot */}
+              <Box 
+                data-aos="fade-down" 
+                data-aos-delay="100"
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 3 }}
+              >
+                <Box sx={{ 
+                  width: 10, height: 10, borderRadius: '50%', bgcolor: '#10b981',
+                  boxShadow: '0 0 12px #10b981'
+                }} />
                 <Typography sx={{ color: '#ffd47e', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   {cms.heroBadge}
                 </Typography>
               </Box>
 
               {/* Main Headline */}
-              <Typography variant="h1" sx={{ 
-                fontSize: { xs: '2.4rem', sm: '3.2rem', lg: '3.8rem' }, 
-                fontWeight: 900, 
-                lineHeight: 1.15, 
-                letterSpacing: '-0.03em', 
-                color: '#ffffff',
-                mb: 3
-              }}>
+              <Typography 
+                variant="h1" 
+                data-aos="fade-up" 
+                data-aos-delay="200"
+                sx={{ 
+                  fontSize: { xs: '2.4rem', sm: '3.2rem', lg: '3.8rem' }, 
+                  fontWeight: 900, 
+                  lineHeight: 1.15, 
+                  letterSpacing: '-0.03em', 
+                  color: '#ffffff',
+                  mb: 3
+                }}
+              >
                 {cms.heroTitle}
               </Typography>
 
               {/* Subtitle */}
-              <Typography sx={{ 
-                color: '#d0ddf5', 
-                fontSize: { xs: '1.05rem', md: '1.2rem' }, 
-                lineHeight: 1.65, 
-                mb: 4, 
-                maxWidth: '680px' 
-              }}>
+              <Typography 
+                data-aos="fade-up" 
+                data-aos-delay="300"
+                sx={{ 
+                  color: '#d0ddf5', 
+                  fontSize: { xs: '1.05rem', md: '1.2rem' }, 
+                  lineHeight: 1.65, 
+                  mb: 4, 
+                  maxWidth: '680px' 
+                }}
+              >
                 {cms.heroSubtitle}
               </Typography>
 
@@ -566,13 +605,13 @@ export const LandingPage = () => {
               <Grid container spacing={2} sx={{ mb: 5 }}>
                 {[
                   '1-Click Online & POS Counter Fee Receipts',
-                  'Biometric & RFID Smart Attendance with Instant Parent SMS',
+                  'Smart Daily Student & Staff Attendance Marking',
                   'Automated CBSE/ICSE Grade Sheets & Report Cards',
                   'Real-Time GPS Fleet & Bus Route Allocation',
                   'Super Admin Multi-Tenant Campus Governance',
                   'Zero Setup Downtime & 24/7 Dedicated Support'
                 ].map((item, idx) => (
-                  <Grid item xs={12} sm={6} key={idx}>
+                  <Grid item xs={12} sm={6} key={idx} data-aos="fade-up" data-aos-delay={350 + idx * 50}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                       <CheckCircleIcon sx={{ color: goldColor, fontSize: 18 }} />
                       <Typography sx={{ color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>{item}</Typography>
@@ -582,22 +621,22 @@ export const LandingPage = () => {
               </Grid>
 
               {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }} data-aos="fade-up" data-aos-delay="650">
                 <Button 
                   variant="contained" 
                   size="large" 
                   href="#contact"
+                  className="eduerp-btn-shimmer"
                   sx={{ 
                     borderRadius: 99, 
                     px: 4.5, py: 1.7, 
                     fontWeight: 800, 
                     fontSize: '1rem',
                     textTransform: 'none',
-                    background: 'linear-gradient(120deg, #ffb000 30%, #ffd47e 48%, #ffb000 62%)',
-                    backgroundSize: '220% 100%',
                     color: '#12233f',
                     boxShadow: '0 14px 28px -8px rgba(255, 176, 0, 0.75)',
-                    '&:hover': { transform: 'translateY(-2px)' }
+                    transition: 'transform 0.2s ease',
+                    '&:hover': { transform: 'translateY(-3px)' }
                   }}
                 >
                   {cms.ctaPrimaryText} &rarr;
@@ -614,7 +653,9 @@ export const LandingPage = () => {
                     textTransform: 'none',
                     borderColor: 'rgba(255,255,255,0.3)', 
                     color: '#ffffff',
-                    '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.06)' }
+                    backdropFilter: 'blur(8px)',
+                    transition: 'all 0.25s ease',
+                    '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.1)', transform: 'translateY(-2px)' }
                   }}
                 >
                   {cms.ctaSecondaryText}
@@ -623,98 +664,274 @@ export const LandingPage = () => {
 
             </Grid>
 
-            {/* Hero Right: Fast Quick Consultation Card (Edumarshal Style) */}
+            {/* Hero Right: Fast Quick Consultation Card (with Floating 3D and floating mini badges) */}
             <Grid item xs={12} md={5}>
-              <Paper sx={{ 
-                p: { xs: 3.5, md: 4.5 }, 
-                borderRadius: 4, 
-                bgcolor: '#ffffff', 
-                color: '#12233f',
-                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h5" fontWeight="900" sx={{ color: '#0a387c', mb: 0.5 }}>
-                    Schedule Live Interactive Demo
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#64748b' }}>
-                    See how DVS ERP automates daily workflows for your teachers, fee accountants, and students.
-                  </Typography>
-                </Box>
-
-                <form onSubmit={handleEnquirySubmit}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField 
-                      fullWidth 
-                      placeholder="Your Full Name *" 
-                      size="small"
-                      required
-                      value={formData.name} 
-                      onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                      InputProps={{ sx: { borderRadius: 2 } }}
-                    />
-                    <TextField 
-                      fullWidth 
-                      placeholder="School / College / Institute Name *" 
-                      size="small"
-                      required
-                      value={formData.school} 
-                      onChange={e => setFormData({ ...formData, school: e.target.value })} 
-                      InputProps={{ sx: { borderRadius: 2 } }}
-                    />
-                    <TextField 
-                      fullWidth 
-                      placeholder="10-Digit Mobile Number *" 
-                      size="small"
-                      required
-                      value={formData.phone} 
-                      onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
-                      inputProps={{ maxLength: 10, pattern: "[0-9]{10}" }}
-                      InputProps={{ sx: { borderRadius: 2 } }}
-                    />
-                    <TextField 
-                      fullWidth 
-                      placeholder="Official Email Address" 
-                      type="email"
-                      size="small"
-                      value={formData.email} 
-                      onChange={e => setFormData({ ...formData, email: e.target.value })} 
-                      InputProps={{ sx: { borderRadius: 2 } }}
-                    />
-                    <Button 
-                      type="submit" 
-                      variant="contained" 
-                      fullWidth
-                      sx={{ 
-                        mt: 1,
-                        py: 1.5, 
-                        fontWeight: 900, 
-                        fontSize: '1rem',
-                        borderRadius: 2.5,
-                        textTransform: 'none',
-                        background: 'linear-gradient(120deg, #ffb000 30%, #ffd47e 48%, #ffb000 62%)',
-                        backgroundSize: '220% 100%',
-                        color: '#12233f',
-                        boxShadow: '0 12px 24px -8px rgba(255, 176, 0, 0.65)',
-                        '&:hover': { transform: 'translateY(-2px)' }
-                      }}
-                    >
-                      Book 30-Minute Free Demo &rarr;
-                    </Button>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', textAlign: 'center', mt: 0.5 }}>
-                      🔒 Zero spam • Custom institution quote within 24 hours
+              <Box sx={{ position: 'relative' }} data-aos="zoom-in" data-aos-delay="250">
+                
+                {/* Floating EduERP-Style live status badge 1 */}
+                <Box 
+                  className="eduerp-floating-badge"
+                  sx={{ 
+                    position: 'absolute', top: -20, left: -20, zIndex: 3,
+                    bgcolor: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
+                    borderRadius: 3, px: 2, py: 1.2,
+                    display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1.2
+                  }}
+                >
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e', boxShadow: '0 0 10px #22c55e' }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ color: '#cbd5e1', fontSize: '0.68rem', display: 'block', fontWeight: 600 }}>
+                      Admissions & Fees
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#ffffff', fontWeight: 800, fontSize: '0.82rem' }}>
+                      100% Real-Time Sync
                     </Typography>
                   </Box>
-                </form>
-              </Paper>
+                </Box>
+
+                {/* Floating EduERP-Style live status badge 2 */}
+                <Box 
+                  className="eduerp-floating-card"
+                  sx={{ 
+                    position: 'absolute', bottom: -22, right: -15, zIndex: 3,
+                    bgcolor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(10,56,124,0.12)',
+                    boxShadow: '0 16px 36px rgba(10,56,124,0.25)',
+                    borderRadius: 3, px: 2.2, py: 1.2,
+                    display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1.2
+                  }}
+                >
+                  <Box sx={{ 
+                    width: 32, height: 32, borderRadius: 2, bgcolor: '#fef3c7',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b45309'
+                  }}>
+                    <VerifiedIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block', fontWeight: 700 }}>
+                      Curriculum Aligned
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#0a387c', fontWeight: 900, fontSize: '0.84rem' }}>
+                      CBSE • ICSE • State Boards
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Paper className="eduerp-3d-card" sx={{ 
+                  p: { xs: 3.5, md: 4.5 }, 
+                  borderRadius: 4, 
+                  bgcolor: '#ffffff', 
+                  color: '#12233f',
+                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  position: 'relative'
+                }}>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="h5" fontWeight="900" sx={{ color: '#0a387c', mb: 0.5 }}>
+                      Schedule Live Interactive Demo
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      See how DVS ERP automates daily workflows for your teachers, fee accountants, and students.
+                    </Typography>
+                  </Box>
+
+                  <form onSubmit={handleEnquirySubmit}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <TextField 
+                        fullWidth 
+                        placeholder="Your Full Name *" 
+                        size="small"
+                        required
+                        value={formData.name} 
+                        onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                      <TextField 
+                        fullWidth 
+                        placeholder="School / College / Institute Name *" 
+                        size="small"
+                        required
+                        value={formData.school} 
+                        onChange={e => setFormData({ ...formData, school: e.target.value })} 
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                      <TextField 
+                        fullWidth 
+                        placeholder="10-Digit Mobile Number *" 
+                        size="small"
+                        required
+                        value={formData.phone} 
+                        onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
+                        inputProps={{ maxLength: 10, pattern: "[0-9]{10}" }}
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                      <TextField 
+                        fullWidth 
+                        placeholder="Official Email Address" 
+                        type="email"
+                        size="small"
+                        value={formData.email} 
+                        onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                      <Button 
+                        type="submit" 
+                        variant="contained" 
+                        fullWidth
+                        className="eduerp-btn-shimmer"
+                        sx={{ 
+                          mt: 1,
+                          py: 1.5, 
+                          fontWeight: 900, 
+                          fontSize: '1rem',
+                          borderRadius: 2.5,
+                          textTransform: 'none',
+                          color: '#12233f',
+                          boxShadow: '0 12px 24px -8px rgba(255, 176, 0, 0.65)'
+                        }}
+                      >
+                        Book 30-Minute Free Demo &rarr;
+                      </Button>
+                      <Typography variant="caption" sx={{ color: '#94a3b8', textAlign: 'center', mt: 0.5 }}>
+                        🔒 Zero spam • Custom institution quote within 24 hours
+                      </Typography>
+                    </Box>
+                  </form>
+                </Paper>
+              </Box>
             </Grid>
 
           </Grid>
         </Container>
       </Box>
 
-      {/* Institutional Stats & Scale Strip (Edumarshal Proven At Scale) */}
-      <Box sx={{ bgcolor: '#ffffff', py: 5, borderBottom: '1px solid #e2e8f0' }}>
+      {/* EduERP-Style High-Impact Infinite Animated Marquee Showcase (Dual Track) */}
+      <Box sx={{ 
+        bgcolor: '#041126', 
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        py: { xs: 3.5, md: 4.5 }, 
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Ambient Top Glow */}
+        <Box sx={{
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '60%', height: '100%',
+          background: 'radial-gradient(ellipse at center, rgba(14,165,233,0.12) 0%, rgba(0,0,0,0) 70%)',
+          pointerEvents: 'none'
+        }} />
+
+        {/* Section Tag */}
+        <Container maxWidth="xl" sx={{ mb: 2.5, textAlign: 'center' }}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.2, px: 2, py: 0.5, bgcolor: 'rgba(255,176,0,0.1)', borderRadius: 99, border: '1px solid rgba(255,176,0,0.25)' }}>
+            <i className="pi pi-bolt" style={{ color: goldColor, fontSize: '0.85rem' }}></i>
+            <Typography sx={{ color: goldColor, fontWeight: 800, fontSize: '0.76rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              POWERING END-TO-END SMART OPERATIONS
+            </Typography>
+          </Box>
+        </Container>
+
+        {/* Track 1: Left to Right Continuous Stream */}
+        <Box sx={{ mb: 2 }}>
+          <div className="eduerp-marquee-container">
+            <div className="eduerp-marquee-track">
+              {[
+                { icon: 'pi pi-check-circle', title: 'Daily Student Roll-Call Attendance', tag: 'Fast Marking' },
+                { icon: 'pi pi-wallet', title: 'Automated POS Fee Counter', tag: 'Instant Receipts' },
+                { icon: 'pi pi-file-edit', title: 'CBSE & ICSE Grade Sheets', tag: '1-Click Marks Card' },
+                { icon: 'pi pi-map-marker', title: 'Real-Time Bus GPS Tracking', tag: 'Live Fleet' },
+                { icon: 'pi pi-book', title: 'NCERT Digital E-Books Library', tag: 'Classes 6-12' },
+                { icon: 'pi pi-comments', title: 'Parent WhatsApp & SMS Gateway', tag: 'Instant Sync' },
+                { icon: 'pi pi-server', title: 'Multi-Branch Super Admin Hub', tag: 'Cross-Campus' },
+                { icon: 'pi pi-chart-line', title: 'Comprehensive Fee & Expense Analytics', tag: 'Instant Audit' },
+              ].concat([
+                { icon: 'pi pi-check-circle', title: 'Daily Student Roll-Call Attendance', tag: 'Fast Marking' },
+                { icon: 'pi pi-wallet', title: 'Automated POS Fee Counter', tag: 'Instant Receipts' },
+                { icon: 'pi pi-file-edit', title: 'CBSE & ICSE Grade Sheets', tag: '1-Click Marks Card' },
+                { icon: 'pi pi-map-marker', title: 'Real-Time Bus GPS Tracking', tag: 'Live Fleet' },
+                { icon: 'pi pi-book', title: 'NCERT Digital E-Books Library', tag: 'Classes 6-12' },
+                { icon: 'pi pi-comments', title: 'Parent WhatsApp & SMS Gateway', tag: 'Instant Sync' },
+                { icon: 'pi pi-server', title: 'Multi-Branch Super Admin Hub', tag: 'Cross-Campus' },
+                { icon: 'pi pi-chart-line', title: 'Comprehensive Fee & Expense Analytics', tag: 'Instant Audit' },
+              ]).map((item, idx) => (
+                <div key={`track1-${idx}`} className="eduerp-marquee-pill">
+                  <Box sx={{ 
+                    width: 32, height: 32, borderRadius: '50%', 
+                    bgcolor: 'rgba(255,176,0,0.18)', color: goldColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <i className={item.icon} style={{ fontSize: '0.95rem' }}></i>
+                  </Box>
+                  <Typography sx={{ color: '#ffffff', fontSize: '0.92rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                    {item.title}
+                  </Typography>
+                  <Box sx={{ 
+                    px: 1.2, py: 0.3, borderRadius: 99, 
+                    bgcolor: 'rgba(255,255,255,0.08)', color: '#93c5fd', 
+                    fontSize: '0.72rem', fontWeight: 700 
+                  }}>
+                    {item.tag}
+                  </Box>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Box>
+
+        {/* Track 2: Reverse Direction Stream for dynamic contrast */}
+        <Box>
+          <div className="eduerp-marquee-container">
+            <div className="eduerp-marquee-track reverse">
+              {[
+                { icon: 'pi pi-shield', title: 'Role-Based Permissions & Audit Logs', tag: '100% Secure' },
+                { icon: 'pi pi-id-card', title: 'Student & Staff Smart ID Cards', tag: 'Barcode / QR' },
+                { icon: 'pi pi-mobile', title: 'Dedicated Multi-Child Parent Portal', tag: 'Web & Mobile' },
+                { icon: 'pi pi-calendar', title: 'Dynamic Timetable & Bell Scheduler', tag: 'Auto Proxy' },
+                { icon: 'pi pi-sparkles', title: '24/7 AI Homework & Doubt Solver', tag: 'AI Tutor' },
+                { icon: 'pi pi-users', title: 'Staff Attendance & Leave Approvals', tag: 'Staff Ops' },
+                { icon: 'pi pi-box', title: 'Inventory & Asset Store Management', tag: 'Stock Audit' },
+                { icon: 'pi pi-verified', title: 'Transfer Certificate & Promotion Engine', tag: '1-Click TC' }
+              ].concat([
+                { icon: 'pi pi-shield', title: 'Role-Based Permissions & Audit Logs', tag: '100% Secure' },
+                { icon: 'pi pi-id-card', title: 'Student & Staff Smart ID Cards', tag: 'Barcode / QR' },
+                { icon: 'pi pi-mobile', title: 'Dedicated Multi-Child Parent Portal', tag: 'Web & Mobile' },
+                { icon: 'pi pi-calendar', title: 'Dynamic Timetable & Bell Scheduler', tag: 'Auto Proxy' },
+                { icon: 'pi pi-sparkles', title: '24/7 AI Homework & Doubt Solver', tag: 'AI Tutor' },
+                { icon: 'pi pi-users', title: 'Staff Attendance & Leave Approvals', tag: 'Staff Ops' },
+                { icon: 'pi pi-box', title: 'Inventory & Asset Store Management', tag: 'Stock Audit' },
+                { icon: 'pi pi-verified', title: 'Transfer Certificate & Promotion Engine', tag: '1-Click TC' }
+              ]).map((item, idx) => (
+                <div key={`track2-${idx}`} className="eduerp-marquee-pill" style={{ background: 'rgba(15,23,42,0.6)', borderColor: 'rgba(255,255,255,0.09)' }}>
+                  <Box sx={{ 
+                    width: 32, height: 32, borderRadius: '50%', 
+                    bgcolor: 'rgba(56,189,248,0.18)', color: '#38bdf8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <i className={item.icon} style={{ fontSize: '0.95rem' }}></i>
+                  </Box>
+                  <Typography sx={{ color: '#e2e8f0', fontSize: '0.92rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                    {item.title}
+                  </Typography>
+                  <Box sx={{ 
+                    px: 1.2, py: 0.3, borderRadius: 99, 
+                    bgcolor: 'rgba(255,176,0,0.12)', color: '#fde047', 
+                    fontSize: '0.72rem', fontWeight: 700 
+                  }}>
+                    {item.tag}
+                  </Box>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Box>
+
+      </Box>
+
+      {/* Institutional Stats & Scale Strip (Edumarshal Proven At Scale with AOS Animation) */}
+      <Box sx={{ bgcolor: '#ffffff', py: 6, borderBottom: '1px solid #e2e8f0' }}>
         <Container maxWidth="xl">
           <Grid container spacing={4} justifyContent="center" textAlign="center">
             {[
@@ -723,7 +940,7 @@ export const LandingPage = () => {
               { num: '100%', label: 'Zero Paper Fee Collection', sub: 'Instant POS Receipts' },
               { num: '4.9/5', label: 'Customer Satisfaction', sub: 'Rated by School Principals' }
             ].map((stat, idx) => (
-              <Grid item xs={6} md={3} key={idx}>
+              <Grid item xs={6} md={3} key={idx} data-aos="fade-up" data-aos-delay={idx * 100}>
                 <Typography variant="h3" fontWeight="900" sx={{ color: '#0a387c', mb: 0.5 }}>
                   {stat.num}
                 </Typography>
@@ -743,7 +960,7 @@ export const LandingPage = () => {
       <Box id="slider-preview" sx={{ py: 10, bgcolor: '#f8fafc' }}>
         <Container maxWidth="xl">
           
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Box sx={{ textAlign: 'center', mb: 6 }} data-aos="fade-up">
             <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
               <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
               <Typography sx={{ color: '#0a387c', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
@@ -760,103 +977,124 @@ export const LandingPage = () => {
           </Box>
 
           {/* Interactive Slide Container */}
-          {cms.slides && cms.slides.length > 0 && (
-            <Paper 
-              elevation={0}
-              sx={{ 
-                borderRadius: 4, 
-                border: '1.5px solid rgba(10,56,124,0.15)', 
-                overflow: 'hidden',
-                boxShadow: '0 24px 60px -20px rgba(10, 56, 124, 0.25)',
-                bgcolor: '#ffffff'
-              }}
-            >
-              <Grid container alignItems="center">
-                
-                {/* Slide Details */}
-                <Grid item xs={12} lg={5} sx={{ p: { xs: 4, md: 6 } }}>
-                  <Chip 
-                    label={cms.slides[currentSlide].badge} 
-                    size="small" 
-                    sx={{ 
-                      mb: 2, 
-                      bgcolor: '#e8f0fc', 
-                      color: '#0a387c', 
-                      fontWeight: 800,
-                      borderRadius: 1.5
-                    }} 
-                  />
-                  <Typography variant="h4" fontWeight="900" sx={{ mb: 2, color: '#0a387c', lineHeight: 1.25 }}>
-                    {cms.slides[currentSlide].title}
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: '#475569', mb: 3.5, lineHeight: 1.75 }}>
-                    {cms.slides[currentSlide].description}
-                  </Typography>
+          {cms.slides && cms.slides.length > 0 && (() => {
+            const validIndex = (currentSlide >= 0 && currentSlide < cms.slides.length) ? currentSlide : 0;
+            const slide = cms.slides[validIndex] || cms.slides[0];
+            if (!slide) return null;
 
-                  {cms.slides[currentSlide].stats && (
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4, px: 2, py: 1, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0', color: '#15803d' }}>
-                      <CheckCircleIcon sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" fontWeight="800">{cms.slides[currentSlide].stats}</Typography>
+            return (
+              <Paper 
+                elevation={0}
+                data-aos="zoom-in"
+                data-aos-duration="800"
+                className="eduerp-3d-card"
+                sx={{ 
+                  borderRadius: 4, 
+                  border: '1.5px solid rgba(10,56,124,0.15)', 
+                  overflow: 'hidden',
+                  boxShadow: '0 24px 60px -20px rgba(10, 56, 124, 0.25)',
+                  bgcolor: '#ffffff'
+                }}
+              >
+                <Grid container alignItems="center">
+                  
+                  {/* Slide Details */}
+                  <Grid item xs={12} lg={5} sx={{ p: { xs: 4, md: 6 } }}>
+                    {slide.badge && (
+                      <Chip 
+                        label={slide.badge} 
+                        size="small" 
+                        sx={{ 
+                          mb: 2, 
+                          bgcolor: '#e8f0fc', 
+                          color: '#0a387c', 
+                          fontWeight: 800,
+                          borderRadius: 1.5
+                        }} 
+                      />
+                    )}
+                    <Typography variant="h4" fontWeight="900" sx={{ mb: 2, color: '#0a387c', lineHeight: 1.25 }}>
+                      {slide.title || 'Institutional Module'}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#475569', mb: 3.5, lineHeight: 1.75 }}>
+                      {slide.description || ''}
+                    </Typography>
+
+                    {slide.stats && (
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4, px: 2, py: 1, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0', color: '#15803d' }}>
+                        <CheckCircleIcon sx={{ fontSize: 18 }} />
+                        <Typography variant="body2" fontWeight="800">{slide.stats}</Typography>
+                      </Box>
+                    )}
+
+                    {/* Slider Controls */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <IconButton 
+                        size="small"
+                        onClick={() => setCurrentSlide((validIndex - 1 + cms.slides.length) % cms.slides.length)}
+                        sx={{ bgcolor: '#e8f0fc', color: '#0a387c', '&:hover': { bgcolor: '#d0ddf5' } }}
+                      >
+                        <ArrowBackIosNewIcon fontSize="small" sx={{ fontSize: 14 }} />
+                      </IconButton>
+
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {cms.slides.map((_, dotIdx) => (
+                          <Box 
+                            key={dotIdx}
+                            onClick={() => setCurrentSlide(dotIdx)}
+                            sx={{ 
+                              width: dotIdx === validIndex ? 28 : 10, 
+                              height: 10, 
+                              borderRadius: 5, 
+                              bgcolor: dotIdx === validIndex ? goldColor : '#cbd5e1',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease'
+                            }} 
+                          />
+                        ))}
+                      </Box>
+
+                      <IconButton 
+                        size="small"
+                        onClick={() => setCurrentSlide((validIndex + 1) % cms.slides.length)}
+                        sx={{ bgcolor: '#e8f0fc', color: '#0a387c', '&:hover': { bgcolor: '#d0ddf5' } }}
+                      >
+                        <ArrowForwardIosIcon fontSize="small" sx={{ fontSize: 14 }} />
+                      </IconButton>
                     </Box>
-                  )}
+                  </Grid>
 
-                  {/* Slider Controls */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton 
-                      size="small"
-                      onClick={() => setCurrentSlide((currentSlide - 1 + cms.slides.length) % cms.slides.length)}
-                      sx={{ bgcolor: '#e8f0fc', color: '#0a387c', '&:hover': { bgcolor: '#d0ddf5' } }}
-                    >
-                      <ArrowBackIosNewIcon fontSize="small" sx={{ fontSize: 14 }} />
-                    </IconButton>
-
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {cms.slides.map((_, dotIdx) => (
-                        <Box 
-                          key={dotIdx}
-                          onClick={() => setCurrentSlide(dotIdx)}
-                          sx={{ 
-                            width: dotIdx === currentSlide ? 28 : 10, 
-                            height: 10, 
-                            borderRadius: 5, 
-                            bgcolor: dotIdx === currentSlide ? goldColor : '#cbd5e1',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }} 
-                        />
-                      ))}
+                  {/* Screenshot Visual */}
+                  <Grid item xs={12} lg={7}>
+                    <Box sx={{ 
+                      p: { xs: 1.5, md: 2.5 }, 
+                      bgcolor: '#071834', 
+                      height: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      minHeight: { xs: 260, md: 460 }
+                    }}>
+                      <CardMedia 
+                        component="img" 
+                        image={slide.image || '/images/erp_dashboard.jpg'} 
+                        alt={slide.title || 'ERP Preview'}
+                        sx={{ 
+                          borderRadius: 2, 
+                          width: '100%', 
+                          maxHeight: { xs: 280, md: 460 }, 
+                          objectFit: 'contain',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                          bgcolor: '#0b192e'
+                        }} 
+                      />
                     </Box>
+                  </Grid>
 
-                    <IconButton 
-                      size="small"
-                      onClick={() => setCurrentSlide((currentSlide + 1) % cms.slides.length)}
-                      sx={{ bgcolor: '#e8f0fc', color: '#0a387c', '&:hover': { bgcolor: '#d0ddf5' } }}
-                    >
-                      <ArrowForwardIosIcon fontSize="small" sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  </Box>
                 </Grid>
-
-                {/* Screenshot Visual */}
-                <Grid item xs={12} lg={7}>
-                  <Box sx={{ p: 2, bgcolor: '#071834' }}>
-                    <CardMedia 
-                      component="img" 
-                      image={cms.slides[currentSlide].image} 
-                      alt={cms.slides[currentSlide].title}
-                      sx={{ 
-                        borderRadius: 2.5, 
-                        width: '100%', 
-                        height: { xs: 260, md: 460 }, 
-                        objectFit: 'cover' 
-                      }} 
-                    />
-                  </Box>
-                </Grid>
-
-              </Grid>
-            </Paper>
-          )}
+              </Paper>
+            );
+          })()}
 
         </Container>
       </Box>
@@ -865,7 +1103,7 @@ export const LandingPage = () => {
       <Box id="modules-suite" sx={{ py: 10, bgcolor: '#ffffff' }}>
         <Container maxWidth="xl">
           
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Box sx={{ textAlign: 'center', mb: 6 }} data-aos="fade-up">
             <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
               <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
               <Typography sx={{ color: '#0a387c', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
@@ -912,11 +1150,12 @@ export const LandingPage = () => {
             </Box>
           </Box>
 
-          {/* Modules Grid (Edumarshal Card UI with Hover Lift) */}
+          {/* Modules Grid (Edumarshal Card UI with Hover Lift and Staggered Animations) */}
           <Grid container spacing={3}>
             {filteredModules.map((item, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={idx}>
+              <Grid item xs={12} sm={6} md={4} key={idx} data-aos="fade-up" data-aos-delay={(idx % 6) * 70}>
                 <Paper 
+                  className="eduerp-3d-card"
                   sx={{ 
                     p: 3.5, 
                     height: '100%', 
@@ -926,11 +1165,11 @@ export const LandingPage = () => {
                     boxShadow: '0 4px 14px rgba(0,0,0,0.02)',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'all 0.25s ease',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                     '&:hover': {
-                      transform: 'translateY(-5px)',
+                      transform: 'translateY(-6px)',
                       borderColor: goldColor,
-                      boxShadow: '0 22px 44px -20px rgba(10, 56, 124, 0.45)'
+                      boxShadow: '0 22px 44px -20px rgba(10, 56, 124, 0.35)'
                     }
                   }}
                 >
@@ -939,7 +1178,9 @@ export const LandingPage = () => {
                       width: 48, height: 48, borderRadius: 2.5, 
                       bgcolor: '#e8f0fc', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#0a387c'
+                      color: '#0a387c',
+                      transition: 'transform 0.3s ease',
+                      '&:hover': { transform: 'scale(1.1) rotate(6deg)' }
                     }}>
                       <i className={item.icon} style={{ fontSize: '1.4rem' }}></i>
                     </Box>
@@ -977,7 +1218,7 @@ export const LandingPage = () => {
       {/* Why Choose Us - 3 Pillars (Academics, Administration, Finance) */}
       <Box id="why-us" sx={{ py: 10, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
         <Container maxWidth="xl">
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Box sx={{ textAlign: 'center', mb: 6 }} data-aos="fade-up">
             <Typography variant="h3" fontWeight="900" sx={{ color: '#0a387c', mb: 1.5 }}>
               Why Indian Institutions Choose DVS ERP
             </Typography>
@@ -1001,18 +1242,22 @@ export const LandingPage = () => {
               {
                 icon: 'pi pi-dollar',
                 title: 'Financial Health & Transparency',
-                desc: 'Eliminate fee leakages with automated POS counters, fee concessions, instant online gateway collection, and daily tally receipts.'
+                desc: 'Eliminate fee leakages with automated POS counters, fee concessions, instant online gateway collection, and daily collection reports.'
               }
             ].map((pillar, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
-                <Paper sx={{ 
-                  p: 4.5, 
-                  height: '100%', 
-                  borderRadius: 4, 
-                  bgcolor: '#ffffff', 
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.03)'
-                }}>
+              <Grid item xs={12} md={4} key={idx} data-aos="fade-up" data-aos-delay={idx * 120}>
+                <Paper 
+                  className="eduerp-3d-card"
+                  sx={{ 
+                    p: 4.5, 
+                    height: '100%', 
+                    borderRadius: 4, 
+                    bgcolor: '#ffffff', 
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.03)',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                >
                   <Box sx={{ 
                     width: 52, height: 52, borderRadius: 2.5, 
                     bgcolor: '#0a387c', color: goldColor,
@@ -1102,13 +1347,17 @@ export const LandingPage = () => {
         color: '#ffffff'
       }}>
         <Container maxWidth="md">
-          <Paper sx={{ 
-            p: { xs: 4, md: 6 }, 
-            borderRadius: 4.5, 
-            bgcolor: '#ffffff', 
-            color: '#12233f',
-            boxShadow: '0 30px 70px -15px rgba(0,0,0,0.6)'
-          }}>
+          <Paper 
+            data-aos="zoom-in"
+            className="eduerp-3d-card"
+            sx={{ 
+              p: { xs: 4, md: 6 }, 
+              borderRadius: 4.5, 
+              bgcolor: '#ffffff', 
+              color: '#12233f',
+              boxShadow: '0 30px 70px -15px rgba(0,0,0,0.6)'
+            }}
+          >
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <Typography variant="h4" fontWeight="900" sx={{ color: '#0a387c', mb: 1 }}>
                 Ready to Upgrade Your Institution?
@@ -1172,17 +1421,15 @@ export const LandingPage = () => {
                     type="submit" 
                     variant="contained" 
                     fullWidth
+                    className="eduerp-btn-shimmer"
                     sx={{ 
                       py: 1.75, 
                       fontWeight: 900, 
                       fontSize: '1.05rem',
                       borderRadius: 3,
                       textTransform: 'none',
-                      background: 'linear-gradient(120deg, #ffb000 30%, #ffd47e 48%, #ffb000 62%)',
-                      backgroundSize: '220% 100%',
                       color: '#12233f',
-                      boxShadow: '0 12px 28px -10px rgba(255, 176, 0, 0.7)',
-                      '&:hover': { transform: 'translateY(-2px)' }
+                      boxShadow: '0 12px 28px -10px rgba(255, 176, 0, 0.7)'
                     }}
                   >
                     Request Custom Quote & Free Demo &rarr;

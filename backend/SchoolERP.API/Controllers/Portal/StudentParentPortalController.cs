@@ -346,9 +346,132 @@ namespace SchoolERP.API.Controllers.Portal
                 })
                 .ToListAsync();
 
+            // 1. Holiday Calendar (for this branch and academic year)
+            var holidays = await _context.Set<Holiday>()
+                .Where(h => h.BranchId == student.BranchId && (yearId == 0 || h.AcademicYearId == yearId))
+                .OrderBy(h => h.HolidayDate)
+                .Select(h => new
+                {
+                    h.Id,
+                    h.Name,
+                    h.HolidayDate,
+                    h.Description
+                })
+                .ToListAsync();
+
+            // 2. Class Teacher Details (Name, Phone, Email)
+            var classTeacherAlloc = await _context.Set<TeacherAllocation>()
+                .Include(ta => ta.Employee)
+                .Where(ta => ta.BranchId == student.BranchId && ta.ClassId == classId && ta.SectionId == sectionId && ta.IsClassTeacher && (yearId == 0 || ta.AcademicYearId == yearId))
+                .OrderByDescending(ta => ta.Id)
+                .FirstOrDefaultAsync();
+
+            var classTeacher = classTeacherAlloc?.Employee != null ? new
+            {
+                Name = (classTeacherAlloc.Employee.FirstName + " " + classTeacherAlloc.Employee.LastName).Trim(),
+                Phone = classTeacherAlloc.Employee.Mobile ?? "",
+                Email = classTeacherAlloc.Employee.Email ?? "",
+                Designation = "Class Teacher"
+            } : null;
+
+            // 3. Transport Route & Driver Details
+            var transportAlloc = await _context.Set<TransportAllocation>()
+                .Include(ta => ta.RouteStop)
+                    .ThenInclude(rs => rs!.Route)
+                        .ThenInclude(r => r!.Vehicle)
+                            .ThenInclude(v => v!.Driver)
+                .Where(ta => ta.StudentId == sId && ta.Status == "Active" && (yearId == 0 || ta.AcademicYearId == yearId))
+                .OrderByDescending(ta => ta.Id)
+                .FirstOrDefaultAsync();
+
+            var transportDetails = transportAlloc?.RouteStop != null ? new
+            {
+                HasTransport = true,
+                RouteName = transportAlloc.RouteStop.Route?.RouteName ?? "Bus Route",
+                StopName = transportAlloc.RouteStop.StopName,
+                PickUpTime = transportAlloc.RouteStop.PickUpTime?.ToString(@"hh\:mm") ?? "",
+                DropTime = transportAlloc.RouteStop.DropTime?.ToString(@"hh\:mm") ?? "",
+                MonthlyFare = transportAlloc.RouteStop.MonthlyFare,
+                VehicleNo = transportAlloc.RouteStop.Route?.Vehicle?.RegistrationNo ?? "Bus",
+                VehicleType = transportAlloc.RouteStop.Route?.Vehicle?.VehicleType ?? "Bus",
+                DriverName = transportAlloc.RouteStop.Route?.Vehicle?.Driver != null
+                    ? (transportAlloc.RouteStop.Route.Vehicle.Driver.FirstName + " " + transportAlloc.RouteStop.Route.Vehicle.Driver.LastName).Trim()
+                    : (transportAlloc.RouteStop.Route?.Vehicle?.DriverName ?? "Assigned Driver"),
+                DriverPhone = transportAlloc.RouteStop.Route?.Vehicle?.Driver?.Mobile 
+                    ?? transportAlloc.RouteStop.Route?.Vehicle?.DriverPhone 
+                    ?? ""
+            } : new
+            {
+                HasTransport = false,
+                RouteName = "",
+                StopName = "",
+                PickUpTime = "",
+                DropTime = "",
+                MonthlyFare = 0m,
+                VehicleNo = "",
+                VehicleType = "",
+                DriverName = "",
+                DriverPhone = ""
+            };
+
+            // 4. Student Fee Concessions
+            var concessionsList = await _context.Set<FeeConcession>()
+                .Include(c => c.FeeHead)
+                .Where(c => c.StudentId == sId && c.IsApproved && (yearId == 0 || c.AcademicYearId == yearId))
+                .Select(c => new
+                {
+                    c.Id,
+                    FeeHead = c.FeeHead != null ? c.FeeHead.Name : "Fee Head",
+                    Type = c.Type.ToString(),
+                    Value = c.Value,
+                    CalculatedAmount = c.CalculatedAmount,
+                    Reason = c.Reason ?? "Fee Concession"
+                })
+                .ToListAsync();
+
+            // 5. Late Fine Rules & Installment Due Dates
+            var fineRules = await _context.Set<FineRule>()
+                .Include(fr => fr.Installment)
+                .Where(fr => fr.BranchId == student.BranchId && (yearId == 0 || fr.AcademicYearId == yearId))
+                .Select(fr => new
+                {
+                    fr.Id,
+                    InstallmentName = fr.Installment != null ? fr.Installment.Name : "Installment",
+                    DueDate = fr.Installment != null ? fr.Installment.DueDate : DateTime.MinValue,
+                    GraceDays = fr.GraceDays,
+                    LateFineAmount = fr.Amount,
+                    FineType = fr.FineType.ToString(),
+                    FineApplicableFrom = fr.Installment != null ? fr.Installment.DueDate.AddDays(fr.GraceDays) : DateTime.MinValue
+                })
+                .ToListAsync();
+
+            // 6. Branch / School Info (for ID Card & Demand Slip)
+            var branchInfo = await _context.Branches
+                .Include(b => b.School)
+                .Where(b => b.Id == student.BranchId)
+                .Select(b => new
+                {
+                    SchoolName = b.School != null ? b.School.Name : b.Name,
+                    BranchName = b.Name,
+                    Address = b.Address ?? (b.School != null ? b.School.Address : ""),
+                    Phone = b.Phone ?? (b.School != null ? b.School.ContactNumber : ""),
+                    Email = b.Email ?? (b.School != null ? b.School.Email : ""),
+                    LogoUrl = b.LogoUrl ?? (b.School != null ? b.School.LogoUrl : ""),
+                    AffiliationNumber = b.School != null ? b.School.AffiliationNumber : ""
+                })
+                .FirstOrDefaultAsync();
+
+            var fatherGuardian = student.Guardians?.FirstOrDefault(g => g.Relation != null && g.Relation.ToLower().Contains("father")) 
+                ?? student.Guardians?.FirstOrDefault();
+            var motherGuardian = student.Guardians?.FirstOrDefault(g => g.Relation != null && g.Relation.ToLower().Contains("mother"));
+
             var data = new
             {
                 AcademicYearId = yearId,
+                SchoolInfo = branchInfo,
+                ClassTeacher = classTeacher,
+                Transport = transportDetails,
+                Holidays = holidays,
                 Student = new
                 {
                     student.Id,
@@ -365,6 +488,9 @@ namespace SchoolERP.API.Controllers.Portal
                     student.State,
                     student.Pincode,
                     student.EmergencyContact,
+                    FatherName = fatherGuardian?.Name ?? "",
+                    MotherName = motherGuardian?.Name ?? "",
+                    GuardianPhone = fatherGuardian?.Mobile ?? student.EmergencyContact ?? "",
                     ClassName = activeEnrollment?.Class?.Name ?? "Class",
                     SectionName = activeEnrollment?.Section?.Name ?? "Section",
                     RollNo = activeEnrollment?.RollNo ?? 0
@@ -384,6 +510,8 @@ namespace SchoolERP.API.Controllers.Portal
                     TotalPaid = totalPaid,
                     TotalPending = totalPending,
                     TotalConcession = totalConcession,
+                    Concessions = concessionsList,
+                    FineRules = fineRules,
                     RecentReceipts = recentReceipts,
                     PendingDues = feeDues.Where(f => f.BalanceAmount > 0).Select(f => new
                     {
@@ -391,6 +519,7 @@ namespace SchoolERP.API.Controllers.Portal
                         Installment = f.Installment?.Name ?? "Installment",
                         DueDate = f.Installment?.DueDate,
                         Amount = f.OriginalAmount,
+                        ConcessionAmount = f.ConcessionAmount,
                         Balance = f.BalanceAmount
                     }).ToList()
                 },
