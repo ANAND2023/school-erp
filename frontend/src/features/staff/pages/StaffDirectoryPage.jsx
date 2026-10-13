@@ -42,6 +42,7 @@ import { simpleMasterApi } from '../../masters/api';
 import { DataGrid } from '../../../components/DataGrid';
 import { usePermission } from '../../../hooks/usePermission';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { Button as ActionButton } from 'primereact/button';
 
 export default function StaffDirectoryPage() {
   const navigate = useNavigate();
@@ -123,20 +124,107 @@ export default function StaffDirectoryPage() {
   };
 
   const getStatusChip = (st) => {
-    switch (Number(st)) {
-      case 1:
-        return <Chip label="Active" color="success" size="small" />;
-      case 2:
-        return <Chip label="On Leave" color="warning" size="small" />;
-      case 3:
-        return <Chip label="Resigned" color="default" size="small" />;
-      case 4:
-        return <Chip label="Terminated" color="error" size="small" />;
-      case 5:
-        return <Chip label="Retired" color="info" size="small" />;
-      default:
-        return <Chip label="Active" color="success" size="small" />;
+    const s = Number(st);
+    if (s === 1) {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #a7f3d0',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+          Active
+        </span>
+      );
     }
+    if (s === 2) {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#fffbeb',
+            color: '#92400e',
+            border: '1px solid #fde68a',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+          On Leave
+        </span>
+      );
+    }
+    if (s === 3) {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+          Resigned
+        </span>
+      );
+    }
+    if (s === 4) {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+          Terminated
+        </span>
+      );
+    }
+    if (s === 5) {
+      return (
+        <span
+          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+          style={{
+            backgroundColor: '#eff6ff',
+            color: '#1e40af',
+            border: '1px solid #bfdbfe',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
+          Retired
+        </span>
+      );
+    }
+    return (
+      <span
+        className="inline-flex align-items-center gap-1.5 px-2.5 py-1 text-xs font-bold"
+        style={{
+          backgroundColor: '#ecfdf5',
+          color: '#065f46',
+          border: '1px solid #a7f3d0',
+          borderRadius: '9999px',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+        Active
+      </span>
+    );
   };
 
   const handleExportCSV = () => {
@@ -190,15 +278,22 @@ export default function StaffDirectoryPage() {
     {
       field: 'employeeCode',
       headerName: 'Emp Code',
-      width: 120,
+      width: 125,
+      minWidth: 125,
       renderCell: (params) => (
-        <Chip
-          label={params.value}
-          size="small"
-          variant="outlined"
-          color="primary"
-          sx={{ fontWeight: 600 }}
-        />
+        <span
+          title={params.value}
+          className="font-bold text-xs text-blue-700 font-monospace cursor-pointer white-space-nowrap select-all"
+          style={{
+            backgroundColor: '#eff6ff',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            border: '1px solid #bfdbfe',
+            display: 'inline-block',
+          }}
+        >
+          {params.value}
+        </span>
       ),
     },
     {
@@ -207,22 +302,22 @@ export default function StaffDirectoryPage() {
       flex: 1.5,
       minWidth: 200,
       renderCell: (params) => (
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <div className="flex align-items-center gap-2" style={{ minWidth: '180px' }}>
           <Avatar
             src={params.row.photoUrl}
-            sx={{ width: 36, height: 36, bgcolor: 'secondary.main', fontSize: 14 }}
+            sx={{ width: 34, height: 34, bgcolor: '#3b82f6', fontSize: 13, fontWeight: 700 }}
           >
-            {params.value ? params.value[0] : 'E'}
+            {params.value ? params.value[0] : 'S'}
           </Avatar>
-          <Box>
-            <Typography variant="body2" fontWeight={600} color="text.primary">
+          <div className="flex flex-column min-w-0" style={{ lineHeight: '1.25' }}>
+            <span className="font-bold text-slate-900 text-sm white-space-nowrap">
               {params.value}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {params.row.gender}
-            </Typography>
-          </Box>
-        </Stack>
+            </span>
+            <span className="text-xs text-slate-400">
+              {params.row.gender || 'Staff'}
+            </span>
+          </div>
+        </div>
       ),
     },
     {
@@ -265,83 +360,125 @@ export default function StaffDirectoryPage() {
     {
       field: 'joiningDate',
       headerName: 'Joining Date',
-      width: 120,
-      valueFormatter: (value) => value ? dayjs(value).format('DD MMM YYYY') : '—',
+      width: 125,
+      minWidth: 125,
+      renderCell: (params) => (
+        <span className="text-xs text-slate-700 font-medium">
+          {params.value ? dayjs(params.value).format('DD MMM YYYY') : '—'}
+        </span>
+      ),
     },
     {
       field: 'allocationsCount',
       headerName: 'Allocations',
-      width: 110,
+      width: 120,
+      minWidth: 120,
       renderCell: (params) => (
-        <Chip
-          label={`${params.value} Classes`}
-          size="small"
-          variant="filled"
-          color={params.value > 0 ? 'info' : 'default'}
-        />
+        <span
+          className="inline-flex align-items-center gap-1 px-2 py-0.5 font-bold text-xs"
+          style={{
+            backgroundColor: Number(params.value) > 0 ? '#eff6ff' : '#f1f5f9',
+            color: Number(params.value) > 0 ? '#1e40af' : '#64748b',
+            border: `1px solid ${Number(params.value) > 0 ? '#bfdbfe' : '#e2e8f0'}`,
+            borderRadius: '4px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <i className="pi pi-book text-xs" />
+          <span>{params.value || 0} Classes</span>
+        </span>
       ),
     },
     {
       field: 'hasUserAccount',
       headerName: 'Login',
-      width: 90,
+      width: 100,
+      minWidth: 100,
       renderCell: (params) => (
         params.value ? (
-          <Tooltip title="User Login Active">
-            <BadgeIcon color="primary" fontSize="small" />
-          </Tooltip>
+          <span
+            className="inline-flex align-items-center gap-1 text-xs font-semibold px-2 py-0.5"
+            style={{
+              backgroundColor: '#f0fdf4',
+              color: '#15803d',
+              border: '1px solid #bbf7d0',
+              borderRadius: '4px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <i className="pi pi-check-circle text-xs text-green-600" />
+            <span>Active</span>
+          </span>
         ) : (
-          <Typography variant="caption" color="text.disabled">No Login</Typography>
+          <span className="text-xs text-slate-400 italic">No Login</span>
         )
       ),
     },
     {
       field: 'status',
       headerName: 'Status',
-      width: 110,
+      width: 115,
+      minWidth: 115,
       renderCell: (params) => getStatusChip(params.value),
     },
     {
       field: 'actions',
       headerName: 'Actions',
       width: 140,
+      minWidth: 140,
       sortable: false,
+      frozen: true,
+      alignFrozen: 'right',
+      headerStyle: { width: '140px', minWidth: '140px', textAlign: 'center' },
+      style: { width: '140px', minWidth: '140px', textAlign: 'center' },
       renderCell: (params) => (
-        <Stack direction="row" spacing={0.5}>
-          <Tooltip title="View Profile">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => navigate(`/staff/profile/${params.row.id}`)}
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+        <div className="flex align-items-center gap-1 justify-content-center" style={{ minWidth: '125px' }}>
+          <ActionButton
+            icon="pi pi-eye"
+            className="p-button-rounded p-button-text p-button-primary p-button-sm"
+            tooltip="View Profile"
+            tooltipOptions={{ position: 'top' }}
+            style={{ width: '30px', height: '30px' }}
+            onClick={() => navigate(`/staff/profile/${params.row.id}`)}
+          />
 
           {can('Staff', 'Edit') && (
-            <Tooltip title="Edit Staff Details">
-              <IconButton
-                size="small"
-                color="secondary"
-                onClick={() => navigate(`/staff/edit/${params.row.id}`)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <ActionButton
+              icon="pi pi-pencil"
+              className="p-button-rounded p-button-text p-button-secondary p-button-sm"
+              tooltip="Edit Staff Details"
+              tooltipOptions={{ position: 'top' }}
+              style={{ width: '30px', height: '30px' }}
+              onClick={() => navigate(`/staff/edit/${params.row.id}`)}
+            />
           )}
 
           {can('Staff', 'Edit') && params.row.status === 1 && (
-            <Tooltip title="Process Relieving / Exit (FR-4.5)">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleOpenExitDialog(params.row)}
-              >
-                <ExitIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <ActionButton
+              icon="pi pi-sign-out"
+              className="p-button-rounded p-button-text p-button-danger p-button-sm"
+              tooltip="Process Relieving / Exit"
+              tooltipOptions={{ position: 'top' }}
+              style={{ width: '30px', height: '30px' }}
+              onClick={() => handleOpenExitDialog(params.row)}
+            />
           )}
-        </Stack>
+
+          {params.row.mobile && (
+            <ActionButton
+              icon="pi pi-whatsapp"
+              className="p-button-rounded p-button-text p-button-success p-button-sm"
+              tooltip="Send WhatsApp Message"
+              tooltipOptions={{ position: 'top' }}
+              style={{ width: '30px', height: '30px' }}
+              onClick={() => {
+                const cleanMobile = params.row.mobile.replace(/[^0-9]/g, '');
+                const mobileWithCountry = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
+                window.open(`https://wa.me/${mobileWithCountry}`, '_blank');
+              }}
+            />
+          )}
+        </div>
       ),
     },
   ];

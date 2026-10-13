@@ -541,6 +541,7 @@ export const AppTable = ({
         rowClassName={rowClassName}
         onRowClick={onRowClick}
         responsiveLayout="scroll"
+        scrollable={rest.scrollable !== undefined ? rest.scrollable : normalizedColumns.some((c) => c.frozen)}
         {...rest}
       >
         {selectionMode === 'checkbox' && (
@@ -560,6 +561,7 @@ export const AppTable = ({
             align={col.align}
             alignHeader={col.alignHeader || col.align}
             frozen={col.frozen}
+            alignFrozen={col.alignFrozen || (col.frozen ? 'right' : undefined)}
           />
         ))}
       </DataTable>
