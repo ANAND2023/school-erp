@@ -26,6 +26,7 @@ import {
   HowToReg as ConvertIcon,
   Search as SearchIcon,
   ReceiptLong as ReceiptLongIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { DataGrid } from '../../../components/DataGrid';
@@ -36,6 +37,7 @@ import { useUiStore } from '../../../store/uiStore';
 import { useAuthStore } from '../../../store/authStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { EnquirySlipModal } from '../components/EnquirySlipModal';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { AppDatePicker, AppInput, AppSelect } from '../../../components/common';
 
 const ENQUIRY_STATUSES = [
@@ -88,6 +90,17 @@ export const EnquiriesPage = () => {
   const [slipModalOpen, setSlipModalOpen] = useState(false);
   const [slipEnquiry, setSlipEnquiry] = useState(null);
   const [isNewlyCreated, setIsNewlyCreated] = useState(false);
+
+  // WhatsApp Dialog State
+  const [whatsAppModal, setWhatsAppModal] = useState({
+    open: false,
+    recipientName: '',
+    recipientPhone: '',
+    recipientRole: '',
+    moduleKey: 'enquiry',
+    moduleTitle: '',
+    templateData: {},
+  });
 
   const loadClasses = async () => {
     try {
@@ -247,6 +260,23 @@ export const EnquiriesPage = () => {
     return <Chip label={s?.label || 'Open'} color={s?.color || 'default'} size="small" />;
   };
 
+  const handleOpenWhatsApp = (enquiry) => {
+    setWhatsAppModal({
+      open: true,
+      recipientName: enquiry.guardianName || enquiry.studentName,
+      recipientPhone: enquiry.mobile,
+      recipientRole: `Parent of ${enquiry.studentName}`,
+      moduleKey: 'enquiry',
+      moduleTitle: 'Enquiry Acknowledgement (WhatsApp)',
+      templateData: {
+        ParentName: enquiry.guardianName || 'Parent',
+        StudentName: enquiry.studentName,
+        ClassName: enquiry.className || 'Class Seeking Admission',
+        EnquiryNo: enquiry.enquiryNo || `ENQ-${enquiry.id}`,
+      },
+    });
+  };
+
   const columns = [
     { field: 'studentName', headerName: 'Student Name', flex: 1.2, minWidth: 160 },
     { field: 'className', headerName: 'Class Sought', width: 120 },
@@ -282,7 +312,7 @@ export const EnquiriesPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 210,
+      width: 240,
       sortable: false,
       renderCell: (params) => {
         const enq = params.row;
@@ -292,6 +322,19 @@ export const EnquiriesPage = () => {
 
         return (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Send WhatsApp Message">
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#25D366',
+                  bgcolor: '#f0fdf4',
+                  '&:hover': { bgcolor: '#dcfce7' },
+                }}
+                onClick={() => handleOpenWhatsApp(enq)}
+              >
+                <WhatsAppIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Print Enquiry Slip">
               <IconButton size="small" color="info" onClick={() => handleOpenSlip(enq)}>
                 <ReceiptLongIcon fontSize="small" />
@@ -602,6 +645,18 @@ export const EnquiriesPage = () => {
           setSlipModalOpen(false);
           handleConvertToAdmission(enq);
         }}
+      />
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppModal.open}
+        onClose={() => setWhatsAppModal((prev) => ({ ...prev, open: false }))}
+        recipientName={whatsAppModal.recipientName}
+        recipientPhone={whatsAppModal.recipientPhone}
+        recipientRole={whatsAppModal.recipientRole}
+        moduleKey={whatsAppModal.moduleKey}
+        moduleTitle={whatsAppModal.moduleTitle}
+        templateData={whatsAppModal.templateData}
       />
     </Box>
   );

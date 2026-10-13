@@ -123,4 +123,15 @@ export const superAdminApi = {
     const res = await apiClient.post('/superadmin/error-logs/clear-all', null, { params: { daysOld } });
     return res.data;
   },
+
+  // 9. WhatsApp Module Configuration
+  getWhatsAppConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/whatsapp-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveWhatsAppConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/whatsapp-config', payload, { params: { schoolId } });
+    return res.data;
+  },
 };

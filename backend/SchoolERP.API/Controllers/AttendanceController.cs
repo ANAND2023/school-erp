@@ -184,6 +184,7 @@ namespace SchoolERP.API.Controllers
             // Active students enrolled in this section
             var enrollments = await _context.StudentEnrollments
                 .Include(e => e.Student)
+                .ThenInclude(s => s!.Guardians)
                 .Where(e => e.Student!.BranchId == branchId &&
                             e.AcademicYearId == yearId &&
                             e.SectionId == sectionId &&
@@ -205,6 +206,7 @@ namespace SchoolERP.API.Controllers
             var studentItems = enrollments.Select(e =>
             {
                 var att = existingAttendances.FirstOrDefault(a => a.StudentId == e.StudentId);
+                var guardian = e.Student?.Guardians?.FirstOrDefault();
                 return new StudentAttendanceItemDto
                 {
                     StudentId = e.StudentId,
@@ -214,7 +216,9 @@ namespace SchoolERP.API.Controllers
                     FullName = e.Student?.FullName ?? "",
                     Gender = e.Student?.Gender ?? "Male",
                     Status = att?.Status ?? AttendanceStatus.Present, // FR-6.1: all Present by default
-                    Remarks = att?.Remarks
+                    Remarks = att?.Remarks,
+                    Mobile = guardian?.Mobile ?? e.Student?.EmergencyContact,
+                    GuardianName = guardian?.Name
                 };
             }).ToList();
 

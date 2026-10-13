@@ -43,7 +43,10 @@ import {
   AssignmentTurnedIn as ExamIcon,
   CheckCircle as CheckIcon,
   HourglassEmpty as PendingIcon,
+  Cake as CakeIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
+import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -54,10 +57,12 @@ import { usePermission } from '../../../hooks/usePermission';
 import { dashboardApi } from '../api';
 import InventoryDashboardPage from '../../inventory/pages/InventoryDashboardPage';
 import StudentPortalDashboardPage from '../../portal/pages/StudentPortalDashboardPage';
+import WhatsAppDialog from '../../communication/components/WhatsAppDialog';
 
 export const DashboardPage = () => {
   const { user, activeAcademicYearId, activeAcademicYearName, academicYears } = useAuthStore();
   const { isDarkMode, currentColorHex } = useThemeStore();
+  const themeColor = currentColorHex || '#ec4899';
   const { hasPermission } = usePermission();
   const navigate = useNavigate();
 
@@ -78,6 +83,7 @@ export const DashboardPage = () => {
   // Default view based on role
   const defaultRoleView = isAdmin ? 'all' : isAccountant ? 'accounts' : isTeacher ? 'teacher' : isFrontDesk ? 'admissions' : 'all';
   const [activeRoleView, setActiveRoleView] = useState(defaultRoleView);
+  const [birthdayFilter, setBirthdayFilter] = useState('all'); // 'all' | 'students' | 'staff'
 
   const currentAY = academicYears.find((y) => y.id === activeAcademicYearId) || academicYears[0];
   const activeYearLabel = activeAcademicYearName || (currentAY ? (currentAY.rawName || currentAY.name.replace('Session: ', '').replace(' (Current)', '')) : (user?.academicYearName || '2026-27'));
@@ -107,6 +113,49 @@ export const DashboardPage = () => {
     classWiseEnrollment: [],
     monthlyFeeCollection: [],
     genderDistribution: { male: 0, female: 0, other: 0 },
+    birthdays: { todayBirthdays: [], upcomingBirthdays: [], totalThisMonth: 0 },
+  };
+
+  // Birthday list helpers
+  const allBirthdaysList = useMemo(() => {
+    const today = stats.birthdays?.todayBirthdays || [];
+    const upcoming = stats.birthdays?.upcomingBirthdays || [];
+    return [...today, ...upcoming];
+  }, [stats.birthdays]);
+
+  const allBirthdaysCount = useMemo(() => {
+    const students = allBirthdaysList.filter((b) => b.roleType === 'Student').length;
+    const staff = allBirthdaysList.filter((b) => b.roleType === 'Staff').length;
+    return { all: allBirthdaysList.length, students, staff };
+  }, [allBirthdaysList]);
+
+  const [whatsAppModal, setWhatsAppModal] = useState({
+    open: false,
+    recipientName: '',
+    recipientMobile: '',
+    variables: {},
+  });
+
+  const displayedBirthdays = useMemo(() => {
+    if (birthdayFilter === 'students') return allBirthdaysList.filter((b) => b.roleType === 'Student');
+    if (birthdayFilter === 'staff') return allBirthdaysList.filter((b) => b.roleType === 'Staff');
+    return allBirthdaysList;
+  }, [allBirthdaysList, birthdayFilter]);
+
+  const handleWishBirthday = (person) => {
+    setWhatsAppModal({
+      open: true,
+      recipientName: person.fullName,
+      recipientMobile: person.mobile || '',
+      variables: {
+        StudentName: person.fullName,
+        StaffName: person.fullName,
+        Name: person.fullName,
+        Age: person.age != null ? String(person.age) : '',
+        SchoolName: 'Our School',
+        Date: dayjs().format('DD/MM/YYYY'),
+      },
+    });
   };
 
   // Fee recovery percentage
@@ -732,6 +781,151 @@ export const DashboardPage = () => {
         </CardContent>
       </Card>
 
+      {/* 🎉 TODAY'S BIRTHDAY CELEBRATIONS BANNER */}
+      {stats.birthdays?.todayBirthdays?.length > 0 && (
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2.5,
+            background: isDarkMode
+              ? 'linear-gradient(135deg, #831843 0%, #701a75 50%, #4a044e 100%)'
+              : `linear-gradient(135deg, ${themeColor}18 0%, #fdf2f8 50%, #fff1f2 100%)`,
+            border: '1.5px solid',
+            borderColor: isDarkMode ? '#be185d' : `${themeColor}40`,
+            boxShadow: '0 4px 18px rgba(236, 72, 153, 0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              spacing={1.5}
+              sx={{ mb: 2 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '12px',
+                    backgroundColor: `${themeColor}25`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                  }}
+                >
+                  🎂
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    fontWeight={800}
+                    sx={{
+                      color: isDarkMode ? '#fdf2f8' : '#831843',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    Today's Birthday Celebrations! 🎉
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: isDarkMode ? '#fbcfe8' : '#9d174d', fontWeight: 600 }}
+                  >
+                    Wishing our wonderful students and staff a very Happy Birthday today!
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Tag
+                value={`${stats.birthdays.todayBirthdays.length} Celebrating Today`}
+                severity="success"
+                style={{ fontSize: '11px', fontWeight: 700 }}
+              />
+            </Stack>
+
+            <Grid container spacing={2}>
+              {stats.birthdays.todayBirthdays.map((person) => (
+                <Grid item xs={12} sm={6} md={4} key={`today-${person.roleType}-${person.id}`}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: '1.5px solid',
+                      borderColor: person.roleType === 'Staff' ? '#a855f7' : '#ec4899',
+                      bgcolor: isDarkMode ? '#1e293b' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1.5,
+                      transition: 'transform 0.15s ease',
+                      '&:hover': { transform: 'translateY(-2px)' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                      <Box sx={{ position: 'relative' }}>
+                        <Avatar
+                          src={person.photoUrl}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            bgcolor: person.roleType === 'Staff' ? '#9333ea' : '#db2777',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            border: '2px solid #ffffff',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          }}
+                        >
+                          {person.fullName ? person.fullName[0] : '🎂'}
+                        </Avatar>
+                        <span style={{ position: 'absolute', bottom: -4, right: -4, fontSize: '13px' }}>
+                          🎂
+                        </span>
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={800} noWrap sx={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                          {person.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap display="block">
+                          {person.detail}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#db2777', fontWeight: 700 }}>
+                          Turned {person.age} today! 🎈
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="success"
+                      onClick={() => handleWishBirthday(person)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        py: 0.5,
+                        px: 1.2,
+                        minWidth: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}
+                      startIcon={<WhatsAppIcon sx={{ fontSize: 15 }} />}
+                    >
+                      Wish
+                    </Button>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ========================================================================= */}
       {/* 📊 INTERACTIVE EXECUTIVE CHARTS & ANALYTICS SECTION                      */}
       {/* ========================================================================= */}
@@ -1023,8 +1217,290 @@ export const DashboardPage = () => {
           </Grid>
         )}
       </Grid>
+
+      {/* 🎂 STUDENT & STAFF BIRTHDAYS WIDGET */}
+      <Card
+        sx={{
+          mt: 3,
+          borderRadius: 2.5,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+          border: '1px solid',
+          borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+        }}
+      >
+        <CardContent sx={{ p: 2.5 }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={2}
+            sx={{ mb: 2.5 }}
+          >
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={800}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: isDarkMode ? '#f8fafc' : '#1e293b',
+                }}
+              >
+                <span>🎂</span>
+                <span>Student & Staff Birthdays</span>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Birthdays happening today and upcoming within the next 14 days (Session {activeYearLabel})
+              </Typography>
+            </Box>
+
+            {/* Filter Tabs: All, Students, Staff */}
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <button
+                type="button"
+                onClick={() => setBirthdayFilter('all')}
+                style={{
+                  height: '30px',
+                  borderRadius: '6px',
+                  border: birthdayFilter === 'all' ? `1.5px solid ${themeColor}` : isDarkMode ? '1px solid #334155' : '1px solid #cbd5e1',
+                  backgroundColor: birthdayFilter === 'all' ? `${themeColor}20` : 'transparent',
+                  color: birthdayFilter === 'all' ? themeColor : isDarkMode ? '#94a3b8' : '#64748b',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '0 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>All</span>
+                <span
+                  style={{
+                    backgroundColor: birthdayFilter === 'all' ? themeColor : isDarkMode ? '#334155' : '#e2e8f0',
+                    color: birthdayFilter === 'all' ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569',
+                    borderRadius: '4px',
+                    padding: '1px 5px',
+                    fontSize: '10px',
+                  }}
+                >
+                  {allBirthdaysCount.all}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBirthdayFilter('students')}
+                style={{
+                  height: '30px',
+                  borderRadius: '6px',
+                  border: birthdayFilter === 'students' ? '1.5px solid #0284c7' : isDarkMode ? '1px solid #334155' : '1px solid #cbd5e1',
+                  backgroundColor: birthdayFilter === 'students' ? (isDarkMode ? 'rgba(2, 132, 199, 0.2)' : '#f0f9ff') : 'transparent',
+                  color: birthdayFilter === 'students' ? '#0284c7' : isDarkMode ? '#94a3b8' : '#64748b',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '0 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>Students</span>
+                <span
+                  style={{
+                    backgroundColor: birthdayFilter === 'students' ? '#0284c7' : isDarkMode ? '#334155' : '#e2e8f0',
+                    color: birthdayFilter === 'students' ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569',
+                    borderRadius: '4px',
+                    padding: '1px 5px',
+                    fontSize: '10px',
+                  }}
+                >
+                  {allBirthdaysCount.students}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBirthdayFilter('staff')}
+                style={{
+                  height: '30px',
+                  borderRadius: '6px',
+                  border: birthdayFilter === 'staff' ? '1.5px solid #9333ea' : isDarkMode ? '1px solid #334155' : '1px solid #cbd5e1',
+                  backgroundColor: birthdayFilter === 'staff' ? (isDarkMode ? 'rgba(147, 51, 234, 0.2)' : '#faf5ff') : 'transparent',
+                  color: birthdayFilter === 'staff' ? '#9333ea' : isDarkMode ? '#94a3b8' : '#64748b',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '0 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>Staff</span>
+                <span
+                  style={{
+                    backgroundColor: birthdayFilter === 'staff' ? '#9333ea' : isDarkMode ? '#334155' : '#e2e8f0',
+                    color: birthdayFilter === 'staff' ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569',
+                    borderRadius: '4px',
+                    padding: '1px 5px',
+                    fontSize: '10px',
+                  }}
+                >
+                  {allBirthdaysCount.staff}
+                </span>
+              </button>
+            </Stack>
+          </Stack>
+
+          {/* Birthday Cards Grid */}
+          {displayedBirthdays.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4, bgcolor: isDarkMode ? '#1e293b' : '#fafafa', borderRadius: 2 }}>
+              <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '8px' }}>🎈</span>
+              <Typography variant="body2" fontWeight={700} color="text.secondary">
+                No birthdays found for the selected filter in the next 14 days.
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Birthdays within the next 14 days will appear here automatically.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {displayedBirthdays.map((person) => {
+                const isToday = person.isToday;
+                const isStaff = person.roleType === 'Staff';
+                return (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={`${person.roleType}-${person.id}`}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        border: isToday ? '2px solid #ec4899' : '1px solid #e2e8f0',
+                        bgcolor: isToday
+                          ? isDarkMode ? 'rgba(236, 72, 153, 0.12)' : '#fdf2f8'
+                          : isDarkMode ? '#1e293b' : '#ffffff',
+                        boxShadow: isToday ? '0 4px 14px rgba(236, 72, 153, 0.15)' : 'none',
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                        },
+                      }}
+                    >
+                      <div>
+                        {/* Header: Date Badge & Role Tag */}
+                        <div className="flex align-items-center justify-content-between mb-2">
+                          <span
+                            className="inline-flex align-items-center gap-1 font-bold px-2 py-0.5 border-round text-xs"
+                            style={{
+                              backgroundColor: isToday ? '#ec4899' : isDarkMode ? '#334155' : '#f1f5f9',
+                              color: isToday ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569',
+                              fontSize: '11px',
+                            }}
+                          >
+                            {isToday ? '🎂 Today!' : person.daysUntil === 1 ? 'Tomorrow' : dayjs(person.dateOfBirth).format('DD MMM')}
+                          </span>
+
+                          <Tag
+                            value={person.roleType}
+                            severity={isStaff ? 'secondary' : 'info'}
+                            style={{ fontSize: '10px' }}
+                          />
+                        </div>
+
+                        {/* Person Details */}
+                        <div className="flex align-items-center gap-2 mb-2">
+                          <Avatar
+                            src={person.photoUrl}
+                            sx={{
+                              width: 38,
+                              height: 38,
+                              fontSize: 14,
+                              fontWeight: 700,
+                              bgcolor: isStaff ? '#9333ea' : '#0284c7',
+                            }}
+                          >
+                            {person.fullName ? person.fullName[0] : '🎂'}
+                          </Avatar>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div
+                              className="font-bold text-xs line-clamp-1"
+                              style={{ color: isDarkMode ? '#f8fafc' : '#1e293b' }}
+                            >
+                              {person.fullName}
+                            </div>
+                            <div
+                              className="text-xs line-clamp-1"
+                              style={{ fontSize: '11px', color: isDarkMode ? '#94a3b8' : '#64748b' }}
+                            >
+                              {person.detail}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer: Age & Wish Button */}
+                      <div
+                        className="flex align-items-center justify-content-between pt-2 mt-1"
+                        style={{ borderTop: `1px solid ${isDarkMode ? '#334155' : '#f1f5f9'}` }}
+                      >
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: isToday ? '#ec4899' : isDarkMode ? '#cbd5e1' : '#64748b' }}
+                        >
+                          {isToday ? `Turned ${person.age} 🎉` : `Turning ${person.age}`}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleWishBirthday(person)}
+                          style={{
+                            height: '26px',
+                            padding: '0 8px',
+                            borderRadius: '5px',
+                            border: '1px solid #10b981',
+                            backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
+                            color: isDarkMode ? '#34d399' : '#059669',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          className="hover:shadow-1 transition-all"
+                        >
+                          <i className="pi pi-whatsapp" style={{ fontSize: '11px' }} />
+                          <span>Wish</span>
+                        </button>
+                      </div>
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </CardContent>
+      </Card>
       </>
       )}
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppModal.open}
+        onClose={() => setWhatsAppModal((prev) => ({ ...prev, open: false }))}
+        moduleKey="birthday"
+        recipientName={whatsAppModal.recipientName}
+        recipientMobile={whatsAppModal.recipientMobile}
+        variables={whatsAppModal.variables}
+      />
     </Box>
   );
 };

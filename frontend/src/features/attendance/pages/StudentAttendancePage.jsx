@@ -1,66 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  MenuItem,
   Paper,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Chip,
   Alert,
-  Stack,
   CircularProgress,
-  IconButton,
-  Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  CheckCircleOutline as CheckAllIcon,
-  HighlightOff as AbsentAllIcon,
-  EventBusy as HolidayIcon,
-  Info as InfoIcon,
-  Person as StudentIcon,
-} from '@mui/icons-material';
+import { Tag } from 'primereact/tag';
 import api from '../../../api/client';
 import { getStudentAttendance, saveStudentAttendanceBulk } from '../api';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { AppButton } from '../../../components/common/AppButton';
 import { useUiStore } from '../../../store/uiStore';
+import { useThemeStore } from '../../../store/themeStore';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 
 const STATUS_CONFIG = {
-  1: { label: 'Present', color: 'success', bg: '#e8f5e9' },
-  2: { label: 'Absent', color: 'error', bg: '#ffebee' },
-  3: { label: 'Leave', color: 'info', bg: '#e1f5fe' },
-  4: { label: 'Half Day', color: 'warning', bg: '#fff3e0' },
-  5: { label: 'Late', color: 'secondary', bg: '#f3e5f5' },
+  1: { code: 'P', label: 'Present', color: '#10b981', lightBg: '#ecfdf5', borderColor: '#a7f3d0' },
+  2: { code: 'A', label: 'Absent', color: '#ef4444', lightBg: '#fef2f2', borderColor: '#fecaca' },
+  3: { code: 'L', label: 'Leave', color: '#3b82f6', lightBg: '#eff6ff', borderColor: '#bfdbfe' },
+  4: { code: 'HD', label: 'Half Day', color: '#f59e0b', lightBg: '#fffbeb', borderColor: '#fde68a' },
+  5: { code: 'LT', label: 'Late', color: '#8b5cf6', lightBg: '#f5f3ff', borderColor: '#ddd6fe' },
 };
 
-const StudentAttendancePage = () => {
+const formatName = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+export const StudentAttendancePage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { currentColorHex } = useThemeStore();
+  const themeColor = currentColorHex || '#14b8a6';
+  const { showSnackbar } = useUiStore();
+
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [sections, setSections] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [attendanceSheet, setAttendanceSheet] = useState(null);
   const [studentRows, setStudentRows] = useState([]);
-  const { showSnackbar } = useUiStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 1 | 2 | 3 | 4 | 5
+
+  // WhatsApp Dialog State
+  const [whatsAppModal, setWhatsAppModal] = useState({
+    open: false,
+    recipientName: '',
+    recipientPhone: '',
+    recipientRole: '',
+    moduleKey: 'attendance',
+    moduleTitle: '',
+    templateData: {},
+  });
 
   // 1. Fetch Classes on mount
   useEffect(() => {
@@ -88,7 +101,7 @@ const StudentAttendancePage = () => {
 
   const handleClassChange = (classId) => {
     setSelectedClassId(classId);
-    const found = classes.find((c) => c.id === classId);
+    const found = classes.find((c) => c.id === Number(classId));
     const secs = found?.sections || [];
     setSections(secs);
     if (secs.length > 0) {
@@ -107,9 +120,8 @@ const StudentAttendancePage = () => {
     }
   }, [selectedSectionId, date]);
 
-  const loadAttendance = async (preserveAlert = false) => {
+  const loadAttendance = async () => {
     setLoading(true);
-    
     try {
       const res = await getStudentAttendance(selectedSectionId, date);
       const data = res.data?.data || res.data;
@@ -122,8 +134,10 @@ const StudentAttendancePage = () => {
           rollNo: s.rollNo,
           fullName: s.fullName,
           gender: s.gender,
-          status: s.status || 1, // Present by default (FR-6.1)
+          status: s.status || 1, // Default to Present
           remarks: s.remarks || '',
+          mobile: s.mobile || '',
+          guardianName: s.guardianName || '',
         }))
       );
     } catch (err) {
@@ -156,11 +170,23 @@ const StudentAttendancePage = () => {
     setStudentRows((prev) => prev.map((row) => ({ ...row, status })));
   };
 
+  // Date change handler
+  const handleDateChange = (val) => {
+    if (!val) return;
+    if (val instanceof Date) {
+      const y = val.getFullYear();
+      const m = String(val.getMonth() + 1).padStart(2, '0');
+      const d = String(val.getDate()).padStart(2, '0');
+      setDate(`${y}-${m}-${d}`);
+    } else if (typeof val === 'string') {
+      setDate(val);
+    }
+  };
+
   // Save Attendance
   const handleSave = async () => {
     if (!selectedSectionId) return;
     setSaving(true);
-    
     try {
       const payload = {
         sectionId: selectedSectionId,
@@ -174,8 +200,7 @@ const StudentAttendancePage = () => {
       };
       await saveStudentAttendanceBulk(payload);
       showSnackbar('Attendance recorded successfully!', 'success');
-      // Reload to reflect saved state
-      loadAttendance(true);
+      loadAttendance();
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || 'Failed to save attendance.';
@@ -185,258 +210,688 @@ const StudentAttendancePage = () => {
     }
   };
 
+  const handleOpenAbsentAlert = (student) => {
+    const currentClass = classes.find((c) => c.id === Number(selectedClassId));
+    const currentSection = sections.find((s) => s.id === Number(selectedSectionId));
+    const classLabel = `${currentClass?.name || ''} ${currentSection?.name ? '- ' + currentSection.name : ''}`.trim();
+
+    setWhatsAppModal({
+      open: true,
+      recipientName: student.guardianName || student.fullName,
+      recipientPhone: student.mobile,
+      recipientRole: `Parent of ${student.fullName}`,
+      moduleKey: 'attendance',
+      moduleTitle: 'Student Absence Alert (WhatsApp)',
+      templateData: {
+        StudentName: student.fullName,
+        ClassName: classLabel || 'Class',
+        Date: date,
+      },
+    });
+  };
+
   // Compute live counts
-  const counts = studentRows.reduce(
-    (acc, row) => {
-      acc[row.status] = (acc[row.status] || 0) + 1;
-      return acc;
-    },
-    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  );
+  const counts = useMemo(() => {
+    return studentRows.reduce(
+      (acc, row) => {
+        acc[row.status] = (acc[row.status] || 0) + 1;
+        return acc;
+      },
+      { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    );
+  }, [studentRows]);
+
+  // Filtered rows by search and status tab
+  const filteredStudents = useMemo(() => {
+    return studentRows.filter((student) => {
+      // 1. Status Filter
+      if (statusFilter !== 'all' && student.status !== Number(statusFilter)) {
+        return false;
+      }
+      // 2. Search Query
+      if (!searchQuery.trim()) return true;
+      const term = searchQuery.toLowerCase().trim();
+      const nameMatch = student.fullName?.toLowerCase().includes(term);
+      const rollMatch = String(student.rollNo ?? '').toLowerCase().includes(term);
+      const admMatch = student.admissionNo?.toLowerCase().includes(term);
+      return nameMatch || rollMatch || admMatch;
+    });
+  }, [studentRows, statusFilter, searchQuery]);
 
   const isBlocked = attendanceSheet?.isSunday || attendanceSheet?.isHoliday;
   const isReadOnly = isBlocked || (attendanceSheet && !attendanceSheet.isEditable);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
-            Daily Student Attendance
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Mark daily class attendance with real-time status counts and instant absence reporting (FR-6.1, FR-6.2, BR-6.1)
-          </Typography>
-        </Box>
-        {attendanceSheet && !isReadOnly && (
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            onClick={handleSave}
-            disabled={saving || studentRows.length === 0}
-            sx={{ px: 3, py: 1 }}
-          >
-            {saving ? 'Saving...' : 'Save Attendance'}
-          </Button>
-        )}
-      </Box>
-
-      {/* Filter / Selector Bar */}
-      <Card sx={{ mb: 3, boxShadow: 2 }}>
-        <CardContent sx={{ p: 2.5 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Class</InputLabel>
-                <Select
-                  value={selectedClassId}
-                  label="Class"
-                  onChange={(e) => handleClassChange(e.target.value)}
-                >
-                  {classes.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Section</InputLabel>
-                <Select
-                  value={selectedSectionId}
-                  label="Section"
-                  onChange={(e) => setSelectedSectionId(e.target.value)}
-                >
-                  {sections.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
-                      {s.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={3}>
-              <AppDatePicker
-                label="Attendance Date"
-                value={date}
-                onChange={(e) => setDate(e.value)}
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, pb: { xs: 10, md: 3 } }}>
+      {/* 1. TOP HEADER CARD */}
+      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-3 border-round-lg shadow-1 border-1 surface-border mb-3">
+        <div>
+          <div className="flex align-items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold text-slate-800 m-0">Daily Student Attendance</h2>
+            {attendanceSheet?.alreadyMarked && (
+              <Tag
+                value="Already Marked"
+                severity="success"
+                style={{ fontSize: '10px', fontWeight: 600 }}
               />
-            </Grid>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 m-0 mt-1">
+            Mark daily class attendance with real-time status counts and instant absence reporting
+          </p>
+        </div>
 
-            <Grid item xs={12} sm={3}>
-              <Stack direction="row" spacing={1} justifyContent="flex-end">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  startIcon={<CheckAllIcon />}
-                  onClick={() => markAll(1)}
-                  disabled={isReadOnly || studentRows.length === 0}
-                >
-                  All Present
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  startIcon={<AbsentAllIcon />}
-                  onClick={() => markAll(2)}
-                  disabled={isReadOnly || studentRows.length === 0}
-                >
-                  All Absent
-                </Button>
-              </Stack>
-            </Grid>
+        {attendanceSheet && !isReadOnly && (
+          <div className="flex align-items-center gap-2 w-full sm:w-auto justify-content-end">
+            <AppButton
+              label={saving ? 'Saving...' : 'Save Attendance'}
+              icon="pi pi-check"
+              size="small"
+              loading={saving}
+              disabled={saving || studentRows.length === 0}
+              onClick={handleSave}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 2. FILTER & SELECTION BAR */}
+      <div className="bg-white border-round-lg shadow-1 border-1 surface-border p-3 mb-3">
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Class"
+              value={selectedClassId}
+              onChange={(e) => handleClassChange(e.target.value)}
+              sx={{
+                '& .MuiInputBase-root': { height: 32, fontSize: '12px' },
+                '& .MuiInputLabel-root': { fontSize: '12px' },
+              }}
+            >
+              {classes.map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={{ fontSize: '12px' }}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
-        </CardContent>
-      </Card>
 
-      {/* Holiday / Sunday / Editability Notice */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Section"
+              value={selectedSectionId}
+              onChange={(e) => setSelectedSectionId(e.target.value)}
+              sx={{
+                '& .MuiInputBase-root': { height: 32, fontSize: '12px' },
+                '& .MuiInputLabel-root': { fontSize: '12px' },
+              }}
+            >
+              {sections.map((s) => (
+                <MenuItem key={s.id} value={s.id} sx={{ fontSize: '12px' }}>
+                  Section {s.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <AppDatePicker
+              label="Attendance Date"
+              value={date}
+              onChange={(e) => handleDateChange(e.value)}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <div className="flex align-items-center gap-2">
+              <button
+                type="button"
+                onClick={() => markAll(1)}
+                disabled={isReadOnly || studentRows.length === 0}
+                style={{
+                  height: '30px',
+                  borderRadius: '6px',
+                  border: '1px solid #10b981',
+                  backgroundColor: '#ecfdf5',
+                  color: '#059669',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: isReadOnly || studentRows.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: isReadOnly || studentRows.length === 0 ? 0.6 : 1,
+                }}
+                className="flex-1 flex align-items-center justify-content-center gap-1 hover:shadow-1 transition-all"
+              >
+                <i className="pi pi-check text-xs" />
+                <span>All Present</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => markAll(2)}
+                disabled={isReadOnly || studentRows.length === 0}
+                style={{
+                  height: '30px',
+                  borderRadius: '6px',
+                  border: '1px solid #ef4444',
+                  backgroundColor: '#fef2f2',
+                  color: '#dc2626',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: isReadOnly || studentRows.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: isReadOnly || studentRows.length === 0 ? 0.6 : 1,
+                }}
+                className="flex-1 flex align-items-center justify-content-center gap-1 hover:shadow-1 transition-all"
+              >
+                <i className="pi pi-times text-xs" />
+                <span>All Absent</span>
+              </button>
+            </div>
+          </Grid>
+        </Grid>
+      </div>
+
+      {/* 3. ALERTS (Sunday / Holiday / Past Date) */}
       {attendanceSheet?.isSunday && (
-        <Alert severity="warning" icon={<HolidayIcon />} sx={{ mb: 3 }}>
-          <strong>Sunday:</strong> Attendance marking is blocked on Sundays (FR-6.2).
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+          <strong>Sunday:</strong> Attendance marking is blocked on Sundays.
         </Alert>
       )}
 
       {attendanceSheet?.isHoliday && (
-        <Alert severity="warning" icon={<HolidayIcon />} sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           <strong>Holiday:</strong> Attendance marking is blocked for{' '}
-          <strong>{attendanceSheet.holidayName}</strong> (FR-6.2).
+          <strong>{attendanceSheet.holidayName || 'Scheduled Holiday'}</strong>.
         </Alert>
       )}
 
       {attendanceSheet && !attendanceSheet.isEditable && !isBlocked && (
-        <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-          <strong>Past Date:</strong> Teachers can only mark attendance for the current day. Editing past attendance requires Admin authorization (BR-6.1).
+        <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+          <strong>Past Date:</strong> Teachers can only mark attendance for the current day. Editing past attendance requires Admin authorization.
         </Alert>
       )}
 
-      {/* Attendance Summary Counter Bar */}
+      {/* 4. KPI COUNTERS & FILTER TABS */}
       {studentRows.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip label={`Total: ${studentRows.length}`} color="default" variant="outlined" sx={{ fontWeight: 700 }} />
-          <Chip label={`Present: ${counts[1]}`} color="success" sx={{ fontWeight: 700 }} />
-          <Chip label={`Absent: ${counts[2]}`} color="error" sx={{ fontWeight: 700 }} />
-          <Chip label={`Leave: ${counts[3]}`} color="info" sx={{ fontWeight: 700 }} />
-          <Chip label={`Half Day: ${counts[4]}`} color="warning" sx={{ fontWeight: 700 }} />
-          <Chip label={`Late: ${counts[5]}`} color="secondary" sx={{ fontWeight: 700 }} />
+        <div className="grid mb-3">
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter('all')}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 'all' ? 'border-primary surface-100 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #64748b' }}
+            >
+              <span className="text-xs text-slate-500 block">Total</span>
+              <span className="text-base sm:text-xl font-bold text-slate-800">
+                {studentRows.length}
+              </span>
+            </div>
+          </div>
 
-          {attendanceSheet?.alreadyMarked && (
-            <Chip
-              label="Already Marked (Saved)"
-              color="primary"
-              variant="outlined"
-              size="small"
-              sx={{ ml: 'auto' }}
-            />
-          )}
-        </Paper>
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter(statusFilter === 1 ? 'all' : 1)}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 1 ? 'border-emerald-500 bg-emerald-50 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #10b981' }}
+            >
+              <span className="text-xs text-slate-500 block">Present</span>
+              <span className="text-base sm:text-xl font-bold text-emerald-600">
+                {counts[1]}
+              </span>
+            </div>
+          </div>
+
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter(statusFilter === 2 ? 'all' : 2)}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 2 ? 'border-red-500 bg-red-50 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #ef4444' }}
+            >
+              <span className="text-xs text-slate-500 block">Absent</span>
+              <span className="text-base sm:text-xl font-bold text-red-600">
+                {counts[2]}
+              </span>
+            </div>
+          </div>
+
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter(statusFilter === 3 ? 'all' : 3)}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 3 ? 'border-blue-500 bg-blue-50 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #3b82f6' }}
+            >
+              <span className="text-xs text-slate-500 block">Leave</span>
+              <span className="text-base sm:text-xl font-bold text-blue-600">
+                {counts[3]}
+              </span>
+            </div>
+          </div>
+
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter(statusFilter === 4 ? 'all' : 4)}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 4 ? 'border-amber-500 bg-amber-50 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #f59e0b' }}
+            >
+              <span className="text-xs text-slate-500 block">Half Day</span>
+              <span className="text-base sm:text-xl font-bold text-amber-600">
+                {counts[4]}
+              </span>
+            </div>
+          </div>
+
+          <div className="col-4 sm:col-4 md:col-2">
+            <div
+              onClick={() => setStatusFilter(statusFilter === 5 ? 'all' : 5)}
+              className={`p-2 bg-white border-round-lg shadow-1 border-1 cursor-pointer transition-all ${
+                statusFilter === 5 ? 'border-purple-500 bg-purple-50 shadow-2' : 'surface-border'
+              }`}
+              style={{ borderLeft: '4px solid #8b5cf6' }}
+            >
+              <span className="text-xs text-slate-500 block">Late</span>
+              <span className="text-base sm:text-xl font-bold text-purple-600">
+                {counts[5]}
+              </span>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Student Attendance Grid */}
+      {/* 5. SEARCH & ACTIVE FILTER BAR */}
+      {studentRows.length > 0 && (
+        <div className="flex flex-column sm:flex-row align-items-center justify-content-between gap-2 bg-white p-2 border-round-lg shadow-1 border-1 surface-border mb-3">
+          <div className="w-full sm:w-20rem position-relative">
+            <div className="p-input-icon-left w-full">
+              <i className="pi pi-search text-xs" style={{ left: '10px' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by student name or roll no..."
+                className="p-inputtext p-inputtext-sm w-full text-xs pl-5"
+                style={{ height: '30px' }}
+              />
+            </div>
+          </div>
+
+          <div className="flex align-items-center gap-2 w-full sm:w-auto justify-content-between sm:justify-content-end">
+            <span className="text-xs text-slate-500">
+              Showing <b>{filteredStudents.length}</b> of {studentRows.length} students
+            </span>
+
+            {statusFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className="text-xs text-primary font-bold bg-transparent border-none cursor-pointer underline p-0"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 6. CONTENT: LOADING / EMPTY / DATA */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex align-items-center justify-content-center p-6 bg-white border-round-lg border-1 surface-border">
+          <CircularProgress size={32} />
+        </div>
       ) : studentRows.length === 0 ? (
-        <Paper sx={{ p: 5, textAlign: 'center' }}>
-          <StudentIcon sx={{ fontSize: 50, color: 'text.secondary', mb: 1 }} />
-          <Typography variant="h6" color="text.secondary">
+        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2 }}>
+          <i className="pi pi-users text-4xl text-slate-400 mb-2 block" />
+          <Typography variant="h6" color="text.secondary" sx={{ fontSize: '15px' }}>
             No active students enrolled in this section.
           </Typography>
         </Paper>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
-          <Table size="small">
-            <TableHead sx={{ bgcolor: '#f4f6f8' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: 80 }}>Roll No</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 140 }}>Admission No</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Student Name</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 90 }}>Gender</TableCell>
-                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 440 }}>
-                  Attendance Status (FR-6.1)
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 220 }}>Remarks / Reason</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {studentRows.map((row, index) => {
-                const config = STATUS_CONFIG[row.status] || STATUS_CONFIG[1];
+        <>
+          {/* ========================================================
+              DESKTOP VIEW: Sleek Compact Enterprise Table (>= 768px)
+             ======================================================== */}
+          <div className="hidden md:block bg-white border-round-lg shadow-1 border-1 surface-border overflow-hidden">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
+                <thead>
+                  <tr className="surface-100 text-slate-700 text-xs font-bold border-bottom-1 surface-border text-left">
+                    <th style={{ width: '60px', padding: '10px 12px' }}>Roll</th>
+                    <th style={{ width: '130px', padding: '10px 12px' }}>Admission No</th>
+                    <th style={{ padding: '10px 12px' }}>Student Name</th>
+                    <th style={{ width: '80px', padding: '10px 12px' }}>Gender</th>
+                    <th style={{ width: '370px', padding: '10px 12px', textAlign: 'center' }}>
+                      Attendance Status
+                    </th>
+                    <th style={{ width: '220px', padding: '10px 12px' }}>Remarks / Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((row, index) => {
+                    const isAbsent = row.status === 2;
+                    const isLeave = row.status === 3;
+                    return (
+                      <tr
+                        key={row.studentId}
+                        className="border-bottom-1 surface-border transition-colors"
+                        style={{
+                          backgroundColor: isAbsent
+                            ? '#fff5f5'
+                            : isLeave
+                            ? '#f0f9ff'
+                            : index % 2 === 0
+                            ? '#ffffff'
+                            : '#fafafa',
+                        }}
+                      >
+                        {/* Roll No */}
+                        <td style={{ padding: '8px 12px' }}>
+                          <span className="font-bold text-xs text-slate-700">
+                            #{row.rollNo ?? index + 1}
+                          </span>
+                        </td>
+
+                        {/* Admission No */}
+                        <td style={{ padding: '8px 12px' }}>
+                          <span className="text-xs font-mono text-slate-600">
+                            {row.admissionNo}
+                          </span>
+                        </td>
+
+                        {/* Student Name */}
+                        <td style={{ padding: '8px 12px' }}>
+                          <div className="font-bold text-xs text-slate-800">
+                            {formatName(row.fullName)}
+                          </div>
+                        </td>
+
+                        {/* Gender */}
+                        <td style={{ padding: '8px 12px' }}>
+                          <span className="text-xs text-slate-500">
+                            {row.gender}
+                          </span>
+                        </td>
+
+                        {/* Attendance Status - Compact Segmented Button Group (Single Line) */}
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                          <div className="inline-flex align-items-center justify-content-center gap-1">
+                            {[1, 2, 3, 4, 5].map((stId) => {
+                              const isSelected = row.status === stId;
+                              const cfg = STATUS_CONFIG[stId];
+                              return (
+                                <button
+                                  key={stId}
+                                  type="button"
+                                  disabled={isReadOnly}
+                                  onClick={() => handleStatusChange(row.studentId, stId)}
+                                  style={{
+                                    height: '28px',
+                                    padding: '0 9px',
+                                    borderRadius: '6px',
+                                    border: isSelected
+                                      ? `1.5px solid ${cfg.color}`
+                                      : '1px solid #cbd5e1',
+                                    backgroundColor: isSelected ? cfg.color : '#ffffff',
+                                    color: isSelected ? '#ffffff' : '#475569',
+                                    fontSize: '11px',
+                                    fontWeight: isSelected ? 700 : 500,
+                                    cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  className="hover:shadow-1"
+                                >
+                                  <span style={{ fontSize: '10px', fontWeight: 800 }}>
+                                    {cfg.code}
+                                  </span>
+                                  <span>{cfg.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </td>
+
+                        {/* Remarks Input & WhatsApp Absent Alert */}
+                        <td style={{ padding: '8px 12px' }}>
+                          <div className="flex align-items-center gap-1">
+                            <input
+                              type="text"
+                              placeholder="Optional remarks"
+                              value={row.remarks || ''}
+                              onChange={(e) => handleRemarksChange(row.studentId, e.target.value)}
+                              disabled={isReadOnly}
+                              className="p-inputtext p-inputtext-sm w-full text-xs"
+                              style={{ height: '28px', padding: '2px 8px' }}
+                            />
+                            {isAbsent && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAbsentAlert(row)}
+                                title="Send WhatsApp Absent Alert to Parent"
+                                style={{
+                                  height: '28px',
+                                  padding: '0 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #10b981',
+                                  backgroundColor: '#ecfdf5',
+                                  color: '#059669',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                className="hover:shadow-1"
+                              >
+                                <i className="pi pi-whatsapp" style={{ fontSize: '12px' }} />
+                                <span>Alert</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center p-4 text-slate-400 text-xs">
+                        No students match the selected filter or search query.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ========================================================
+              MOBILE VIEW: Touch-Friendly Student Card List (< 768px)
+             ======================================================== */}
+          <div className="block md:hidden">
+            <div className="flex flex-column gap-2">
+              {filteredStudents.map((row, index) => {
+                const isAbsent = row.status === 2;
+                const isLeave = row.status === 3;
+                const currentCfg = STATUS_CONFIG[row.status] || STATUS_CONFIG[1];
+
                 return (
-                  <TableRow
+                  <div
                     key={row.studentId}
-                    hover
-                    sx={{
-                      bgcolor: row.status === 2 ? '#fff8f8' : index % 2 === 0 ? '#fff' : '#fafafa',
-                      transition: 'background-color 0.2s',
+                    className="bg-white border-round-lg shadow-1 border-1 surface-border p-3"
+                    style={{
+                      borderLeft: `4px solid ${currentCfg.color}`,
+                      backgroundColor: isAbsent ? '#fff8f8' : isLeave ? '#f0f9ff' : '#ffffff',
                     }}
                   >
-                    <TableCell sx={{ fontWeight: 600 }}>{row.rollNo ?? '-'}</TableCell>
-                    <TableCell>{row.admissionNo}</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>{row.fullName}</TableCell>
-                    <TableCell>{row.gender}</TableCell>
+                    {/* Top Row: Roll + Name + Badge */}
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <span
+                          className="inline-flex align-items-center justify-content-center border-round-circle font-bold text-xs bg-slate-100 text-slate-700"
+                          style={{ width: '28px', height: '28px' }}
+                        >
+                          #{row.rollNo ?? index + 1}
+                        </span>
+                        <div>
+                          <div className="font-bold text-xs text-slate-800 line-clamp-1">
+                            {formatName(row.fullName)}
+                          </div>
+                          <div className="text-xs text-slate-400" style={{ fontSize: '10px' }}>
+                            {row.admissionNo} • {row.gender}
+                          </div>
+                        </div>
+                      </div>
 
-                    {/* Status Options */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <RadioGroup
-                        row
-                        value={row.status}
-                        onChange={(e) => handleStatusChange(row.studentId, Number(e.target.value))}
-                        sx={{ justifyContent: 'center' }}
+                      <span
+                        style={{
+                          backgroundColor: currentCfg.lightBg,
+                          color: currentCfg.color,
+                          border: `1px solid ${currentCfg.borderColor}`,
+                          borderRadius: '12px',
+                          padding: '2px 8px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                        }}
                       >
-                        <FormControlLabel
-                          value={1}
-                          control={<Radio size="small" color="success" disabled={isReadOnly} />}
-                          label={<Typography variant="body2" sx={{ color: 'success.main', fontWeight: row.status === 1 ? 700 : 400 }}>Present</Typography>}
-                        />
-                        <FormControlLabel
-                          value={2}
-                          control={<Radio size="small" color="error" disabled={isReadOnly} />}
-                          label={<Typography variant="body2" sx={{ color: 'error.main', fontWeight: row.status === 2 ? 700 : 400 }}>Absent</Typography>}
-                        />
-                        <FormControlLabel
-                          value={3}
-                          control={<Radio size="small" color="info" disabled={isReadOnly} />}
-                          label={<Typography variant="body2" sx={{ color: 'info.main', fontWeight: row.status === 3 ? 700 : 400 }}>Leave</Typography>}
-                        />
-                        <FormControlLabel
-                          value={4}
-                          control={<Radio size="small" color="warning" disabled={isReadOnly} />}
-                          label={<Typography variant="body2" sx={{ color: 'warning.main', fontWeight: row.status === 4 ? 700 : 400 }}>Half Day</Typography>}
-                        />
-                        <FormControlLabel
-                          value={5}
-                          control={<Radio size="small" color="secondary" disabled={isReadOnly} />}
-                          label={<Typography variant="body2" sx={{ color: 'secondary.main', fontWeight: row.status === 5 ? 700 : 400 }}>Late</Typography>}
-                        />
-                      </RadioGroup>
-                    </TableCell>
+                        {currentCfg.label}
+                      </span>
+                    </div>
 
-                    {/* Remarks Input */}
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        placeholder="Optional remarks"
-                        value={row.remarks}
-                        onChange={(e) => handleRemarksChange(row.studentId, e.target.value)}
-                        disabled={isReadOnly}
-                      />
-                    </TableCell>
-                  </TableRow>
+                    {/* Middle Row: 5 Large Touch Buttons */}
+                    <div className="grid grid-nogutter gap-1 mb-2">
+                      {[1, 2, 3, 4, 5].map((stId) => {
+                        const isSelected = row.status === stId;
+                        const cfg = STATUS_CONFIG[stId];
+                        return (
+                          <button
+                            key={stId}
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() => handleStatusChange(row.studentId, stId)}
+                            style={{
+                              flex: 1,
+                              height: '42px',
+                              borderRadius: '6px',
+                              backgroundColor: isSelected ? cfg.color : '#f8fafc',
+                              color: isSelected ? '#ffffff' : '#64748b',
+                              border: isSelected ? `2px solid ${cfg.color}` : '1px solid #e2e8f0',
+                              cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '2px 0',
+                            }}
+                            className="transition-all"
+                          >
+                            <span style={{ fontSize: '13px', fontWeight: 800, lineHeight: 1 }}>
+                              {cfg.code}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '8.5px',
+                                fontWeight: isSelected ? 700 : 500,
+                                opacity: 0.9,
+                                lineHeight: 1.2,
+                                marginTop: '2px',
+                              }}
+                            >
+                              {cfg.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bottom Row: Optional Remarks */}
+                    <input
+                      type="text"
+                      placeholder="Remarks / reason (optional)"
+                      value={row.remarks || ''}
+                      onChange={(e) => handleRemarksChange(row.studentId, e.target.value)}
+                      disabled={isReadOnly}
+                      className="p-inputtext p-inputtext-sm w-full text-xs"
+                      style={{ height: '30px', fontSize: '11px' }}
+                    />
+                  </div>
                 );
               })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+
+              {filteredStudents.length === 0 && (
+                <div className="bg-white border-round-lg p-4 text-center text-slate-400 text-xs border-1 surface-border">
+                  No students match the search query or status filter.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ========================================================
+              MOBILE STICKY BOTTOM ACTION BAR (< 768px)
+             ======================================================== */}
+          {attendanceSheet && !isReadOnly && studentRows.length > 0 && (
+            <div
+              className="block md:hidden fixed bottom-0 left-0 right-0 p-2.5 bg-white border-top-1 surface-border shadow-4 z-5"
+              style={{
+                boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.12)',
+              }}
+            >
+              <div className="flex align-items-center justify-content-between gap-2 max-w-28rem mx-auto">
+                <div className="flex align-items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-700">
+                    <span className="text-emerald-600 font-bold">{counts[1]}</span>/
+                    {studentRows.length} Present
+                  </span>
+                  {counts[2] > 0 && (
+                    <span className="text-xs font-bold text-red-600">
+                      • {counts[2]} Absent
+                    </span>
+                  )}
+                </div>
+
+                <AppButton
+                  label={saving ? 'Saving...' : 'Save Attendance'}
+                  icon="pi pi-check"
+                  size="small"
+                  loading={saving}
+                  disabled={saving}
+                  onClick={handleSave}
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
+
+      {/* WhatsApp Absence Alert Dialog */}
+      <WhatsAppDialog
+        open={whatsAppModal.open}
+        onClose={() => setWhatsAppModal((prev) => ({ ...prev, open: false }))}
+        recipientName={whatsAppModal.recipientName}
+        recipientPhone={whatsAppModal.recipientPhone}
+        recipientRole={whatsAppModal.recipientRole}
+        moduleKey="attendance"
+        moduleTitle="Absence Alert (WhatsApp)"
+        templateData={whatsAppModal.templateData}
+      />
     </Box>
   );
 };

@@ -23,11 +23,13 @@ import {
   Person as PersonIcon,
   ArrowForward as ArrowForwardIcon,
   Add as AddIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { studentApi } from '../api';
 import { branchApi } from '../../masters/api';
 import { useAuthStore } from '../../../store/authStore';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { printWithTitle } from '../../../utils/printUtils';
 
 // Helper to convert date to words
@@ -83,6 +85,7 @@ export const AdmissionReportModal = ({
   const [loading, setLoading] = useState(false);
   const [student, setStudent] = useState(initialStudentData || null);
   const [branchInfo, setBranchInfo] = useState(null);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -899,6 +902,20 @@ export const AdmissionReportModal = ({
             </Button>
             <Button
               variant="contained"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => setWhatsAppOpen(true)}
+              disabled={loading || !student}
+              sx={{
+                px: 2.5,
+                fontWeight: 700,
+                bgcolor: '#25D366',
+                '&:hover': { bgcolor: '#128C7E' },
+              }}
+            >
+              WhatsApp Confirmation
+            </Button>
+            <Button
+              variant="contained"
               color="primary"
               startIcon={<PrintIcon />}
               onClick={handlePrint}
@@ -910,6 +927,31 @@ export const AdmissionReportModal = ({
           </Stack>
         </DialogActions>
       </Dialog>
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppOpen}
+        onClose={() => setWhatsAppOpen(false)}
+        recipientName={student?.fatherName || student?.guardianName || student?.fullName}
+        recipientPhone={
+          student?.fatherMobile ||
+          student?.guardianMobile ||
+          student?.emergencyContactNumber ||
+          student?.mobile ||
+          student?.guardians?.[0]?.mobile
+        }
+        recipientRole={`Parent of ${student?.fullName}`}
+        moduleKey="admission"
+        moduleTitle="Admission Confirmation (WhatsApp)"
+        templateData={{
+          ParentName: student?.fatherName || student?.guardianName || 'Parent',
+          StudentName: student?.fullName || '',
+          AdmissionNo: student?.admissionNo || '',
+          ClassName: student?.className || student?.currentEnrollment?.className || '',
+          Section: student?.sectionName || student?.currentEnrollment?.sectionName || '',
+          Date: student?.admissionDate ? dayjs(student.admissionDate).format('DD-MM-YYYY') : dayjs().format('DD-MM-YYYY'),
+        }}
+      />
     </>
   );
 };

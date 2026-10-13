@@ -1280,6 +1280,95 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.1 WHATSAPP MODULE CONFIGURATIONS
+        // ==========================================
+        [HttpGet("whatsapp-config")]
+        public async Task<ActionResult<ApiResponse<WhatsAppModuleConfigDto>>> GetWhatsAppConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var config = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "WHATSAPP");
+
+            if (config == null && schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "WHATSAPP");
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<WhatsAppModuleConfigDto>(
+                        config.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.IsEnabled = config.IsActive;
+                        return Ok(ApiResponse<WhatsAppModuleConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(ApiResponse<WhatsAppModuleConfigDto>.Ok(new WhatsAppModuleConfigDto()));
+        }
+
+        [HttpPost("whatsapp-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveWhatsAppConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] WhatsAppModuleConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "WHATSAPP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = request.Provider?.ToUpper() ?? "DIRECT_WEB";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = request.IsEnabled;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "WHATSAPP",
+                    Provider = request.Provider?.ToUpper() ?? "DIRECT_WEB",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = request.IsEnabled
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "WHATSAPP_MODULES_CONFIGURED",
+                "TenantGatewayConfig",
+                request.Provider ?? "DIRECT_WEB",
+                null,
+                new { request.IsEnabled, request.Provider });
+
+            return Ok(ApiResponse<bool>.Ok(true, "WhatsApp module configurations saved successfully."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

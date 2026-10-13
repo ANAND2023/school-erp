@@ -20,6 +20,7 @@ import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useAuthStore } from '../../../store/authStore';
 import { DemandBillPrintModal } from '../components/DemandBillPrintModal';
 import { AppInput, AppSelect, AppDatePicker } from '../../../components/common';
+import { whatsappService } from '../../communication/services/whatsappService';
 
 const ACADEMIC_MONTHS = [
   { index: 1, name: 'April', short: 'Apr' },
@@ -242,7 +243,7 @@ export const DemandBillPage = () => {
   };
 
   // Handle WhatsApp Reminder
-  const handleSendWhatsApp = (student) => {
+  const handleSendWhatsApp = async (student) => {
     if (!student?.guardianMobile) {
       toastRef.current?.show({
         severity: 'warn',
@@ -251,24 +252,33 @@ export const DemandBillPage = () => {
       });
       return;
     }
-    const cleanMobile = student.guardianMobile.replace(/[^0-9]/g, '');
-    const mobileWithCountry = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
+
+    const config = await whatsappService.getConfig();
+    if (!whatsappService.isModuleEnabled(config, 'feeDemand')) {
+      toastRef.current?.show({
+        severity: 'warn',
+        summary: 'Module Disabled',
+        detail: 'Fee Demand WhatsApp module is currently disabled by Super Admin.',
+      });
+      return;
+    }
+
     const dueDate = student.dueDate ? dayjs(student.dueDate).format('DD-MM-YYYY') : dayjs().add(10, 'day').format('DD-MM-YYYY');
     const netAmount = Number(student.netDemandAmount || student.balanceAmount || 0).toLocaleString('en-IN');
     const period = (student.billingPeriod || student.monthName || 'Current Due').replace(/^month of\s+/i, '');
-    
-    const message = `*FEE DEMAND NOTICE - ${schoolInfo?.schoolName || 'SCHOOL'}*\n\n` +
-      `Dear Parent,\n` +
-      `This is a gentle reminder regarding the fee demand bill for your ward *${student.studentName}* (Class: *${student.className}${student.sectionName ? ' - ' + student.sectionName : ''}*, Adm No: *${student.admissionNo}*).\n\n` +
-      `• *Billing Period:* ${period}\n` +
-      `• *Total Due Demand:* ₹${netAmount}\n` +
-      `• *Due Date:* ${dueDate}\n` +
-      `• *Bill No:* ${student.demandBillNo || 'DB-' + student.admissionNo}\n\n` +
-      `Please deposit the fees on or before the due date to avoid late charges. Ignore if already paid.\n\n` +
-      `Thank you,\n*${schoolInfo?.schoolName || 'Accounts Office'}*`;
+    const template =
+      config?.feeDemand?.template ||
+      'Dear Parent, this is a gentle reminder regarding pending school fees of Rs. {PendingAmount} for {StudentName} ({Month}) at {SchoolName}. Due Date: {DueDate}. Please clear the dues at your earliest convenience.';
 
-    const url = `https://wa.me/${mobileWithCountry}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    const message = whatsappService.interpolateTemplate(template, {
+      StudentName: student.studentName,
+      PendingAmount: netAmount,
+      Month: period,
+      DueDate: dueDate,
+      SchoolName: schoolInfo?.schoolName || user?.schoolName || 'Our School',
+    });
+
+    whatsappService.sendDirectMessage(student.guardianMobile, message);
   };
 
   // Export to Excel

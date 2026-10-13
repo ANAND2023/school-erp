@@ -22,6 +22,7 @@ namespace SchoolERP.Application.DTOs
         public List<ClassEnrollmentDto> ClassWiseEnrollment { get; set; } = new List<ClassEnrollmentDto>();
         public List<MonthlyTrendDto> MonthlyFeeCollection { get; set; } = new List<MonthlyTrendDto>();
         public GenderRatioDto GenderDistribution { get; set; } = new GenderRatioDto();
+        public BirthdaySummaryDto Birthdays { get; set; } = new BirthdaySummaryDto();
     }
 
     public class MonthlyTrendDto
@@ -91,5 +92,26 @@ namespace SchoolERP.Application.DTOs
         public string ClassName { get; set; } = string.Empty;
         public int StudentCount { get; set; }
         public int Capacity { get; set; }
+    }
+
+    public class BirthdayItemDto
+    {
+        public long Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string RoleType { get; set; } = "Student"; // "Student" | "Staff"
+        public string Detail { get; set; } = string.Empty;
+        public DateTime DateOfBirth { get; set; }
+        public int Age { get; set; }
+        public bool IsToday { get; set; }
+        public int DaysUntil { get; set; }
+        public string? PhotoUrl { get; set; }
+        public string? Mobile { get; set; }
+    }
+
+    public class BirthdaySummaryDto
+    {
+        public List<BirthdayItemDto> TodayBirthdays { get; set; } = new List<BirthdayItemDto>();
+        public List<BirthdayItemDto> UpcomingBirthdays { get; set; } = new List<BirthdayItemDto>();
+        public int TotalThisMonth { get; set; }
     }
 }

@@ -1171,3 +1171,30 @@ html.app-dark-mode .MuiDialog-paper .MuiDialogActions-root {
   transform: translateY(-2px);
 }
 
+/* ==========================================================================
+   Fix: Dropdown, MultiSelect, Calendar, AutoComplete Overlays
+   Must Always Appear Above Modal Dialogs (MUI Dialog z-index: 1300)
+   ========================================================================== */
+.p-dropdown-panel,
+.p-multiselect-panel,
+.p-datepicker,
+.p-autocomplete-panel,
+.p-cascadeselect-panel,
+.p-overlaypanel,
+.p-menu,
+.p-tieredmenu,
+.p-contextmenu,
+.app-select-panel,
+.app-datepicker-panel {
+  z-index: 99999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-tooltip {
+  z-index: 100000 !important;
+}
+
+.p-toast {
+  z-index: 100100 !important;
+}
+

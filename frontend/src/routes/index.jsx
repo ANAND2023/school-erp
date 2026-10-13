@@ -92,6 +92,7 @@ import { CreateTenantWizardPage } from '../features/superadmin/pages/CreateTenan
 import { TenantDetailPage } from '../features/superadmin/pages/TenantDetailPage';
 import { SubscriptionPlansPage } from '../features/superadmin/pages/SubscriptionPlansPage';
 import { GatewaysPage } from '../features/superadmin/pages/GatewaysPage';
+import { WhatsAppSettingsPage } from '../features/superadmin/pages/WhatsAppSettingsPage';
 import { GlobalAuditLogsPage } from '../features/superadmin/pages/GlobalAuditLogsPage';
 import { LandingEnquiriesPage } from '../features/superadmin/pages/LandingEnquiriesPage';
 import { ModuleCatalogPage } from '../features/superadmin/pages/ModuleCatalogPage';
@@ -660,6 +661,7 @@ export const AppRoutes = () => {
         <Route path="plans" element={<SubscriptionPlansPage />} />
         <Route path="modules" element={<ModuleCatalogPage />} />
         <Route path="gateways" element={<GatewaysPage />} />
+        <Route path="whatsapp" element={<WhatsAppSettingsPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
         <Route path="error-logs" element={<SystemErrorLogsPage />} />
         <Route path="enquiries" element={<LandingEnquiriesPage />} />

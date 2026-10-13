@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -8,6 +9,7 @@ import { Toast } from 'primereact/toast';
 import { superAdminApi } from '../api/superAdminApi';
 
 export const GatewaysPage = () => {
+  const navigate = useNavigate();
   const toastRef = useRef(null);
   const [gateways, setGateways] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -118,11 +120,20 @@ export const GatewaysPage = () => {
     <div className="flex flex-column gap-4">
       <Toast ref={toastRef} />
 
-      <div className="bg-white p-4 border-round-lg shadow-1 border-1 surface-border">
-        <h2 className="text-xl font-bold text-slate-800 m-0">Global API & Gateway Integrations</h2>
-        <p className="text-xs text-slate-500 m-0 mt-1">
-          Configure default platform gateways for SMS, WhatsApp notifications, and payment collection. Tenants can inherit these defaults or override with their own credentials.
-        </p>
+      <div className="bg-white p-4 border-round-lg shadow-1 border-1 surface-border flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 m-0">Global API & Gateway Integrations</h2>
+          <p className="text-xs text-slate-500 m-0 mt-1">
+            Configure default platform gateways for SMS, WhatsApp notifications, and payment collection. Tenants can inherit these defaults or override with their own credentials.
+          </p>
+        </div>
+        <Button
+          label="Manage WhatsApp Modules & Templates"
+          icon="pi pi-whatsapp"
+          size="small"
+          className="bg-emerald-600 border-emerald-600 font-bold whitespace-nowrap"
+          onClick={() => navigate('/superadmin/whatsapp')}
+        />
       </div>
 
       <div className="grid">

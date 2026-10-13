@@ -276,6 +276,7 @@ export const AppModal = ({
       maxWidth={maxWidth}
       fullWidth={fullWidth}
       scroll="paper"
+      disableEnforceFocus
       PaperProps={{
         ...PaperProps,
         sx: {

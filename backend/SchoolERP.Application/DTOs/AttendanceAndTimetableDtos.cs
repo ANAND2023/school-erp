@@ -32,6 +32,8 @@ namespace SchoolERP.Application.DTOs
         public string Gender { get; set; } = "Male";
         public AttendanceStatus Status { get; set; } = AttendanceStatus.Present;
         public string? Remarks { get; set; }
+        public string? Mobile { get; set; }
+        public string? GuardianName { get; set; }
     }
 
     public class StudentAttendanceSheetDto

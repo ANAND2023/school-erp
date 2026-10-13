@@ -98,6 +98,12 @@ export const AppDatePicker = forwardRef(({
           maxDate={maxDate}
           disabled={disabled}
           readOnlyInput={readOnly}
+          appendTo={rest.appendTo || (typeof document !== 'undefined' ? document.body : undefined)}
+          panelClassName={`app-datepicker-panel ${rest.panelClassName || ''}`.trim()}
+          panelStyle={{
+            zIndex: 99999,
+            ...rest.panelStyle,
+          }}
           className={`w-full ${className}`}
           prevIcon="pi pi-chevron-left"
           nextIcon="pi pi-chevron-right"

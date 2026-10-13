@@ -109,6 +109,12 @@ export const AppSelect = forwardRef(({
     onChange: handleChange,
     itemTemplate,
     dropdownIcon: 'pi pi-chevron-down',
+    appendTo: rest.appendTo || (typeof document !== 'undefined' ? document.body : undefined),
+    panelClassName: `app-select-panel ${rest.panelClassName || ''}`.trim(),
+    panelStyle: {
+      zIndex: 99999,
+      ...rest.panelStyle,
+    },
     ...rest,
   };
 

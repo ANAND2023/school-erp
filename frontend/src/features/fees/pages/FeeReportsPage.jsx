@@ -56,8 +56,10 @@ import {
   ReceiptLong as ReceiptLongIcon,
   Check as CheckIcon,
   Payment as PaymentIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import WhatsAppDialog from '../../communication/components/WhatsAppDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { feesApi } from '../api';
@@ -113,6 +115,15 @@ export default function FeeReportsPage() {
   const [selectedReceiptForCancel, setSelectedReceiptForCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState('');
+
+  // WhatsApp Dialog State
+  const [whatsAppModal, setWhatsAppModal] = useState({
+    open: false,
+    recipientName: '',
+    recipientMobile: '',
+    moduleKey: 'feeDemand',
+    variables: {},
+  });
 
   // Single Receipt Print
   const { activeBranchId } = useAuthStore();
@@ -1054,6 +1065,39 @@ export default function FeeReportsPage() {
                               >
                                 Collect
                               </Button>
+                              <Tooltip title="Send Fee Dues WhatsApp Reminder">
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  startIcon={<WhatsAppIcon sx={{ fontSize: 15 }} />}
+                                  onClick={() =>
+                                    setWhatsAppModal({
+                                      open: true,
+                                      recipientName: d.guardianName || d.studentName,
+                                      recipientMobile: d.guardianMobile || '',
+                                      moduleKey: 'feeDemand',
+                                      variables: {
+                                        StudentName: d.studentName,
+                                        AdmissionNo: d.admissionNo,
+                                        TotalFee: String(d.totalOverdue),
+                                        DueDate: dayjs().add(7, 'day').format('DD/MM/YYYY'),
+                                        SchoolName: schoolName,
+                                        GuardianName: d.guardianName || '',
+                                      },
+                                    })
+                                  }
+                                  sx={{
+                                    textTransform: 'none',
+                                    py: 0.3,
+                                    bgcolor: '#16a34a',
+                                    '&:hover': { bgcolor: '#15803d' },
+                                    fontWeight: 600,
+                                    color: '#ffffff',
+                                  }}
+                                >
+                                  WhatsApp
+                                </Button>
+                              </Tooltip>
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -2610,6 +2654,36 @@ export default function FeeReportsPage() {
             >
               Print Slip (2 Copies)
             </Button>
+            <Button
+              variant="contained"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => {
+                if (!printReceiptData) return;
+                setWhatsAppModal({
+                  open: true,
+                  recipientName: printReceiptData.guardianName || printReceiptData.studentName,
+                  recipientMobile: printReceiptData.guardianMobile || printReceiptData.contact || '',
+                  moduleKey: 'feeReceipt',
+                  variables: {
+                    StudentName: printReceiptData.studentName || '',
+                    ReceiptNo: printReceiptData.receiptNo || '',
+                    Amount: String(printReceiptData.totalPaid ?? printReceiptData.amount ?? ''),
+                    Date: printReceiptData.receiptDate ? dayjs(printReceiptData.receiptDate).format('DD/MM/YYYY') : dayjs().format('DD/MM/YYYY'),
+                    PaymentMode: printReceiptData.paymentMode || 'Cash',
+                    SchoolName: printReceiptData.schoolName || schoolName,
+                  },
+                });
+              }}
+              sx={{
+                fontWeight: 700,
+                textTransform: 'none',
+                bgcolor: '#16a34a',
+                '&:hover': { bgcolor: '#15803d' },
+                color: '#ffffff',
+              }}
+            >
+              WhatsApp
+            </Button>
           </Stack>
         </DialogActions>
       </Dialog>
@@ -2623,6 +2697,16 @@ export default function FeeReportsPage() {
         }}
         studentId={selectedHistoryStudentId}
         onPrintReceipt={(receiptId) => handleOpenPrint(receiptId)}
+      />
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppModal.open}
+        onClose={() => setWhatsAppModal((prev) => ({ ...prev, open: false }))}
+        moduleKey={whatsAppModal.moduleKey}
+        recipientName={whatsAppModal.recipientName}
+        recipientMobile={whatsAppModal.recipientMobile}
+        variables={whatsAppModal.variables}
       />
     </Box>
   );

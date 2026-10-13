@@ -20,12 +20,14 @@ import {
   School as SchoolIcon,
   CheckCircle as CheckIcon,
   HowToReg as ConvertIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import apiClient from '../../../api/client';
 import { enquiryApi } from '../api';
 import { branchApi } from '../../masters/api';
 import { useAuthStore } from '../../../store/authStore';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { printWithTitle } from '../../../utils/printUtils';
 
 export const EnquirySlipModal = ({
@@ -40,6 +42,7 @@ export const EnquirySlipModal = ({
   const [loading, setLoading] = useState(false);
   const [enquiry, setEnquiry] = useState(initialEnquiryData || null);
   const [branchInfo, setBranchInfo] = useState(null);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -677,6 +680,20 @@ export const EnquirySlipModal = ({
             </Button>
             <Button
               variant="contained"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => setWhatsAppOpen(true)}
+              disabled={loading || !enquiry}
+              sx={{
+                px: 2.5,
+                fontWeight: 700,
+                bgcolor: '#25D366',
+                '&:hover': { bgcolor: '#128C7E' },
+              }}
+            >
+              WhatsApp Slip
+            </Button>
+            <Button
+              variant="contained"
               startIcon={<PrintIcon />}
               onClick={handlePrint}
               disabled={loading || !enquiry}
@@ -687,6 +704,23 @@ export const EnquirySlipModal = ({
           </Stack>
         </DialogActions>
       </Dialog>
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppOpen}
+        onClose={() => setWhatsAppOpen(false)}
+        recipientName={enquiry?.guardianName || enquiry?.studentName}
+        recipientPhone={enquiry?.mobile}
+        recipientRole={`Parent of ${enquiry?.studentName}`}
+        moduleKey="enquiry"
+        moduleTitle="Enquiry Slip (WhatsApp)"
+        templateData={{
+          ParentName: enquiry?.guardianName || 'Parent',
+          StudentName: enquiry?.studentName || '',
+          ClassName: enquiry?.className || '',
+          EnquiryNo: enquiry?.enquiryNo || `ENQ-${enquiry?.id}`,
+        }}
+      />
     </>
   );
 };

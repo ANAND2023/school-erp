@@ -35,12 +35,14 @@ import {
   School as SchoolIcon,
   ReceiptLong as ReceiptLongIcon,
   Edit as EditIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { studentApi } from '../api';
 import { classesApi, simpleMasterApi } from '../../masters/api';
 import { AdmissionReportModal } from '../components/AdmissionReportModal';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { DataGrid } from '../../../components/DataGrid';
 import { usePermission } from '../../../hooks/usePermission';
 import { AppInput, AppSelect, AppButton } from '../../../components/common';
@@ -70,6 +72,37 @@ export default function StudentsPage() {
   const handleOpenAdmissionReport = (student) => {
     setAdmissionReportStudent(student);
     setIsAdmissionReportOpen(true);
+  };
+
+  // WhatsApp Dialog State
+  const [whatsAppModal, setWhatsAppModal] = useState({
+    open: false,
+    recipientName: '',
+    recipientPhone: '',
+    recipientRole: '',
+    moduleKey: 'admission',
+    moduleTitle: '',
+    templateData: {},
+  });
+
+  const handleOpenWhatsApp = (student) => {
+    setWhatsAppModal({
+      open: true,
+      recipientName: student.guardianName || student.fullName,
+      recipientPhone: student.guardianMobile || student.emergencyContactNumber || student.mobile,
+      recipientRole: `Parent of ${student.fullName}`,
+      moduleKey: 'admission',
+      moduleTitle: 'WhatsApp Notification',
+      templateData: {
+        ParentName: student.guardianName || 'Parent',
+        StudentName: student.fullName,
+        AdmissionNo: student.admissionNo || '',
+        ClassName: student.className || '',
+        Section: student.sectionName || '',
+        RollNo: student.rollNo || '',
+        Date: dayjs().format('DD-MM-YYYY'),
+      },
+    });
   };
 
   // Fetch classes and sections
@@ -402,6 +435,23 @@ export default function StudentsPage() {
                 >
                   {mobile}
                 </Typography>
+                <Tooltip title="WhatsApp Guardian" arrow>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      p: 0.1,
+                      ml: 0.3,
+                      color: '#25D366',
+                      '&:hover': { bgcolor: '#f0fdf4' },
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenWhatsApp(params.row);
+                    }}
+                  >
+                    <WhatsAppIcon sx={{ fontSize: 13 }} />
+                  </IconButton>
+                </Tooltip>
               </Stack>
             )}
           </Box>
@@ -417,10 +467,26 @@ export default function StudentsPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 148,
+      width: 175,
       sortable: false,
       renderCell: (params) => (
         <Stack direction="row" spacing={0.5} alignItems="center">
+          <Tooltip title="Send WhatsApp" arrow>
+            <IconButton
+              size="small"
+              sx={{
+                width: 26,
+                height: 26,
+                color: '#16a34a',
+                bgcolor: '#f0fdf4',
+                '&:hover': { bgcolor: '#dcfce7' },
+                borderRadius: '6px',
+              }}
+              onClick={() => handleOpenWhatsApp(params.row)}
+            >
+              <WhatsAppIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="View Profile" arrow>
             <IconButton
               size="small"
@@ -815,6 +881,18 @@ export default function StudentsPage() {
         onClose={() => setIsAdmissionReportOpen(false)}
         studentId={admissionReportStudent?.id}
         studentData={admissionReportStudent}
+      />
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppDialog
+        open={whatsAppModal.open}
+        onClose={() => setWhatsAppModal((prev) => ({ ...prev, open: false }))}
+        recipientName={whatsAppModal.recipientName}
+        recipientPhone={whatsAppModal.recipientPhone}
+        recipientRole={whatsAppModal.recipientRole}
+        moduleKey={whatsAppModal.moduleKey}
+        moduleTitle={whatsAppModal.moduleTitle}
+        templateData={whatsAppModal.templateData}
       />
     </Box>
   );

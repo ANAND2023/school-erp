@@ -9,6 +9,7 @@ using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Application.Common.Models;
 using SchoolERP.Application.DTOs;
 using SchoolERP.Domain.Enums;
+using SchoolERP.Domain.Entities;
 using SchoolERP.Infrastructure.Persistence;
 
 namespace SchoolERP.API.Controllers
@@ -206,6 +207,21 @@ namespace SchoolERP.API.Controllers
             var femaleCount = allActiveStudents.Count(s => s.Gender != null && (s.Gender.ToLower().StartsWith("f")));
             var otherCount = Math.Max(0, allActiveStudents.Count - maleCount - femaleCount);
 
+            // 12. Student & Staff Birthdays
+            var studentsForBday = await _context.Students
+                .Include(s => s.Enrollments).ThenInclude(e => e.Class)
+                .Include(s => s.Enrollments).ThenInclude(e => e.Section)
+                .Where(s => s.BranchId == branchId && s.Status == StudentStatus.Active)
+                .ToListAsync();
+
+            var staffForBday = await _context.Employees
+                .Include(e => e.Designation)
+                .Include(e => e.Department)
+                .Where(e => e.BranchId == branchId && e.Status == EmployeeStatus.Active && e.DateOfBirth.HasValue)
+                .ToListAsync();
+
+            var birthdays = ComputeBirthdays(studentsForBday, staffForBday, yearId, 14);
+
             var result = new DashboardSummaryDto
             {
                 AcademicYearId = yearId,
@@ -246,10 +262,144 @@ namespace SchoolERP.API.Controllers
                     Male = maleCount,
                     Female = femaleCount,
                     Other = otherCount
-                }
+                },
+                Birthdays = birthdays
             };
 
             return Ok(ApiResponse<DashboardSummaryDto>.Ok(result));
+        }
+
+        [HttpGet("birthdays")]
+        public async Task<ActionResult<ApiResponse<BirthdaySummaryDto>>> GetBirthdays([FromQuery] int daysAhead = 14)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+
+            var studentsForBday = await _context.Students
+                .Include(s => s.Enrollments).ThenInclude(e => e.Class)
+                .Include(s => s.Enrollments).ThenInclude(e => e.Section)
+                .Where(s => s.BranchId == branchId && s.Status == StudentStatus.Active)
+                .ToListAsync();
+
+            var staffForBday = await _context.Employees
+                .Include(e => e.Designation)
+                .Include(e => e.Department)
+                .Where(e => e.BranchId == branchId && e.Status == EmployeeStatus.Active && e.DateOfBirth.HasValue)
+                .ToListAsync();
+
+            var result = ComputeBirthdays(studentsForBday, staffForBday, yearId, daysAhead);
+            return Ok(ApiResponse<BirthdaySummaryDto>.Ok(result));
+        }
+
+        private BirthdaySummaryDto ComputeBirthdays(List<Student> students, List<Employee> employees, long academicYearId, int daysAhead = 14)
+        {
+            var nowUtc = DateTime.UtcNow;
+            var istDate = nowUtc.AddMinutes(330).Date; // IST timezone
+            var todayMonth = istDate.Month;
+            var todayDay = istDate.Day;
+
+            var summary = new BirthdaySummaryDto();
+            var all = new List<BirthdayItemDto>();
+            int totalThisMonth = 0;
+
+            // 1. Students
+            foreach (var s in students)
+            {
+                if (s.DateOfBirth == default) continue;
+                var dob = s.DateOfBirth;
+                if (dob.Month == todayMonth) totalThisMonth++;
+
+                var enr = s.Enrollments.FirstOrDefault(e => e.AcademicYearId == academicYearId) ?? s.Enrollments.LastOrDefault();
+                var classSec = enr?.Class != null ? $"{enr.Class.Name}{(enr.Section != null ? " - " + enr.Section.Name : "")}" : "Student";
+                var detail = $"{classSec} • Adm: {s.AdmissionNo}";
+
+                var isToday = (dob.Month == todayMonth && dob.Day == todayDay);
+
+                DateTime nextBday;
+                try { nextBday = new DateTime(istDate.Year, dob.Month, dob.Day); }
+                catch { nextBday = new DateTime(istDate.Year, dob.Month, 28); }
+
+                if (nextBday < istDate) nextBday = nextBday.AddYears(1);
+
+                var daysUntil = (nextBday - istDate).Days;
+                var age = istDate.Year - dob.Year;
+                if (daysUntil > 0 && nextBday.Year > istDate.Year) age++;
+
+                if (isToday || daysUntil <= daysAhead)
+                {
+                    all.Add(new BirthdayItemDto
+                    {
+                        Id = s.Id,
+                        FullName = s.FullName,
+                        RoleType = "Student",
+                        Detail = detail,
+                        DateOfBirth = dob,
+                        Age = Math.Max(1, age),
+                        IsToday = isToday,
+                        DaysUntil = daysUntil,
+                        PhotoUrl = s.PhotoUrl,
+                        Mobile = s.EmergencyContact
+                    });
+                }
+            }
+
+            // 2. Staff
+            foreach (var emp in employees)
+            {
+                if (!emp.DateOfBirth.HasValue || emp.DateOfBirth.Value == default) continue;
+                var dob = emp.DateOfBirth.Value;
+                if (dob.Month == todayMonth) totalThisMonth++;
+
+                var desig = emp.Designation?.Name ?? "Staff";
+                var dept = emp.Department?.Name ?? "";
+                var detail = !string.IsNullOrEmpty(dept) ? $"{desig} • {dept}" : desig;
+
+                var isToday = (dob.Month == todayMonth && dob.Day == todayDay);
+
+                DateTime nextBday;
+                try { nextBday = new DateTime(istDate.Year, dob.Month, dob.Day); }
+                catch { nextBday = new DateTime(istDate.Year, dob.Month, 28); }
+
+                if (nextBday < istDate) nextBday = nextBday.AddYears(1);
+
+                var daysUntil = (nextBday - istDate).Days;
+                var age = istDate.Year - dob.Year;
+                if (daysUntil > 0 && nextBday.Year > istDate.Year) age++;
+
+                if (isToday || daysUntil <= daysAhead)
+                {
+                    all.Add(new BirthdayItemDto
+                    {
+                        Id = emp.Id,
+                        FullName = emp.FullName,
+                        RoleType = "Staff",
+                        Detail = detail,
+                        DateOfBirth = dob,
+                        Age = Math.Max(1, age),
+                        IsToday = isToday,
+                        DaysUntil = daysUntil,
+                        PhotoUrl = emp.PhotoUrl,
+                        Mobile = emp.Mobile
+                    });
+                }
+            }
+
+            summary.TodayBirthdays = all
+                .Where(b => b.IsToday)
+                .OrderBy(b => b.RoleType)
+                .ThenBy(b => b.FullName)
+                .ToList();
+
+            summary.UpcomingBirthdays = all
+                .Where(b => !b.IsToday && b.DaysUntil <= daysAhead)
+                .OrderBy(b => b.DaysUntil)
+                .ThenBy(b => b.RoleType)
+                .ThenBy(b => b.FullName)
+                .ToList();
+
+            summary.TotalThisMonth = totalThisMonth;
+
+            return summary;
         }
     }
 }

@@ -46,7 +46,8 @@ import {
   Check as CheckIcon,
   PictureAsPdf as PdfIcon,
   Settings as SettingsIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -59,6 +60,7 @@ import { FeeReceiptSlip } from '../components/FeeReceiptSlip';
 import { StudentLookupDropdown } from '../components/StudentLookupDropdown';
 import { exportDualFeeReceiptPdf } from '../utils/feeExportUtils';
 import { printWithTitle } from '../../../utils/printUtils';
+import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 
 const noSpinnerSx = {
   '& input[type=number]': {
@@ -115,6 +117,7 @@ export default function FeeCollectionPage() {
   const { activeBranchId } = useAuthStore();
   const [printReceiptData, setPrintReceiptData] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [headerSaveLoading, setHeaderSaveLoading] = useState(false);
 
@@ -1984,6 +1987,19 @@ export default function FeeCollectionPage() {
           </Button>
           <Stack direction="row" spacing={1.5}>
             <Button
+              variant="contained"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => setIsWhatsAppModalOpen(true)}
+              sx={{
+                bgcolor: '#25D366',
+                '&:hover': { bgcolor: '#128C7E' },
+                fontWeight: 700,
+                textTransform: 'none',
+              }}
+            >
+              Send WhatsApp Receipt
+            </Button>
+            <Button
               variant="outlined"
               color="error"
               startIcon={<PdfIcon />}
@@ -2009,6 +2025,28 @@ export default function FeeCollectionPage() {
           </Stack>
         </DialogActions>
       </Dialog>
+
+      {/* WhatsApp Receipt Dialog */}
+      <WhatsAppDialog
+        open={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        recipientName={printReceiptData?.fatherName || printReceiptData?.guardianName || printReceiptData?.studentName}
+        recipientPhone={printReceiptData?.guardianMobile || printReceiptData?.contact || printReceiptData?.mobile}
+        recipientRole={`Parent of ${printReceiptData?.studentName}`}
+        moduleKey="feeReceipt"
+        moduleTitle="Fee Payment Receipt (WhatsApp)"
+        templateData={{
+          ParentName: printReceiptData?.fatherName || printReceiptData?.guardianName || 'Parent',
+          StudentName: printReceiptData?.studentName || '',
+          ReceiptNo: printReceiptData?.receiptNo || '',
+          PaidAmount: Number(printReceiptData?.totalPaid || 0).toLocaleString('en-IN'),
+          PaymentMode: printReceiptData?.paymentModeName || 'Cash',
+          Balance: Number(printReceiptData?.remainingTotalDues || 0).toLocaleString('en-IN'),
+          Date: printReceiptData?.receiptDate
+            ? dayjs(printReceiptData.receiptDate).format('DD-MM-YYYY')
+            : dayjs().format('DD-MM-YYYY'),
+        }}
+      />
     </Box>
   );
 }

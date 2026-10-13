@@ -22,6 +22,7 @@ export const SuperAdminLayout = () => {
     { label: 'Subscription Plans', path: '/superadmin/plans', icon: 'pi pi-credit-card' },
     { label: 'Module Catalog', path: '/superadmin/modules', icon: 'pi pi-th-large' },
     { label: 'Gateways & APIs', path: '/superadmin/gateways', icon: 'pi pi-sliders-h' },
+    { label: 'WhatsApp Modules', path: '/superadmin/whatsapp', icon: 'pi pi-whatsapp', badge: 'Active' },
     { label: 'Global Audit Trail', path: '/superadmin/audit-logs', icon: 'pi pi-history' },
     { label: 'System Error Logs', path: '/superadmin/error-logs', icon: 'pi pi-exclamation-triangle', badge: 'Live' },
     { label: 'SaaS Leads', path: '/superadmin/enquiries', icon: 'pi pi-envelope', badge: 'New' },

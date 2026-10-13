@@ -341,4 +341,62 @@ namespace SchoolERP.Application.DTOs
     {
         public string NewPassword { get; set; } = string.Empty;
     }
+
+    public class WhatsAppModuleConfigDto
+    {
+        public bool IsEnabled { get; set; } = true;
+        public string Provider { get; set; } = "DIRECT_WEB"; // DIRECT_WEB, INTERAKT, GUPSHUP, TWILIO, WATI
+        public string? ApiKey { get; set; }
+        public string? ApiSecret { get; set; }
+        public string? PhoneNumberId { get; set; }
+        public bool IsTestMode { get; set; } = false;
+
+        public WhatsAppModuleItemDto Enquiry { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Dear {ParentName}, thank you for your enquiry for {StudentName} (Class: {ClassName}) at {SchoolName}. Enquiry No: {EnquiryNo}. For any queries, call {SchoolPhone}. Best regards!"
+        };
+
+        public WhatsAppModuleItemDto Admission { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Congratulations {ParentName}! Admission for {StudentName} is confirmed in Class {ClassName} (Section: {Section}) at {SchoolName}. Admission No: {AdmissionNo}. Welcome to our school family!"
+        };
+
+        public WhatsAppModuleItemDto FeeReceipt { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Dear {ParentName}, Fee payment of Rs. {PaidAmount} for {StudentName} (Receipt: #{ReceiptNo}) has been successfully received on {Date}. Remaining balance: Rs. {Balance}. Thank you, {SchoolName}."
+        };
+
+        public WhatsAppModuleItemDto FeeDemand { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Dear Parent, this is a gentle reminder regarding pending school fees of Rs. {PendingAmount} for {StudentName} ({Month}) at {SchoolName}. Due Date: {DueDate}. Please clear the dues at your earliest convenience."
+        };
+
+        public WhatsAppModuleItemDto Attendance { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Dear Parent, please note that your ward {StudentName} (Class: {ClassName}) is marked ABSENT today ({Date}) at {SchoolName}. If on leave, please submit an application."
+        };
+
+        public WhatsAppModuleItemDto Birthday { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "🎉 Warmest Birthday Wishes to {StudentName} on turning {Age} today! May your year ahead be filled with success, knowledge, and joy. From all of us at {SchoolName}! 🎂"
+        };
+
+        public WhatsAppModuleItemDto General { get; set; } = new()
+        {
+            Enabled = true,
+            Template = "Notice from {SchoolName}: Dear Parent, regarding {StudentName} - {Message}. Thank you."
+        };
+    }
+
+    public class WhatsAppModuleItemDto
+    {
+        public bool Enabled { get; set; } = true;
+        public string Template { get; set; } = string.Empty;
+    }
 }
