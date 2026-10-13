@@ -154,6 +154,20 @@ export const ExamSchedulesPage = () => {
   const [collapsedSubjects, setCollapsedSubjects] = useState({});
   const [allCollapsed, setAllCollapsed] = useState(false);
 
+  const formatLocalDate = (val) => {
+    if (!val) return '';
+    if (val instanceof Date) {
+      const y = val.getFullYear();
+      const m = String(val.getMonth() + 1).padStart(2, '0');
+      const d = String(val.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    if (typeof val === 'string') {
+      return val.split('T')[0];
+    }
+    return '';
+  };
+
   // Schedule Modal
   const [scheduleModal, setScheduleModal] = useState(false);
   const [subjects, setSubjects] = useState([]);
@@ -209,6 +223,9 @@ export const ExamSchedulesPage = () => {
       setExams(examList);
       if (examList.length > 0 && !selectedExam) {
         setSelectedExam(examList[0]);
+        setTab3ExamTitle(examList[0].name);
+        setTab3ClassId(examList[0].classId);
+        loadTab3Schedules(examList[0].id, examList[0].classId);
       }
     } catch (err) {
       console.error(err);
@@ -243,16 +260,10 @@ export const ExamSchedulesPage = () => {
 
   const handleSelectExamForTab = async (exam) => {
     setSelectedExam(exam);
+    setTab3ClassId(exam.classId);
+    setTab3ExamTitle(exam.name);
     setActiveTab(3);
-    setSchedulesLoading(true);
-    try {
-      const res = await examApi.getSchedules(exam.id);
-      setSchedules(res.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSchedulesLoading(false);
-    }
+    loadTab3Schedules(exam.id, exam.classId);
   };
 
   const handleAutoPopulate = async (examIdToUse) => {
@@ -852,15 +863,15 @@ export const ExamSchedulesPage = () => {
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       {/* ===================== TOP HEADER & WORKFLOW GUIDE ===================== */}
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={2} sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <Typography variant="h5" fontWeight={900} color="#0f2b48">
+            <Typography variant="h5" fontWeight={900} color="text.primary">
               Examination & Academic Terms Master
             </Typography>
             <Chip
               icon={<SparklesIcon sx={{ fontSize: 16 }} />}
-              label="4-Step Unified Exam Flow"
+              label="Unified Exam Flow"
               size="small"
               color="primary"
               variant="filled"
@@ -877,143 +888,231 @@ export const ExamSchedulesPage = () => {
             variant="outlined"
             startIcon={<CalendarIcon />}
             onClick={handleOpenCreateTerm}
-            sx={{ borderColor: '#0f2b48', color: '#0f2b48', fontWeight: 700 }}
+            sx={{
+              borderColor: 'var(--primary-color, #14b8a6)',
+              color: 'var(--primary-color, #14b8a6)',
+              fontWeight: 700,
+              textTransform: 'none',
+              '&:hover': {
+                borderColor: 'var(--primary-color, #14b8a6)',
+                bgcolor: 'rgba(20, 184, 166, 0.08)',
+              },
+            }}
           >
-            + Add Term
+            Add Term
           </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenCreateExam()}
-            sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700 }}
+            sx={{
+              bgcolor: 'var(--primary-color, #14b8a6)',
+              color: '#ffffff',
+              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+            }}
           >
-            + Create Exam
+            Create Exam
           </Button>
         </Stack>
       </Stack>
 
       {/* ===================== METRIC SUMMARY CARDS ===================== */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="caption" fontWeight={800} color="#1e40af" textTransform="uppercase">
-                    Academic Terms
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#1e3a8a" sx={{ mt: 0.5 }}>
-                    {terms.length}
-                  </Typography>
-                  <Typography variant="caption" color="#3b82f6">
-                    Configured assessment terms
-                  </Typography>
-                </Box>
-                <SchoolIcon sx={{ fontSize: 38, color: '#3b82f6', opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: 2,
+              bgcolor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderLeft: '4px solid var(--primary-color, #14b8a6)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Academic Terms
+              </Typography>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary-color, #14b8a6)', lineHeight: 1.2, my: 0.25 }}>
+                {terms.length}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: 'var(--primary-color, #14b8a6)', fontWeight: 600 }}>
+                Configured assessment terms
+              </Typography>
+            </Box>
+            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'rgba(20, 184, 166, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <SchoolIcon sx={{ fontSize: 22, color: 'var(--primary-color, #14b8a6)' }} />
+            </Box>
+          </Paper>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="caption" fontWeight={800} color="#166534" textTransform="uppercase">
-                    Independent Master Exams
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#14532d" sx={{ mt: 0.5 }}>
-                    {totalDistinctExamsCount}
-                  </Typography>
-                  <Typography variant="caption" color="#22c55e">
-                    ({exams.length} Class Mappings)
-                  </Typography>
-                </Box>
-                <ExamIcon sx={{ fontSize: 38, color: '#22c55e', opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: 2,
+              bgcolor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderLeft: '4px solid #16a34a',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Master Exams
+              </Typography>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#14532d', lineHeight: 1.2, my: 0.25 }}>
+                {totalDistinctExamsCount}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>
+                {exams.length} Class Mappings
+              </Typography>
+            </Box>
+            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ExamIcon sx={{ fontSize: 22, color: '#16a34a' }} />
+            </Box>
+          </Paper>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="caption" fontWeight={800} color="#6b21a8" textTransform="uppercase">
-                    Subject Date Sheets
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#581c87" sx={{ mt: 0.5 }}>
-                    {totalSchedulesCount}
-                  </Typography>
-                  <Typography variant="caption" color="#a855f7">
-                    Total scheduled subject slots
-                  </Typography>
-                </Box>
-                <SubjectIcon sx={{ fontSize: 38, color: '#a855f7', opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: 2,
+              bgcolor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderLeft: '4px solid #9333ea',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Subject Date Sheets
+              </Typography>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#581c87', lineHeight: 1.2, my: 0.25 }}>
+                {totalSchedulesCount}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: '#9333ea', fontWeight: 600 }}>
+                Scheduled subject slots
+              </Typography>
+            </Box>
+            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: '#faf5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <SubjectIcon sx={{ fontSize: 22, color: '#9333ea' }} />
+            </Box>
+          </Paper>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="caption" fontWeight={800} color="#9a3412" textTransform="uppercase">
-                    Published Status
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#7c2d12" sx={{ mt: 0.5 }}>
-                    {publishedExamsCount} / {exams.length}
-                  </Typography>
-                  <Typography variant="caption" color="#f97316">
-                    Live results visibility
-                  </Typography>
-                </Box>
-                <PublishIcon sx={{ fontSize: 38, color: '#f97316', opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: 2,
+              bgcolor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderLeft: '4px solid #ea580c',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Published Status
+              </Typography>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#7c2d12', lineHeight: 1.2, my: 0.25 }}>
+                {publishedExamsCount} / {exams.length}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: '#ea580c', fontWeight: 600 }}>
+                Live results visibility
+              </Typography>
+            </Box>
+            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <PublishIcon sx={{ fontSize: 22, color: '#ea580c' }} />
+            </Box>
+          </Paper>
         </Grid>
       </Grid>
 
       {/* ===================== PROMINENT NAVIGATION TABS ===================== */}
-      <Paper sx={{ mb: 3, borderRadius: 2, bgcolor: '#ffffff', boxShadow: 1 }}>
+      <Paper sx={{ mb: 2.5, borderRadius: 2, bgcolor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
         <Tabs
           value={activeTab}
-          onChange={(e, val) => setActiveTab(val)}
+          onChange={(e, val) => {
+            setActiveTab(val);
+            if (val === 3 && !tab3ClassId) {
+              if (selectedExam) {
+                setTab3ClassId(selectedExam.classId);
+                setTab3ExamTitle(selectedExam.name);
+                loadTab3Schedules(selectedExam.id, selectedExam.classId);
+              } else if (exams.length > 0) {
+                const first = exams[0];
+                setSelectedExam(first);
+                setTab3ClassId(first.classId);
+                setTab3ExamTitle(first.name);
+                loadTab3Schedules(first.id, first.classId);
+              }
+            }
+          }}
           indicatorColor="primary"
           textColor="primary"
           variant="scrollable"
           scrollButtons="auto"
           sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            px: 2,
-            '& .MuiTab-root': { py: 2, fontWeight: 800, fontSize: '0.92rem', textTransform: 'none' },
+            minHeight: 46,
+            px: 1.5,
+            '& .MuiTab-root': {
+              minHeight: 46,
+              py: 1,
+              px: 2,
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              textTransform: 'none',
+              letterSpacing: '0.2px',
+            },
+            '& .Mui-selected': {
+              color: 'var(--primary-color, #14b8a6) !important',
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'var(--primary-color, #14b8a6)',
+            },
           }}
         >
           <Tab
-            icon={<FolderIcon sx={{ fontSize: 20, color: '#0284c7' }} />}
+            icon={<FolderIcon sx={{ fontSize: 18, color: '#0284c7' }} />}
             iconPosition="start"
-            label={`🗂️ Term ↔ Exams Independent Master Table (${totalDistinctExamsCount})`}
+            label={`Term & Exams Master (${totalDistinctExamsCount})`}
           />
           <Tab
-            icon={<ExamIcon sx={{ fontSize: 20 }} />}
+            icon={<ExamIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label={`📋 Class-Wise Examinations Table (${exams.length})`}
+            label={`Class-Wise Exams (${exams.length})`}
           />
           <Tab
-            icon={<SchoolIcon sx={{ fontSize: 20 }} />}
+            icon={<SchoolIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label={`🏛️ Academic Terms Master Table (${terms.length})`}
+            label={`Academic Terms (${terms.length})`}
           />
           <Tab
-            icon={<EventIcon sx={{ fontSize: 20 }} />}
+            icon={<EventIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label={`🗓️ Subject Date Sheet & Timetables (${selectedExam ? `${selectedExam.name} - ${selectedExam.className}` : 'Select Exam'})`}
+            label={`Subject Date Sheet & Timetable ${selectedExam ? `(${selectedExam.name} - ${selectedExam.className})` : ''}`}
           />
         </Tabs>
       </Paper>
@@ -1046,7 +1145,7 @@ export const ExamSchedulesPage = () => {
           <Card sx={{ mb: 3, boxShadow: 1, borderRadius: 2 }}>
             <CardContent sx={{ p: 2 }}>
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={5}>
+                <Grid item xs={12} sm={12} md={4.5}>
                   <TextField
                     fullWidth
                     size="small"
@@ -1063,7 +1162,7 @@ export const ExamSchedulesPage = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6} md={3.5}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Filter by Term</InputLabel>
                     <Select
@@ -1081,7 +1180,7 @@ export const ExamSchedulesPage = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={3} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, gap: 1 }}>
+                <Grid item xs={12} sm={6} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 1 }}>
                   <ToggleButtonGroup
                     size="small"
                     value={masterViewMode}
@@ -1100,9 +1199,16 @@ export const ExamSchedulesPage = () => {
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenCreateExam(selectedTermId || undefined)}
-                    sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
+                    sx={{
+                      bgcolor: 'var(--primary-color, #14b8a6)',
+                      color: '#ffffff',
+                      '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
-                    + Create Exam
+                    Create Exam
                   </Button>
                 </Grid>
               </Grid>
@@ -1118,7 +1224,7 @@ export const ExamSchedulesPage = () => {
                   <Box
                     sx={{
                       p: 2,
-                      bgcolor: '#0f2b48',
+                      background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, #14b8a6) 0%, var(--app-theme-darker, #0d9488) 100%))',
                       color: '#ffffff',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -1128,12 +1234,12 @@ export const ExamSchedulesPage = () => {
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <SchoolIcon sx={{ color: '#38bdf8' }} />
+                      <SchoolIcon sx={{ color: '#ffffff' }} />
                       <Box>
                         <Typography variant="h6" fontWeight={900} color="#ffffff">
                           {term.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.85)' }}>
                           Code: <strong>{term.termCode}</strong> | Weightage: <strong>{term.weightage}%</strong>
                           {term.description ? ` | ${term.description}` : ''}
                         </Typography>
@@ -1144,16 +1250,23 @@ export const ExamSchedulesPage = () => {
                       <Chip
                         label={`${termExamsList.length} Exam(s) in this Term`}
                         size="small"
-                        sx={{ bgcolor: '#ffffff', color: '#0f2b48', fontWeight: 800 }}
+                        sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: '#ffffff', fontWeight: 800, backdropFilter: 'blur(4px)' }}
                       />
                       <Button
                         size="small"
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenCreateExam(term.id)}
-                        sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, fontWeight: 700, textTransform: 'none' }}
+                        sx={{
+                          bgcolor: '#ffffff',
+                          color: 'var(--primary-color, #14b8a6)',
+                          '&:hover': { bgcolor: '#f8fafc' },
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
                       >
-                        + Add Exam in {term.name}
+                        Add Exam in {term.name}
                       </Button>
                     </Stack>
                   </Box>
@@ -1163,10 +1276,10 @@ export const ExamSchedulesPage = () => {
                     <Table size="medium">
                       <TableHead sx={{ bgcolor: '#f8fafc' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 800, color: '#0f2b48', width: '28%' }}>Examination Name & Code</TableCell>
-                          <TableCell sx={{ fontWeight: 800, color: '#0f2b48', width: '40%' }}>Mapped Classes ({classes.length} Total)</TableCell>
-                          <TableCell align="center" sx={{ fontWeight: 800, color: '#0f2b48', width: '15%' }}>Subject Schedules</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 800, color: '#0f2b48', width: '17%' }}>Actions</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: 'text.primary', width: '28%' }}>Examination Name & Code</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: 'text.primary', width: '40%' }}>Mapped Classes ({classes.length} Total)</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 800, color: 'text.primary', width: '15%' }}>Subject Schedules</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 800, color: 'text.primary', width: '17%' }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1202,7 +1315,7 @@ export const ExamSchedulesPage = () => {
                           termExamsList.map((me, idx) => (
                             <TableRow key={idx} hover sx={{ '&:hover': { bgcolor: '#f1f5f9' } }}>
                               <TableCell>
-                                <Typography variant="body1" fontWeight={800} color="#0f2b48">
+                                <Typography variant="body1" fontWeight={800} color="text.primary">
                                   {me.examName}
                                 </Typography>
                                 <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
@@ -1289,12 +1402,21 @@ export const ExamSchedulesPage = () => {
           ) : (
             /* MODE 2: FLAT MASTER EXAMS TABLE */
             <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, overflow: 'hidden' }}>
-              <Box sx={{ p: 2, bgcolor: '#0f2b48', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, #14b8a6) 0%, var(--app-theme-darker, #0d9488) 100%))',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
                 <Box>
                   <Typography variant="subtitle1" fontWeight={800} color="#ffffff">
                     Independent Examination Master Table (Term-Wise Overview)
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.85)' }}>
                     Showing all distinct examination definitions and their mapped terms & classes
                   </Typography>
                 </Box>
@@ -1303,21 +1425,28 @@ export const ExamSchedulesPage = () => {
                   size="small"
                   startIcon={<AddIcon />}
                   onClick={handleOpenCreateExam}
-                  sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, fontWeight: 700 }}
+                  sx={{
+                    bgcolor: '#ffffff',
+                    color: 'var(--primary-color, #14b8a6)',
+                    '&:hover': { bgcolor: '#f8fafc' },
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
                 >
-                  + Create Exam
+                  Create Exam
                 </Button>
               </Box>
 
               <Table>
                 <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Academic Term</TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Exam Name & Code</TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Mapped Classes List</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 800, color: '#0f2b48' }}>Total Classes</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 800, color: '#0f2b48' }}>Total Subject Schedules</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 800, color: '#0f2b48' }}>Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Academic Term</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Exam Name & Code</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Mapped Classes List</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 800, color: 'text.primary' }}>Total Classes</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 800, color: 'text.primary' }}>Total Subject Schedules</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: 'text.primary' }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1346,7 +1475,7 @@ export const ExamSchedulesPage = () => {
                         </TableCell>
 
                         <TableCell>
-                          <Typography variant="body2" fontWeight={800} color="#0f2b48">
+                          <Typography variant="body2" fontWeight={800} color="text.primary">
                             {me.examName}
                           </Typography>
                           {me.examCode && (
@@ -1389,7 +1518,13 @@ export const ExamSchedulesPage = () => {
                               variant="contained"
                               startIcon={<EventIcon />}
                               onClick={() => handleSelectExamForTab(me.classInstances[0])}
-                              sx={{ bgcolor: '#0f2b48', fontWeight: 700, textTransform: 'none' }}
+                              sx={{
+                                bgcolor: 'var(--primary-color, #14b8a6)',
+                                color: '#ffffff',
+                                '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                                fontWeight: 700,
+                                textTransform: 'none'
+                              }}
                             >
                               Date Sheet
                             </Button>
@@ -1489,9 +1624,17 @@ export const ExamSchedulesPage = () => {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenCreateExam(selectedTermId || undefined)}
-                    sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, height: 40, fontWeight: 700, whiteSpace: 'nowrap', flex: 1 }}
+                    sx={{
+                      bgcolor: 'var(--primary-color, #14b8a6)',
+                      color: '#ffffff',
+                      '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                      height: 40,
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      flex: 1
+                    }}
                   >
-                    + Create Exam
+                    Create Exam
                   </Button>
                 </Grid>
               </Grid>
@@ -1500,12 +1643,21 @@ export const ExamSchedulesPage = () => {
 
           {/* Created Examinations Table */}
           <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, overflow: 'hidden' }}>
-            <Box sx={{ p: 2, bgcolor: '#0f2b48', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box
+              sx={{
+                p: 2,
+                background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, #14b8a6) 0%, var(--app-theme-darker, #0d9488) 100%))',
+                color: '#ffffff',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
               <Box>
                 <Typography variant="subtitle1" fontWeight={800} color="#ffffff">
                   Class-Wise Examination Instances Table
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.85)' }}>
                   Showing {filteredExams.length} individual class examination rows with lock & publish controls
                 </Typography>
               </Box>
@@ -1514,22 +1666,29 @@ export const ExamSchedulesPage = () => {
                 size="small"
                 startIcon={<AddIcon />}
                 onClick={handleOpenCreateExam}
-                sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, fontWeight: 700 }}
+                sx={{
+                  bgcolor: '#ffffff',
+                  color: 'var(--primary-color, #14b8a6)',
+                  '&:hover': { bgcolor: '#f8fafc' },
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
               >
-                + New Exam
+                New Exam
               </Button>
             </Box>
 
             <Table>
               <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Exam Name & Details</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Academic Term</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Target Class</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Scheduled Subjects</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Marks Entry</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Publish Status</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#0f2b48' }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Exam Name & Details</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Academic Term</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Target Class</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Scheduled Subjects</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Marks Entry</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Publish Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'text.primary' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1556,7 +1715,7 @@ export const ExamSchedulesPage = () => {
                   filteredExams.map((exam) => (
                     <TableRow key={exam.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
                       <TableCell>
-                        <Typography variant="body2" fontWeight={800} color="#0f2b48">
+                        <Typography variant="body2" fontWeight={800} color="text.primary">
                           {exam.name}
                         </Typography>
                         {exam.description && (
@@ -1613,7 +1772,13 @@ export const ExamSchedulesPage = () => {
                             variant="contained"
                             startIcon={<EventIcon />}
                             onClick={() => handleOpenSchedules(exam)}
-                            sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700, textTransform: 'none' }}
+                            sx={{
+                              bgcolor: 'var(--primary-color, #14b8a6)',
+                              color: '#ffffff',
+                              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                              fontWeight: 700,
+                              textTransform: 'none'
+                            }}
                           >
                             Date Sheet ({exam.scheduleCount || 0})
                           </Button>
@@ -1698,9 +1863,15 @@ export const ExamSchedulesPage = () => {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleOpenCreateTerm}
-                    sx={{ bgcolor: '#0f2b48', fontWeight: 700 }}
+                    sx={{
+                      bgcolor: 'var(--primary-color, #14b8a6)',
+                      color: '#ffffff',
+                      '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                      fontWeight: 700,
+                      textTransform: 'none'
+                    }}
                   >
-                    + Add New Term
+                    Add New Term
                   </Button>
                 </Grid>
               </Grid>
@@ -1709,12 +1880,21 @@ export const ExamSchedulesPage = () => {
 
           {/* Academic Terms Table */}
           <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, overflow: 'hidden' }}>
-            <Box sx={{ p: 2, bgcolor: '#0f2b48', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box
+              sx={{
+                p: 2,
+                background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, #14b8a6) 0%, var(--app-theme-darker, #0d9488) 100%))',
+                color: '#ffffff',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
               <Box>
                 <Typography variant="subtitle1" fontWeight={800} color="#ffffff">
                   Academic Terms Master Table
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.85)' }}>
                   Terms define academic session partitions (e.g., Term 1, Term 2, Annual, Unit Tests)
                 </Typography>
               </Box>
@@ -1723,12 +1903,12 @@ export const ExamSchedulesPage = () => {
             <Table>
               <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Term Name</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Term Code</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Evaluation Weightage (%)</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Description / Purpose</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>Linked Examinations</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#0f2b48' }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Term Name</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Term Code</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Evaluation Weightage (%)</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Description / Purpose</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>Linked Examinations</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'text.primary' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1745,7 +1925,7 @@ export const ExamSchedulesPage = () => {
                 ) : (
                   filteredTerms.map((t) => (
                     <TableRow key={t.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
-                      <TableCell sx={{ fontWeight: 800, color: '#0f2b48' }}>
+                      <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>
                         {t.name}
                       </TableCell>
                       <TableCell>
@@ -1779,9 +1959,17 @@ export const ExamSchedulesPage = () => {
                             variant="contained"
                             startIcon={<AddIcon />}
                             onClick={() => handleOpenCreateExam(t.id)}
-                            sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700, textTransform: 'none', py: 0.5, px: 1.5 }}
+                            sx={{
+                              bgcolor: 'var(--primary-color, #14b8a6)',
+                              color: '#ffffff',
+                              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                              fontWeight: 700,
+                              textTransform: 'none',
+                              py: 0.5,
+                              px: 1.5
+                            }}
                           >
-                            + Add Exam
+                            Add Exam
                           </Button>
                           <Tooltip title="Edit Term">
                             <IconButton size="small" color="primary" onClick={() => handleOpenEditTerm(t)}>
@@ -1817,16 +2005,16 @@ export const ExamSchedulesPage = () => {
       {activeTab === 3 && (
         <Box>
           {/* TOP SELECTORS: CLASS, EXAM, SUBJECT CHIPS */}
-          <Card sx={{ mb: 3, boxShadow: 1, borderRadius: 2 }}>
-            <CardContent sx={{ p: 2.5 }}>
+          <Card sx={{ mb: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+            <CardContent sx={{ p: 2 }}>
               <Grid container spacing={2} alignItems="center">
                 {/* 1. Class Dropdown */}
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Select Class</InputLabel>
+                    <InputLabel>Class</InputLabel>
                     <Select
                       value={tab3ClassId}
-                      label="Select Class"
+                      label="Class"
                       onChange={(e) => {
                         const newClassId = e.target.value;
                         setTab3ClassId(newClassId);
@@ -1856,10 +2044,10 @@ export const ExamSchedulesPage = () => {
                 {/* 2. EXAM Dropdown */}
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>EXAM Dropdown (Select Exam)</InputLabel>
+                    <InputLabel>Examination</InputLabel>
                     <Select
                       value={tab3ExamTitle}
-                      label="EXAM Dropdown (Select Exam)"
+                      label="Examination"
                       onChange={(e) => {
                         const newTitle = e.target.value;
                         setTab3ExamTitle(newTitle);
@@ -1928,18 +2116,25 @@ export const ExamSchedulesPage = () => {
           </Card>
 
           {/* ⚡ BULK EDIT ASSESSMENTS BAR */}
-          <Card variant="outlined" sx={{ p: 2, mb: 3, bgcolor: '#ffffff', borderRadius: 2, boxShadow: 1 }}>
+          <Card variant="outlined" sx={{ p: 1.75, mb: 2, bgcolor: '#ffffff', borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
-              <Typography variant="subtitle2" fontWeight={800} color="#0f2b48" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <SparklesIcon sx={{ fontSize: 18, color: '#eab308' }} /> Bulk Edit Assessments
+              <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <SparklesIcon sx={{ fontSize: 18, color: '#eab308' }} /> Bulk Apply Timings & Marks
               </Typography>
               <Button
                 variant="contained"
                 size="small"
                 onClick={handleTab3ApplyBulkTimings}
-                sx={{ bgcolor: '#1d4ed8', '&:hover': { bgcolor: '#1e40af' }, fontWeight: 700, textTransform: 'none', px: 2 }}
+                sx={{
+                  bgcolor: 'var(--primary-color, #14b8a6)',
+                  color: '#ffffff',
+                  '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  px: 2
+                }}
               >
-                ADD ANOTHER ASSESSMENT / APPLY TO ALL
+                Apply to All Subjects
               </Button>
             </Box>
             <Grid container spacing={1.5} alignItems="center">
@@ -1977,15 +2172,16 @@ export const ExamSchedulesPage = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="date"
+                <AppDatePicker
                   label="Date"
-                  InputLabelProps={{ shrink: true }}
                   value={tab3BulkTimings.examDate}
-                  onChange={(e) => setTab3BulkTimings({ ...tab3BulkTimings, examDate: e.target.value })}
-                  inputProps={{ style: { fontSize: '0.85rem' } }}
+                  onChange={(e) => {
+                    const val = formatLocalDate(e.value);
+                    setTab3BulkTimings({ ...tab3BulkTimings, examDate: val });
+                  }}
+                  placeholder="Select Date"
+                  dateFormat="dd/mm/yy"
+                  style={{ marginBottom: 0 }}
                 />
               </Grid>
               <Grid item xs={6} sm={2}>
@@ -2018,7 +2214,7 @@ export const ExamSchedulesPage = () => {
           {/* SUBJECT-WISE SCHEDULE SECTION */}
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="h6" fontWeight={800} color="#0f2b48">
+              <Typography variant="h6" fontWeight={800} color="text.primary">
                 Subject-wise Schedule
               </Typography>
               <Button
@@ -2032,7 +2228,7 @@ export const ExamSchedulesPage = () => {
                   });
                   setCollapsedSubjects(updated);
                 }}
-                sx={{ textTransform: 'none', fontWeight: 700, color: '#2563eb' }}
+                sx={{ textTransform: 'none', fontWeight: 700, color: 'var(--primary-color, #14b8a6)' }}
               >
                 {allCollapsed ? 'Expand All' : 'Collapse All'}
               </Button>
@@ -2086,7 +2282,7 @@ export const ExamSchedulesPage = () => {
                           setCollapsedSubjects((prev) => ({ ...prev, [idx]: !prev[idx] }));
                         }}
                       >
-                        <Typography variant="subtitle1" fontWeight={800} color="#0f2b48">
+                        <Typography variant="subtitle1" fontWeight={800} color="text.primary">
                           {row.subjectName?.toUpperCase()} {row.subjectCode ? `(${row.subjectCode})` : ''}
                         </Typography>
                         <IconButton size="small">
@@ -2131,15 +2327,16 @@ export const ExamSchedulesPage = () => {
                             />
                           </Grid>
                           <Grid item xs={12} sm={2}>
-                            <TextField
-                              fullWidth
-                              size="small"
-                              type="date"
+                            <AppDatePicker
                               label="Date"
-                              InputLabelProps={{ shrink: true }}
                               value={row.examDate}
-                              onChange={(e) => handleTab3RowChange(idx, 'examDate', e.target.value)}
-                              inputProps={{ style: { fontSize: '0.85rem' } }}
+                              onChange={(e) => {
+                                const val = formatLocalDate(e.value);
+                                handleTab3RowChange(idx, 'examDate', val);
+                              }}
+                              placeholder="Select Date"
+                              dateFormat="dd/mm/yy"
+                              style={{ marginBottom: 0 }}
                             />
                           </Grid>
                           <Grid item xs={5} sm={1.8}>
@@ -2218,7 +2415,7 @@ export const ExamSchedulesPage = () => {
           {/* Drawer Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box>
-              <Typography variant="h6" fontWeight={800} color="#0f2b48">
+              <Typography variant="h6" fontWeight={800} color="text.primary">
                 {selectedExam?.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -2237,7 +2434,16 @@ export const ExamSchedulesPage = () => {
               size="small"
               startIcon={<SparklesIcon />}
               onClick={() => handleAutoPopulate()}
-              sx={{ borderColor: '#0f2b48', color: '#0f2b48', fontWeight: 700, flex: 1 }}
+              sx={{
+                borderColor: 'var(--primary-color, #14b8a6)',
+                color: 'var(--primary-color, #14b8a6)',
+                fontWeight: 700,
+                flex: 1,
+                '&:hover': {
+                  borderColor: 'var(--primary-color, #14b8a6)',
+                  bgcolor: 'rgba(20, 184, 166, 0.08)'
+                }
+              }}
             >
               Auto-Populate
             </Button>
@@ -2257,9 +2463,15 @@ export const ExamSchedulesPage = () => {
                 });
                 setScheduleModal(true);
               }}
-              sx={{ bgcolor: '#0f2b48', fontWeight: 700 }}
+              sx={{
+                bgcolor: 'var(--primary-color, #14b8a6)',
+                color: '#ffffff',
+                '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+                fontWeight: 700,
+                textTransform: 'none'
+              }}
             >
-              + Add Slot
+              Add Slot
             </Button>
             <Button
               variant="outlined"
@@ -2296,7 +2508,7 @@ export const ExamSchedulesPage = () => {
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                       <Box sx={{ flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={800} color="#0f2b48">
+                          <Typography variant="subtitle2" fontWeight={800} color="text.primary">
                             {sch.subjectName}
                           </Typography>
                           {sch.subjectCode && (
@@ -2442,7 +2654,13 @@ export const ExamSchedulesPage = () => {
             variant="contained"
             startIcon={<PrintIcon />}
             onClick={printDateSheet}
-            sx={{ bgcolor: '#0f2b48', fontWeight: 700 }}
+            sx={{
+              bgcolor: 'var(--primary-color, #14b8a6)',
+              color: '#ffffff',
+              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+              fontWeight: 700,
+              textTransform: 'none'
+            }}
           >
             Print Official Date Sheet
           </Button>
@@ -2451,7 +2669,7 @@ export const ExamSchedulesPage = () => {
 
       {/* ===================== MODAL: ADD / EDIT SUBJECT SCHEDULE ===================== */}
       <Dialog open={scheduleModal} onClose={() => setScheduleModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f2b48' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: 'text.primary' }}>
           Schedule Subject Exam (Step 5: Subject Mapping)
         </DialogTitle>
         <DialogContent>
@@ -2474,14 +2692,16 @@ export const ExamSchedulesPage = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
+              <AppDatePicker
                 label="Exam Date"
-                InputLabelProps={{ shrink: true }}
                 value={scheduleForm.examDate}
-                onChange={(e) => setScheduleForm({ ...scheduleForm, examDate: e.target.value })}
+                onChange={(e) => {
+                  const val = formatLocalDate(e.value);
+                  setScheduleForm({ ...scheduleForm, examDate: val });
+                }}
+                placeholder="Select Date"
+                dateFormat="dd/mm/yy"
+                style={{ marginBottom: 0 }}
               />
             </Grid>
 
@@ -2545,7 +2765,17 @@ export const ExamSchedulesPage = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setScheduleModal(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveSchedule} sx={{ bgcolor: '#0f2b48', fontWeight: 700 }}>
+          <Button
+            variant="contained"
+            onClick={handleSaveSchedule}
+            sx={{
+              bgcolor: 'var(--primary-color, #14b8a6)',
+              color: '#ffffff',
+              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+              fontWeight: 700,
+              textTransform: 'none'
+            }}
+          >
             Save Subject Schedule
           </Button>
         </DialogActions>
@@ -2553,7 +2783,7 @@ export const ExamSchedulesPage = () => {
 
       {/* ===================== MODAL: CREATE / EDIT TERM (STEP 1) ===================== */}
       <Dialog open={termModal} onClose={() => setTermModal(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f2b48' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: 'text.primary' }}>
           {editingTerm ? 'Edit Academic Term' : 'Step 1: Create Academic Term'}
         </DialogTitle>
         <DialogContent>
@@ -2604,7 +2834,17 @@ export const ExamSchedulesPage = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setTermModal(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveTerm} sx={{ bgcolor: '#0f2b48', fontWeight: 700 }}>
+          <Button
+            variant="contained"
+            onClick={handleSaveTerm}
+            sx={{
+              bgcolor: 'var(--primary-color, #14b8a6)',
+              color: '#ffffff',
+              '&:hover': { filter: 'brightness(0.92)', bgcolor: 'var(--primary-color, #14b8a6)' },
+              fontWeight: 700,
+              textTransform: 'none'
+            }}
+          >
             {editingTerm ? 'Update Term' : 'Save Term'}
           </Button>
         </DialogActions>
@@ -2625,11 +2865,11 @@ export const ExamSchedulesPage = () => {
               variant="contained"
               onClick={handleSaveExam}
               sx={{ 
-                background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, #1d4ed8 100%))', 
+                background: 'var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #14b8a6) 0%, var(--app-theme-darker, #0d9488) 100%))', 
                 '&:hover': { opacity: 0.95 }, 
                 fontWeight: 700, 
                 px: 3,
-                boxShadow: 'var(--app-modal-shadow, 0 4px 14px rgba(59, 130, 246, 0.35))'
+                boxShadow: 'var(--app-modal-shadow, 0 4px 14px rgba(20, 184, 166, 0.35))'
               }}
             >
               {editingExam ? 'Update Exam' : 'Save Exam'}

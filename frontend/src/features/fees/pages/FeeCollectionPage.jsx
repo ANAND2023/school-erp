@@ -56,6 +56,7 @@ import { studentApi } from '../../students/api';
 import { branchApi } from '../../masters/api';
 import { useAuthStore } from '../../../store/authStore';
 import { FeeReceiptSlip } from '../components/FeeReceiptSlip';
+import { StudentLookupDropdown } from '../components/StudentLookupDropdown';
 import { exportDualFeeReceiptPdf } from '../utils/feeExportUtils';
 import { printWithTitle } from '../../../utils/printUtils';
 
@@ -117,13 +118,6 @@ export default function FeeCollectionPage() {
   const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [headerSaveLoading, setHeaderSaveLoading] = useState(false);
 
-  // Search students query
-  const { data: searchRes, isLoading: isSearching } = useQuery({
-    queryKey: ['fee-search-students', searchTerm],
-    queryFn: () => studentApi.getStudents({ search: searchTerm, pageSize: 6 }),
-    enabled: searchTerm.length >= 2,
-  });
-  const searchResults = searchRes?.data?.data?.items || [];
 
   // Fetch dues for selected student
   const {
@@ -738,72 +732,25 @@ export default function FeeCollectionPage() {
 
 
       {/* Student Search & Info Card */}
-      <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2 }}>
+      <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2, overflow: 'visible', position: 'relative', zIndex: 20 }}>
         <CardContent sx={{ p: { xs: 2, sm: 2.25 } }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={5}>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom sx={{ fontSize: 13 }}>
-                Search & Select Student
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                label="Search Student"
-                placeholder={duesSummary ? `${duesSummary.studentName} (${duesSummary.admissionNo || 'Selected'})` : "Admission No, Name or Mobile..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1, fontSize: 18 }} />,
-                  endAdornment: (
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      {(isSearching || isLoadingDues) && <CircularProgress size={16} />}
-                      {(selectedStudentId || searchTerm) && (
-                        <Tooltip title="Clear selection / search">
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setSelectedStudentId('');
-                              setSearchTerm('');
-                              setSelectedMonthIds([]);
-                              setSelectedDues({});
-                              setErrorMsg('');
-                              setInfoNotice('');
-                              hasInitializedStudentRef.current = null;
-                            }}
-                          >
-                            <ClearIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Stack>
-                  ),
+              <StudentLookupDropdown
+                selectedStudentId={selectedStudentId}
+                duesSummary={duesSummary}
+                isLoadingDues={isLoadingDues}
+                onSelectStudent={handleSelectStudent}
+                onClearSelection={() => {
+                  setSelectedStudentId('');
+                  setSearchTerm('');
+                  setSelectedMonthIds([]);
+                  setSelectedDues({});
+                  setErrorMsg('');
+                  setInfoNotice('');
+                  hasInitializedStudentRef.current = null;
                 }}
               />
-
-              {searchResults.length > 0 && (
-                <Paper sx={{ mt: 1, maxHeight: 200, overflow: 'auto', border: '1px solid #ccc', position: 'absolute', zIndex: 10, width: { xs: '90%', md: 400 }, boxShadow: 4 }}>
-                  {searchResults.map((st) => (
-                    <Box
-                      key={st.id}
-                      sx={{
-                        p: 1.5,
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #eee',
-                        bgcolor: '#fff',
-                        '&:hover': { bgcolor: '#f0f7ff' },
-                      }}
-                      onClick={() => handleSelectStudent(st)}
-                    >
-                      <Typography variant="body2" fontWeight={700}>
-                        {st.fullName} ({st.admissionNo})
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Class: {st.className} - {st.sectionName} | Guardian: {st.guardianName} ({st.guardianMobile})
-                      </Typography>
-                    </Box>
-                  ))}
-                </Paper>
-              )}
             </Grid>
 
             {/* Selected Student Banner */}

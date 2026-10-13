@@ -19,6 +19,7 @@ import apiClient from '../../../api/client';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useAuthStore } from '../../../store/authStore';
 import { DemandBillPrintModal } from '../components/DemandBillPrintModal';
+import { AppInput, AppSelect, AppDatePicker } from '../../../components/common';
 
 const ACADEMIC_MONTHS = [
   { index: 1, name: 'April', short: 'Apr' },
@@ -368,21 +369,22 @@ export const DemandBillPage = () => {
     const cleanLabel = rawPeriod.replace(/^month of\s+/i, '');
 
     return (
-      <div className="flex flex-column" style={{ minWidth: '130px' }}>
+      <div className="flex flex-column justify-content-center" style={{ minWidth: '135px', lineHeight: '1.25' }}>
         <div
-          className="inline-flex align-items-center gap-1.5 px-2.5 py-1 font-bold text-xs"
+          className="inline-flex align-items-center gap-1 px-2 py-0.5 font-bold text-xs"
           style={{
             backgroundColor: '#eff6ff',
             color: '#1e40af',
             border: '1px solid #bfdbfe',
-            borderRadius: '6px',
+            borderRadius: '4px',
             width: 'fit-content',
+            whiteSpace: 'nowrap',
           }}
         >
           <i className="pi pi-calendar text-xs text-blue-600" />
           <span>{cleanLabel}</span>
         </div>
-        <span className="text-500 font-medium text-[10px] mt-0.5 ml-1">
+        <span className="text-500 font-medium text-[10px] mt-1 ml-0.5 white-space-nowrap">
           {isSingle ? 'Single Month Bill' : 'Session Period'}
         </span>
       </div>
@@ -391,21 +393,21 @@ export const DemandBillPage = () => {
 
   // Clean Net Demand Container
   const netDemandBodyTemplate = (rowData) => (
-    <div className="flex flex-column align-items-end" style={{ minWidth: '100px' }}>
+    <div className="flex flex-column align-items-end justify-content-center" style={{ minWidth: '115px', lineHeight: '1.25' }}>
       <span
         className="font-bold text-sm px-2.5 py-1"
         style={{
           backgroundColor: '#fef2f2',
           color: '#b91c1c',
           border: '1px solid #fee2e2',
-          borderRadius: '6px',
+          borderRadius: '4px',
           whiteSpace: 'nowrap',
         }}
       >
         ₹ {Number(rowData.netDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
       </span>
       {Number(rowData.previousArrears || 0) > 0 && (
-        <span className="text-[10px] text-orange-600 font-semibold mt-0.5">
+        <span className="text-[10px] text-orange-600 font-semibold mt-1 white-space-nowrap">
           Arrears: ₹{Number(rowData.previousArrears).toLocaleString('en-IN')}
         </span>
       )}
@@ -419,7 +421,7 @@ export const DemandBillPage = () => {
       : 'ST';
 
     return (
-      <div className="flex align-items-center gap-2" style={{ minWidth: '160px' }}>
+      <div className="flex align-items-center gap-2" style={{ minWidth: '180px' }}>
         <Avatar
           label={initials}
           size="normal"
@@ -434,72 +436,75 @@ export const DemandBillPage = () => {
             flexShrink: 0,
           }}
         />
-        <div className="flex flex-column min-w-0">
-          <span className="font-bold text-900 text-sm line-height-2 text-overflow-ellipsis overflow-hidden">
+        <div className="flex flex-column min-w-0" style={{ lineHeight: '1.25' }}>
+          <span className="font-bold text-900 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
             {rowData.studentName}
           </span>
-          <span className="text-xs text-500 flex align-items-center gap-1">
+          <span className="text-xs text-600 flex align-items-center gap-1 mt-1 white-space-nowrap">
             <span className="font-semibold text-700">Adm: {rowData.admissionNo}</span>
-            {rowData.rollNo && rowData.rollNo !== '-' && <span>| Roll: {rowData.rollNo}</span>}
+            {rowData.rollNo && rowData.rollNo !== '-' && <span>• Roll: #{rowData.rollNo}</span>}
           </span>
         </div>
       </div>
     );
   };
 
-  // Bill No Formatted
+  // Bill No Formatted - No ugly slicing
   const billNoBodyTemplate = (rowData) => {
     const billNo = rowData.demandBillNo || `DB-${rowData.admissionNo}`;
-    const shortBill = billNo.length > 18 ? `...${billNo.slice(-12)}` : billNo;
 
     return (
       <span
         title={billNo}
-        className="font-semibold text-xs text-700 font-monospace cursor-pointer"
+        className="font-bold text-xs text-blue-700 font-monospace cursor-pointer white-space-nowrap select-all"
         style={{
-          backgroundColor: '#f8fafc',
-          padding: '2px 6px',
+          backgroundColor: '#eff6ff',
+          padding: '3px 8px',
           borderRadius: '4px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid #bfdbfe',
+          display: 'inline-block',
         }}
       >
-        {shortBill}
+        {billNo}
       </span>
     );
   };
 
   const guardianBodyTemplate = (rowData) => (
-    <div className="flex flex-column text-xs" style={{ minWidth: '120px' }}>
-      <span className="font-semibold text-800">{rowData.fatherName || 'Guardian'}</span>
-      <span className="text-500 flex align-items-center gap-1 mt-0.5">
-        <i className="pi pi-phone text-[10px] text-400" />
-        {rowData.guardianMobile || '-'}
+    <div className="flex flex-column text-xs justify-content-center" style={{ minWidth: '135px', lineHeight: '1.25' }}>
+      <span className="font-semibold text-800 white-space-nowrap">{rowData.fatherName || 'Guardian'}</span>
+      <span className="text-500 flex align-items-center gap-1 mt-1 white-space-nowrap">
+        <i className="pi pi-phone text-xs text-400" />
+        <span>{rowData.guardianMobile || '-'}</span>
       </span>
     </div>
   );
 
   const actionBodyTemplate = (rowData) => (
-    <div className="flex align-items-center gap-1 justify-content-center" style={{ minWidth: '110px' }}>
+    <div className="flex align-items-center gap-1 justify-content-center" style={{ minWidth: '115px' }}>
       <Button
         icon="pi pi-print"
         className="p-button-rounded p-button-text p-button-primary p-button-sm"
-        title="Print Demand Bill / Challan"
-        style={{ width: '28px', height: '28px' }}
+        tooltip="Print Demand Bill / Challan"
+        tooltipOptions={{ position: 'top' }}
+        style={{ width: '30px', height: '30px' }}
         onClick={() => handlePrintSingle(rowData)}
       />
       <Button
         icon="pi pi-list"
         className="p-button-rounded p-button-text p-button-secondary p-button-sm"
-        title="View Fee Breakdown"
-        style={{ width: '28px', height: '28px' }}
+        tooltip="View Fee Breakdown"
+        tooltipOptions={{ position: 'top' }}
+        style={{ width: '30px', height: '30px' }}
         onClick={() => setBreakdownStudent(rowData)}
       />
       {rowData.guardianMobile && (
         <Button
           icon="pi pi-whatsapp"
           className="p-button-rounded p-button-text p-button-success p-button-sm"
-          title="Send WhatsApp Reminder"
-          style={{ width: '28px', height: '28px' }}
+          tooltip="Send WhatsApp Reminder"
+          tooltipOptions={{ position: 'top' }}
+          style={{ width: '30px', height: '30px' }}
           onClick={() => handleSendWhatsApp(rowData)}
         />
       )}
@@ -622,144 +627,160 @@ export const DemandBillPage = () => {
       {/* Top Statistics KPI Cards */}
       <div className="grid mb-3">
         <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="surface-card shadow-1 border-left-3 border-blue-500 py-1">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">TOTAL DEMAND VALUE</span>
-                <div className="text-900 font-bold text-xl text-blue-700">
-                  ₹ {Number(summary?.totalNetDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-                <span className="text-xs text-500">Gross: ₹{Number(summary?.totalGrossAmount || 0).toLocaleString('en-IN')}</span>
+          <div className="surface-card shadow-1 border-round p-3 border-left-3 border-blue-600 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-bold text-xs uppercase letter-spacing-1 mb-1">TOTAL DEMAND VALUE</span>
+              <div className="text-900 font-bold text-xl text-blue-700">
+                ₹ {Number(summary?.totalNetDemandAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
-              <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                <i className="pi pi-wallet text-blue-600 text-lg" />
-              </div>
+              <span className="text-xs text-500 font-medium">Gross: ₹{Number(summary?.totalGrossAmount || 0).toLocaleString('en-IN')}</span>
             </div>
-          </Card>
+            <div className="flex align-items-center justify-content-center bg-blue-50 border-circle flex-shrink-0" style={{ width: '40px', height: '40px' }}>
+              <i className="pi pi-wallet text-blue-600 text-lg" />
+            </div>
+          </div>
         </div>
 
         <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="surface-card shadow-1 border-left-3 border-orange-500 py-1">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">PENDING DEFAULTERS</span>
-                <div className="text-900 font-bold text-xl text-orange-600">
-                  {summary?.totalDefaulters || 0} Students
-                </div>
-                <span className="text-xs text-500">Total Enrolled: {summary?.totalStudents || 0}</span>
+          <div className="surface-card shadow-1 border-round p-3 border-left-3 border-orange-500 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-bold text-xs uppercase letter-spacing-1 mb-1">PENDING DEFAULTERS</span>
+              <div className="text-900 font-bold text-xl text-orange-600">
+                {summary?.totalDefaulters || 0} Students
               </div>
-              <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                <i className="pi pi-exclamation-triangle text-orange-600 text-lg" />
-              </div>
+              <span className="text-xs text-500 font-medium">Total Enrolled: {summary?.totalStudents || 0}</span>
             </div>
-          </Card>
+            <div className="flex align-items-center justify-content-center bg-orange-50 border-circle flex-shrink-0" style={{ width: '40px', height: '40px' }}>
+              <i className="pi pi-exclamation-triangle text-orange-600 text-lg" />
+            </div>
+          </div>
         </div>
 
         <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="surface-card shadow-1 border-left-3 border-green-500 py-1">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">CONCESSIONS & DISCOUNTS</span>
-                <div className="text-900 font-bold text-xl text-green-600">
-                  ₹ {Number(summary?.totalConcessionAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-                <span className="text-xs text-500">Already Paid: ₹{Number(summary?.totalPaidAmount || 0).toLocaleString('en-IN')}</span>
+          <div className="surface-card shadow-1 border-round p-3 border-left-3 border-green-500 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-bold text-xs uppercase letter-spacing-1 mb-1">CONCESSIONS & DISC</span>
+              <div className="text-900 font-bold text-xl text-green-600">
+                ₹ {Number(summary?.totalConcessionAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
-              <div className="flex align-items-center justify-content-center bg-green-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                <i className="pi pi-tag text-green-600 text-lg" />
-              </div>
+              <span className="text-xs text-500 font-medium">Already Paid: ₹{Number(summary?.totalPaidAmount || 0).toLocaleString('en-IN')}</span>
             </div>
-          </Card>
+            <div className="flex align-items-center justify-content-center bg-green-50 border-circle flex-shrink-0" style={{ width: '40px', height: '40px' }}>
+              <i className="pi pi-tag text-green-600 text-lg" />
+            </div>
+          </div>
         </div>
 
         <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="surface-card shadow-1 border-left-3 border-indigo-500 py-1">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">SELECTED DEMAND</span>
-                <div className="text-900 font-bold text-xl text-indigo-700">
-                  ₹ {selectedStudents.reduce((acc, s) => acc + Number(s.netDemandAmount || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-                <span className="text-xs text-indigo-600 font-semibold">{selectedStudents.length} Students Selected</span>
+          <div className="surface-card shadow-1 border-round p-3 border-left-3 border-indigo-600 flex justify-content-between align-items-center h-full">
+            <div>
+              <span className="block text-500 font-bold text-xs uppercase letter-spacing-1 mb-1">SELECTED DEMAND</span>
+              <div className="text-900 font-bold text-xl text-indigo-700">
+                ₹ {selectedStudents.reduce((acc, s) => acc + Number(s.netDemandAmount || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
-              <div className="flex align-items-center justify-content-center bg-indigo-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                <i className="pi pi-check-square text-indigo-600 text-lg" />
-              </div>
+              <span className="text-xs text-indigo-600 font-semibold">{selectedStudents.length} Students Selected</span>
             </div>
-          </Card>
+            <div className="flex align-items-center justify-content-center bg-indigo-50 border-circle flex-shrink-0" style={{ width: '40px', height: '40px' }}>
+              <i className="pi pi-check-square text-indigo-600 text-lg" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filter Toolbar Card */}
-      <Card className="shadow-1 mb-3">
+      {/* Filter Toolbar Card - Admission Notched Style */}
+      <div className="surface-card border-round shadow-1 px-3 pt-3 pb-1 mb-3">
         <div className="grid align-items-center">
           <div className="col-12 sm:col-6 md:col-3">
-            <label className="block text-xs font-semibold text-600 mb-1">Class</label>
-            <Dropdown
+            <AppSelect
+              label="Class"
               value={selectedClass}
               options={[{ label: 'All Classes', value: null }, ...classes.map(c => ({ label: c.name, value: c.id }))]}
-              onChange={(e) => setSelectedClass(e.value)}
+              optionLabel="label"
+              optionValue="value"
+              onChange={(e) => setSelectedClass(e.value ?? null)}
               placeholder="Select Class"
-              className="w-full p-inputtext-sm"
+              showClear
             />
           </div>
 
           <div className="col-12 sm:col-6 md:col-2">
-            <label className="block text-xs font-semibold text-600 mb-1">Section</label>
-            <Dropdown
+            <AppSelect
+              label="Section"
               value={selectedSection}
               options={[{ label: 'All Sections', value: null }, ...sections.map(s => ({ label: s.name, value: s.id }))]}
-              onChange={(e) => setSelectedSection(e.value)}
+              optionLabel="label"
+              optionValue="value"
+              onChange={(e) => setSelectedSection(e.value ?? null)}
               placeholder="All Sections"
               disabled={!selectedClass}
-              className="w-full p-inputtext-sm"
+              showClear
             />
           </div>
 
           <div className="col-12 sm:col-6 md:col-2">
-            <label className="block text-xs font-semibold text-600 mb-1">Due Status</label>
-            <Dropdown
+            <AppSelect
+              label="Due Status"
               value={statusFilter}
               options={[
                 { label: 'Unpaid / Due Only', value: 'unpaid' },
                 { label: 'All Students', value: 'all' },
                 { label: 'Partially Paid', value: 'partial' },
               ]}
-              onChange={(e) => setStatusFilter(e.value)}
-              className="w-full p-inputtext-sm"
+              optionLabel="label"
+              optionValue="value"
+              onChange={(e) => setStatusFilter(e.value ?? 'unpaid')}
+              filter={false}
+              showClear={false}
             />
           </div>
 
           <div className="col-12 sm:col-6 md:col-2">
-            <label className="block text-xs font-semibold text-600 mb-1">Custom Due Date</label>
-            <Calendar
+            <AppDatePicker
+              label="Custom Due Date"
               value={customDueDate}
-              onChange={(e) => setCustomDueDate(e.value)}
+              onChange={(e) => setCustomDueDate(e.value ?? null)}
               placeholder="Bill Due Date"
               dateFormat="dd-mm-yy"
-              showIcon
-              className="w-full p-inputtext-sm"
             />
           </div>
 
           <div className="col-12 sm:col-6 md:col-3">
-            <label className="block text-xs font-semibold text-600 mb-1">Search Student / Mobile</label>
-            <div className="p-inputgroup">
-              <InputText
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchDemandBills()}
-                placeholder="Name, Adm No, Roll, Phone..."
-                className="p-inputtext-sm"
-              />
-              <Button icon="pi pi-search" className="p-button-sm p-button-primary" onClick={fetchDemandBills} />
+            <div className="flex align-items-center gap-1">
+              <div className="flex-grow-1">
+                <AppInput
+                  label="Search Student / Mobile"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchDemandBills()}
+                  placeholder="Name, Adm, Roll, Phone..."
+                  addon={<i className="pi pi-search" />}
+                  onAddonClick={fetchDemandBills}
+                  addonTooltip="Search Demand Bills"
+                />
+              </div>
+              {(searchTerm || selectedClass || statusFilter !== 'unpaid' || customDueDate) && (
+                <Button
+                  icon="pi pi-filter-slash"
+                  className="p-button-outlined p-button-secondary p-button-sm mb-2"
+                  style={{ height: '30px', width: '30px', flexShrink: 0 }}
+                  onClick={() => {
+                    setSelectedClass(null);
+                    setSelectedSection(null);
+                    setStatusFilter('unpaid');
+                    setCustomDueDate(null);
+                    setSearchTerm('');
+                  }}
+                  tooltip="Reset Filters"
+                  tooltipOptions={{ position: 'top' }}
+                />
+              )}
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Demand Bills Data Table */}
-      <Card className="shadow-1">
+      <div className="surface-card border-round shadow-1 p-2">
         <DataTable
           value={students}
           selection={selectedStudents}
@@ -772,26 +793,26 @@ export const DemandBillPage = () => {
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
           emptyMessage="No students found matching the selected criteria."
-          className="p-datatable-sm"
-          responsiveLayout="scroll"
+          className="app-demand-bills-table p-datatable-gridlines"
+          scrollable
           stripedRows
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-          <Column field="demandBillNo" header="Bill No" body={billNoBodyTemplate} sortable style={{ width: '120px' }} />
-          <Column header="Student Particulars" body={studentNameBodyTemplate} sortable field="studentName" />
-          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ width: '95px' }} />
-          <Column header="Parent & Contact" body={guardianBodyTemplate} />
-          <Column header="Billing Period" body={billingPeriodBodyTemplate} style={{ minWidth: '150px' }} />
-          <Column field="grossAmount" header="Gross (₹)" body={(r) => Number(r.grossAmount || 0).toLocaleString('en-IN')} className="text-right text-xs" />
-          <Column field="concessionAmount" header="Disc (₹)" body={(r) => Number(r.concessionAmount || 0) > 0 ? `-${Number(r.concessionAmount).toFixed(0)}` : '0'} className="text-right text-xs text-green-600" />
-          <Column field="currentPeriodDue" header="Month Due (₹)" body={(r) => Number(r.currentPeriodDue || r.balanceAmount || 0).toLocaleString('en-IN')} className="text-right text-xs font-semibold text-blue-700" />
-          <Column field="previousArrears" header="Arrears (₹)" body={(r) => Number(r.previousArrears || 0) > 0 ? Number(r.previousArrears).toLocaleString('en-IN') : '-'} className="text-right text-xs text-orange-600" />
-          <Column field="fineAmount" header="Fine (₹)" body={(r) => Number(r.fineAmount || 0) > 0 ? Number(r.fineAmount).toFixed(0) : '-'} className="text-right text-xs text-red-500" />
-          <Column field="netDemandAmount" header="Net Demand (₹)" body={netDemandBodyTemplate} sortable className="text-right" />
-          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '110px', textAlign: 'center' }} />
-          <Column header="Actions" body={actionBodyTemplate} style={{ width: '120px', textAlign: 'center' }} />
+          <Column selectionMode="multiple" headerStyle={{ width: '3.2rem', minWidth: '3.2rem' }} />
+          <Column field="demandBillNo" header="Bill No" body={billNoBodyTemplate} sortable style={{ minWidth: '150px' }} />
+          <Column header="Student Particulars" body={studentNameBodyTemplate} sortable field="studentName" style={{ minWidth: '200px' }} />
+          <Column header="Class - Sec" body={(r) => `${r.className}${r.sectionName ? ' - ' + r.sectionName : ''}`} sortable field="className" style={{ minWidth: '100px' }} />
+          <Column header="Parent & Contact" body={guardianBodyTemplate} style={{ minWidth: '140px' }} />
+          <Column header="Billing Period" body={billingPeriodBodyTemplate} style={{ minWidth: '145px' }} />
+          <Column field="grossAmount" header="Gross (₹)" body={(r) => Number(r.grossAmount || 0).toLocaleString('en-IN')} className="text-right text-xs" style={{ minWidth: '85px' }} />
+          <Column field="concessionAmount" header="Disc (₹)" body={(r) => Number(r.concessionAmount || 0) > 0 ? `-${Number(r.concessionAmount).toFixed(0)}` : '0'} className="text-right text-xs text-green-600" style={{ minWidth: '80px' }} />
+          <Column field="currentPeriodDue" header="Month Due (₹)" body={(r) => Number(r.currentPeriodDue || r.balanceAmount || 0).toLocaleString('en-IN')} className="text-right text-xs font-semibold text-blue-700" style={{ minWidth: '105px' }} />
+          <Column field="previousArrears" header="Arrears (₹)" body={(r) => Number(r.previousArrears || 0) > 0 ? Number(r.previousArrears).toLocaleString('en-IN') : '-'} className="text-right text-xs text-orange-600" style={{ minWidth: '90px' }} />
+          <Column field="fineAmount" header="Fine (₹)" body={(r) => Number(r.fineAmount || 0) > 0 ? Number(r.fineAmount).toFixed(0) : '-'} className="text-right text-xs text-red-500" style={{ minWidth: '80px' }} />
+          <Column field="netDemandAmount" header="Net Demand (₹)" body={netDemandBodyTemplate} sortable className="text-right" style={{ minWidth: '130px' }} />
+          <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px', textAlign: 'center' }} />
+          <Column header="Actions" body={actionBodyTemplate} frozen alignFrozen="right" style={{ width: '120px', minWidth: '120px', textAlign: 'center' }} headerStyle={{ width: '120px', minWidth: '120px', textAlign: 'center' }} />
         </DataTable>
-      </Card>
+      </div>
 
       {/* Print Modal for Single or Bulk Bills */}
       <DemandBillPrintModal

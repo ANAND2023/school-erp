@@ -53,9 +53,41 @@ export const App = () => {
             },
           },
         },
+        MuiTextField: {
+          defaultProps: {
+            InputLabelProps: {
+              shrink: true,
+            },
+          },
+        },
+        MuiInputLabel: {
+          defaultProps: {
+            shrink: true,
+          },
+          styleOverrides: {
+            root: {
+              fontWeight: 700,
+              color: isDarkMode ? '#93c5fd' : '#1e3a8a',
+              textTransform: 'uppercase',
+              letterSpacing: '0.3px',
+              '&.Mui-focused': {
+                color: '#00bcd4',
+                fontWeight: 700,
+              },
+            },
+          },
+        },
+        MuiFormLabel: {
+          styleOverrides: {
+            root: {
+              fontWeight: 700,
+              color: isDarkMode ? '#93c5fd' : '#1e3a8a',
+            },
+          },
+        },
       },
     });
-  }, [currentColorHex, isDarkMode]);
+  }, [currentColorHex, isDarkMode, fontSize]);
 
   const primeConfig = {
     ripple: true,

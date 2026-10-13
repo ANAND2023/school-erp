@@ -77,6 +77,8 @@ namespace SchoolERP.API.Controllers
                 query = query.Where(e => e.Student!.AdmissionNo.ToLower().Contains(s) ||
                                          e.Student.FirstName.ToLower().Contains(s) ||
                                          e.Student.LastName.ToLower().Contains(s) ||
+                                         (e.Student.FirstName + " " + e.Student.LastName).ToLower().Contains(s) ||
+                                         (e.Class != null && e.Class.Name.ToLower().Contains(s)) ||
                                          e.Student.Guardians.Any(g => g.Mobile.Contains(s) || g.Name.ToLower().Contains(s)));
             }
 

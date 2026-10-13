@@ -309,20 +309,60 @@ textarea {
   font-size: var(--app-input-font-size, 12px) !important;
 }
 
-.MuiInputLabel-root {
-  font-size: var(--app-label-font-size, 11px) !important;
-  transform: translate(10px, 6px) scale(1) !important;
+.MuiInputLabel-root,
+.MuiFormLabel-root:not(.MuiFormControlLabel-label) {
+  font-size: var(--app-label-font-size, 10px) !important;
+  font-weight: 700 !important;
+  color: #1e3a8a !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  line-height: 1 !important;
+  transform: translate(9px, -6px) scale(1) !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  padding: 0 4px !important;
+  border-radius: 2px !important;
+  z-index: 3 !important;
 }
 
 .MuiInputLabel-shrink {
-  transform: translate(10px, -7px) scale(0.85) !important;
-  background-color: var(--surface-card, #ffffff);
-  padding: 0 4px;
-  font-weight: 700;
+  transform: translate(9px, -6px) scale(1) !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  padding: 0 4px !important;
+  font-weight: 700 !important;
+  color: #1e3a8a !important;
 }
 
-html.app-dark-mode .MuiInputLabel-shrink {
-  background-color: #1e293b;
+.MuiInputLabel-root.Mui-focused,
+.MuiFormLabel-root.Mui-focused {
+  color: #00bcd4 !important;
+  font-weight: 700 !important;
+}
+
+.MuiInputLabel-root.Mui-error,
+.MuiFormLabel-root.Mui-error {
+  color: #ef4444 !important;
+}
+
+.MuiOutlinedInput-notchedOutline legend {
+  max-width: 0.01px !important;
+  width: 0 !important;
+  padding: 0 !important;
+}
+
+label:not(.MuiFormControlLabel-root) {
+  font-weight: 700 !important;
+  color: #1e3a8a;
+}
+
+html.app-dark-mode .MuiInputLabel-root,
+html.app-dark-mode .MuiInputLabel-shrink,
+html.app-dark-mode .MuiFormLabel-root:not(.MuiFormControlLabel-label) {
+  background-color: #1e293b !important;
+  color: #93c5fd !important;
+}
+
+html.app-dark-mode label:not(.MuiFormControlLabel-root) {
+  color: #93c5fd;
 }
 
 .MuiSelect-select {
@@ -481,6 +521,43 @@ table td {
 .p-datatable .p-datatable-tbody > tr {
   min-height: 38px;
   transition: background-color 0.15s ease;
+}
+
+/* Multi-line cells in demand bills table */
+.app-demand-bills-table .p-datatable-tbody > tr > td {
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+  line-height: 1.4 !important;
+  overflow: visible !important;
+}
+
+.app-demand-bills-table .p-datatable-thead > tr > th {
+  padding: 10px 12px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  font-size: 11.5px !important;
+  letter-spacing: 0.3px;
+  background-color: #f8fafc !important;
+}
+
+.app-demand-bills-table .p-datatable-tbody > tr {
+  min-height: 54px !important;
+}
+
+/* Sticky frozen Actions column styling */
+.app-demand-bills-table .p-datatable-tbody > tr > td.p-frozen-column,
+.app-demand-bills-table .p-datatable-thead > tr > th.p-frozen-column {
+  background-color: #ffffff !important;
+  box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
+  z-index: 2 !important;
+}
+
+.app-demand-bills-table .p-datatable-thead > tr > th.p-frozen-column {
+  background-color: #f8fafc !important;
+}
+
+.app-demand-bills-table .p-datatable-tbody > tr:hover > td.p-frozen-column {
+  background-color: #f8fafc !important;
 }
 
 .p-datatable .p-datatable-tbody > tr:hover {
