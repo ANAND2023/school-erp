@@ -3,6 +3,7 @@ export { AppInput } from './AppInput';
 export { AppSelect } from './AppSelect';
 export { AppTable } from './AppTable';
 export { AppModal } from './AppModal';
+export { AppModal as Modal } from './AppModal';
 export { AppDatePicker } from './AppDatePicker';
 export { AppCheckbox } from './AppCheckbox';
 export { AppTag } from './AppTag';

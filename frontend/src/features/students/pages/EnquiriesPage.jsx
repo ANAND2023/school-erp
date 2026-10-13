@@ -399,8 +399,10 @@ export const EnquiriesPage = () => {
         onClose={() => setAddModalOpen(false)}
         title="Record New Student Enquiry (FR-3.1)"
         maxWidth="sm"
+        formId="enquiry-form"
+        submitLabel="Save Enquiry"
       >
-        <Box component="form" onSubmit={handleCreateEnquiry} sx={{ mt: 1 }}>
+        <Box component="form" id="enquiry-form" onSubmit={handleCreateEnquiry} sx={{ mt: 1 }}>
           <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
               <AppSelect
@@ -496,28 +498,18 @@ export const EnquiriesPage = () => {
               />
             </Grid>
           </Grid>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2.5 }}>
-            <Button onClick={() => setAddModalOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained">
-              Save Enquiry
-            </Button>
-          </Box>
         </Box>
       </Modal>
 
-      {/* Follow-up History & Log Dialog */}
-      <Dialog
+      {/* Follow-up History & Log Modal */}
+      <Modal
         open={followupModalOpen}
         onClose={() => setFollowupModalOpen(false)}
+        title={`Follow-up Log: ${selectedEnquiry?.studentName || ''}`}
         maxWidth="sm"
-        fullWidth
+        formId="followup-form"
+        submitLabel="Save Follow-up"
       >
-        <DialogTitle sx={{ fontWeight: 600 }}>
-          Follow-up Log: {selectedEnquiry?.studentName}
-        </DialogTitle>
-        <DialogContent dividers>
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Parent: {selectedEnquiry?.guardianName} ({selectedEnquiry?.mobile})
@@ -597,16 +589,7 @@ export const EnquiriesPage = () => {
               </Grid>
             </Grid>
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 1.5 }}>
-          <Button onClick={() => setFollowupModalOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button type="submit" form="followup-form" variant="contained">
-            Save Follow-up
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Modal>
 
       {/* Printable Enquiry Slip Modal */}
       <EnquirySlipModal

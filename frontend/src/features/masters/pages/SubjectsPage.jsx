@@ -185,8 +185,10 @@ export const SubjectsPage = () => {
         onClose={() => setModalOpen(false)}
         title={editingSubject ? 'Edit Subject' : 'Create Subject'}
         maxWidth="xs"
+        formId="subject-form"
+        submitLabel="Save Subject"
       >
-        <Box component="form" onSubmit={handleSave} sx={{ mt: 1 }}>
+        <Box component="form" id="subject-form" onSubmit={handleSave} sx={{ mt: 1 }}>
           <TextField
             required
             fullWidth
@@ -215,14 +217,6 @@ export const SubjectsPage = () => {
             <MenuItem value={1}>Scholastic (Academic / Core)</MenuItem>
             <MenuItem value={2}>Co-Scholastic (Activities / Sports / Arts)</MenuItem>
           </TextField>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={() => setModalOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained">
-              Save Subject
-            </Button>
-          </Box>
         </Box>
       </Modal>
 

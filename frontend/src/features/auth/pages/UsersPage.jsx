@@ -367,8 +367,10 @@ export const UsersPage = () => {
         onClose={() => setUserModalOpen(false)}
         title={editingUserId ? 'Edit User' : 'Create New User'}
         maxWidth="sm"
+        formId="user-form"
+        submitLabel={editingUserId ? 'Save Changes' : 'Create User'}
       >
-        <Box component="form" onSubmit={handleSaveUser} sx={{ mt: 1 }}>
+        <Box component="form" id="user-form" onSubmit={handleSaveUser} sx={{ mt: 1 }}>
           <Grid container spacing={2}>
             {!editingUserId && (
               <Grid item xs={12} sm={6}>
@@ -455,43 +457,32 @@ export const UsersPage = () => {
               </TextField>
             </Grid>
           </Grid>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={() => setUserModalOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained">
-              {editingUserId ? 'Save Changes' : 'Create User'}
-            </Button>
-          </Box>
         </Box>
       </Modal>
 
       {/* Reset Password Modal */}
-      <Dialog open={resetModalOpen} onClose={() => setResetModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>Reset Password</DialogTitle>
-        <Box component="form" onSubmit={handleResetPassword}>
-          <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Enter a temporary password. The user will be required to change it on their next login.
-            </Typography>
-            <TextField
-              required
-              fullWidth
-              label="New Temporary Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setResetModalOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" color="secondary">
-              Reset Password
-            </Button>
-          </DialogActions>
+      <Modal
+        open={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        title="Reset Password"
+        maxWidth="xs"
+        formId="reset-password-form"
+        submitLabel="Reset Password"
+        confirmColor="secondary"
+      >
+        <Box component="form" id="reset-password-form" onSubmit={handleResetPassword}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter a temporary password. The user will be required to change it on their next login.
+          </Typography>
+          <TextField
+            required
+            fullWidth
+            label="New Temporary Password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
         </Box>
-      </Dialog>
+      </Modal>
 
       {/* Status Toggle Confirm */}
       <ConfirmDialog

@@ -123,17 +123,17 @@ html.app-dark-mode .app-notched-label {
   border-bottom-right-radius: 0 !important;
 }
 
-/* Focus state - Cyan/Blue highlight as shown in screenshot */
+/* Focus state - dynamic theme highlight */
 .app-notched-control-group:focus-within .p-inputtext,
 .app-notched-control-group:focus-within .p-dropdown,
 .app-notched-control-group:focus-within .p-multiselect,
 .app-notched-control-group:focus-within .p-calendar .p-inputtext {
-  border-color: #00bcd4 !important;
-  box-shadow: 0 0 0 1px #00bcd4 !important;
+  border-color: var(--app-theme-primary, #00bcd4) !important;
+  box-shadow: 0 0 0 1px var(--app-theme-primary, #00bcd4) !important;
 }
 
 .app-notched-control-group:focus-within .app-notched-label {
-  color: #00bcd4 !important;
+  color: var(--app-theme-primary, #00bcd4) !important;
 }
 
 /* Invalid / Error state */
@@ -334,7 +334,7 @@ textarea {
 
 .MuiInputLabel-root.Mui-focused,
 .MuiFormLabel-root.Mui-focused {
-  color: #00bcd4 !important;
+  color: var(--app-theme-primary, #00bcd4) !important;
   font-weight: 700 !important;
 }
 
@@ -929,13 +929,13 @@ input[type="number"] {
 .p-dialog {
   border-radius: 12px !important;
   overflow: hidden !important;
-  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(59, 130, 246, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
+  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(20, 184, 166, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Header with Dynamic Theme Gradient */
 .p-dialog .p-dialog-header {
-  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, var(--app-theme-darker, #1d4ed8) 100%)) !important;
+  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, var(--primary-color, #14b8a6)) 0%, var(--app-theme-darker, #0d9488) 100%)) !important;
   color: #ffffff !important;
   padding: 0.85rem 1.25rem !important;
   border-top-left-radius: 11px !important;
@@ -999,12 +999,12 @@ html.app-dark-mode .p-dialog .p-dialog-footer {
 .MuiDialog-paper {
   border-radius: 12px !important;
   overflow: hidden !important;
-  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(59, 130, 246, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
+  box-shadow: var(--app-modal-shadow, 0 25px 50px -12px rgba(20, 184, 166, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.15)) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 .MuiDialog-paper .MuiDialogTitle-root {
-  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--primary-color, #3B82F6) 0%, var(--app-theme-darker, #1d4ed8) 100%)) !important;
+  background: var(--app-modal-header-bg, linear-gradient(135deg, var(--app-theme-primary, var(--primary-color, #14b8a6)) 0%, var(--app-theme-darker, #0d9488) 100%)) !important;
   color: #ffffff !important;
   font-weight: 700 !important;
   font-size: 1.05rem !important;

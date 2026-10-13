@@ -15,10 +15,15 @@ import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { classApi } from '../api';
 import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
+import { AppButton } from '../../../components/common/AppButton';
 
 export const ClassesSectionsPage = () => {
   const { showSnackbar } = useUiStore();
   const { hasPermission } = usePermission();
+  const { currentColorHex } = useThemeStore();
+  const themeColor = currentColorHex || '#14b8a6';
+  const themeDarker = shadeColor(themeColor, -20);
 
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -236,7 +241,10 @@ export const ClassesSectionsPage = () => {
               header="Section Name"
               body={(sec) => (
                 <div className="flex align-items-center gap-2">
-                  <span className="inline-flex align-items-center justify-content-center border-round font-bold bg-indigo-100 text-indigo-700" style={{ width: '26px', height: '26px', fontSize: '12px' }}>
+                  <span
+                    className="inline-flex align-items-center justify-content-center border-round font-bold"
+                    style={{ width: '26px', height: '26px', fontSize: '12px', backgroundColor: `${themeColor}18`, color: themeColor }}
+                  >
                     {sec.name}
                   </span>
                   <span className="font-bold text-xs text-slate-800">Section {sec.name}</span>
@@ -314,11 +322,10 @@ export const ClassesSectionsPage = () => {
         </div>
         <div className="flex align-items-center gap-2">
           {canAdd && (
-            <Button
+            <AppButton
               label="Add Class"
               icon="pi pi-plus"
               size="small"
-              className="bg-pink-600 border-pink-600 hover:bg-pink-700 font-semibold"
               onClick={handleOpenAddClass}
             />
           )}
@@ -331,9 +338,12 @@ export const ClassesSectionsPage = () => {
           <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
             <div>
               <span className="text-xs text-slate-500 block mb-1">Total Classes</span>
-              <span className="text-2xl font-bold text-indigo-700">{totalClassesCount}</span>
+              <span className="text-2xl font-bold" style={{ color: themeColor }}>{totalClassesCount}</span>
             </div>
-            <div className="flex align-items-center justify-content-center bg-indigo-50 text-indigo-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
+            <div
+              className="flex align-items-center justify-content-center border-round p-2"
+              style={{ width: '42px', height: '42px', backgroundColor: `${themeColor}15`, color: themeColor }}
+            >
               <i className="pi pi-building text-xl" />
             </div>
           </div>
@@ -342,9 +352,12 @@ export const ClassesSectionsPage = () => {
           <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
             <div>
               <span className="text-xs text-slate-500 block mb-1">Total Sections</span>
-              <span className="text-2xl font-bold text-pink-600">{totalSectionsCount}</span>
+              <span className="text-2xl font-bold" style={{ color: themeColor }}>{totalSectionsCount}</span>
             </div>
-            <div className="flex align-items-center justify-content-center bg-pink-50 text-pink-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
+            <div
+              className="flex align-items-center justify-content-center border-round p-2"
+              style={{ width: '42px', height: '42px', backgroundColor: `${themeColor}15`, color: themeColor }}
+            >
               <i className="pi pi-book text-xl" />
             </div>
           </div>
@@ -443,7 +456,7 @@ export const ClassesSectionsPage = () => {
                   style={{
                     width: '32px',
                     height: '32px',
-                    background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                    background: `linear-gradient(135deg, ${themeColor} 0%, ${themeDarker} 100%)`,
                     fontSize: '11px',
                   }}
                 >
@@ -489,7 +502,7 @@ export const ClassesSectionsPage = () => {
                       className="flex align-items-center gap-2 px-2 py-1 bg-slate-50 hover:bg-slate-100 border-1 surface-border border-round transition-colors"
                     >
                       <div className="flex align-items-center gap-1">
-                        <span className="font-bold text-xs text-indigo-800">Sec {sec.name}</span>
+                        <span className="font-bold text-xs" style={{ color: themeDarker }}>Sec {sec.name}</span>
                         <span className="text-xs text-slate-500">({sec.capacity} seats)</span>
                       </div>
                       <div className="flex align-items-center gap-1 border-left-1 surface-border pl-1 ml-1">
@@ -497,7 +510,7 @@ export const ClassesSectionsPage = () => {
                           <button
                             type="button"
                             title="Edit Section"
-                            className="p-0 border-none bg-transparent cursor-pointer text-slate-400 hover:text-indigo-600 flex align-items-center"
+                            className="p-0 border-none bg-transparent cursor-pointer text-slate-400 hover:text-primary flex align-items-center"
                             onClick={() => handleOpenEditSection(row.id, sec)}
                           >
                             <i className="pi pi-pencil" style={{ fontSize: '10px' }} />
@@ -524,7 +537,12 @@ export const ClassesSectionsPage = () => {
                     <button
                       type="button"
                       title="Add another section to this class"
-                      className="flex align-items-center gap-1 px-2 py-1 border-1 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-round text-xs cursor-pointer transition-colors"
+                      className="flex align-items-center gap-1 px-2 py-1 border-1 border-dashed border-round text-xs cursor-pointer transition-colors"
+                      style={{
+                        borderColor: `${themeColor}80`,
+                        backgroundColor: `${themeColor}12`,
+                        color: themeColor,
+                      }}
                       onClick={() => handleOpenAddSection(row.id)}
                     >
                       <i className="pi pi-plus" style={{ fontSize: '9px' }} />
@@ -627,8 +645,10 @@ export const ClassesSectionsPage = () => {
         onClose={() => setClassModalOpen(false)}
         title={editingClass ? 'Edit Class' : 'Create New Class'}
         maxWidth="xs"
+        formId="class-form"
+        submitLabel={editingClass ? 'Save Changes' : 'Save Class'}
       >
-        <Box component="form" onSubmit={handleSaveClass} sx={{ mt: 1 }}>
+        <Box component="form" id="class-form" onSubmit={handleSaveClass} sx={{ mt: 1 }}>
           <TextField
             required
             fullWidth
@@ -646,14 +666,6 @@ export const ClassesSectionsPage = () => {
             onChange={(e) => setDisplayOrder(Number(e.target.value))}
             sx={{ mb: 2 }}
           />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <MuiButton onClick={() => setClassModalOpen(false)} color="inherit">
-              Cancel
-            </MuiButton>
-            <MuiButton type="submit" variant="contained">
-              Save Class
-            </MuiButton>
-          </Box>
         </Box>
       </Modal>
 
@@ -663,8 +675,10 @@ export const ClassesSectionsPage = () => {
         onClose={() => setSectionModalOpen(false)}
         title={editingSection ? 'Edit Section' : 'Add Section to Class'}
         maxWidth="xs"
+        formId="section-form"
+        submitLabel={editingSection ? 'Save Changes' : 'Save Section'}
       >
-        <Box component="form" onSubmit={handleSaveSection} sx={{ mt: 1 }}>
+        <Box component="form" id="section-form" onSubmit={handleSaveSection} sx={{ mt: 1 }}>
           <TextField
             required
             fullWidth
@@ -683,14 +697,6 @@ export const ClassesSectionsPage = () => {
             onChange={(e) => setSectionCapacity(Number(e.target.value))}
             sx={{ mb: 2 }}
           />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <MuiButton onClick={() => setSectionModalOpen(false)} color="inherit">
-              Cancel
-            </MuiButton>
-            <MuiButton type="submit" variant="contained">
-              Save Section
-            </MuiButton>
-          </Box>
         </Box>
       </Modal>
 

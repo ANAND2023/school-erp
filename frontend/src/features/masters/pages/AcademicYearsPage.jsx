@@ -162,8 +162,10 @@ export const AcademicYearsPage = () => {
         onClose={() => setModalOpen(false)}
         title="Create New Academic Session"
         maxWidth="xs"
+        formId="academic-year-form"
+        submitLabel="Save Academic Year"
       >
-        <Box component="form" onSubmit={handleCreate} sx={{ mt: 1 }}>
+        <Box component="form" id="academic-year-form" onSubmit={handleCreate} sx={{ mt: 1 }}>
           <TextField
             required
             fullWidth
@@ -197,15 +199,6 @@ export const AcademicYearsPage = () => {
             }
             label="Mark as current active session (BR-2.1)"
           />
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={() => setModalOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained">
-              Save Academic Year
-            </Button>
-          </Box>
         </Box>
       </Modal>
     </Box>

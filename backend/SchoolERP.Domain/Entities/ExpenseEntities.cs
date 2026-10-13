@@ -17,6 +17,7 @@ namespace SchoolERP.Domain.Entities
     public class Expense : BaseEntity
     {
         public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
         public long CategoryId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
@@ -27,6 +28,8 @@ namespace SchoolERP.Domain.Entities
         
         [JsonIgnore]
         public virtual Branch? Branch { get; set; }
+        [JsonIgnore]
+        public virtual AcademicYear? AcademicYear { get; set; }
         public virtual ExpenseCategory? Category { get; set; }
     }
 }

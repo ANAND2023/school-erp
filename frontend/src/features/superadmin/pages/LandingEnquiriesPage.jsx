@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, MenuItem, Select, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, MenuItem, Select, TextField, Button } from '@mui/material';
+import { Modal } from '../../../components/Modal';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import dayjs from 'dayjs';
@@ -185,40 +186,40 @@ export const LandingEnquiriesPage = () => {
         </Table>
       </TableContainer>
 
-      {/* Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Update Lead Status</DialogTitle>
-        <DialogContent dividers>
-          <Box display="flex" flexDirection="column" gap={3} sx={{ mt: 1 }}>
-            <Select
-              fullWidth
-              value={editStatus}
-              onChange={(e) => setEditStatus(e.target.value)}
-              label="Status"
-            >
-              <MenuItem value="New">New</MenuItem>
-              <MenuItem value="FollowUp">FollowUp</MenuItem>
-              <MenuItem value="Converted">Converted (ERP Sold)</MenuItem>
-              <MenuItem value="Rejected">Rejected</MenuItem>
-            </Select>
+      {/* Edit Modal */}
+      <Modal
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        title="Update Lead Status"
+        maxWidth="sm"
+        onConfirm={saveEdit}
+        confirmText="Save Changes"
+      >
+        <Box display="flex" flexDirection="column" gap={3} sx={{ mt: 1 }}>
+          <Select
+            fullWidth
+            value={editStatus}
+            onChange={(e) => setEditStatus(e.target.value)}
+            label="Status"
+          >
+            <MenuItem value="New">New</MenuItem>
+            <MenuItem value="FollowUp">FollowUp</MenuItem>
+            <MenuItem value="Converted">Converted (ERP Sold)</MenuItem>
+            <MenuItem value="Rejected">Rejected</MenuItem>
+          </Select>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Follow-up Remarks / Notes"
-              variant="outlined"
-              value={editRemarks}
-              onChange={(e) => setEditRemarks(e.target.value)}
-              placeholder="e.g. Talked to Principal, agreed for meeting on next Monday."
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={saveEdit} variant="contained" color="primary">Save Changes</Button>
-        </DialogActions>
-      </Dialog>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Follow-up Remarks / Notes"
+            variant="outlined"
+            value={editRemarks}
+            onChange={(e) => setEditRemarks(e.target.value)}
+            placeholder="e.g. Talked to Principal, agreed for meeting on next Monday."
+          />
+        </Box>
+      </Modal>
     </Box>
   );
 };

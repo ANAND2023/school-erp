@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Switch, Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, InputLabel, FormControl, Tooltip } from '@mui/material';
+import { Switch, Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl, Tooltip } from '@mui/material';
+import { Modal } from '../../../components/Modal';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HistoryIcon from '@mui/icons-material/History';
@@ -240,157 +241,159 @@ export const TransportAllocationsPage = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Transport to Student</DialogTitle>
-        <DialogContent sx={{ overflow: 'visible' }}>
-          <Grid container spacing={3} mt={1}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Select Class</InputLabel>
-                <Select label="Select Class" value={selectedClassId} onChange={handleClassChange}>
-                  {classes.map(c => (
-                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth disabled={!selectedClassId}>
-                <InputLabel>Select Section</InputLabel>
-                <Select label="Select Section" value={selectedSectionId} onChange={handleSectionChange}>
-                  {sections.map(s => (
-                    <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              
-                <Box>
-                  <Typography variant="caption" color="textSecondary" display="block" mb={0.5}>Select Student(s)</Typography>
-                  <MultiSelect 
-                    value={formData.studentIds || []} 
-                    onChange={(e) => setFormData({...formData, studentIds: e.value})} 
-                    options={filteredStudents} 
-                    optionLabel="fullName" 
-                    optionValue="id"
-                    display="chip" 
-                    placeholder="Select Students" 
-                    disabled={!selectedSectionId}
-                    filter
-                    className="w-full mui-custom-multiselect" appendTo="self" 
-                    style={{ width: '100%' }}
-                  />
-                </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Select Route</InputLabel>
-                <Select label="Select Route" value={formData.routeId} onChange={e => setFormData({...formData, routeId: e.target.value, routeStopId: ''})}>
-                  {routes.map(r => (
-                    <MenuItem key={r.id} value={r.id}>{r.routeName}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth disabled={!formData.routeId}>
-                <InputLabel>Select Stop</InputLabel>
-                <Select label="Select Stop" value={formData.routeStopId} onChange={e => setFormData({...formData, routeStopId: e.target.value})}>
-                  {selectedRouteStops.map(rs => (
-                    <MenuItem key={rs.id} value={rs.id}>{rs.stopName} (₹{rs.monthlyFare})</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField fullWidth type="date" label="Start Date" InputLabelProps={{ shrink: true }} value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
-            </Grid>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Assign Transport to Student"
+        maxWidth="sm"
+        onConfirm={handleSave}
+        confirmText="Save Allocation"
+        confirmDisabled={(!formData.studentIds || formData.studentIds.length === 0) || !formData.routeStopId}
+      >
+        <Grid container spacing={3} mt={1}>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Select Class</InputLabel>
+              <Select label="Select Class" value={selectedClassId} onChange={handleClassChange}>
+                {classes.map(c => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" disabled={(!formData.studentIds || formData.studentIds.length === 0) || !formData.routeStopId}>Save Allocation</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* History Dialog */}
-      <Dialog open={historyOpen} onClose={() => setHistoryOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Status History - {selectedStudentName}</DialogTitle>
-        <DialogContent dividers>
-          {currentLogs.length === 0 ? (
-            <Typography variant="body2" color="textSecondary">No status changes recorded.</Typography>
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date & Time</TableCell>
-                  <TableCell>Changed By</TableCell>
-                  <TableCell>Old Status</TableCell>
-                  <TableCell>New Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {currentLogs.map(log => (
-                  <TableRow key={log.id}>
-                    <TableCell>{new Date(log.changedOn + (!log.changedOn.endsWith('Z') ? 'Z' : '')).toLocaleString()}</TableCell>
-                    <TableCell>{log.changedBy}</TableCell>
-                    <TableCell>{log.oldStatus}</TableCell>
-                    <TableCell>{log.newStatus}</TableCell>
-                  </TableRow>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth disabled={!selectedClassId}>
+              <InputLabel>Select Section</InputLabel>
+              <Select label="Select Section" value={selectedSectionId} onChange={handleSectionChange}>
+                {sections.map(s => (
+                  <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHistoryOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Fees Dialog */}
-      <Dialog open={feesOpen} onClose={() => setFeesOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Transport Fees - {selectedStudentName}</DialogTitle>
-        <DialogContent dividers>
-          {currentFees.length === 0 ? (
-            <Typography variant="body2" color="textSecondary">No transport fees found for this student.</Typography>
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Month</TableCell>
-                  <TableCell>Due Date</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Paid Amount</TableCell>
-                  <TableCell>Balance Amount</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {currentFees.map(fee => (
-                  <TableRow key={fee.id}>
-                    <TableCell>{fee.month}</TableCell>
-                    <TableCell>{new Date(fee.dueDate).toLocaleDateString()}</TableCell>
-                    <TableCell>₹{fee.amount}</TableCell>
-                    <TableCell>₹{fee.paidAmount}</TableCell>
-                    <TableCell>₹{fee.balanceAmount}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={fee.status} 
-                        size="small" 
-                        color={fee.status === 'Paid' ? 'success' : fee.status === 'Partial' ? 'warning' : 'error'} 
-                      />
-                    </TableCell>
-                  </TableRow>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <Box>
+              <Typography variant="caption" color="textSecondary" display="block" mb={0.5}>Select Student(s)</Typography>
+              <MultiSelect 
+                value={formData.studentIds || []} 
+                onChange={(e) => setFormData({...formData, studentIds: e.value})} 
+                options={filteredStudents} 
+                optionLabel="fullName" 
+                optionValue="id"
+                display="chip" 
+                placeholder="Select Students" 
+                disabled={!selectedSectionId}
+                filter
+                className="w-full mui-custom-multiselect" appendTo="self" 
+                style={{ width: '100%' }}
+              />
+            </Box>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Select Route</InputLabel>
+              <Select label="Select Route" value={formData.routeId} onChange={e => setFormData({...formData, routeId: e.target.value, routeStopId: ''})}>
+                {routes.map(r => (
+                  <MenuItem key={r.id} value={r.id}>{r.routeName}</MenuItem>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFeesOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth disabled={!formData.routeId}>
+              <InputLabel>Select Stop</InputLabel>
+              <Select label="Select Stop" value={formData.routeStopId} onChange={e => setFormData({...formData, routeStopId: e.target.value})}>
+                {selectedRouteStops.map(rs => (
+                  <MenuItem key={rs.id} value={rs.id}>{rs.stopName} (₹{rs.monthlyFare})</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth type="date" label="Start Date" InputLabelProps={{ shrink: true }} value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+          </Grid>
+        </Grid>
+      </Modal>
+
+      {/* History Modal */}
+      <Modal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title={`Status History - ${selectedStudentName}`}
+        maxWidth="sm"
+        showConfirm={false}
+        cancelText="Close"
+      >
+        {currentLogs.length === 0 ? (
+          <Typography variant="body2" color="textSecondary">No status changes recorded.</Typography>
+        ) : (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Date & Time</TableCell>
+                <TableCell>Changed By</TableCell>
+                <TableCell>Old Status</TableCell>
+                <TableCell>New Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentLogs.map(log => (
+                <TableRow key={log.id}>
+                  <TableCell>{new Date(log.changedOn + (!log.changedOn.endsWith('Z') ? 'Z' : '')).toLocaleString()}</TableCell>
+                  <TableCell>{log.changedBy}</TableCell>
+                  <TableCell>{log.oldStatus}</TableCell>
+                  <TableCell>{log.newStatus}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Modal>
+
+      {/* Fees Modal */}
+      <Modal
+        open={feesOpen}
+        onClose={() => setFeesOpen(false)}
+        title={`Transport Fees - ${selectedStudentName}`}
+        maxWidth="md"
+        showConfirm={false}
+        cancelText="Close"
+      >
+        {currentFees.length === 0 ? (
+          <Typography variant="body2" color="textSecondary">No transport fees found for this student.</Typography>
+        ) : (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Month</TableCell>
+                <TableCell>Due Date</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Paid Amount</TableCell>
+                <TableCell>Balance Amount</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentFees.map(fee => (
+                <TableRow key={fee.id}>
+                  <TableCell>{fee.month}</TableCell>
+                  <TableCell>{new Date(fee.dueDate).toLocaleDateString()}</TableCell>
+                  <TableCell>₹{fee.amount}</TableCell>
+                  <TableCell>₹{fee.paidAmount}</TableCell>
+                  <TableCell>₹{fee.balanceAmount}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={fee.status} 
+                      size="small" 
+                      color={fee.status === 'Paid' ? 'success' : fee.status === 'Partial' ? 'warning' : 'error'} 
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Modal>
     </Box>
   );
 };

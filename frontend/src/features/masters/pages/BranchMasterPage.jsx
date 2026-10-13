@@ -58,6 +58,7 @@ import {
 import { schoolApi, branchApi } from '../api';
 import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
+import { Modal } from '../../../components/Modal';
 
 export const BranchMasterPage = ({ initialTab = 0 }) => {
   const location = useLocation();
@@ -1416,456 +1417,386 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
         </Box>
       )}
 
-      {/* ===================== DIALOG: REGISTER NEW SCHOOL ===================== */}
-      <Dialog
+      {/* ===================== MODAL: REGISTER NEW SCHOOL ===================== */}
+      <Modal
         open={createSchoolOpen}
         onClose={() => !savingSchool && setCreateSchoolOpen(false)}
+        title="Register New School / Institution"
+        subtitle="Add a new educational entity to the multi-school ERP"
+        icon={<SchoolIcon sx={{ fontSize: 26 }} />}
         maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        formId="create-school-form"
+        submitLabel="Register School"
+        confirmLoadingText="Creating School..."
+        loading={savingSchool}
       >
-        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SchoolIcon color="primary" sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Register New School / Institution
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Add a new educational entity to the multi-school ERP
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <Divider />
-
-        <form onSubmit={handleCreateSchoolSubmit}>
-          <DialogContent sx={{ pt: 2.5 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
-              1. School / Institution Identity
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={8}>
-                <TextField
-                  required
-                  fullWidth
-                  label="School / Institution Name"
-                  placeholder="e.g. St. Xavier's International Academy"
-                  value={newSchoolForm.name}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, name: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  required
-                  fullWidth
-                  label="School Code (Short Code)"
-                  placeholder="e.g. SXIA"
-                  value={newSchoolForm.code}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, code: e.target.value.toUpperCase() })}
-                  helperText="Unique uppercase identifier"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Affiliation / Board Registration No."
-                  placeholder="e.g. CBSE/AFF/2026/84291 or State Board"
-                  value={newSchoolForm.affiliationNumber}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, affiliationNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Logo Image URL (Optional)"
-                  placeholder="https://example.com/logo.png"
-                  value={newSchoolForm.logoUrl}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, logoUrl: e.target.value })}
-                />
-              </Grid>
+        <Box component="form" id="create-school-form" onSubmit={handleCreateSchoolSubmit} sx={{ pt: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
+            1. School / Institution Identity
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={8}>
+              <TextField
+                required
+                fullWidth
+                label="School / Institution Name"
+                placeholder="e.g. St. Xavier's International Academy"
+                value={newSchoolForm.name}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, name: e.target.value })}
+              />
             </Grid>
-
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
-              2. Contact & Address Details
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Official Contact Number"
-                  placeholder="+91 98765 43210"
-                  value={newSchoolForm.contactNumber}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, contactNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Official Email Address"
-                  placeholder="contact@school.edu.in"
-                  value={newSchoolForm.email}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, email: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Official Website"
-                  placeholder="https://www.myschool.edu.in"
-                  value={newSchoolForm.website}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, website: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Campus / Registered Address"
-                  placeholder="Plot No. 12, Knowledge Park, City, State - PIN"
-                  value={newSchoolForm.address}
-                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, address: e.target.value })}
-                />
-              </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                required
+                fullWidth
+                label="School Code (Short Code)"
+                placeholder="e.g. SXIA"
+                value={newSchoolForm.code}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, code: e.target.value.toUpperCase() })}
+                helperText="Unique uppercase identifier"
+              />
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Affiliation / Board Registration No."
+                placeholder="e.g. CBSE/AFF/2026/84291 or State Board"
+                value={newSchoolForm.affiliationNumber}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, affiliationNumber: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Logo Image URL (Optional)"
+                placeholder="https://example.com/logo.png"
+                value={newSchoolForm.logoUrl}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, logoUrl: e.target.value })}
+              />
+            </Grid>
+          </Grid>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
-              3. Automatic Initial Campus & Academic Session Setup
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
+            2. Contact & Address Details
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Official Contact Number"
+                placeholder="+91 98765 43210"
+                value={newSchoolForm.contactNumber}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, contactNumber: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Official Email Address"
+                placeholder="contact@school.edu.in"
+                value={newSchoolForm.email}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, email: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Official Website"
+                placeholder="https://www.myschool.edu.in"
+                value={newSchoolForm.website}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, website: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Campus / Registered Address"
+                placeholder="Plot No. 12, Knowledge Park, City, State - PIN"
+                value={newSchoolForm.address}
+                onChange={(e) => setNewSchoolForm({ ...newSchoolForm, address: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5 }}>
+            3. Automatic Initial Campus & Academic Session Setup
+          </Typography>
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fbfbfb', borderRadius: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={newSchoolForm.createDefaultBranch}
+                  onChange={(e) => setNewSchoolForm({ ...newSchoolForm, createDefaultBranch: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Automatically create default campus branch and current academic session
+                </Typography>
+              }
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Recommended. Enables fee collection, student enrollment, and class setup immediately after creation.
             </Typography>
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fbfbfb', borderRadius: 2 }}>
+
+            {newSchoolForm.createDefaultBranch && (
+              <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Initial Branch Name"
+                    value={newSchoolForm.branchName}
+                    onChange={(e) => setNewSchoolForm({ ...newSchoolForm, branchName: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Initial Branch Code"
+                    value={newSchoolForm.branchCode}
+                    onChange={(e) => setNewSchoolForm({ ...newSchoolForm, branchCode: e.target.value.toUpperCase() })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Initial Academic Session"
+                    value={newSchoolForm.academicYearName}
+                    onChange={(e) => setNewSchoolForm({ ...newSchoolForm, academicYearName: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+            )}
+          </Paper>
+        </Box>
+      </Modal>
+
+      {/* ===================== MODAL: EDIT SCHOOL ===================== */}
+      <Modal
+        open={editSchoolOpen}
+        onClose={() => !savingSchool && setEditSchoolOpen(false)}
+        title="Edit School Details"
+        icon={<EditIcon sx={{ fontSize: 24 }} />}
+        maxWidth="sm"
+        formId="edit-school-form"
+        submitLabel="Save Changes"
+        confirmLoadingText="Updating..."
+        loading={savingSchool}
+      >
+        <Box component="form" id="edit-school-form" onSubmit={handleEditSchoolSubmit} sx={{ pt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={8}>
+              <TextField
+                required
+                fullWidth
+                label="School Name"
+                value={editSchoolForm.name}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                required
+                fullWidth
+                label="School Code"
+                value={editSchoolForm.code}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, code: e.target.value.toUpperCase() })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Affiliation Number"
+                value={editSchoolForm.affiliationNumber}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, affiliationNumber: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Logo URL"
+                value={editSchoolForm.logoUrl}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, logoUrl: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Contact Phone"
+                value={editSchoolForm.contactNumber}
+                inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, contactNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Official Email"
+                value={editSchoolForm.email}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, email: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Website URL"
+                value={editSchoolForm.website}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, website: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Address"
+                value={editSchoolForm.address}
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, address: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={newSchoolForm.createDefaultBranch}
-                    onChange={(e) => setNewSchoolForm({ ...newSchoolForm, createDefaultBranch: e.target.checked })}
+                    checked={editSchoolForm.isActive}
+                    onChange={(e) => setEditSchoolForm({ ...editSchoolForm, isActive: e.target.checked })}
                     color="primary"
                   />
                 }
-                label={
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Automatically create default campus branch and current academic session
-                  </Typography>
-                }
+                label={<Typography variant="body2" sx={{ fontWeight: 600 }}>Active School Status</Typography>}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                Recommended. Enables fee collection, student enrollment, and class setup immediately after creation.
-              </Typography>
-
-              {newSchoolForm.createDefaultBranch && (
-                <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Initial Branch Name"
-                      value={newSchoolForm.branchName}
-                      onChange={(e) => setNewSchoolForm({ ...newSchoolForm, branchName: e.target.value })}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Initial Branch Code"
-                      value={newSchoolForm.branchCode}
-                      onChange={(e) => setNewSchoolForm({ ...newSchoolForm, branchCode: e.target.value.toUpperCase() })}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Initial Academic Session"
-                      value={newSchoolForm.academicYearName}
-                      onChange={(e) => setNewSchoolForm({ ...newSchoolForm, academicYearName: e.target.value })}
-                    />
-                  </Grid>
-                </Grid>
-              )}
-            </Paper>
-          </DialogContent>
-          <Divider />
-
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={() => setCreateSchoolOpen(false)} disabled={savingSchool} color="inherit">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={savingSchool}
-              startIcon={savingSchool ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
-              sx={{ px: 3, fontWeight: 700 }}
-            >
-              {savingSchool ? 'Creating School...' : 'Register School'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      {/* ===================== DIALOG: EDIT SCHOOL ===================== */}
-      <Dialog
-        open={editSchoolOpen}
-        onClose={() => !savingSchool && setEditSchoolOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <EditIcon color="primary" />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Edit School Details
-          </Typography>
-        </DialogTitle>
-        <Divider />
-
-        <form onSubmit={handleEditSchoolSubmit}>
-          <DialogContent sx={{ pt: 2.5 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={8}>
-                <TextField
-                  required
-                  fullWidth
-                  label="School Name"
-                  value={editSchoolForm.name}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, name: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  required
-                  fullWidth
-                  label="School Code"
-                  value={editSchoolForm.code}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, code: e.target.value.toUpperCase() })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Affiliation Number"
-                  value={editSchoolForm.affiliationNumber}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, affiliationNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Logo URL"
-                  value={editSchoolForm.logoUrl}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, logoUrl: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Contact Phone"
-                  value={editSchoolForm.contactNumber}
-                  inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, contactNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Official Email"
-                  value={editSchoolForm.email}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, email: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Website URL"
-                  value={editSchoolForm.website}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, website: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Address"
-                  value={editSchoolForm.address}
-                  onChange={(e) => setEditSchoolForm({ ...editSchoolForm, address: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={editSchoolForm.isActive}
-                      onChange={(e) => setEditSchoolForm({ ...editSchoolForm, isActive: e.target.checked })}
-                      color="primary"
-                    />
-                  }
-                  label={<Typography variant="body2" sx={{ fontWeight: 600 }}>Active School Status</Typography>}
-                />
-              </Grid>
             </Grid>
-          </DialogContent>
-          <Divider />
+          </Grid>
+        </Box>
+      </Modal>
 
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={() => setEditSchoolOpen(false)} disabled={savingSchool} color="inherit">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={savingSchool}
-              startIcon={savingSchool ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
-              sx={{ px: 3, fontWeight: 700 }}
-            >
-              {savingSchool ? 'Updating...' : 'Save Changes'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      {/* ===================== DIALOG: ADD NEW BRANCH ===================== */}
-      <Dialog
+      {/* ===================== MODAL: ADD NEW BRANCH ===================== */}
+      <Modal
         open={createBranchOpen}
         onClose={() => !savingBranch && setCreateBranchOpen(false)}
+        title="Add Campus Branch"
+        icon={<DomainIcon sx={{ fontSize: 24 }} />}
         maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        formId="create-branch-form"
+        submitLabel="Add Branch"
+        confirmLoadingText="Adding..."
+        loading={savingBranch}
       >
-        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <DomainIcon color="primary" />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Add Campus Branch
-          </Typography>
-        </DialogTitle>
-        <Divider />
-
-        <form onSubmit={handleCreateBranchSubmit}>
-          <DialogContent sx={{ pt: 2.5 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <FormControl fullWidth required size="small">
-                  <InputLabel>Parent School</InputLabel>
-                  <Select
-                    value={newBranchForm.schoolId}
-                    label="Parent School"
-                    onChange={(e) => setNewBranchForm({ ...newBranchForm, schoolId: e.target.value })}
-                  >
-                    {schools.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>
-                        {s.name} ({s.code})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={8}>
-                <TextField
-                  required
-                  fullWidth
-                  size="small"
-                  label="Branch Name"
-                  placeholder="e.g. South Extension Campus"
-                  value={newBranchForm.name}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, name: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  required
-                  fullWidth
-                  size="small"
-                  label="Branch Code"
-                  placeholder="e.g. SOUTH"
-                  value={newBranchForm.code}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, code: e.target.value.toUpperCase() })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Receipt & Report Print Header"
-                  placeholder="Appears on fee slips and reports"
-                  value={newBranchForm.printHeader}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, printHeader: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Branch Address"
-                  value={newBranchForm.address}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, address: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="City"
-                  value={newBranchForm.city}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, city: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="State"
-                  value={newBranchForm.state}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, state: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Pincode"
-                  value={newBranchForm.pincode}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, pincode: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Phone Number"
-                  value={newBranchForm.phone}
-                  inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Email Address"
-                  value={newBranchForm.email}
-                  onChange={(e) => setNewBranchForm({ ...newBranchForm, email: e.target.value })}
-                />
-              </Grid>
+        <Box component="form" id="create-branch-form" onSubmit={handleCreateBranchSubmit} sx={{ pt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <FormControl fullWidth required size="small">
+                <InputLabel>Parent School</InputLabel>
+                <Select
+                  value={newBranchForm.schoolId}
+                  label="Parent School"
+                  onChange={(e) => setNewBranchForm({ ...newBranchForm, schoolId: e.target.value })}
+                >
+                  {schools.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.name} ({s.code})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-          </DialogContent>
-          <Divider />
 
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={() => setCreateBranchOpen(false)} disabled={savingBranch} color="inherit">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={savingBranch}
-              startIcon={savingBranch ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
-              sx={{ px: 3, fontWeight: 700 }}
-            >
-              {savingBranch ? 'Adding...' : 'Add Branch'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+            <Grid item xs={12} sm={8}>
+              <TextField
+                required
+                fullWidth
+                size="small"
+                label="Branch Name"
+                placeholder="e.g. South Extension Campus"
+                value={newBranchForm.name}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                required
+                fullWidth
+                size="small"
+                label="Branch Code"
+                placeholder="e.g. SOUTH"
+                value={newBranchForm.code}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, code: e.target.value.toUpperCase() })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Receipt & Report Print Header"
+                placeholder="Appears on fee slips and reports"
+                value={newBranchForm.printHeader}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, printHeader: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Branch Address"
+                value={newBranchForm.address}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, address: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                label="City"
+                value={newBranchForm.city}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, city: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                label="State"
+                value={newBranchForm.state}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, state: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Pincode"
+                value={newBranchForm.pincode}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, pincode: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Phone Number"
+                value={newBranchForm.phone}
+                inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Email Address"
+                value={newBranchForm.email}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, email: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      </Modal>
     </Box>
   );
 };

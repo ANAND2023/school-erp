@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Modal } from '../../../components/Modal';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -132,54 +133,55 @@ export const TransportVehiclesPage = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editData ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} mt={1}>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="Registration No." value={formData.registrationNo} onChange={e => setFormData({...formData, registrationNo: e.target.value})} required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Vehicle Type</InputLabel>
-                <Select label="Vehicle Type" value={formData.vehicleType} onChange={e => setFormData({...formData, vehicleType: e.target.value})}>
-                  <MenuItem value="Bus">Bus</MenuItem>
-                  <MenuItem value="Van">Van</MenuItem>
-                  <MenuItem value="Car">Car</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth type="number" label="Seating Capacity" value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})} required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select label="Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="UnderMaintenance">Under Maintenance</MenuItem>
-                  <MenuItem value="Inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Select Driver (Staff)</InputLabel>
-                <Select label="Select Driver (Staff)" value={formData.driverId} onChange={e => setFormData({...formData, driverId: e.target.value})}>
-                  <MenuItem value=""><em>None</em></MenuItem>
-                  {staff.map(s => (
-                    <MenuItem key={s.id} value={s.id}>{s.fullName} ({s.employeeCode})</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={editData ? 'Edit Vehicle' : 'Add New Vehicle'}
+        maxWidth="sm"
+        onConfirm={handleSave}
+        confirmText="Save Vehicle"
+        confirmDisabled={!formData.registrationNo || !formData.capacity}
+      >
+        <Grid container spacing={2} mt={1}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Registration No." value={formData.registrationNo} onChange={e => setFormData({...formData, registrationNo: e.target.value})} required />
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" disabled={!formData.registrationNo || !formData.capacity}>Save Vehicle</Button>
-        </DialogActions>
-      </Dialog>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Vehicle Type</InputLabel>
+              <Select label="Vehicle Type" value={formData.vehicleType} onChange={e => setFormData({...formData, vehicleType: e.target.value})}>
+                <MenuItem value="Bus">Bus</MenuItem>
+                <MenuItem value="Van">Van</MenuItem>
+                <MenuItem value="Car">Car</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth type="number" label="Seating Capacity" value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})} required />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select label="Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="UnderMaintenance">Under Maintenance</MenuItem>
+                <MenuItem value="Inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>Select Driver (Staff)</InputLabel>
+              <Select label="Select Driver (Staff)" value={formData.driverId} onChange={e => setFormData({...formData, driverId: e.target.value})}>
+                <MenuItem value=""><em>None</em></MenuItem>
+                {staff.map(s => (
+                  <MenuItem key={s.id} value={s.id}>{s.fullName} ({s.employeeCode})</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Modal>
     </Box>
   );
 };

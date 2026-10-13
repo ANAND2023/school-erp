@@ -71,7 +71,7 @@ export const App = () => {
               textTransform: 'uppercase',
               letterSpacing: '0.3px',
               '&.Mui-focused': {
-                color: '#00bcd4',
+                color: currentColorHex || '#14b8a6',
                 fontWeight: 700,
               },
             },

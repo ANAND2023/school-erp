@@ -46,7 +46,7 @@ export function applyFontSize(size) {
 }
 
 // Helper to adjust color brightness/darkness for subtle gradient
-function shadeColor(color, percent) {
+export function shadeColor(color, percent) {
   let num = parseInt(color.replace('#', ''), 16);
   let amt = Math.round(2.55 * percent);
   let R = (num >> 16) + amt;

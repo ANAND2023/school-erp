@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Modal } from '../../../components/Modal';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -158,87 +159,89 @@ export const TransportRoutesPage = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{editData ? 'Edit Route' : 'Add New Route'}</DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} mt={1}>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="Route Name" value={formData.routeName} onChange={e => setFormData({...formData, routeName: e.target.value})} required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Assigned Vehicle</InputLabel>
-                <Select label="Assigned Vehicle" value={formData.vehicleId} onChange={e => setFormData({...formData, vehicleId: e.target.value})}>
-                  <MenuItem value=""><em>None</em></MenuItem>
-                  {vehicles.map(v => (
-                    <MenuItem key={v.id} value={v.id}>{v.registrationNo} ({v.capacity} Seats)</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField fullWidth label="Description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-            </Grid>
-
-            {/* Route Stops Section */}
-            <Grid item xs={12}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={1}>
-                <Typography variant="subtitle1" fontWeight="bold">Route Stops</Typography>
-                <Button size="small" variant="outlined" onClick={handleAddStop}>+ Add Stop</Button>
-              </Box>
-              {formData.stops.length === 0 && <Typography variant="body2" color="textSecondary">No stops added. Add stops to define this route.</Typography>}
-              {formData.stops.map((stop, index) => (
-                <Box key={index} display="flex" gap={2} mb={2} alignItems="center" bgcolor="#f8fafc" p={2} borderRadius={2}>
-                  <TextField size="small" label="Stop Name" value={stop.stopName} onChange={e => handleStopChange(index, 'stopName', e.target.value)} required sx={{ flex: 2 }} />
-                  <TextField size="small" type="time" label="Pick-up" InputLabelProps={{ shrink: true }} value={stop.pickUpTime || ''} onChange={e => handleStopChange(index, 'pickUpTime', e.target.value)} sx={{ flex: 1 }} />
-                  <TextField size="small" type="time" label="Drop" InputLabelProps={{ shrink: true }} value={stop.dropTime || ''} onChange={e => handleStopChange(index, 'dropTime', e.target.value)} sx={{ flex: 1 }} />
-                  <TextField size="small" type="number" label="Monthly Fare" value={stop.monthlyFare} onChange={e => handleStopChange(index, 'monthlyFare', e.target.value)} sx={{ flex: 1 }} />
-                  <IconButton color="error" onClick={() => handleRemoveStop(index)}><DeleteIcon /></IconButton>
-                </Box>
-              ))}
-            </Grid>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={editData ? 'Edit Route' : 'Add New Route'}
+        maxWidth="md"
+        onConfirm={handleSave}
+        confirmText="Save Route"
+        confirmDisabled={!formData.routeName}
+      >
+        <Grid container spacing={2} mt={1}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Route Name" value={formData.routeName} onChange={e => setFormData({...formData, routeName: e.target.value})} required />
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" disabled={!formData.routeName}>Save Route</Button>
-        </DialogActions>
-      </Dialog>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Assigned Vehicle</InputLabel>
+              <Select label="Assigned Vehicle" value={formData.vehicleId} onChange={e => setFormData({...formData, vehicleId: e.target.value})}>
+                <MenuItem value=""><em>None</em></MenuItem>
+                {vehicles.map(v => (
+                  <MenuItem key={v.id} value={v.id}>{v.registrationNo} ({v.capacity} Seats)</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="Description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+          </Grid>
 
-      <Dialog open={viewOpen} onClose={() => setViewOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Route Stops Details - {viewData?.routeName}</DialogTitle>
-        <DialogContent dividers>
-          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-            <Table size="small">
-              <TableHead sx={{ bgcolor: '#f1f5f9' }}>
-                <TableRow>
-                  <TableCell>Stop Name</TableCell>
-                  <TableCell>Pick-up Time</TableCell>
-                  <TableCell>Drop Time</TableCell>
-                  <TableCell>Monthly Fare</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {viewData?.stops?.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} align="center">No stops added to this route.</TableCell></TableRow>
-                ) : (
-                  viewData?.stops?.map((stop, index) => (
-                    <TableRow key={index} hover>
-                      <TableCell>{stop.stopName}</TableCell>
-                      <TableCell>{stop.pickUpTime || '-'}</TableCell>
-                      <TableCell>{stop.dropTime || '-'}</TableCell>
-                      <TableCell>{stop.monthlyFare}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+          {/* Route Stops Section */}
+          <Grid item xs={12}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={1}>
+              <Typography variant="subtitle1" fontWeight="bold">Route Stops</Typography>
+              <Button size="small" variant="outlined" onClick={handleAddStop}>+ Add Stop</Button>
+            </Box>
+            {formData.stops.length === 0 && <Typography variant="body2" color="textSecondary">No stops added. Add stops to define this route.</Typography>}
+            {formData.stops.map((stop, index) => (
+              <Box key={index} display="flex" gap={2} mb={2} alignItems="center" bgcolor="#f8fafc" p={2} borderRadius={2}>
+                <TextField size="small" label="Stop Name" value={stop.stopName} onChange={e => handleStopChange(index, 'stopName', e.target.value)} required sx={{ flex: 2 }} />
+                <TextField size="small" type="time" label="Pick-up" InputLabelProps={{ shrink: true }} value={stop.pickUpTime || ''} onChange={e => handleStopChange(index, 'pickUpTime', e.target.value)} sx={{ flex: 1 }} />
+                <TextField size="small" type="time" label="Drop" InputLabelProps={{ shrink: true }} value={stop.dropTime || ''} onChange={e => handleStopChange(index, 'dropTime', e.target.value)} sx={{ flex: 1 }} />
+                <TextField size="small" type="number" label="Monthly Fare" value={stop.monthlyFare} onChange={e => handleStopChange(index, 'monthlyFare', e.target.value)} sx={{ flex: 1 }} />
+                <IconButton color="error" onClick={() => handleRemoveStop(index)}><DeleteIcon /></IconButton>
+              </Box>
+            ))}
+          </Grid>
+        </Grid>
+      </Modal>
+
+      <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title={`Route Stops Details - ${viewData?.routeName || ''}`}
+        maxWidth="md"
+        showConfirm={false}
+        cancelText="Close"
+      >
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+          <Table size="small">
+            <TableHead sx={{ bgcolor: '#f1f5f9' }}>
+              <TableRow>
+                <TableCell>Stop Name</TableCell>
+                <TableCell>Pick-up Time</TableCell>
+                <TableCell>Drop Time</TableCell>
+                <TableCell>Monthly Fare</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {viewData?.stops?.length === 0 ? (
+                <TableRow><TableCell colSpan={4} align="center">No stops added to this route.</TableCell></TableRow>
+              ) : (
+                viewData?.stops?.map((stop, index) => (
+                  <TableRow key={index} hover>
+                    <TableCell>{stop.stopName}</TableCell>
+                    <TableCell>{stop.pickUpTime || '-'}</TableCell>
+                    <TableCell>{stop.dropTime || '-'}</TableCell>
+                    <TableCell>{stop.monthlyFare}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Modal>
     </Box>
   );
 };
