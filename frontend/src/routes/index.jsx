@@ -98,6 +98,7 @@ import { LandingEnquiriesPage } from '../features/superadmin/pages/LandingEnquir
 import { ModuleCatalogPage } from '../features/superadmin/pages/ModuleCatalogPage';
 import { WebsiteCmsPage } from '../features/superadmin/pages/WebsiteCmsPage';
 import { SystemErrorLogsPage } from '../features/superadmin/pages/SystemErrorLogsPage';
+import { EnquirySlipDesignerPage } from '../features/superadmin/pages/EnquirySlipDesignerPage';
 import { useAuthStore } from '../store/authStore';
 import { usePermission } from '../hooks/usePermission';
 
@@ -662,6 +663,7 @@ export const AppRoutes = () => {
         <Route path="modules" element={<ModuleCatalogPage />} />
         <Route path="gateways" element={<GatewaysPage />} />
         <Route path="whatsapp" element={<WhatsAppSettingsPage />} />
+        <Route path="enquiry-slip-designer" element={<EnquirySlipDesignerPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
         <Route path="error-logs" element={<SystemErrorLogsPage />} />
         <Route path="enquiries" element={<LandingEnquiriesPage />} />

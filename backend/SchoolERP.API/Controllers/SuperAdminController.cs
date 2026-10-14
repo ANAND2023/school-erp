@@ -1369,6 +1369,155 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.2 DYNAMIC ENQUIRY SLIP BUILDER (SCHOOL-WISE)
+        // ==========================================
+        [HttpGet("enquiry-slip-config")]
+        public async Task<ActionResult<ApiResponse<EnquirySlipConfigDto>>> GetEnquirySlipConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ENQUIRY_SLIP");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                // Fallback to Global default template
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "ENQUIRY_SLIP");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<EnquirySlipConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        var defaultSecs = EnquirySlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<EnquirySlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new EnquirySlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<EnquirySlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("enquiry-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveEnquirySlipConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] EnquirySlipConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ENQUIRY_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "SLIP_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "ENQUIRY_SLIP",
+                    Provider = "SLIP_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "ENQUIRY_SLIP_CONFIGURED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Platform Default",
+                null,
+                new { schoolId, request.PrimaryColor, request.FontFamily });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Enquiry slip layout & styling saved successfully."));
+        }
+
+        [HttpDelete("enquiry-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetEnquirySlipConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ENQUIRY_SLIP");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "ENQUIRY_SLIP_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School enquiry slip reset to platform default successfully."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

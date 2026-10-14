@@ -134,4 +134,20 @@ export const superAdminApi = {
     const res = await apiClient.post('/superadmin/whatsapp-config', payload, { params: { schoolId } });
     return res.data;
   },
+
+  // 10. Dynamic Enquiry Slip Designer (School-wise)
+  getEnquirySlipConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/enquiry-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveEnquirySlipConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/enquiry-slip-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetEnquirySlipConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/enquiry-slip-config', { params: { schoolId } });
+    return res.data;
+  },
 };

@@ -12,6 +12,7 @@ using SchoolERP.Application.DTOs;
 using SchoolERP.Domain.Entities;
 using SchoolERP.Domain.Enums;
 using SchoolERP.Infrastructure.Persistence;
+using System.Text.Json;
 
 namespace SchoolERP.API.Controllers
 {
@@ -233,6 +234,72 @@ namespace SchoolERP.API.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse.Ok("Followup logged successfully."));
+        }
+
+        [HttpGet("slip-config")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<EnquirySlipConfigDto>>> GetEnquirySlipConfig()
+        {
+            var branchId = _currentUserService.BranchId;
+            long? schoolId = null;
+
+            if (branchId > 0)
+            {
+                schoolId = await _context.Branches
+                    .Where(b => b.Id == branchId)
+                    .Select(b => (long?)b.SchoolId)
+                    .FirstOrDefaultAsync();
+            }
+
+            // 1. Try school-specific config
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ENQUIRY_SLIP" && g.IsActive);
+            }
+
+            // 2. Fallback to platform-wide default
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "ENQUIRY_SLIP" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<EnquirySlipConfigDto>(
+                        config.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        var defaultSecs = EnquirySlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<EnquirySlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            // Return default config
+            return Ok(ApiResponse<EnquirySlipConfigDto>.Ok(new EnquirySlipConfigDto()));
         }
     }
 }
