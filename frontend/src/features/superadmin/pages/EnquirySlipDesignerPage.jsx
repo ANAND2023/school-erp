@@ -8,8 +8,9 @@ import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Divider } from 'primereact/divider';
+import { Dialog } from 'primereact/dialog';
 import { superAdminApi } from '../api/superAdminApi';
-import { printWithTitle } from '../../../utils/printUtils';
+import { printElement, downloadElementAsPdf, sanitizeFileName } from '../../../utils/printUtils';
 
 const PRESET_PALETTES = [
   { name: 'Teal Elegance', primary: '#0f766e', secondary: '#f0fdfa', accent: '#115e59', border: '#0f766e' },
@@ -45,7 +46,7 @@ const BORDER_STYLES = [
 ];
 
 const PAGE_SIZE_OPTIONS = [
-  { label: 'A4 Paper (210 × 297 mm - Standard)', value: 'A4' },
+  { label: 'A4 Paper (210 × 297 mm - Standard Full Page)', value: 'A4' },
   { label: 'A5 Paper (148 × 210 mm - Half Sheet / Voucher)', value: 'A5' },
   { label: 'Letter (8.5 × 11 in)', value: 'Letter' },
 ];
@@ -69,6 +70,7 @@ export const EnquirySlipDesignerPage = () => {
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState(null); // null = Global default
   const [activeTab, setActiveTab] = useState('sizing'); // 'sizing' | 'sections' | 'styling' | 'layout' | 'content'
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   // Drag and drop state
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -167,7 +169,6 @@ export const EnquirySlipDesignerPage = () => {
         setConfig((prev) => ({
           ...prev,
           ...res.data,
-          // ensure sizing defaults if null/undefined
           logoSize: res.data.logoSize || 52,
           photoWidth: res.data.photoWidth || 86,
           photoHeight: res.data.photoHeight || 104,
@@ -338,6 +339,16 @@ export const EnquirySlipDesignerPage = () => {
       default:
         return `2px solid ${config.borderColor}`;
     }
+  };
+
+  // Trigger Isolated Print
+  const handlePrintSlip = () => {
+    printElement('printable-enquiry-slip', {
+      title: `Enquiry_Slip_${config.schoolName || 'Template'}`,
+      pageSize: config.pageSize || 'A4',
+      orientation: config.pageOrientation || 'portrait',
+      margin: config.pageMargin || '8mm',
+    });
   };
 
   // Mock enquiry data for live preview
@@ -1035,9 +1046,76 @@ export const EnquirySlipDesignerPage = () => {
     <div className="p-3" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <Toast ref={toastRef} />
 
-      {/* Top Banner & School Selector Bar */}
+      {/* CSS PRINT MEDIA STYLES TO ENSURE 100% ISOLATION IF USER USES CTRL+P */}
+      <style>
+        {`
+          @page {
+            size: ${config.pageSize || 'A4'} ${config.pageOrientation || 'portrait'};
+            margin: ${config.pageMargin || '8mm'};
+          }
+          @media print {
+            html, body {
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .no-print,
+            aside,
+            header,
+            nav,
+            .p-toast,
+            .p-card-header,
+            button,
+            .designer-controls-column {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              width: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .designer-preview-column,
+            .designer-preview-column .p-card,
+            .designer-preview-column .p-card-body,
+            .designer-preview-column .p-card-content {
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+              background: #ffffff !important;
+            }
+            .designer-preview-canvas {
+              background: #ffffff !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              max-height: none !important;
+              overflow: visible !important;
+            }
+            #printable-enquiry-slip {
+              position: static !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 auto !important;
+              box-shadow: none !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+            }
+          }
+        `}
+      </style>
+
+      {/* Top Banner & School Selector Bar (Hidden in Print) */}
       <div
-        className="flex flex-column md:flex-row md:align-items-center md:justify-content-between p-4 border-round-xl shadow-1 mb-4"
+        className="no-print flex flex-column md:flex-row md:align-items-center md:justify-content-between p-4 border-round-xl shadow-1 mb-4"
         style={{
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
           color: '#ffffff',
@@ -1112,8 +1190,8 @@ export const EnquirySlipDesignerPage = () => {
 
       {/* Main Designer Layout (Grid: Controls on Left, Live Preview on Right) */}
       <div className="grid">
-        {/* Left Column: Customization Controls (5 cols on lg) */}
-        <div className="col-12 lg:col-5">
+        {/* Left Column: Customization Controls (Hidden in Print via .designer-controls-column) */}
+        <div className="col-12 lg:col-5 designer-controls-column no-print">
           <Card className="shadow-2 border-round-xl p-0 overflow-hidden mb-3">
             {/* Navigation Tabs */}
             <div
@@ -1789,37 +1867,53 @@ export const EnquirySlipDesignerPage = () => {
           </Card>
         </div>
 
-        {/* Right Column: Interactive Live Preview (7 cols on lg) */}
-        <div className="col-12 lg:col-7">
+        {/* Right Column: Interactive Live Preview */}
+        <div className="col-12 lg:col-7 designer-preview-column">
           <Card className="shadow-2 border-round-xl p-0 overflow-hidden sticky" style={{ top: '16px' }}>
             <div
-              className="flex align-items-center justify-content-between p-3 border-bottom-1 surface-border"
+              className="no-print flex flex-wrap align-items-center justify-content-between p-3 border-bottom-1 surface-border gap-2"
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex align-items-center gap-2">
                 <i className="pi pi-eye text-indigo-600"></i>
-                <span className="text-sm font-bold text-slate-800">Interactive Live Slip Preview</span>
+                <span className="text-sm font-bold text-slate-800">Live Slip Preview</span>
                 <span className="text-xs text-indigo-600 font-bold px-2 py-0.5 border-round bg-indigo-50">
                   {config.pageSize} {config.pageOrientation} • Max: {maxWidthPx}px
                 </span>
               </div>
 
+              {/* Action Buttons: Preview Modal, Download PDF, Isolated Print */}
               <div className="flex align-items-center gap-2">
                 <Button
-                  label="Test Print View"
+                  label="Modal View"
+                  icon="pi pi-window-maximize"
+                  className="p-button-outlined p-button-secondary p-button-sm font-semibold"
+                  tooltip="Preview full-screen slip dialog"
+                  onClick={() => setPreviewModalOpen(true)}
+                />
+                <Button
+                  label="Download PDF"
+                  icon="pi pi-file-pdf"
+                  className="p-button-outlined p-button-danger p-button-sm font-semibold"
+                  tooltip="Directly download PDF file"
+                  onClick={() => downloadElementAsPdf('printable-enquiry-slip', `Enquiry_Slip_${config.schoolName || 'Template'}.pdf`)}
+                />
+                <Button
+                  label="Print Slip"
                   icon="pi pi-print"
-                  className="p-button-outlined p-button-sm font-bold"
-                  style={{ color: config.primaryColor, borderColor: config.primaryColor }}
-                  onClick={() => printWithTitle(`Preview_Enquiry_Slip_${config.schoolName || 'Template'}`)}
+                  className="p-button-primary p-button-sm font-bold"
+                  style={{ backgroundColor: config.primaryColor, borderColor: config.primaryColor }}
+                  tooltip="Print ONLY the Enquiry Slip (No admin UI)"
+                  onClick={handlePrintSlip}
                 />
               </div>
             </div>
 
-            {/* Live Slip Paper Preview Background */}
+            {/* Live Slip Paper Preview Canvas */}
             <div
-              className="p-3"
+              className="p-3 designer-preview-canvas"
               style={{
-                backgroundColor: '#cbd5e1',
+                backgroundColor: '#94a3b8',
                 minHeight: '640px',
                 maxHeight: '85vh',
                 overflowY: 'auto',
@@ -1836,7 +1930,7 @@ export const EnquirySlipDesignerPage = () => {
                   border: getBorderCss(),
                   borderRadius: '6px',
                   padding: `${slipPadding}px`,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
                   fontFamily: config.fontFamily,
                   color: '#1e293b',
                   width: '100%',
@@ -1856,6 +1950,61 @@ export const EnquirySlipDesignerPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* FULL PREVIEW MODAL DIALOG */}
+      <Dialog
+        header={`Official Slip Preview — ${config.schoolName || 'Platform Default'}`}
+        visible={previewModalOpen}
+        onHide={() => setPreviewModalOpen(false)}
+        style={{ width: '90vw', maxWidth: '880px' }}
+        maximizable
+        modal
+        className="no-print"
+      >
+        <div style={{ backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '8px' }}>
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              border: getBorderCss(),
+              borderRadius: '6px',
+              padding: `${slipPadding}px`,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+              fontFamily: config.fontFamily,
+              color: '#1e293b',
+              width: '100%',
+              maxWidth: `${maxWidthPx}px`,
+              margin: '0 auto',
+              fontSize: `${config.baseFontSize || 13}px`,
+            }}
+          >
+            {config.sections
+              .filter((s) => s.visible)
+              .map((section) => renderPreviewSection(section.key))}
+          </div>
+
+          <div className="flex justify-content-end gap-2 mt-3">
+            <Button
+              label="Close"
+              icon="pi pi-times"
+              className="p-button-text p-button-secondary p-button-sm"
+              onClick={() => setPreviewModalOpen(false)}
+            />
+            <Button
+              label="Download PDF"
+              icon="pi pi-file-pdf"
+              className="p-button-outlined p-button-danger p-button-sm"
+              onClick={() => downloadElementAsPdf('printable-enquiry-slip', `Enquiry_Slip_${config.schoolName || 'Template'}.pdf`)}
+            />
+            <Button
+              label="Print Enquiry Slip"
+              icon="pi pi-print"
+              className="p-button-primary p-button-sm font-bold"
+              style={{ backgroundColor: config.primaryColor, borderColor: config.primaryColor }}
+              onClick={handlePrintSlip}
+            />
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

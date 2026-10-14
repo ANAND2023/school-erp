@@ -38,7 +38,7 @@ export const SuperAdminLayout = () => {
       <div className="flex flex-1">
         {/* Dark Slate Executive Sidebar */}
         <aside
-          className={`flex flex-column justify-content-between p-3 border-right-1 ${
+          className={`no-print flex flex-column justify-content-between p-3 border-right-1 ${
             mobileMenuOpen ? 'block' : 'hidden md:flex'
           }`}
           style={{
@@ -154,7 +154,7 @@ export const SuperAdminLayout = () => {
         <div className="flex-1 flex flex-column min-h-screen overflow-x-hidden">
           {/* Top Executive Header */}
           <header
-            className="flex align-items-center justify-content-between px-4 py-3 bg-white border-bottom-1 surface-border sticky top-0 z-3"
+            className="no-print flex align-items-center justify-content-between px-4 py-3 bg-white border-bottom-1 surface-border sticky top-0 z-3"
             style={{ height: '60px', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}
           >
             <div className="flex align-items-center gap-3">
