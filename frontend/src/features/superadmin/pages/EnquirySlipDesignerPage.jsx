@@ -23,12 +23,35 @@ const PRESET_PALETTES = [
 ];
 
 const FONT_OPTIONS = [
+  { label: 'Inherit Slip Font', value: 'inherit' },
   { label: 'Inter (Modern & Clean)', value: 'Inter, sans-serif' },
   { label: 'Poppins (Geometric & Friendly)', value: 'Poppins, sans-serif' },
   { label: 'Roboto (Balanced Neo-Grotesque)', value: 'Roboto, sans-serif' },
-  { label: 'Montserrat (Premium Header & Body)', value: 'Montserrat, sans-serif' },
+  { label: 'Montserrat (Premium Bold)', value: 'Montserrat, sans-serif' },
   { label: 'Playfair Display (Prestigious Serif)', value: '"Playfair Display", Georgia, serif' },
   { label: 'Segoe UI (System Standard)', value: '"Segoe UI", -apple-system, sans-serif' },
+];
+
+const FONT_WEIGHT_OPTIONS = [
+  { label: 'Normal (400)', value: '400' },
+  { label: 'Medium (500)', value: '500' },
+  { label: 'Semi-Bold (600)', value: '600' },
+  { label: 'Bold (700)', value: '700' },
+  { label: 'Extra Bold (800)', value: '800' },
+  { label: 'Heavy Black (900)', value: '900' },
+];
+
+const TEXT_TRANSFORM_OPTIONS = [
+  { label: 'ALL UPPERCASE (DELHI PUBLIC SCHOOL)', value: 'uppercase' },
+  { label: 'Title Case (Delhi Public School)', value: 'capitalize' },
+  { label: 'Normal / As Typed', value: 'none' },
+];
+
+const LETTER_SPACING_OPTIONS = [
+  { label: 'Normal (0px)', value: '0px' },
+  { label: 'Slightly Spaced (0.8px)', value: '0.8px' },
+  { label: 'Wide (1.5px)', value: '1.5px' },
+  { label: 'Extra Spacious (2.5px)', value: '2.5px' },
 ];
 
 const HEADER_LAYOUTS = [
@@ -36,6 +59,13 @@ const HEADER_LAYOUTS = [
   { label: 'Modern Side-by-Side', value: 'Modern', desc: 'Logo on left, school details center, enquiry badge & QR on right' },
   { label: 'Solid Color Banner', value: 'Banner', desc: 'Full-bleed primary colored header with bold white text' },
   { label: 'Clean Minimalist', value: 'Minimal', desc: 'Understated light header with crisp thin dividers' },
+];
+
+const HEADER_DIVIDER_OPTIONS = [
+  { label: 'Double Line (2.5px)', value: 'Double' },
+  { label: 'Solid Line (2px)', value: 'Solid' },
+  { label: 'Dashed Outline (1.5px)', value: 'Dashed' },
+  { label: 'No Bottom Line', value: 'None' },
 ];
 
 const BORDER_STYLES = [
@@ -69,7 +99,7 @@ export const EnquirySlipDesignerPage = () => {
   const [saving, setSaving] = useState(false);
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState(null); // null = Global default
-  const [activeTab, setActiveTab] = useState('sizing'); // 'sizing' | 'sections' | 'styling' | 'layout' | 'content'
+  const [activeTab, setActiveTab] = useState('header'); // 'header' | 'sizing' | 'sections' | 'styling' | 'content'
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   // Drag and drop state
@@ -90,17 +120,45 @@ export const EnquirySlipDesignerPage = () => {
     headerLayout: 'Classic',
     borderStyle: 'Solid',
 
-    // Sizing Controls (Requested by User)
-    logoSize: 52, // 30px to 120px
-    photoWidth: 86, // 50px to 140px
-    photoHeight: 104, // 70px to 180px
-    baseFontSize: 13, // 10px to 18px
-    fontScalePercent: 100, // 70% to 140%
-    pageSize: 'A4', // 'A4' | 'A5' | 'Letter'
-    pageOrientation: 'portrait', // 'portrait' | 'landscape'
-    pageMargin: '8mm', // '5mm' | '8mm' | '12mm' | '16mm'
-    pagePadding: 20, // 8px to 36px
-    pageMaxWidth: 760, // 540px to 960px
+    // Full Header Customization (School Name font size, style, color, weight)
+    headerSchoolNameCustom: '',
+    headerSchoolNameFontSize: 24, // 14px to 42px
+    headerSchoolNameColor: '#0f766e',
+    headerSchoolNameFontWeight: '900',
+    headerSchoolNameFontFamily: 'inherit',
+    headerSchoolNameTransform: 'uppercase',
+    headerSchoolNameLetterSpacing: '0.8px',
+
+    headerSubtitleCustom: '',
+    headerSubtitleFontSize: 13,
+    headerSubtitleColor: '#475569',
+    headerSubtitleFontWeight: '600',
+
+    headerAddressCustom: '',
+    headerAddressFontSize: 11,
+    headerAddressColor: '#64748b',
+
+    headerAlignment: 'center',
+    headerBgColor: 'transparent',
+    headerPaddingY: 10,
+    headerDividerStyle: 'Double',
+    headerDividerColor: '#0f766e',
+
+    slipTitleBgColor: '#0f766e',
+    slipTitleTextColor: '#ffffff',
+    slipTitleFontSize: 12,
+
+    // Sizing Controls
+    logoSize: 52,
+    photoWidth: 86,
+    photoHeight: 104,
+    baseFontSize: 13,
+    fontScalePercent: 100,
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargin: '8mm',
+    pagePadding: 20,
+    pageMaxWidth: 760,
 
     // Titles & Toggles
     slipTitle: 'Visitor & Admission Enquiry Slip',
@@ -139,12 +197,10 @@ export const EnquirySlipDesignerPage = () => {
     ],
   });
 
-  // Load school list on mount
   useEffect(() => {
     loadSchools();
   }, []);
 
-  // Reload template config whenever selected school changes
   useEffect(() => {
     loadTemplate(selectedSchoolId);
   }, [selectedSchoolId]);
@@ -169,6 +225,27 @@ export const EnquirySlipDesignerPage = () => {
         setConfig((prev) => ({
           ...prev,
           ...res.data,
+          headerSchoolNameCustom: res.data.headerSchoolNameCustom || '',
+          headerSchoolNameFontSize: res.data.headerSchoolNameFontSize || 24,
+          headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || '#0f766e',
+          headerSchoolNameFontWeight: res.data.headerSchoolNameFontWeight || '900',
+          headerSchoolNameFontFamily: res.data.headerSchoolNameFontFamily || 'inherit',
+          headerSchoolNameTransform: res.data.headerSchoolNameTransform || 'uppercase',
+          headerSchoolNameLetterSpacing: res.data.headerSchoolNameLetterSpacing || '0.8px',
+          headerSubtitleCustom: res.data.headerSubtitleCustom || '',
+          headerSubtitleFontSize: res.data.headerSubtitleFontSize || 13,
+          headerSubtitleColor: res.data.headerSubtitleColor || '#475569',
+          headerAddressCustom: res.data.headerAddressCustom || '',
+          headerAddressFontSize: res.data.headerAddressFontSize || 11,
+          headerAddressColor: res.data.headerAddressColor || '#64748b',
+          headerAlignment: res.data.headerAlignment || 'center',
+          headerBgColor: res.data.headerBgColor || 'transparent',
+          headerPaddingY: res.data.headerPaddingY || 10,
+          headerDividerStyle: res.data.headerDividerStyle || 'Double',
+          headerDividerColor: res.data.headerDividerColor || res.data.borderColor || '#0f766e',
+          slipTitleBgColor: res.data.slipTitleBgColor || res.data.primaryColor || '#0f766e',
+          slipTitleTextColor: res.data.slipTitleTextColor || '#ffffff',
+          slipTitleFontSize: res.data.slipTitleFontSize || 12,
           logoSize: res.data.logoSize || 52,
           photoWidth: res.data.photoWidth || 86,
           photoHeight: res.data.photoHeight || 104,
@@ -315,6 +392,9 @@ export const EnquirySlipDesignerPage = () => {
       secondaryColor: palette.secondary,
       accentColor: palette.accent,
       borderColor: palette.border,
+      headerSchoolNameColor: palette.primary,
+      headerDividerColor: palette.primary,
+      slipTitleBgColor: palette.primary,
     }));
   };
 
@@ -341,6 +421,21 @@ export const EnquirySlipDesignerPage = () => {
     }
   };
 
+  const getHeaderDividerCss = () => {
+    switch (config.headerDividerStyle) {
+      case 'Double':
+        return `2.5px double ${config.headerDividerColor || config.borderColor}`;
+      case 'Solid':
+        return `2px solid ${config.headerDividerColor || config.borderColor}`;
+      case 'Dashed':
+        return `1.5px dashed ${config.headerDividerColor || config.borderColor}`;
+      case 'None':
+        return 'none';
+      default:
+        return `2.5px double ${config.headerDividerColor || config.borderColor}`;
+    }
+  };
+
   // Trigger Isolated Print
   const handlePrintSlip = () => {
     printElement('printable-enquiry-slip', {
@@ -352,6 +447,10 @@ export const EnquirySlipDesignerPage = () => {
   };
 
   // Mock enquiry data for live preview
+  const defaultSchoolName = selectedSchoolId
+    ? schools.find((s) => s.id === selectedSchoolId)?.name || 'ST. XAVIER SENIOR SECONDARY SCHOOL'
+    : 'DELHI PUBLIC SCHOOL';
+
   const mockEnquiry = {
     refNo: 'ENQ-2026-0042',
     dateTime: '14 Oct 2026, 11:30 AM',
@@ -366,18 +465,60 @@ export const EnquirySlipDesignerPage = () => {
     academicSession: '2026-27',
     notes: 'Enquired about Science lab curriculum, bus transport route, and quarterly fee breakdown.',
     nextFollowup: '20 Oct 2026',
-    schoolName: selectedSchoolId
-      ? schools.find((s) => s.id === selectedSchoolId)?.name || 'ST. XAVIER SENIOR SECONDARY SCHOOL'
-      : 'DELHI PUBLIC SCHOOL',
+    schoolName: config.headerSchoolNameCustom?.trim() || defaultSchoolName,
     branchName: 'Main Campus',
-    affiliation: 'Affiliated to CBSE, New Delhi (Affiliation No: 2130892)',
-    address: 'Sector 12, RK Puram, New Delhi - 110022 | Helpline: +91 11 2617 8900 | Email: admissions@school.edu.in',
+    affiliation: config.headerSubtitleCustom?.trim() || 'Main Campus • Affiliated to CBSE, New Delhi (Affiliation No: 2130892)',
+    address: config.headerAddressCustom?.trim() || 'Sector 12, RK Puram, New Delhi - 110022 | Helpline: +91 11 2617 8900 | Email: admissions@school.edu.in',
   };
 
   // Render individual preview section
   const renderPreviewSection = (sectionKey) => {
     switch (sectionKey) {
-      case 'header':
+      case 'header': {
+        const schoolNameFont = config.headerSchoolNameFontFamily === 'inherit' ? config.fontFamily : config.headerSchoolNameFontFamily;
+        const schoolNamePx = Math.round((config.headerSchoolNameFontSize || 24) * fontMultiplier);
+        const subPx = Math.round((config.headerSubtitleFontSize || 13) * fontMultiplier);
+        const addrPx = Math.round((config.headerAddressFontSize || 11) * fontMultiplier);
+        const badgePx = Math.round((config.slipTitleFontSize || 12) * fontMultiplier);
+
+        const schoolNameStyle = {
+          margin: 0,
+          color: config.headerLayout === 'Banner' ? '#ffffff' : (config.headerSchoolNameColor || config.primaryColor),
+          fontSize: `${schoolNamePx}px`,
+          fontWeight: config.headerSchoolNameFontWeight || '900',
+          fontFamily: schoolNameFont,
+          textTransform: config.headerSchoolNameTransform || 'uppercase',
+          letterSpacing: config.headerSchoolNameLetterSpacing || '0.8px',
+          lineHeight: 1.15,
+        };
+
+        const subtitleStyle = {
+          fontSize: `${subPx}px`,
+          color: config.headerLayout === 'Banner' ? 'rgba(255,255,255,0.92)' : (config.headerSubtitleColor || '#475569'),
+          fontWeight: config.headerSubtitleFontWeight || '600',
+          marginTop: '2px',
+        };
+
+        const addressStyle = {
+          fontSize: `${addrPx}px`,
+          color: config.headerLayout === 'Banner' ? 'rgba(255,255,255,0.85)' : (config.headerAddressColor || '#64748b'),
+          marginTop: '3px',
+          lineHeight: 1.3,
+        };
+
+        const badgeStyle = {
+          display: 'inline-block',
+          marginTop: '8px',
+          backgroundColor: config.headerLayout === 'Banner' ? 'rgba(255,255,255,0.22)' : (config.slipTitleBgColor || config.primaryColor),
+          color: config.slipTitleTextColor || '#ffffff',
+          padding: '3px 16px',
+          borderRadius: '4px',
+          fontWeight: 700,
+          fontSize: `${badgePx}px`,
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+        };
+
         if (config.headerLayout === 'Banner') {
           return (
             <div
@@ -385,13 +526,20 @@ export const EnquirySlipDesignerPage = () => {
               style={{
                 backgroundColor: config.primaryColor,
                 color: '#ffffff',
-                padding: `${12 * fontMultiplier}px ${16 * fontMultiplier}px`,
+                padding: `${config.headerPaddingY || 12}px 16px`,
                 borderRadius: '6px',
                 marginBottom: `${10 * fontMultiplier}px`,
-                textAlign: 'center',
+                textAlign: config.headerAlignment || 'center',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: `${14 * fontMultiplier}px` }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: config.headerAlignment === 'left' ? 'flex-start' : 'center',
+                  gap: '14px',
+                }}
+              >
                 {config.showSchoolLogo && (
                   <div
                     style={{
@@ -411,30 +559,12 @@ export const EnquirySlipDesignerPage = () => {
                   </div>
                 )}
                 <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.4 * fontMultiplier}rem`, fontWeight: 800, letterSpacing: '0.5px' }}>
-                    {mockEnquiry.schoolName}
-                  </h2>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, opacity: 0.95, marginTop: '2px' }}>
-                    {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
-                  </div>
+                  <h2 style={schoolNameStyle}>{mockEnquiry.schoolName}</h2>
+                  <div style={subtitleStyle}>{mockEnquiry.affiliation}</div>
                 </div>
               </div>
-              <div style={{ fontSize: `${0.68 * fontMultiplier}rem`, opacity: 0.9, marginTop: '5px' }}>{mockEnquiry.address}</div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  marginTop: '8px',
-                  backgroundColor: 'rgba(255,255,255,0.22)',
-                  padding: `${3 * fontMultiplier}px ${14 * fontMultiplier}px`,
-                  borderRadius: '12px',
-                  fontSize: `${0.72 * fontMultiplier}rem`,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.8px',
-                }}
-              >
-                {config.slipTitle}
-              </div>
+              <div style={addressStyle}>{mockEnquiry.address}</div>
+              <div style={badgeStyle}>{config.slipTitle}</div>
             </div>
           );
         }
@@ -447,12 +577,15 @@ export const EnquirySlipDesignerPage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingBottom: `${10 * fontMultiplier}px`,
-                borderBottom: `2px solid ${config.borderColor}`,
+                paddingBottom: `${config.headerPaddingY || 10}px`,
+                borderBottom: getHeaderDividerCss(),
                 marginBottom: `${12 * fontMultiplier}px`,
+                backgroundColor: config.headerBgColor !== 'transparent' ? config.headerBgColor : 'transparent',
+                padding: config.headerBgColor !== 'transparent' ? '12px' : undefined,
+                borderRadius: config.headerBgColor !== 'transparent' ? '6px' : undefined,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: `${14 * fontMultiplier}px` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 {config.showSchoolLogo && (
                   <div
                     style={{
@@ -473,35 +606,14 @@ export const EnquirySlipDesignerPage = () => {
                   </div>
                 )}
                 <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.3 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
-                    {mockEnquiry.schoolName}
-                  </h2>
-                  <div style={{ fontSize: `${0.76 * fontMultiplier}rem`, color: '#64748b', fontWeight: 600 }}>
-                    {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
-                  </div>
-                  <div style={{ fontSize: `${0.68 * fontMultiplier}rem`, color: '#64748b', marginTop: '2px' }}>
-                    {mockEnquiry.address}
-                  </div>
+                  <h2 style={schoolNameStyle}>{mockEnquiry.schoolName}</h2>
+                  <div style={subtitleStyle}>{mockEnquiry.affiliation}</div>
+                  <div style={addressStyle}>{mockEnquiry.address}</div>
                 </div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <span
-                  style={{
-                    backgroundColor: config.primaryColor,
-                    color: '#ffffff',
-                    padding: `${4 * fontMultiplier}px ${10 * fontMultiplier}px`,
-                    borderRadius: '4px',
-                    fontSize: `${0.7 * fontMultiplier}rem`,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    display: 'inline-block',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {config.slipTitle}
-                </span>
+                <span style={badgeStyle}>{config.slipTitle}</span>
                 {config.showQrCode && (
                   <div
                     style={{
@@ -511,6 +623,7 @@ export const EnquirySlipDesignerPage = () => {
                       gap: '4px',
                       fontSize: `${0.65 * fontMultiplier}rem`,
                       color: '#64748b',
+                      marginTop: '4px',
                     }}
                   >
                     <i className="pi pi-qrcode" style={{ fontSize: `${18 * fontMultiplier}px`, color: config.primaryColor }}></i>
@@ -522,56 +635,30 @@ export const EnquirySlipDesignerPage = () => {
           );
         }
 
-        if (config.headerLayout === 'Minimal') {
-          return (
-            <div
-              key="header"
-              style={{
-                textAlign: 'left',
-                paddingBottom: `${8 * fontMultiplier}px`,
-                borderBottom: '1px solid #cbd5e1',
-                marginBottom: `${10 * fontMultiplier}px`,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
-                    {mockEnquiry.schoolName}
-                  </h2>
-                  <div style={{ fontSize: `${0.74 * fontMultiplier}rem`, color: '#475569', marginTop: '2px' }}>
-                    {mockEnquiry.branchName} | {mockEnquiry.address}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    border: `1.5px solid ${config.primaryColor}`,
-                    color: config.primaryColor,
-                    padding: `${3 * fontMultiplier}px ${10 * fontMultiplier}px`,
-                    borderRadius: '4px',
-                    fontSize: `${0.7 * fontMultiplier}rem`,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {config.slipTitle}
-                </div>
-              </div>
-            </div>
-          );
-        }
-
         // Classic Layout (Default)
         return (
           <div
             key="header"
             style={{
-              textAlign: 'center',
-              paddingBottom: `${10 * fontMultiplier}px`,
-              borderBottom: `2.5px double ${config.borderColor}`,
+              textAlign: config.headerAlignment || 'center',
+              paddingTop: `${config.headerPaddingY || 4}px`,
+              paddingBottom: `${config.headerPaddingY || 10}px`,
+              borderBottom: getHeaderDividerCss(),
               marginBottom: `${12 * fontMultiplier}px`,
+              backgroundColor: config.headerBgColor !== 'transparent' ? config.headerBgColor : 'transparent',
+              paddingLeft: config.headerBgColor !== 'transparent' ? '12px' : undefined,
+              paddingRight: config.headerBgColor !== 'transparent' ? '12px' : undefined,
+              borderRadius: config.headerBgColor !== 'transparent' ? '6px' : undefined,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: `${12 * fontMultiplier}px` }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: config.headerAlignment === 'left' ? 'flex-start' : 'center',
+                gap: '12px',
+              }}
+            >
               {config.showSchoolLogo && (
                 <div
                   style={{
@@ -592,41 +679,15 @@ export const EnquirySlipDesignerPage = () => {
                 </div>
               )}
               <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    color: config.primaryColor,
-                    fontSize: `${1.45 * fontMultiplier}rem`,
-                    fontWeight: 900,
-                    letterSpacing: '0.8px',
-                  }}
-                >
-                  {mockEnquiry.schoolName}
-                </h2>
-                <div style={{ fontSize: `${0.78 * fontMultiplier}rem`, fontWeight: 600, color: '#475569', marginTop: '2px' }}>
-                  {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
-                </div>
+                <h2 style={schoolNameStyle}>{mockEnquiry.schoolName}</h2>
+                <div style={subtitleStyle}>{mockEnquiry.affiliation}</div>
               </div>
             </div>
-            <div style={{ fontSize: `${0.7 * fontMultiplier}rem`, color: '#64748b', marginTop: '4px' }}>{mockEnquiry.address}</div>
-            <div
-              style={{
-                display: 'inline-block',
-                marginTop: '8px',
-                padding: `${3 * fontMultiplier}px ${16 * fontMultiplier}px`,
-                backgroundColor: config.primaryColor,
-                color: '#ffffff',
-                borderRadius: '4px',
-                fontWeight: 700,
-                fontSize: `${0.74 * fontMultiplier}rem`,
-                textTransform: 'uppercase',
-                letterSpacing: '0.6px',
-              }}
-            >
-              {config.slipTitle}
-            </div>
+            <div style={addressStyle}>{mockEnquiry.address}</div>
+            <div style={badgeStyle}>{config.slipTitle}</div>
           </div>
         );
+      }
 
       case 'meta_bar':
         return (
@@ -1046,7 +1107,7 @@ export const EnquirySlipDesignerPage = () => {
     <div className="p-3" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <Toast ref={toastRef} />
 
-      {/* CSS PRINT MEDIA STYLES TO ENSURE 100% ISOLATION IF USER USES CTRL+P */}
+      {/* CSS PRINT MEDIA STYLES TO ENSURE 100% ISOLATION */}
       <style>
         {`
           @page {
@@ -1139,7 +1200,7 @@ export const EnquirySlipDesignerPage = () => {
             Enquiry Slip Designer (Dynamic & School-Wise)
           </h1>
           <p className="text-xs text-slate-300 mt-1 mb-0">
-            Adjust logo size, student photo dimensions, typography scaling, page format (A4/A5), and drag-and-drop sections.
+            Full control over School Name font size, color, typography, logo, photo dimensions, and A4/A5 page size.
           </p>
         </div>
 
@@ -1190,7 +1251,7 @@ export const EnquirySlipDesignerPage = () => {
 
       {/* Main Designer Layout (Grid: Controls on Left, Live Preview on Right) */}
       <div className="grid">
-        {/* Left Column: Customization Controls (Hidden in Print via .designer-controls-column) */}
+        {/* Left Column: Customization Controls */}
         <div className="col-12 lg:col-5 designer-controls-column no-print">
           <Card className="shadow-2 border-round-xl p-0 overflow-hidden mb-3">
             {/* Navigation Tabs */}
@@ -1199,10 +1260,10 @@ export const EnquirySlipDesignerPage = () => {
               style={{ backgroundColor: '#f1f5f9', padding: '6px 8px' }}
             >
               {[
-                { id: 'sizing', label: 'Sizes & Dimensions', icon: 'pi pi-arrows-alt', badge: 'New' },
+                { id: 'header', label: 'Header & School Name', icon: 'pi pi-id-card', highlight: true },
+                { id: 'sizing', label: 'Sizes & Dimensions', icon: 'pi pi-arrows-alt' },
                 { id: 'sections', label: 'Drag & Order', icon: 'pi pi-bars' },
-                { id: 'styling', label: 'Colors & Font', icon: 'pi pi-palette' },
-                { id: 'layout', label: 'Header Style', icon: 'pi pi-table' },
+                { id: 'styling', label: 'Colors & Theme', icon: 'pi pi-palette' },
                 { id: 'content', label: 'Texts & Notes', icon: 'pi pi-pencil' },
               ].map((tab) => (
                 <button
@@ -1222,10 +1283,391 @@ export const EnquirySlipDesignerPage = () => {
             </div>
 
             <div className="p-3">
-              {/* TAB 1: SIZES & DIMENSIONS (LOGO, PHOTO, FONT, FULL PAGE) */}
+              {/* TAB 1: FULL HEADER & SCHOOL NAME CONTROLS (Requested by user) */}
+              {activeTab === 'header' && (
+                <div className="flex flex-column gap-3">
+                  {/* Section A: School Name Font, Size, Style & Color */}
+                  <div className="p-3 border-round-lg border-1 border-indigo-200" style={{ backgroundColor: '#f8faff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-bookmark text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-900">A. School Name (Font, Size & Color)</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-100 text-indigo-800">
+                        {config.headerSchoolNameFontSize}px • {config.headerSchoolNameFontWeight}
+                      </span>
+                    </div>
+
+                    {/* Custom School Name Override */}
+                    <div className="mb-2">
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Custom School Name (Leave empty to use tenant name):
+                      </label>
+                      <InputText
+                        value={config.headerSchoolNameCustom || ''}
+                        onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
+                        placeholder={defaultSchoolName}
+                        className="p-inputtext-sm w-full font-bold"
+                      />
+                    </div>
+
+                    {/* School Name Font Size Slider */}
+                    <div className="mb-2">
+                      <div className="flex justify-content-between align-items-center mb-1">
+                        <label className="text-xs font-bold text-slate-700">
+                          School Name Font Size: <strong>{config.headerSchoolNameFontSize}px</strong>
+                        </label>
+                        <div className="flex gap-1">
+                          {[18, 22, 26, 30, 36].map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => setConfig({ ...config, headerSchoolNameFontSize: sz })}
+                              className="px-1.5 py-0.5 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
+                              style={{
+                                backgroundColor: config.headerSchoolNameFontSize === sz ? '#6366f1' : '#ffffff',
+                                color: config.headerSchoolNameFontSize === sz ? '#ffffff' : '#475569',
+                              }}
+                            >
+                              {sz}px
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={14}
+                        max={42}
+                        step={1}
+                        value={config.headerSchoolNameFontSize}
+                        onChange={(e) => setConfig({ ...config, headerSchoolNameFontSize: Number(e.target.value) })}
+                        className="w-full cursor-pointer accent-indigo-600"
+                      />
+                    </div>
+
+                    {/* School Name Color & Font Weight */}
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">School Name Color:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.headerSchoolNameColor}
+                            onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                            }}
+                          />
+                          <InputText
+                            value={config.headerSchoolNameColor}
+                            onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Font Weight (Thickness):</label>
+                        <Dropdown
+                          value={config.headerSchoolNameFontWeight}
+                          onChange={(e) => setConfig({ ...config, headerSchoolNameFontWeight: e.value })}
+                          options={FONT_WEIGHT_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Specific Font Family:</label>
+                        <Dropdown
+                          value={config.headerSchoolNameFontFamily}
+                          onChange={(e) => setConfig({ ...config, headerSchoolNameFontFamily: e.value })}
+                          options={FONT_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Text Case (Transform):</label>
+                        <Dropdown
+                          value={config.headerSchoolNameTransform}
+                          onChange={(e) => setConfig({ ...config, headerSchoolNameTransform: e.value })}
+                          options={TEXT_TRANSFORM_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-12">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Letter Spacing (Kerning):</label>
+                        <Dropdown
+                          value={config.headerSchoolNameLetterSpacing}
+                          onChange={(e) => setConfig({ ...config, headerSchoolNameLetterSpacing: e.value })}
+                          options={LETTER_SPACING_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section B: Subtitle / Affiliation & Branch line */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-id-card text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">B. Subtitle / Affiliation & Branch Line</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-slate-100 text-slate-700">
+                        {config.headerSubtitleFontSize}px
+                      </span>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="text-xs text-slate-600 font-semibold block mb-1">
+                        Subtitle Text (Override branch / affiliation):
+                      </label>
+                      <InputText
+                        value={config.headerSubtitleCustom || ''}
+                        onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
+                        placeholder="Main Campus • Affiliated to CBSE, New Delhi (Affiliation No: 2130892)"
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">
+                          Subtitle Font Size: <strong>{config.headerSubtitleFontSize}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={10}
+                          max={18}
+                          step={1}
+                          value={config.headerSubtitleFontSize}
+                          onChange={(e) => setConfig({ ...config, headerSubtitleFontSize: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Subtitle Color:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.headerSubtitleColor}
+                            onChange={(e) => setConfig({ ...config, headerSubtitleColor: e.target.value })}
+                            style={{ width: '32px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          />
+                          <InputText
+                            value={config.headerSubtitleColor}
+                            onChange={(e) => setConfig({ ...config, headerSubtitleColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section C: Address & Helpline Bar */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-map-marker text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">C. Address, Helpline & Email Text</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-slate-100 text-slate-700">
+                        {config.headerAddressFontSize}px
+                      </span>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="text-xs text-slate-600 font-semibold block mb-1">
+                        Address & Helpline String:
+                      </label>
+                      <InputText
+                        value={config.headerAddressCustom || ''}
+                        onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
+                        placeholder="Sector 12, RK Puram, New Delhi - 110022 | Helpline: +91 11 2617 8900 | Email: admissions@school.edu.in"
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">
+                          Address Font Size: <strong>{config.headerAddressFontSize}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={9}
+                          max={15}
+                          step={1}
+                          value={config.headerAddressFontSize}
+                          onChange={(e) => setConfig({ ...config, headerAddressFontSize: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Address Text Color:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.headerAddressColor}
+                            onChange={(e) => setConfig({ ...config, headerAddressColor: e.target.value })}
+                            style={{ width: '32px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          />
+                          <InputText
+                            value={config.headerAddressColor}
+                            onChange={(e) => setConfig({ ...config, headerAddressColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section D: Header Presentation & Dividers */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-sliders-h text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">D. Header Presentation & Dividers</span>
+                      </div>
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Header Layout Style:</label>
+                        <Dropdown
+                          value={config.headerLayout}
+                          onChange={(e) => setConfig({ ...config, headerLayout: e.value })}
+                          options={HEADER_LAYOUTS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Text Alignment:</label>
+                        <Dropdown
+                          value={config.headerAlignment}
+                          onChange={(e) => setConfig({ ...config, headerAlignment: e.value })}
+                          options={[
+                            { label: 'Centered (Classic)', value: 'center' },
+                            { label: 'Left Aligned (Modern)', value: 'left' },
+                          ]}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Bottom Divider Style:</label>
+                        <Dropdown
+                          value={config.headerDividerStyle}
+                          onChange={(e) => setConfig({ ...config, headerDividerStyle: e.value })}
+                          options={HEADER_DIVIDER_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Bottom Divider Color:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.headerDividerColor}
+                            onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
+                            style={{ width: '32px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          />
+                          <InputText
+                            value={config.headerDividerColor}
+                            onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">
+                          Header Vertical Spacing: <strong>{config.headerPaddingY}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={4}
+                          max={28}
+                          step={2}
+                          value={config.headerPaddingY}
+                          onChange={(e) => setConfig({ ...config, headerPaddingY: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section E: Slip Title Badge Styling */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-tag text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">E. Slip Title Badge Styling</span>
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="text-xs text-slate-600 font-semibold block mb-1">Slip Badge Text:</label>
+                      <InputText
+                        value={config.slipTitle}
+                        onChange={(e) => setConfig({ ...config, slipTitle: e.target.value })}
+                        className="p-inputtext-sm w-full font-bold"
+                      />
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Badge Background:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.slipTitleBgColor}
+                            onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
+                            style={{ width: '32px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          />
+                          <InputText
+                            value={config.slipTitleBgColor}
+                            onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Badge Text Color:</label>
+                        <div className="flex align-items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.slipTitleTextColor}
+                            onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
+                            style={{ width: '32px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          />
+                          <InputText
+                            value={config.slipTitleTextColor}
+                            onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
+                            className="p-inputtext-sm font-mono uppercase w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: SIZES & DIMENSIONS */}
               {activeTab === 'sizing' && (
                 <div className="flex flex-column gap-3">
-                  {/* 1. School Logo Size Adjustment */}
+                  {/* Logo Size */}
                   <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
                     <div className="flex align-items-center justify-content-between mb-2">
                       <div className="flex align-items-center gap-2">
@@ -1247,7 +1689,6 @@ export const EnquirySlipDesignerPage = () => {
                       className="w-full cursor-pointer accent-indigo-600"
                     />
 
-                    {/* Quick Presets */}
                     <div className="flex gap-1.5 mt-2">
                       {[
                         { label: 'Small (38px)', val: 38 },
@@ -1271,7 +1712,7 @@ export const EnquirySlipDesignerPage = () => {
                     </div>
                   </div>
 
-                  {/* 2. Student Photo Box Dimensions */}
+                  {/* Student Photo Box */}
                   <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
                     <div className="flex align-items-center justify-content-between mb-2">
                       <div className="flex align-items-center gap-2">
@@ -1314,7 +1755,6 @@ export const EnquirySlipDesignerPage = () => {
                       </div>
                     </div>
 
-                    {/* Quick Presets */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {[
                         { label: 'Passport (86×104)', w: 86, h: 104 },
@@ -1338,12 +1778,12 @@ export const EnquirySlipDesignerPage = () => {
                     </div>
                   </div>
 
-                  {/* 3. Font Size Scaling */}
+                  {/* Font Size Scaling */}
                   <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
                     <div className="flex align-items-center justify-content-between mb-2">
                       <div className="flex align-items-center gap-2">
                         <i className="pi pi-align-left text-indigo-600 font-bold"></i>
-                        <span className="text-sm font-bold text-slate-800">3. Text & Font Size Scale</span>
+                        <span className="text-sm font-bold text-slate-800">3. Body Text & Font Scale</span>
                       </div>
                       <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
                         {config.fontScalePercent}% ({config.baseFontSize}px base)
@@ -1380,37 +1820,14 @@ export const EnquirySlipDesignerPage = () => {
                         />
                       </div>
                     </div>
-
-                    {/* Quick Presets */}
-                    <div className="flex gap-1.5 mt-2">
-                      {[
-                        { label: 'Compact (85%)', scale: 85, base: 12 },
-                        { label: 'Normal (100%)', scale: 100, base: 13 },
-                        { label: 'Large (115%)', scale: 115, base: 14 },
-                        { label: 'Spacious (130%)', scale: 130, base: 15 },
-                      ].map((p) => (
-                        <button
-                          key={p.label}
-                          type="button"
-                          onClick={() => setConfig({ ...config, fontScalePercent: p.scale, baseFontSize: p.base })}
-                          className="px-2 py-1 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
-                          style={{
-                            backgroundColor: config.fontScalePercent === p.scale ? '#e0e7ff' : '#f8fafc',
-                            color: config.fontScalePercent === p.scale ? '#3730a3' : '#475569',
-                          }}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
-                  {/* 4. Page Size & Layout Adjustments (Pure Page Ki Size) */}
+                  {/* Page Size & Print Format */}
                   <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
                     <div className="flex align-items-center justify-content-between mb-2">
                       <div className="flex align-items-center gap-2">
                         <i className="pi pi-file text-indigo-600 font-bold"></i>
-                        <span className="text-sm font-bold text-slate-800">4. Pure Page Size & Print Format</span>
+                        <span className="text-sm font-bold text-slate-800">4. Page Sheet & Layout</span>
                       </div>
                       <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
                         {config.pageSize} ({config.pageOrientation})
@@ -1429,7 +1846,7 @@ export const EnquirySlipDesignerPage = () => {
                       </div>
 
                       <div className="col-6">
-                        <label className="text-xs text-slate-600 font-semibold block mb-1">Paper Orientation:</label>
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Orientation:</label>
                         <Dropdown
                           value={config.pageOrientation}
                           onChange={(e) => setConfig({ ...config, pageOrientation: e.value })}
@@ -1439,7 +1856,7 @@ export const EnquirySlipDesignerPage = () => {
                       </div>
 
                       <div className="col-6">
-                        <label className="text-xs text-slate-600 font-semibold block mb-1">Print Page Margin:</label>
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Print Margins:</label>
                         <Dropdown
                           value={config.pageMargin}
                           onChange={(e) => setConfig({ ...config, pageMargin: e.value })}
@@ -1450,7 +1867,7 @@ export const EnquirySlipDesignerPage = () => {
 
                       <div className="col-6">
                         <label className="text-xs text-slate-600 font-semibold block mb-1">
-                          Slip Inner Padding: <strong>{config.pagePadding}px</strong>
+                          Inner Padding: <strong>{config.pagePadding}px</strong>
                         </label>
                         <input
                           type="range"
@@ -1476,34 +1893,13 @@ export const EnquirySlipDesignerPage = () => {
                           onChange={(e) => setConfig({ ...config, pageMaxWidth: Number(e.target.value) })}
                           className="w-full cursor-pointer accent-indigo-600"
                         />
-                        <div className="flex gap-2 mt-1">
-                          {[
-                            { label: 'Compact (600px)', val: 600 },
-                            { label: 'Standard (760px)', val: 760 },
-                            { label: 'Wide A4 (860px)', val: 860 },
-                            { label: 'Full Width (960px)', val: 960 },
-                          ].map((pw) => (
-                            <button
-                              key={pw.val}
-                              type="button"
-                              onClick={() => setConfig({ ...config, pageMaxWidth: pw.val })}
-                              className="px-2 py-0.5 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
-                              style={{
-                                backgroundColor: config.pageMaxWidth === pw.val ? '#e0e7ff' : '#f8fafc',
-                                color: config.pageMaxWidth === pw.val ? '#3730a3' : '#475569',
-                              }}
-                            >
-                              {pw.label}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: DRAG & DROP SECTIONS REORDER */}
+              {/* TAB 3: DRAG & DROP SECTIONS REORDER */}
               {activeTab === 'sections' && (
                 <div>
                   <div className="flex align-items-center justify-content-between mb-2">
@@ -1581,17 +1977,10 @@ export const EnquirySlipDesignerPage = () => {
                       </div>
                     ))}
                   </div>
-
-                  <div className="mt-3 p-2.5 border-round-md" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                    <div className="flex align-items-center gap-2 text-xs font-bold text-green-800">
-                      <i className="pi pi-info-circle"></i>
-                      <span>Tip: Click and drag any row by its handle (☰) or use the arrow buttons to position it.</span>
-                    </div>
-                  </div>
                 </div>
               )}
 
-              {/* TAB 3: STYLING & COLORS */}
+              {/* TAB 4: COLORS & THEME */}
               {activeTab === 'styling' && (
                 <div className="flex flex-column gap-3">
                   <div>
@@ -1627,19 +2016,13 @@ export const EnquirySlipDesignerPage = () => {
 
                   <div className="grid">
                     <div className="col-6">
-                      <label className="text-xs font-semibold text-slate-600 block mb-1">Primary Brand Color:</label>
+                      <label className="text-xs font-semibold text-slate-600 block mb-1">Primary Theme Color:</label>
                       <div className="flex align-items-center gap-2">
                         <input
                           type="color"
                           value={config.primaryColor}
                           onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                          }}
+                          style={{ width: '36px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         />
                         <InputText
                           value={config.primaryColor}
@@ -1650,19 +2033,13 @@ export const EnquirySlipDesignerPage = () => {
                     </div>
 
                     <div className="col-6">
-                      <label className="text-xs font-semibold text-slate-600 block mb-1">Accent / Tint Background:</label>
+                      <label className="text-xs font-semibold text-slate-600 block mb-1">Accent Background Tint:</label>
                       <div className="flex align-items-center gap-2">
                         <input
                           type="color"
                           value={config.secondaryColor}
                           onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                          }}
+                          style={{ width: '36px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         />
                         <InputText
                           value={config.secondaryColor}
@@ -1679,13 +2056,7 @@ export const EnquirySlipDesignerPage = () => {
                           type="color"
                           value={config.borderColor}
                           onChange={(e) => setConfig({ ...config, borderColor: e.target.value })}
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                          }}
+                          style={{ width: '36px', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         />
                         <InputText
                           value={config.borderColor}
@@ -1696,7 +2067,7 @@ export const EnquirySlipDesignerPage = () => {
                     </div>
 
                     <div className="col-6">
-                      <label className="text-xs font-semibold text-slate-600 block mb-1">Border Line Style:</label>
+                      <label className="text-xs font-semibold text-slate-600 block mb-1">Outer Border Style:</label>
                       <Dropdown
                         value={config.borderStyle}
                         onChange={(e) => setConfig({ ...config, borderStyle: e.value })}
@@ -1704,102 +2075,15 @@ export const EnquirySlipDesignerPage = () => {
                         className="p-inputtext-sm w-full"
                       />
                     </div>
-                  </div>
 
-                  <Divider className="my-1" />
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Slip Font Family:</label>
-                    <Dropdown
-                      value={config.fontFamily}
-                      onChange={(e) => setConfig({ ...config, fontFamily: e.value })}
-                      options={FONT_OPTIONS}
-                      className="p-inputtext-sm w-full mb-2"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 4: HEADER & LAYOUT */}
-              {activeTab === 'layout' && (
-                <div className="flex flex-column gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-2">School Header Presentation Style:</label>
-                    <div className="flex flex-column gap-2">
-                      {HEADER_LAYOUTS.map((hl) => (
-                        <div
-                          key={hl.value}
-                          onClick={() => setConfig({ ...config, headerLayout: hl.value })}
-                          className="p-3 border-round-lg border-1 cursor-pointer transition-all flex align-items-center justify-content-between"
-                          style={{
-                            backgroundColor: config.headerLayout === hl.value ? '#eef2ff' : '#ffffff',
-                            borderColor: config.headerLayout === hl.value ? '#6366f1' : '#e2e8f0',
-                          }}
-                        >
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">{hl.label}</div>
-                            <div className="text-xs text-slate-500 mt-1">{hl.desc}</div>
-                          </div>
-                          {config.headerLayout === hl.value && (
-                            <i className="pi pi-check-circle text-indigo-600 text-lg"></i>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Divider className="my-1" />
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-2">Visual Elements & Placeholders:</label>
-                    <div className="flex flex-column gap-2">
-                      {[
-                        {
-                          key: 'showSchoolLogo',
-                          label: 'School Logo in Header',
-                          desc: 'Displays institutional emblem or generic icon',
-                        },
-                        {
-                          key: 'showAffiliationNo',
-                          label: 'Board Affiliation Line',
-                          desc: 'Displays CBSE / ICSE / State board affiliation',
-                        },
-                        {
-                          key: 'showStudentPhotoBox',
-                          label: 'Student Photo Paste Box',
-                          desc: 'Dashed box for physical passport photograph',
-                        },
-                        {
-                          key: 'showSchoolSealBox',
-                          label: 'School Seal & Stamp Box',
-                          desc: 'Official stamp placeholder in signatures row',
-                        },
-                        {
-                          key: 'showQrCode',
-                          label: 'Quick Verification QR Placeholder',
-                          desc: 'Instant lookup code in top-right corner',
-                        },
-                        {
-                          key: 'showNextFollowupDate',
-                          label: 'Scheduled Follow-up Date Box',
-                          desc: 'Shows upcoming counselor visit date',
-                        },
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          className="flex align-items-center justify-content-between p-2 border-round surface-50"
-                        >
-                          <div>
-                            <div className="text-xs font-bold text-slate-700">{item.label}</div>
-                            <div className="text-xs text-slate-400">{item.desc}</div>
-                          </div>
-                          <InputSwitch
-                            checked={config[item.key]}
-                            onChange={(e) => setConfig({ ...config, [item.key]: e.value })}
-                            className="p-inputswitch-sm"
-                          />
-                        </div>
-                      ))}
+                    <div className="col-12">
+                      <label className="text-xs font-bold text-slate-600 block mb-1">Slip Base Font Family:</label>
+                      <Dropdown
+                        value={config.fontFamily}
+                        onChange={(e) => setConfig({ ...config, fontFamily: e.value })}
+                        options={FONT_OPTIONS.filter((f) => f.value !== 'inherit')}
+                        className="p-inputtext-sm w-full mb-2"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1808,15 +2092,6 @@ export const EnquirySlipDesignerPage = () => {
               {/* TAB 5: TEXTS & CONTENT */}
               {activeTab === 'content' && (
                 <div className="flex flex-column gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Slip Title Banner:</label>
-                    <InputText
-                      value={config.slipTitle}
-                      onChange={(e) => setConfig({ ...config, slipTitle: e.target.value })}
-                      className="p-inputtext-sm w-full"
-                    />
-                  </div>
-
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">Important Instructions Title:</label>
                     <InputText
@@ -1878,7 +2153,7 @@ export const EnquirySlipDesignerPage = () => {
                 <i className="pi pi-eye text-indigo-600"></i>
                 <span className="text-sm font-bold text-slate-800">Live Slip Preview</span>
                 <span className="text-xs text-indigo-600 font-bold px-2 py-0.5 border-round bg-indigo-50">
-                  {config.pageSize} {config.pageOrientation} • Max: {maxWidthPx}px
+                  {config.pageSize} {config.pageOrientation} • {config.headerSchoolNameFontSize}px Name
                 </span>
               </div>
 

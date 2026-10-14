@@ -30,7 +30,7 @@ import { enquiryApi } from '../api';
 import { branchApi } from '../../masters/api';
 import { useAuthStore } from '../../../store/authStore';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
-import { printWithTitle } from '../../../utils/printUtils';
+import { printWithTitle, printElement } from '../../../utils/printUtils';
 
 const DEFAULT_SLIP_CONFIG = {
   primaryColor: '#0f766e',
@@ -53,6 +53,29 @@ const DEFAULT_SLIP_CONFIG = {
   pageMargin: '8mm',
   pagePadding: 20,
   pageMaxWidth: 760,
+
+  // Header & School Name Controls
+  headerSchoolNameCustom: '',
+  headerSchoolNameFontSize: 24,
+  headerSchoolNameColor: '',
+  headerSchoolNameFontWeight: '900',
+  headerSchoolNameFontFamily: 'inherit',
+  headerSchoolNameTransform: 'uppercase',
+  headerSchoolNameLetterSpacing: '0.8px',
+  headerSubtitleCustom: '',
+  headerSubtitleFontSize: 13,
+  headerSubtitleColor: '#475569',
+  headerAddressCustom: '',
+  headerAddressFontSize: 11,
+  headerAddressColor: '#64748b',
+  headerAlignment: 'center',
+  headerBgColor: '#ffffff',
+  headerPaddingY: 10,
+  headerDividerStyle: 'Double',
+  headerDividerColor: '',
+  slipTitleBgColor: '',
+  slipTitleTextColor: '#ffffff',
+  slipTitleFontSize: 12,
 
   slipTitle: 'Visitor & Admission Enquiry Slip',
   slipSubtitle: 'Official Visitor Acknowledgement & Follow-up Lead Slip',
@@ -144,19 +167,42 @@ export const EnquirySlipModal = ({
       try {
         const cfgRes = await apiClient.get('/enquiries/slip-config');
         if (isMounted && cfgRes.data?.success && cfgRes.data?.data) {
+          const d = cfgRes.data.data;
           setSlipConfig((prev) => ({
             ...prev,
-            ...cfgRes.data.data,
-            logoSize: cfgRes.data.data.logoSize || 52,
-            photoWidth: cfgRes.data.data.photoWidth || 86,
-            photoHeight: cfgRes.data.data.photoHeight || 104,
-            baseFontSize: cfgRes.data.data.baseFontSize || 13,
-            fontScalePercent: cfgRes.data.data.fontScalePercent || 100,
-            pageSize: cfgRes.data.data.pageSize || 'A4',
-            pageOrientation: cfgRes.data.data.pageOrientation || 'portrait',
-            pageMargin: cfgRes.data.data.pageMargin || '8mm',
-            pagePadding: cfgRes.data.data.pagePadding || 20,
-            pageMaxWidth: cfgRes.data.data.pageMaxWidth || 760,
+            ...d,
+            logoSize: d.logoSize || 52,
+            photoWidth: d.photoWidth || 86,
+            photoHeight: d.photoHeight || 104,
+            baseFontSize: d.baseFontSize || 13,
+            fontScalePercent: d.fontScalePercent || 100,
+            pageSize: d.pageSize || 'A4',
+            pageOrientation: d.pageOrientation || 'portrait',
+            pageMargin: d.pageMargin || '8mm',
+            pagePadding: d.pagePadding || 20,
+            pageMaxWidth: d.pageMaxWidth || 760,
+
+            headerSchoolNameCustom: d.headerSchoolNameCustom ?? '',
+            headerSchoolNameFontSize: d.headerSchoolNameFontSize || 24,
+            headerSchoolNameColor: d.headerSchoolNameColor ?? '',
+            headerSchoolNameFontWeight: d.headerSchoolNameFontWeight || '900',
+            headerSchoolNameFontFamily: d.headerSchoolNameFontFamily || 'inherit',
+            headerSchoolNameTransform: d.headerSchoolNameTransform || 'uppercase',
+            headerSchoolNameLetterSpacing: d.headerSchoolNameLetterSpacing || '0.8px',
+            headerSubtitleCustom: d.headerSubtitleCustom ?? '',
+            headerSubtitleFontSize: d.headerSubtitleFontSize || 13,
+            headerSubtitleColor: d.headerSubtitleColor || '#475569',
+            headerAddressCustom: d.headerAddressCustom ?? '',
+            headerAddressFontSize: d.headerAddressFontSize || 11,
+            headerAddressColor: d.headerAddressColor || '#64748b',
+            headerAlignment: d.headerAlignment || 'center',
+            headerBgColor: d.headerBgColor || '#ffffff',
+            headerPaddingY: d.headerPaddingY || 10,
+            headerDividerStyle: d.headerDividerStyle || 'Double',
+            headerDividerColor: d.headerDividerColor ?? '',
+            slipTitleBgColor: d.slipTitleBgColor ?? '',
+            slipTitleTextColor: d.slipTitleTextColor || '#ffffff',
+            slipTitleFontSize: d.slipTitleFontSize || 12,
           }));
         }
       } catch (err) {
@@ -176,7 +222,12 @@ export const EnquirySlipModal = ({
   const handlePrint = () => {
     const sName = enquiry?.studentName || 'Student';
     const num = enquiry?.enquiryNo || (enquiry?.id ? `ENQ-${enquiry.id}` : 'ENQ');
-    printWithTitle(`Enquiry_Slip_${sName}_${num}`);
+    printElement('printable-enquiry-slip', {
+      title: `Enquiry_Slip_${sName}_${num}`,
+      pageSize: slipConfig.pageSize || 'A4',
+      orientation: slipConfig.pageOrientation || 'portrait',
+      margin: slipConfig.pageMargin || '8mm',
+    });
   };
 
   if (!open) return null;
@@ -230,6 +281,22 @@ export const EnquirySlipModal = ({
     }
   };
 
+  const getHeaderDividerCss = () => {
+    const color = slipConfig.headerDividerColor || slipConfig.borderColor || slipConfig.primaryColor;
+    switch (slipConfig.headerDividerStyle) {
+      case 'Solid':
+        return `2px solid ${color}`;
+      case 'Double':
+        return `3px double ${color}`;
+      case 'Dashed':
+        return `1.5px dashed ${color}`;
+      case 'None':
+        return 'none';
+      default:
+        return `2.5px double ${color}`;
+    }
+  };
+
   // Sizing calculations
   const fontMultiplier = (slipConfig.fontScalePercent || 100) / 100;
   const logoPx = slipConfig.logoSize || 52;
@@ -241,7 +308,63 @@ export const EnquirySlipModal = ({
   // Dynamic Section Renderers
   const renderSection = (sectionKey) => {
     switch (sectionKey) {
-      case 'header':
+      case 'header': {
+        const schoolNameFont =
+          slipConfig.headerSchoolNameFontFamily === 'inherit' || !slipConfig.headerSchoolNameFontFamily
+            ? slipConfig.fontFamily
+            : slipConfig.headerSchoolNameFontFamily;
+        const schoolNamePx = Math.round((slipConfig.headerSchoolNameFontSize || 24) * fontMultiplier);
+        const subPx = Math.round((slipConfig.headerSubtitleFontSize || 13) * fontMultiplier);
+        const addrPx = Math.round((slipConfig.headerAddressFontSize || 11) * fontMultiplier);
+        const badgePx = Math.round((slipConfig.slipTitleFontSize || 12) * fontMultiplier);
+
+        const displaySchoolName = slipConfig.headerSchoolNameCustom?.trim() || branchInfo?.printHeader || schoolName;
+        const displaySubtitle =
+          slipConfig.headerSubtitleCustom?.trim() ||
+          `${branchName}${slipConfig.showAffiliationNo ? ` • Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})` : ''}`;
+        const displayAddress =
+          slipConfig.headerAddressCustom?.trim() ||
+          `Address: ${branchAddress} | Helpline: ${branchPhone} | Email: ${branchEmail}`;
+
+        const schoolNameStyle = {
+          margin: 0,
+          color: slipConfig.headerLayout === 'Banner' ? '#ffffff' : (slipConfig.headerSchoolNameColor || slipConfig.primaryColor),
+          fontSize: `${schoolNamePx}px`,
+          fontWeight: slipConfig.headerSchoolNameFontWeight || '900',
+          fontFamily: schoolNameFont,
+          textTransform: slipConfig.headerSchoolNameTransform || 'uppercase',
+          letterSpacing: slipConfig.headerSchoolNameLetterSpacing || '0.8px',
+          lineHeight: 1.15,
+        };
+
+        const subtitleStyle = {
+          fontSize: `${subPx}px`,
+          color: slipConfig.headerLayout === 'Banner' ? 'rgba(255,255,255,0.92)' : (slipConfig.headerSubtitleColor || '#475569'),
+          fontWeight: 600,
+          marginTop: '2px',
+        };
+
+        const addressStyle = {
+          fontSize: `${addrPx}px`,
+          color: slipConfig.headerLayout === 'Banner' ? 'rgba(255,255,255,0.85)' : (slipConfig.headerAddressColor || '#64748b'),
+          marginTop: '3px',
+          lineHeight: 1.3,
+        };
+
+        const badgeStyle = {
+          display: 'inline-block',
+          marginTop: '8px',
+          bgcolor: slipConfig.headerLayout === 'Banner' ? 'rgba(255,255,255,0.25)' : (slipConfig.slipTitleBgColor || slipConfig.primaryColor),
+          color: slipConfig.slipTitleTextColor || '#ffffff',
+          px: 2.5,
+          py: 0.4,
+          borderRadius: 1,
+          fontWeight: 700,
+          fontSize: `${badgePx}px`,
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+        };
+
         if (slipConfig.headerLayout === 'Banner') {
           return (
             <Box
@@ -249,13 +372,18 @@ export const EnquirySlipModal = ({
               sx={{
                 bgcolor: slipConfig.primaryColor,
                 color: '#ffffff',
-                p: `${12 * fontMultiplier}px ${16 * fontMultiplier}px`,
+                p: `${slipConfig.headerPaddingY || 12}px 16px`,
                 borderRadius: 1.5,
                 mb: `${10 * fontMultiplier}px`,
-                textAlign: 'center',
+                textAlign: slipConfig.headerAlignment || 'center',
               }}
             >
-              <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent={slipConfig.headerAlignment === 'left' ? 'flex-start' : 'center'}
+                alignItems="center"
+              >
                 {slipConfig.showSchoolLogo && (
                   branchInfo?.logoUrl ? (
                     <Box
@@ -291,35 +419,18 @@ export const EnquirySlipModal = ({
                   )
                 )}
                 <Box>
-                  <Typography
-                    variant="h4"
-                    fontWeight={900}
-                    sx={{ letterSpacing: 1, fontSize: `${1.45 * fontMultiplier}rem`, lineHeight: 1.15 }}
-                  >
-                    {branchInfo?.printHeader || schoolName}
+                  <Typography variant="h4" sx={schoolNameStyle}>
+                    {displaySchoolName}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontSize: `${0.78 * fontMultiplier}rem`, opacity: 0.95 }}>
-                    {branchName} {slipConfig.showAffiliationNo && `• Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})`}
+                  <Typography variant="body2" sx={subtitleStyle}>
+                    {displaySubtitle}
                   </Typography>
                 </Box>
               </Stack>
-              <Typography variant="caption" sx={{ fontSize: `${0.7 * fontMultiplier}rem`, opacity: 0.9, display: 'block', mt: 0.5 }}>
-                Address: {branchAddress} | Helpline: {branchPhone} | Email: {branchEmail}
+              <Typography variant="caption" sx={addressStyle} display="block">
+                {displayAddress}
               </Typography>
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  mt: 1,
-                  px: 2.5,
-                  py: 0.4,
-                  bgcolor: 'rgba(255,255,255,0.25)',
-                  borderRadius: 1,
-                  fontWeight: 700,
-                  fontSize: `${0.75 * fontMultiplier}rem`,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                }}
-              >
+              <Box sx={badgeStyle}>
                 {slipConfig.slipTitle}
               </Box>
             </Box>
@@ -334,8 +445,8 @@ export const EnquirySlipModal = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                pb: `${10 * fontMultiplier}px`,
-                borderBottom: `2px solid ${slipConfig.borderColor || slipConfig.primaryColor}`,
+                pb: `${slipConfig.headerPaddingY || 10}px`,
+                borderBottom: getHeaderDividerCss(),
                 mb: `${12 * fontMultiplier}px`,
               }}
             >
@@ -353,42 +464,24 @@ export const EnquirySlipModal = ({
                   )
                 )}
                 <Box>
-                  <Typography
-                    variant="h5"
-                    fontWeight={900}
-                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.35 * fontMultiplier}rem`, lineHeight: 1.2 }}
-                  >
-                    {branchInfo?.printHeader || schoolName}
+                  <Typography variant="h5" sx={schoolNameStyle}>
+                    {displaySchoolName}
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.78 * fontMultiplier}rem` }}>
-                    {branchName} {slipConfig.showAffiliationNo && `• Affiliation No: ${affiliationNo}`}
+                  <Typography variant="body2" sx={subtitleStyle}>
+                    {displaySubtitle}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block' }}>
-                    {branchAddress} | {branchPhone}
+                  <Typography variant="caption" sx={addressStyle} display="block">
+                    {displayAddress}
                   </Typography>
                 </Box>
               </Stack>
 
               <Box sx={{ textAlign: 'right' }}>
-                <Box
-                  sx={{
-                    display: 'inline-block',
-                    px: 1.8,
-                    py: 0.4,
-                    bgcolor: slipConfig.primaryColor,
-                    color: '#ffffff',
-                    borderRadius: 1,
-                    fontWeight: 700,
-                    fontSize: `${0.72 * fontMultiplier}rem`,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.6,
-                    mb: 0.5,
-                  }}
-                >
+                <Box sx={badgeStyle}>
                   {slipConfig.slipTitle}
                 </Box>
                 {slipConfig.showQrCode && (
-                  <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end">
+                  <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end" sx={{ mt: 0.5 }}>
                     <QrCodeIcon sx={{ fontSize: Math.round(18 * fontMultiplier), color: slipConfig.primaryColor }} />
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.65 * fontMultiplier}rem` }}>
                       Ref QR Verify
@@ -405,36 +498,21 @@ export const EnquirySlipModal = ({
             <Box
               key="header"
               sx={{
-                pb: `${8 * fontMultiplier}px`,
-                borderBottom: '1px solid #cbd5e1',
+                pb: `${slipConfig.headerPaddingY || 8}px`,
+                borderBottom: getHeaderDividerCss(),
                 mb: `${10 * fontMultiplier}px`,
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography
-                    variant="h5"
-                    fontWeight={800}
-                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.3 * fontMultiplier}rem` }}
-                  >
-                    {branchInfo?.printHeader || schoolName}
+                  <Typography variant="h5" sx={schoolNameStyle}>
+                    {displaySchoolName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: `${0.76 * fontMultiplier}rem` }}>
-                    {branchName} | {branchAddress} | {branchPhone}
+                  <Typography variant="body2" sx={subtitleStyle}>
+                    {displaySubtitle} | {displayAddress}
                   </Typography>
                 </Box>
-                <Box
-                  sx={{
-                    border: `1.5px solid ${slipConfig.primaryColor}`,
-                    color: slipConfig.primaryColor,
-                    px: 1.5,
-                    py: 0.3,
-                    borderRadius: 1,
-                    fontWeight: 700,
-                    fontSize: `${0.72 * fontMultiplier}rem`,
-                    textTransform: 'uppercase',
-                  }}
-                >
+                <Box sx={badgeStyle}>
                   {slipConfig.slipTitle}
                 </Box>
               </Box>
@@ -447,13 +525,18 @@ export const EnquirySlipModal = ({
           <Box
             key="header"
             sx={{
-              textAlign: 'center',
-              pb: `${10 * fontMultiplier}px`,
-              borderBottom: `2.5px double ${slipConfig.borderColor || slipConfig.primaryColor}`,
+              textAlign: slipConfig.headerAlignment || 'center',
+              pb: `${slipConfig.headerPaddingY || 10}px`,
+              borderBottom: getHeaderDividerCss(),
               mb: `${12 * fontMultiplier}px`,
             }}
           >
-            <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+            <Stack
+              direction="row"
+              spacing={2}
+              justifyContent={slipConfig.headerAlignment === 'left' ? 'flex-start' : 'center'}
+              alignItems="center"
+            >
               {slipConfig.showSchoolLogo && (
                 branchInfo?.logoUrl ? (
                   <Box
@@ -467,45 +550,23 @@ export const EnquirySlipModal = ({
                 )
               )}
               <Box>
-                <Typography
-                  variant="h4"
-                  fontWeight={900}
-                  sx={{
-                    color: slipConfig.primaryColor,
-                    letterSpacing: 1.2,
-                    fontSize: `${1.5 * fontMultiplier}rem`,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  {branchInfo?.printHeader || schoolName}
+                <Typography variant="h4" sx={schoolNameStyle}>
+                  {displaySchoolName}
                 </Typography>
-                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.8 * fontMultiplier}rem` }}>
-                  {branchName} {slipConfig.showAffiliationNo && `• Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})`}
+                <Typography variant="body2" sx={subtitleStyle}>
+                  {displaySubtitle}
                 </Typography>
               </Box>
             </Stack>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.7 * fontMultiplier}rem`, display: 'block', mt: 0.3 }}>
-              Address: {branchAddress} | Helpline: {branchPhone} | Email: {branchEmail}
+            <Typography variant="caption" sx={addressStyle} display="block">
+              {displayAddress}
             </Typography>
-            <Box
-              sx={{
-                mt: 1,
-                display: 'inline-block',
-                px: 3,
-                py: 0.4,
-                bgcolor: slipConfig.primaryColor,
-                color: '#ffffff',
-                borderRadius: 1,
-                fontWeight: 700,
-                letterSpacing: 1,
-                fontSize: `${0.78 * fontMultiplier}rem`,
-                textTransform: 'uppercase',
-              }}
-            >
+            <Box sx={badgeStyle}>
               {slipConfig.slipTitle}
             </Box>
           </Box>
         );
+      }
 
       case 'meta_bar':
         return (

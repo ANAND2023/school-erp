@@ -30,6 +30,34 @@ namespace SchoolERP.Application.DTOs
         public int PagePadding { get; set; } = 20;                 // Inner slip padding in px (8px - 36px)
         public int PageMaxWidth { get; set; } = 760;               // Maximum slip container width in px
 
+        // Full Header Customization Controls (School Name, Style, Colors, Fonts)
+        public string? HeaderSchoolNameCustom { get; set; }        // Custom School Name override
+        public int HeaderSchoolNameFontSize { get; set; } = 24;    // Font size in px (14px - 42px)
+        public string HeaderSchoolNameColor { get; set; } = "#0f766e"; // School name text color
+        public string HeaderSchoolNameFontWeight { get; set; } = "900"; // 600, 700, 800, 900
+        public string HeaderSchoolNameFontFamily { get; set; } = "inherit"; // inherit or specific font
+        public string HeaderSchoolNameTransform { get; set; } = "uppercase"; // "uppercase", "capitalize", "none"
+        public string HeaderSchoolNameLetterSpacing { get; set; } = "0.8px"; // "0px", "0.8px", "1.5px", "2.5px"
+
+        public string? HeaderSubtitleCustom { get; set; }          // Custom subtitle (affiliation/branch)
+        public int HeaderSubtitleFontSize { get; set; } = 13;      // Subtitle font size in px
+        public string HeaderSubtitleColor { get; set; } = "#475569"; // Subtitle color
+        public string HeaderSubtitleFontWeight { get; set; } = "600";
+
+        public string? HeaderAddressCustom { get; set; }           // Custom address / helpline
+        public int HeaderAddressFontSize { get; set; } = 11;       // Address font size in px
+        public string HeaderAddressColor { get; set; } = "#64748b"; // Address color
+
+        public string HeaderAlignment { get; set; } = "center";    // "center", "left"
+        public string HeaderBgColor { get; set; } = "transparent"; // "transparent" or custom color
+        public int HeaderPaddingY { get; set; } = 10;              // Header vertical padding (4px - 28px)
+        public string HeaderDividerStyle { get; set; } = "Double"; // "Double", "Solid", "Dashed", "None"
+        public string HeaderDividerColor { get; set; } = "#0f766e"; // Divider bottom color
+
+        public string SlipTitleBgColor { get; set; } = "#0f766e";  // Slip badge background
+        public string SlipTitleTextColor { get; set; } = "#ffffff";// Slip badge text color
+        public int SlipTitleFontSize { get; set; } = 12;           // Slip badge font size (10px - 16px)
+
         // Titles & Headings
         public string SlipTitle { get; set; } = "Visitor & Admission Enquiry Slip";
         public string SlipSubtitle { get; set; } = "Official Visitor Acknowledgement & Follow-up Lead Slip";
