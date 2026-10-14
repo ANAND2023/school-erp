@@ -1104,7 +1104,7 @@ export const EnquirySlipDesignerPage = () => {
   };
 
   return (
-    <div className="p-3" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <div className="p-2 md:px-3 md:py-2" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <Toast ref={toastRef} />
 
       {/* CSS PRINT MEDIA STYLES TO ENSURE 100% ISOLATION */}
@@ -1182,30 +1182,30 @@ export const EnquirySlipDesignerPage = () => {
           @media (min-width: 992px) {
             .designer-controls-card.sticky-desktop {
               position: sticky !important;
-              top: 76px !important;
+              top: 68px !important;
               z-index: 2;
             }
             .designer-controls-scroll {
-              max-height: calc(100vh - 190px) !important;
+              max-height: calc(100vh - 130px) !important;
               overflow-y: auto !important;
             }
             .designer-preview-card.sticky-desktop {
               position: sticky !important;
-              top: 76px !important;
+              top: 68px !important;
               z-index: 2;
             }
             .designer-preview-canvas {
-              max-height: calc(100vh - 190px) !important;
+              max-height: calc(100vh - 130px) !important;
               overflow-y: auto !important;
             }
           }
           @media (max-width: 991px) {
             .designer-controls-scroll {
-              max-height: 70vh !important;
+              max-height: 65vh !important;
               overflow-y: auto !important;
             }
             .designer-preview-canvas {
-              max-height: 75vh !important;
+              max-height: 70vh !important;
               overflow-y: auto !important;
             }
           }
@@ -1250,78 +1250,64 @@ export const EnquirySlipDesignerPage = () => {
         `}
       </style>
 
-      {/* Top Banner & School Selector Bar (Hidden in Print) */}
+      {/* Sleek Compact Header Bar (Hidden in Print) */}
       <div
-        className="no-print flex flex-column md:flex-row md:align-items-center md:justify-content-between p-4 border-round-xl shadow-1 mb-4"
+        className="no-print flex flex-column sm:flex-row sm:align-items-center sm:justify-content-between px-3 py-2 border-round-lg shadow-1 mb-2 gap-2"
         style={{
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
           color: '#ffffff',
+          minHeight: '44px',
         }}
       >
-        <div>
-          <div className="flex align-items-center gap-2 mb-1">
-            <span
-              className="px-2 py-1 border-round font-bold text-xs"
-              style={{ backgroundColor: '#6366f1', color: '#ffffff' }}
-            >
-              SUPER ADMIN
-            </span>
-            <Tag
-              value={config.isSchoolOverride ? 'School Custom Template' : 'Inheriting Platform Default'}
-              severity={config.isSchoolOverride ? 'warning' : 'info'}
-            />
-          </div>
-          <h1 className="text-2xl font-bold m-0 flex align-items-center gap-2">
-            <i className="pi pi-file-edit text-xl text-indigo-400"></i>
-            Enquiry Slip Designer (Dynamic & School-Wise)
-          </h1>
-          <p className="text-xs text-slate-300 mt-1 mb-0">
-            Full control over School Name font size, color, typography, logo, photo dimensions, and A4/A5 page size.
-          </p>
+        <div className="flex align-items-center gap-2">
+          <i className="pi pi-file-edit text-indigo-400 text-base"></i>
+          <span className="font-bold text-sm text-white">Enquiry Slip Designer</span>
+          <Tag
+            value={config.isSchoolOverride ? 'School Custom' : 'Platform Default'}
+            severity={config.isSchoolOverride ? 'warning' : 'info'}
+            style={{ fontSize: '11px', padding: '1px 8px' }}
+          />
         </div>
 
-        {/* School Dropdown Selector */}
-        <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center gap-2 mt-3 md:mt-0">
-          <div className="flex flex-column">
-            <label className="text-xs text-slate-300 font-semibold mb-1">Select School / Tenant:</label>
-            <Dropdown
-              value={selectedSchoolId}
-              onChange={(e) => setSelectedSchoolId(e.value)}
-              options={[
-                { label: '🌟 Platform Default (All Schools)', value: null },
-                ...schools.map((s) => ({
-                  label: `${s.name} (${s.code || `ID: ${s.id}`})`,
-                  value: s.id,
-                })),
-              ]}
-              optionLabel="label"
-              placeholder="Select School"
-              className="p-inputtext-sm"
-              style={{ minWidth: '280px', backgroundColor: '#ffffff', color: '#0f172a' }}
-              filter
-            />
-          </div>
+        {/* Compact School Selector & Action Buttons */}
+        <div className="flex flex-wrap align-items-center gap-2">
+          <Dropdown
+            value={selectedSchoolId}
+            onChange={(e) => setSelectedSchoolId(e.value)}
+            options={[
+              { label: '🌟 Platform Default (All Schools)', value: null },
+              ...schools.map((s) => ({
+                label: `${s.name} (${s.code || `ID: ${s.id}`})`,
+                value: s.id,
+              })),
+            ]}
+            optionLabel="label"
+            placeholder="Select School / Tenant"
+            className="p-inputtext-sm"
+            style={{ minWidth: '220px', maxWidth: '300px', height: '32px', backgroundColor: '#ffffff', color: '#0f172a' }}
+            filter
+          />
 
-          <div className="flex gap-2 mt-3 sm:mt-auto">
-            {selectedSchoolId && (
-              <Button
-                label="Reset"
-                icon="pi pi-refresh"
-                className="p-button-outlined p-button-secondary p-button-sm text-slate-200"
-                tooltip="Reset to platform default"
-                onClick={handleResetToDefault}
-                disabled={loading || saving}
-              />
-            )}
+          {selectedSchoolId && (
             <Button
-              label={saving ? 'Saving...' : 'Save Template'}
-              icon="pi pi-check"
-              className="p-button-primary p-button-sm font-bold"
-              style={{ backgroundColor: '#4f46e5', borderColor: '#4f46e5' }}
-              onClick={handleSave}
-              loading={saving}
+              label="Reset"
+              icon="pi pi-refresh"
+              className="p-button-outlined p-button-secondary p-button-sm text-slate-200"
+              style={{ height: '32px', padding: '0 10px', fontSize: '12px' }}
+              tooltip="Reset to platform default"
+              onClick={handleResetToDefault}
+              disabled={loading || saving}
             />
-          </div>
+          )}
+
+          <Button
+            label={saving ? 'Saving...' : 'Save Template'}
+            icon="pi pi-check"
+            className="p-button-primary p-button-sm font-bold"
+            style={{ backgroundColor: '#4f46e5', borderColor: '#4f46e5', height: '32px', padding: '0 12px', fontSize: '12px' }}
+            onClick={handleSave}
+            loading={saving}
+          />
         </div>
       </div>
 
@@ -1333,7 +1319,7 @@ export const EnquirySlipDesignerPage = () => {
             {/* Navigation Tabs (Fixed at the top of the card) */}
             <div
               className="flex border-bottom-1 surface-border overflow-x-auto flex-shrink-0"
-              style={{ backgroundColor: '#f1f5f9', padding: '6px 8px' }}
+              style={{ backgroundColor: '#f1f5f9', padding: '4px 6px' }}
             >
               {[
                 { id: 'header', label: 'Header & School Name', icon: 'pi pi-id-card', highlight: true },
@@ -1345,14 +1331,14 @@ export const EnquirySlipDesignerPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex-1 py-2 px-2 text-xs font-bold border-round transition-all border-none cursor-pointer flex align-items-center justify-content-center gap-1.5 whitespace-nowrap"
+                  className="flex-1 py-1.5 px-2 text-xs font-bold border-round transition-all border-none cursor-pointer flex align-items-center justify-content-center gap-1 whitespace-nowrap"
                   style={{
                     backgroundColor: activeTab === tab.id ? '#ffffff' : 'transparent',
                     color: activeTab === tab.id ? '#4f46e5' : '#64748b',
                     boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                   }}
                 >
-                  <i className={tab.icon} style={{ fontSize: '13px' }}></i>
+                  <i className={tab.icon} style={{ fontSize: '12px' }}></i>
                   <span>{tab.label}</span>
                 </button>
               ))}
@@ -2223,8 +2209,8 @@ export const EnquirySlipDesignerPage = () => {
         <div className="col-12 lg:col-7 designer-preview-column">
           <Card className="shadow-2 border-round-xl p-0 overflow-hidden designer-preview-card sticky-desktop">
             <div
-              className="no-print flex flex-wrap align-items-center justify-content-between p-3 border-bottom-1 surface-border gap-2 flex-shrink-0"
-              style={{ backgroundColor: '#ffffff' }}
+              className="no-print flex flex-wrap align-items-center justify-content-between px-3 py-1.5 border-bottom-1 surface-border gap-2 flex-shrink-0"
+              style={{ backgroundColor: '#ffffff', minHeight: '40px' }}
             >
               <div className="flex align-items-center gap-2">
                 <i className="pi pi-eye text-indigo-600"></i>
@@ -2240,6 +2226,7 @@ export const EnquirySlipDesignerPage = () => {
                   label="Modal View"
                   icon="pi pi-window-maximize"
                   className="p-button-outlined p-button-secondary p-button-sm font-semibold"
+                  style={{ height: '32px', fontSize: '12px', padding: '0 10px' }}
                   tooltip="Preview full-screen slip dialog"
                   onClick={() => setPreviewModalOpen(true)}
                 />
@@ -2247,6 +2234,7 @@ export const EnquirySlipDesignerPage = () => {
                   label="Download PDF"
                   icon="pi pi-file-pdf"
                   className="p-button-outlined p-button-danger p-button-sm font-semibold"
+                  style={{ height: '32px', fontSize: '12px', padding: '0 10px' }}
                   tooltip="Directly download PDF file"
                   onClick={() => downloadElementAsPdf('printable-enquiry-slip', `Enquiry_Slip_${config.schoolName || 'Template'}.pdf`)}
                 />
@@ -2254,7 +2242,7 @@ export const EnquirySlipDesignerPage = () => {
                   label="Print Slip"
                   icon="pi pi-print"
                   className="p-button-primary p-button-sm font-bold"
-                  style={{ backgroundColor: config.primaryColor, borderColor: config.primaryColor }}
+                  style={{ backgroundColor: config.primaryColor, borderColor: config.primaryColor, height: '32px', fontSize: '12px', padding: '0 12px' }}
                   tooltip="Print ONLY the Enquiry Slip (No admin UI)"
                   onClick={handlePrintSlip}
                 />
