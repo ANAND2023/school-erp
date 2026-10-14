@@ -292,6 +292,21 @@ namespace SchoolERP.API.Controllers
                 }
                 else
                 {
+                    var enrollmentId = item.EnrollmentId > 0 
+                        ? item.EnrollmentId 
+                        : (await _context.StudentEnrollments
+                            .Where(e => e.StudentId == item.StudentId && e.AcademicYearId == yearId && e.SectionId == section.Id)
+                            .Select(e => e.Id)
+                            .FirstOrDefaultAsync());
+
+                    if (enrollmentId <= 0)
+                    {
+                        enrollmentId = (await _context.StudentEnrollments
+                            .Where(e => e.StudentId == item.StudentId)
+                            .Select(e => e.Id)
+                            .FirstOrDefaultAsync());
+                    }
+
                     _context.StudentAttendances.Add(new StudentAttendance
                     {
                         BranchId = branchId,
@@ -299,7 +314,7 @@ namespace SchoolERP.API.Controllers
                         ClassId = section.ClassId,
                         SectionId = section.Id,
                         StudentId = item.StudentId,
-                        EnrollmentId = item.EnrollmentId,
+                        EnrollmentId = enrollmentId,
                         AttendanceDate = targetDate,
                         Status = item.Status,
                         Remarks = item.Remarks,
