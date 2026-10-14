@@ -1212,40 +1212,40 @@ export const EnquirySlipDesignerPage = () => {
           /* Custom styled scrollbars so users can clearly see and grab them */
           .designer-controls-scroll {
             scrollbar-width: thin;
-            scrollbar-color: #818cf8 #f1f5f9;
+            scrollbar-color: var(--app-scrollbar-thumb, #818cf8) var(--app-scrollbar-track, #f1f5f9);
           }
           .designer-controls-scroll::-webkit-scrollbar {
             width: 8px;
           }
           .designer-controls-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: var(--app-scrollbar-track, #f1f5f9);
             border-radius: 4px;
           }
           .designer-controls-scroll::-webkit-scrollbar-thumb {
-            background: #818cf8;
+            background: var(--app-scrollbar-thumb, #818cf8);
             border-radius: 4px;
           }
           .designer-controls-scroll::-webkit-scrollbar-thumb:hover {
-            background: #4f46e5;
+            background: var(--app-scrollbar-thumb-hover, #4f46e5);
           }
 
           .designer-preview-canvas {
             scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 #64748b;
+            scrollbar-color: var(--app-scrollbar-thumb, #cbd5e1) var(--app-scrollbar-track, #64748b);
           }
           .designer-preview-canvas::-webkit-scrollbar {
             width: 8px;
           }
           .designer-preview-canvas::-webkit-scrollbar-track {
-            background: #64748b;
+            background: var(--app-scrollbar-track, #64748b);
             border-radius: 4px;
           }
           .designer-preview-canvas::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: var(--app-scrollbar-thumb, #cbd5e1);
             border-radius: 4px;
           }
           .designer-preview-canvas::-webkit-scrollbar-thumb:hover {
-            background: #ffffff;
+            background: var(--app-scrollbar-thumb-hover, #ffffff);
           }
         `}
       </style>

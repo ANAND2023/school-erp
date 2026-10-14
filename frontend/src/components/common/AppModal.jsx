@@ -399,19 +399,24 @@ export const AppModal = ({
           color: isDarkMode ? '#f8fafc' : '#0f172a',
           flex: '1 1 auto',
           overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45)) var(--app-scrollbar-track, transparent)',
           '&::-webkit-scrollbar': {
-            width: '8px',
-            height: '8px',
+            width: '7px',
+            height: '7px',
           },
           '&::-webkit-scrollbar-track': {
-            backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+            backgroundColor: 'var(--app-scrollbar-track, transparent)',
+            borderRadius: '99px',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
-            borderRadius: '4px',
+            backgroundColor: 'var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45))',
+            borderRadius: '99px',
+            border: '1.5px solid transparent',
+            backgroundClip: 'padding-box',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+            backgroundColor: 'var(--app-scrollbar-thumb-hover, #3b82f6)',
           },
           ...contentSx,
         }}

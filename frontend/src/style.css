@@ -7,6 +7,22 @@
   --app-table-font-size: max(10.5px, calc(var(--app-font-size, 14px) * 0.82));
   --app-table-header-font-size: max(10px, calc(var(--app-font-size, 14px) * 0.78));
   --app-datepicker-font-size: max(11px, calc(var(--app-font-size, 14px) * 0.86));
+
+  /* Dynamic Theme Scrollbar System Defaults */
+  --app-theme-primary: #3b82f6;
+  --app-theme-darker: #2563eb;
+  --app-theme-lighter: #60a5fa;
+  --app-scrollbar-thumb: rgba(59, 130, 246, 0.45);
+  --app-scrollbar-thumb-hover: #3b82f6;
+  --app-scrollbar-thumb-active: #1d4ed8;
+  --app-scrollbar-track: rgba(0, 0, 0, 0.03);
+}
+
+html.app-dark-mode {
+  --app-scrollbar-thumb: rgba(96, 165, 250, 0.55);
+  --app-scrollbar-thumb-hover: #60a5fa;
+  --app-scrollbar-thumb-active: #93c5fd;
+  --app-scrollbar-track: rgba(15, 23, 42, 0.45);
 }
 
 * {
@@ -19,6 +35,94 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: var(--app-font-size, 14px);
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ==========================================================================
+   Global Dynamic Theme Scrollbar System
+   Applies to html, body, and all scrollable containers, dialogs, tables, drawers,
+   panels, dropdowns, textareas, and code blocks
+   ========================================================================== */
+
+/* Modern Standard CSS Scrollbars (Firefox, Chrome 121+, Safari 18+) */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45)) var(--app-scrollbar-track, transparent);
+}
+
+/* WebKit-based scrollbars (Chrome, Edge, Safari, Opera, Electron, Mobile WebView) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--app-scrollbar-track, transparent);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45));
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--app-scrollbar-thumb-hover, #3b82f6);
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--app-scrollbar-thumb-active, #1d4ed8);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Compact/Slim scrollbars for dense elements like tables, dropdowns, autocomplete, code & modals */
+.p-datatable-wrapper,
+.p-datatable-scrollable-body,
+.MuiDataGrid-virtualScroller,
+.p-dropdown-items-wrapper,
+.p-multiselect-items-wrapper,
+.p-autocomplete-panel,
+.p-calendar-panel,
+.p-dialog-content,
+.MuiDialogContent-root,
+.app-modal-content,
+.app-sidebar,
+.layout-sidebar,
+.MuiDrawer-paper,
+pre,
+code,
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45)) var(--app-scrollbar-track, transparent);
+}
+
+.p-datatable-wrapper::-webkit-scrollbar,
+.p-datatable-scrollable-body::-webkit-scrollbar,
+.MuiDataGrid-virtualScroller::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.p-dropdown-items-wrapper::-webkit-scrollbar,
+.p-multiselect-items-wrapper::-webkit-scrollbar,
+.p-autocomplete-panel::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.app-sidebar::-webkit-scrollbar,
+.layout-sidebar::-webkit-scrollbar,
+.MuiDrawer-paper::-webkit-scrollbar {
+  width: 5px;
 }
 
 /* ==========================================================================
@@ -683,7 +787,7 @@ table td {
 /* Modern slim scrollbar for table horizontal overflow */
 .p-datatable-wrapper {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45)) var(--app-scrollbar-track, transparent);
   scroll-behavior: auto;
 }
 
@@ -693,16 +797,16 @@ table td {
 }
 
 .p-datatable-wrapper::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--app-scrollbar-track, transparent);
 }
 
 .p-datatable-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--app-scrollbar-thumb, rgba(59, 130, 246, 0.45));
   border-radius: 4px;
 }
 
 .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--app-scrollbar-thumb-hover, #3b82f6);
 }
 
 /* Floating Navigation Scroll Buttons (Visible on Overflow) */

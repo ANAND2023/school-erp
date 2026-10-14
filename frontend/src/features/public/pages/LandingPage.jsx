@@ -18,6 +18,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../../../api/client';
+import { updateThemeCssVariables } from '../../../store/themeStore';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -132,6 +133,10 @@ export const LandingPage = () => {
 
   const primaryColor = cms.themeColor || '#0a387c';
   const goldColor = cms.accentColor || '#ffb000';
+
+  useEffect(() => {
+    updateThemeCssVariables(primaryColor, false);
+  }, [primaryColor]);
 
   const categorizedModules = [
     {

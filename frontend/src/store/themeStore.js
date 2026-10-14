@@ -60,12 +60,16 @@ export function shadeColor(color, percent) {
   ).toString(16).slice(1);
 }
 
-export function updateThemeCssVariables(colorHex) {
+export function updateThemeCssVariables(colorHex, isDarkOverride) {
   if (typeof document === 'undefined') return;
   const hex = colorHex || '#3B82F6';
   const darker = shadeColor(hex, -20);
   const muchDarker = shadeColor(hex, -35);
-  const lighter = shadeColor(hex, 15);
+  const lighter = shadeColor(hex, 18);
+  const muchLighter = shadeColor(hex, 35);
+  const isDark = typeof isDarkOverride === 'boolean'
+    ? isDarkOverride
+    : (document.documentElement.classList.contains('app-dark-mode') || document.body?.classList.contains('app-dark-mode'));
 
   document.documentElement.style.setProperty('--app-theme-primary', hex);
   document.documentElement.style.setProperty('--app-theme-darker', darker);
@@ -78,6 +82,17 @@ export function updateThemeCssVariables(colorHex) {
     '--app-modal-shadow',
     `0 25px 50px -12px ${hex}40, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`
   );
+
+  // Dynamic Scrollbar Colors matching active palette
+  const scrollbarThumb = isDark ? `${lighter}85` : `${hex}75`;
+  const scrollbarHover = isDark ? lighter : hex;
+  const scrollbarActive = isDark ? muchLighter : darker;
+  const scrollbarTrack = isDark ? 'rgba(15, 23, 42, 0.45)' : 'rgba(241, 245, 249, 0.65)';
+
+  document.documentElement.style.setProperty('--app-scrollbar-thumb', scrollbarThumb);
+  document.documentElement.style.setProperty('--app-scrollbar-thumb-hover', scrollbarHover);
+  document.documentElement.style.setProperty('--app-scrollbar-thumb-active', scrollbarActive);
+  document.documentElement.style.setProperty('--app-scrollbar-track', scrollbarTrack);
 }
 
 export function applyThemeLink(themeId, colorHex) {
@@ -100,11 +115,6 @@ export function applyThemeLink(themeId, colorHex) {
     document.head.appendChild(link);
   }
 
-  // Set dynamic CSS variables for modals and theme headers
-  if (colorHex) {
-    updateThemeCssVariables(colorHex);
-  }
-
   // Update root HTML and body classes & color scheme
   if (isDark) {
     document.documentElement.classList.add('app-dark-mode');
@@ -125,6 +135,9 @@ export function applyThemeLink(themeId, colorHex) {
     document.body.style.backgroundColor = '#f4f6f8';
     document.body.style.color = '#1f2937';
   }
+
+  // Set dynamic CSS variables for modals, theme headers and scrollbars (with resolved isDark)
+  updateThemeCssVariables(colorHex, isDark);
 }
 
 // Initial values from localStorage or default

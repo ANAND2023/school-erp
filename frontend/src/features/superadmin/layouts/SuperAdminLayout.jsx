@@ -78,6 +78,10 @@ export const SuperAdminLayout = () => {
 
       {/* Embedded sleek custom scrollbar for dark sidebar */}
       <style>{`
+        .superadmin-sidebar-nav {
+          scrollbar-width: thin;
+          scrollbar-color: var(--app-scrollbar-thumb, #6366f1) transparent;
+        }
         .superadmin-sidebar-nav::-webkit-scrollbar {
           width: 5px;
         }
@@ -85,11 +89,11 @@ export const SuperAdminLayout = () => {
           background: transparent;
         }
         .superadmin-sidebar-nav::-webkit-scrollbar-thumb {
-          background: #334155;
+          background: var(--app-scrollbar-thumb, #6366f1);
           border-radius: 4px;
         }
         .superadmin-sidebar-nav::-webkit-scrollbar-thumb:hover {
-          background: #475569;
+          background: var(--app-scrollbar-thumb-hover, #818cf8);
         }
       `}</style>
 
