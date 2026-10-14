@@ -65,6 +65,7 @@ export const SuperAdminLayout = () => {
     { label: 'Enquiry Slip Designer', path: '/superadmin/enquiry-slip-designer', icon: 'pi pi-file-edit', badge: 'Dynamic' },
     { label: 'Fee Slip Designer', path: '/superadmin/fee-slip-designer', icon: 'pi pi-file', badge: 'Dynamic' },
     { label: 'Admission Slip Designer', path: '/superadmin/admission-slip-designer', icon: 'pi pi-id-card', badge: 'Dynamic' },
+    { label: 'Inventory Slip Designer', path: '/superadmin/inventory-slip-designer', icon: 'pi pi-shopping-bag', badge: 'Store' },
     { label: 'Global Audit Trail', path: '/superadmin/audit-logs', icon: 'pi pi-history' },
     { label: 'System Error Logs', path: '/superadmin/error-logs', icon: 'pi pi-exclamation-triangle', badge: 'Live' },
     { label: 'SaaS Leads', path: '/superadmin/enquiries', icon: 'pi pi-envelope', badge: 'New' },

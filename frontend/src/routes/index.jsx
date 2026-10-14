@@ -83,6 +83,7 @@ import ManufactureMasterPage from '../features/inventory/pages/ManufactureMaster
 import StockInwardPage from '../features/inventory/pages/StockInwardPage';
 import StockIssuePage from '../features/inventory/pages/StockIssuePage';
 import StockLedgerPage from '../features/inventory/pages/StockLedgerPage';
+import InventoryStoreSetupPage from '../features/inventory/pages/InventoryStoreSetupPage';
 
 // Super Admin Multi-Tenant Ecosystem
 import { SuperAdminLayout } from '../features/superadmin/layouts/SuperAdminLayout';
@@ -590,6 +591,14 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="inventory/store-setup"
+          element={
+            <ProtectedRoute requiredMenu="InventoryOverview">
+              <InventoryStoreSetupPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="inventory/items"
           element={
             <ProtectedRoute requiredMenu="ItemsMaster">
@@ -668,6 +677,7 @@ export const AppRoutes = () => {
         <Route path="enquiry-slip-designer" element={<EnquirySlipDesignerPage />} />
         <Route path="fee-slip-designer" element={<FeeSlipDesignerPage />} />
         <Route path="admission-slip-designer" element={<AdmissionSlipDesignerPage />} />
+        <Route path="inventory-slip-designer" element={<InventoryStoreSetupPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
         <Route path="error-logs" element={<SystemErrorLogsPage />} />
         <Route path="enquiries" element={<LandingEnquiriesPage />} />

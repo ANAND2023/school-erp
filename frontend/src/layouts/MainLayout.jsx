@@ -135,6 +135,7 @@ const navItems = [
     icon: 'pi pi-box',
     children: [
       { title: 'Inventory Overview', path: '/inventory', menuKey: 'InventoryOverview' },
+      { title: 'Store & Slip Setup', path: '/inventory/store-setup', menuKey: 'InventoryOverview' },
       { title: 'Items Master', path: '/inventory/items', menuKey: 'ItemsMaster' },
       { title: 'Item Categories', path: '/inventory/categories', menuKey: 'ItemCategories' },
       { title: 'Suppliers / Vendors', path: '/inventory/suppliers', menuKey: 'Suppliers' },

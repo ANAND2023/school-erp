@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1107,6 +1108,127 @@ namespace SchoolERP.API.Controllers
                 .ToListAsync();
 
             return Ok(ApiResponse<List<InventoryStockLogDto>>.Ok(logs));
+        }
+
+        #endregion
+
+        #region 8. Inventory Store Entity & Slip Configuration
+
+        [HttpGet("slip-config")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<InventorySlipConfigDto>>> GetInventorySlipConfig()
+        {
+            var branchId = CurrentBranchId;
+            long? schoolId = null;
+
+            if (branchId > 0)
+            {
+                schoolId = await _context.Branches
+                    .Where(b => b.Id == branchId)
+                    .Select(b => (long?)b.SchoolId)
+                    .FirstOrDefaultAsync();
+            }
+
+            // 1. Try school-specific config
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "INVENTORY_SLIP" && g.IsActive);
+            }
+
+            // 2. Fallback to platform-wide default
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "INVENTORY_SLIP" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<InventorySlipConfigDto>(
+                        config.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.IsSchoolOverride = config.SchoolId.HasValue;
+                        return Ok(ApiResponse<InventorySlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch
+                {
+                    // Fall back to default
+                }
+            }
+
+            // Return sensible default
+            var schoolName = "School Bookstore & Uniform Counter";
+            if (schoolId.HasValue)
+            {
+                var sch = await _context.Schools.FindAsync(schoolId.Value);
+                if (sch != null && !string.IsNullOrWhiteSpace(sch.Name))
+                {
+                    schoolName = sch.Name;
+                }
+            }
+
+            var defaultConfig = new InventorySlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<InventorySlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveInventorySlipConfig([FromBody] InventorySlipConfigDto request)
+        {
+            var branchId = CurrentBranchId;
+            long? schoolId = null;
+
+            if (branchId > 0)
+            {
+                schoolId = await _context.Branches
+                    .Where(b => b.Id == branchId)
+                    .Select(b => (long?)b.SchoolId)
+                    .FirstOrDefaultAsync();
+            }
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "INVENTORY_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "INVENTORY_STORE_PROFILE";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "INVENTORY_SLIP",
+                    Provider = "INVENTORY_STORE_PROFILE",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    IsActive = true,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<bool>.Ok(true, "Inventory store profile & slip setup saved successfully."));
         }
 
         #endregion

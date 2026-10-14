@@ -182,4 +182,20 @@ export const superAdminApi = {
     const res = await apiClient.delete('/superadmin/admission-slip-config', { params: { schoolId } });
     return res.data;
   },
+
+  // 13. Dynamic Inventory Store Profile & Slip Designer (School-wise)
+  getInventorySlipConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/inventory-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveInventorySlipConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/inventory-slip-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetInventorySlipConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/inventory-slip-config', { params: { schoolId } });
+    return res.data;
+  },
 };

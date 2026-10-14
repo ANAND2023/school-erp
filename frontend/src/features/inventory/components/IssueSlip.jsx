@@ -1,113 +1,315 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from 'primereact/button';
-import { useEffect } from 'react';
+import { inventoryApi } from '../api';
 
-const IssueSlip = ({ data, onHide }) => {
+const IssueSlip = ({ data, config: propConfig, onHide }) => {
+  const [config, setConfig] = useState(propConfig || null);
+  const [loadingConfig, setLoadingConfig] = useState(!propConfig);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      window.print();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [data.issueNumber]);
+    if (propConfig) {
+      setConfig(propConfig);
+      setLoadingConfig(false);
+      return;
+    }
+
+    const loadConfig = async () => {
+      try {
+        const res = await inventoryApi.getSlipConfig();
+        if (res.data?.success && res.data?.data) {
+          setConfig(res.data.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load inventory slip config, using defaults', err);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    loadConfig();
+  }, [propConfig]);
+
+  useEffect(() => {
+    if (!loadingConfig) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [data?.issueNumber, loadingConfig]);
 
   const handlePrint = () => {
     window.print();
   };
 
+  // Safe defaults if config not yet loaded
+  const cfg = config || {
+    useCustomStoreEntity: true,
+    storeName: 'Vidyarthi Pustak Bhandar & Uniform Counter',
+    storeTagline: 'Authorized School Books, Uniforms & Stationery Supplier',
+    storeAddress: 'Campus Retail Counter, Main Road',
+    storePhone: '+91 98765 43210',
+    storeEmail: '',
+    gstinNumber: '07AAAAA0000A1Z5',
+    tradeLicenseOrPan: '',
+    logoUrl: '',
+    receiptTitle: 'RETAIL CASH MEMO / INVOICE',
+    receiptSubtitle: 'Inventory Stock Issue & Sale Acknowledgement',
+    currencySymbol: '₹',
+    printFormat: '80mm',
+    headerAlignment: 'center',
+    storeNameFontSize: 13,
+    baseFontSize: 10,
+    showLogo: false,
+    showGstin: true,
+    showPhone: true,
+    showEmail: false,
+    showAddress: true,
+    showPaymentMode: true,
+    showIssuedToType: true,
+    showTerms: true,
+    showSignatures: true,
+    showBarcodeOrQr: true,
+    issuerSignatureLabel: 'Store Keeper / Cashier',
+    receiverSignatureLabel: 'Receiver / Student Sign',
+    termsTitle: 'TERMS & CONDITIONS:',
+    termsText: '1. Goods once sold will be exchanged within 7 days with original memo.\n2. Washed or altered uniforms will not be exchanged.\n3. Books with marks or damage cannot be returned.',
+    footerNote: 'Thank you for your purchase! Visit again.'
+  };
+
+  const is58mm = cfg.printFormat === '58mm';
+  const isA4 = cfg.printFormat === 'A4' || cfg.printFormat === 'A5';
+  const slipWidth = is58mm ? '58mm' : (isA4 ? '100%' : '80mm');
+  const maxWidth = isA4 ? '680px' : slipWidth;
+
+  const grandTotal = data.grandTotal || (data.items || []).reduce((sum, item) => {
+    const qty = Number(item.quantity || item.qty || 0);
+    const rate = Number(item.sellingPrice || item.unitPrice || 0);
+    return sum + (item.totalAmount || (qty * rate));
+  }, 0);
+
   return (
-    <div className="flex flex-column gap-3 align-items-center">
+    <div className="flex flex-column gap-3 align-items-center w-full">
       {/* POS Receipt Container */}
-      <div className="print-area surface-card border-1 surface-border" id="printable-issue-slip" style={{ width: '80mm', padding: '10px', fontFamily: 'monospace', fontSize: '10px', color: '#000' }}>
+      <div 
+        className="print-area surface-card border-1 surface-border" 
+        id="printable-issue-slip" 
+        style={{ 
+          width: slipWidth, 
+          maxWidth: maxWidth, 
+          padding: is58mm ? '6px' : '14px', 
+          fontFamily: '"Courier New", Courier, monospace', 
+          fontSize: `${cfg.baseFontSize || 10}px`, 
+          color: '#000000',
+          background: '#ffffff',
+          boxSizing: 'border-box'
+        }}
+      >
         
-        <div className="text-center mb-2">
-          <h3 className="m-0 font-bold" style={{ fontSize: '12px' }}>Delhi Public School</h3>
-          <p className="m-0" style={{ fontSize: '12px' }}>Stock Issue Slip</p>
+        {/* Header: Store Identity (Separate entity from school) */}
+        <div style={{ textAlign: cfg.headerAlignment || 'center', marginBottom: '8px' }}>
+          {/* Store Logo if configured & enabled */}
+          {cfg.showLogo && cfg.logoUrl && (
+            <div style={{ marginBottom: '6px', textAlign: 'center' }}>
+              <img 
+                src={cfg.logoUrl} 
+                alt="Store Logo" 
+                style={{ maxHeight: '45px', maxWidth: '140px', objectFit: 'contain' }} 
+              />
+            </div>
+          )}
+
+          {/* Store / Entity Name */}
+          <h2 
+            className="m-0 font-bold" 
+            style={{ 
+              fontSize: `${cfg.storeNameFontSize || 13}px`, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.3px',
+              lineHeight: 1.2
+            }}
+          >
+            {cfg.useCustomStoreEntity ? (cfg.storeName || 'Bookstore & Uniform Outlet') : (data.schoolName || 'School Inventory')}
+          </h2>
+
+          {/* Subtitle / Tagline */}
+          {cfg.storeTagline && (
+            <p className="m-0 mt-1" style={{ fontSize: `${(cfg.baseFontSize || 10) - 1}px`, color: '#333' }}>
+              {cfg.storeTagline}
+            </p>
+          )}
+
+          {/* Store Address */}
+          {cfg.showAddress && cfg.storeAddress && (
+            <p className="m-0 mt-1" style={{ fontSize: `${(cfg.baseFontSize || 10) - 1.5}px`, color: '#444' }}>
+              {cfg.storeAddress}
+            </p>
+          )}
+
+          {/* Contact & GSTIN row */}
+          <div style={{ fontSize: `${(cfg.baseFontSize || 10) - 1.5}px`, marginTop: '3px' }}>
+            {cfg.showPhone && cfg.storePhone && (
+              <span style={{ marginRight: '8px' }}><strong>Ph:</strong> {cfg.storePhone}</span>
+            )}
+            {cfg.showEmail && cfg.storeEmail && (
+              <span style={{ marginRight: '8px' }}><strong>Email:</strong> {cfg.storeEmail}</span>
+            )}
+            {cfg.showGstin && cfg.gstinNumber && (
+              <span><strong>GSTIN:</strong> {cfg.gstinNumber}</span>
+            )}
+          </div>
+
+          {/* Receipt Title Banner */}
+          <div style={{ 
+            margin: '8px 0 4px 0', 
+            padding: '2px 0', 
+            borderTop: '1px dashed #000', 
+            borderBottom: '1px dashed #000',
+            textAlign: 'center' 
+          }}>
+            <span style={{ fontSize: `${(cfg.baseFontSize || 10) + 1}px`, fontWeight: 'bold', letterSpacing: '0.5px' }}>
+              {cfg.receiptTitle || 'RETAIL CASH MEMO'}
+            </span>
+            {cfg.receiptSubtitle && (
+              <div style={{ fontSize: `${(cfg.baseFontSize || 10) - 2}px` }}>{cfg.receiptSubtitle}</div>
+            )}
+          </div>
         </div>
         
-        <div style={{ borderBottom: '1px dashed #000', margin: '10px 0' }}></div>
-        
-        <div className="mb-2">
-          <p className="m-0 pb-1"><strong>Issue No:</strong> {data.issueNumber || 'N/A'}</p>
-          <p className="m-0 pb-1"><strong>Date:</strong> {data.issueDate ? new Date(data.issueDate).toLocaleDateString() : 'N/A'}</p>
-          <p className="m-0 pb-1"><strong>Issued To:</strong> {data.issuedToName}</p>
-          <p className="m-0 pb-1"><strong>Type:</strong> {data.issuedToType}</p>
-          <p className="m-0 pb-1"><strong>Payment:</strong> {data.paymentMode || 'N/A'}</p>
+        {/* Voucher & Customer Metadata */}
+        <div style={{ marginBottom: '8px', lineHeight: 1.35, fontSize: `${(cfg.baseFontSize || 10) - 0.5}px` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span><strong>Memo No:</strong> {data.issueNumber || 'N/A'}</span>
+            <span><strong>Date:</strong> {data.issueDate ? new Date(data.issueDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')}</span>
+          </div>
+
+          <div style={{ marginTop: '2px' }}>
+            <strong>Issued To:</strong> {data.issuedToName || 'Walk-in Customer'}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+            {cfg.showIssuedToType && (
+              <span><strong>Type:</strong> {data.issuedToType || 'Student'}</span>
+            )}
+            {cfg.showPaymentMode && (
+              <span><strong>Payment:</strong> {data.paymentMode || 'Cash'}</span>
+            )}
+          </div>
         </div>
 
-        <div style={{ borderBottom: '1px dashed #000', margin: '10px 0' }}></div>
+        <div style={{ borderBottom: '1px dashed #000', margin: '4px 0 6px 0' }}></div>
 
-        <table className="w-full text-left" style={{ borderCollapse: 'collapse', fontSize: '10px' }}>
+        {/* Items Table */}
+        <table className="w-full text-left" style={{ borderCollapse: 'collapse', fontSize: `${cfg.baseFontSize || 10}px`, width: '100%' }}>
           <thead>
-            <tr>
-              <th className="pb-2 text-left" colSpan="2">Item</th>
-            </tr>
-            <tr>
-              <th className="pb-2 font-normal text-left" style={{ width: '60%' }}>Qty x Price</th>
-              <th className="pb-2 font-normal text-right" style={{ width: '40%' }}>Total</th>
+            <tr style={{ borderBottom: '1px solid #000' }}>
+              <th className="pb-1 text-left" style={{ width: '50%' }}>Item Description</th>
+              <th className="pb-1 text-center" style={{ width: '22%' }}>Qty x Rate</th>
+              <th className="pb-1 text-right" style={{ width: '28%' }}>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item, idx) => (
-              <React.Fragment key={idx}>
-                <tr>
-                  <td colSpan="2" className="pt-2 font-bold">{idx + 1}. {item.itemName}</td>
-                </tr>
-                <tr>
-                  <td className="pb-2 text-left">
-                    {item.quantity || item.qty} x ₹{item.sellingPrice || item.unitPrice || 0}
+            {(data.items || []).map((item, idx) => {
+              const qty = Number(item.quantity || item.qty || 1);
+              const rate = Number(item.sellingPrice || item.unitPrice || 0);
+              const total = item.totalAmount || (qty * rate);
+              return (
+                <tr key={idx} style={{ borderBottom: '1px dotted #ccc' }}>
+                  <td className="py-1 text-left" style={{ wordBreak: 'break-word', verticalAlign: 'top' }}>
+                    <strong>{idx + 1}.</strong> {item.itemName || 'Item'}
+                    {item.itemCode && <div style={{ fontSize: '8px', color: '#555' }}>Code: {item.itemCode}</div>}
                   </td>
-                  <td className="pb-2 text-right">
-                    ₹{item.totalAmount || ((item.quantity || item.qty) * (item.sellingPrice || item.unitPrice || 0)) || 0}
+                  <td className="py-1 text-center" style={{ verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                    {qty} x {cfg.currencySymbol || '₹'}{rate}
+                  </td>
+                  <td className="py-1 text-right font-bold" style={{ verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                    {cfg.currencySymbol || '₹'}{total.toFixed(2)}
                   </td>
                 </tr>
-              </React.Fragment>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '5px 0' }}></div>
+        {/* Totals Section */}
+        <div style={{ borderTop: '1px dashed #000', margin: '6px 0 4px 0' }}></div>
         
-        <div className="flex justify-content-between font-bold" style={{ fontSize: '12px', margin: '10px 0' }}>
-          <span>Grand Total:</span>
-          <span>₹{data.grandTotal || data.items.reduce((sum, item) => sum + (item.totalAmount || ((item.quantity || item.qty) * (item.sellingPrice || item.unitPrice || 0)) || 0), 0)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${(cfg.baseFontSize || 10) + 2}px`, fontWeight: 'bold', margin: '4px 0' }}>
+          <span>TOTAL AMOUNT:</span>
+          <span>{cfg.currencySymbol || '₹'}{grandTotal.toFixed(2)}</span>
         </div>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '5px 0' }}></div>
+        <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
 
-        <div className="mt-4 flex justify-content-between" style={{ fontSize: '9px' }}>
-          <div>
-            <p className="m-0 pb-4">Issuer Sign</p>
-            <p className="m-0">__________</p>
+        {/* QR / Barcode indicator */}
+        {cfg.showBarcodeOrQr && (
+          <div style={{ textAlign: 'center', margin: '8px 0 4px 0' }}>
+            <div style={{ 
+              fontFamily: '"Libre Barcode 39", "Courier New", monospace', 
+              fontSize: '22px', 
+              letterSpacing: '3px',
+              lineHeight: 1 
+            }}>
+              *{data.issueNumber || 'INVOICE'}*
+            </div>
+            <div style={{ fontSize: '8px', color: '#666' }}>VERIFIED SALE VOUCHER</div>
           </div>
-          <div className="text-right">
-            <p className="m-0 pb-4">Rcvr Sign</p>
-            <p className="m-0">__________</p>
-          </div>
-        </div>
+        )}
 
-        <div className="text-center mt-4">
-          <p className="m-0" style={{ fontSize: '10px' }}>Thank you!</p>
-        </div>
+        {/* Signatures */}
+        {cfg.showSignatures && (
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: `${(cfg.baseFontSize || 10) - 1.5}px` }}>
+            <div style={{ textAlign: 'left', minWidth: '40%' }}>
+              <div style={{ borderBottom: '1px solid #444', height: '14px', marginBottom: '2px' }}></div>
+              <p className="m-0 font-bold">{cfg.issuerSignatureLabel || 'Issuer Sign'}</p>
+            </div>
+            <div style={{ textAlign: 'right', minWidth: '40%' }}>
+              <div style={{ borderBottom: '1px solid #444', height: '14px', marginBottom: '2px' }}></div>
+              <p className="m-0 font-bold">{cfg.receiverSignatureLabel || 'Receiver Sign'}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Terms & Conditions */}
+        {cfg.showTerms && cfg.termsText && (
+          <div style={{ marginTop: '10px', paddingTop: '6px', borderTop: '1px dotted #888', fontSize: `${(cfg.baseFontSize || 10) - 2}px`, color: '#333' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{cfg.termsTitle || 'TERMS & CONDITIONS:'}</div>
+            <div style={{ whiteSpace: 'pre-line', lineHeight: 1.25 }}>
+              {cfg.termsText}
+            </div>
+          </div>
+        )}
+
+        {/* Footer Greetings Note */}
+        {cfg.footerNote && (
+          <div style={{ textAlign: 'center', marginTop: '10px', fontSize: `${(cfg.baseFontSize || 10) - 1}px`, fontWeight: 'bold' }}>
+            <p className="m-0">{cfg.footerNote}</p>
+          </div>
+        )}
+
       </div>
 
-      <div className="flex justify-content-end gap-2 no-print mt-3 w-full" style={{ maxwidth: '80mm' }}>
+      {/* Action Buttons (Excluded from Print) */}
+      <div className="flex justify-content-end gap-2 no-print mt-3 w-full" style={{ maxWidth: maxWidth }}>
         {onHide && <Button label="Close" icon="pi pi-times" className="p-button-text p-button-sm" onClick={onHide} />}
-        <Button label="Print Receipt" icon="pi pi-print" className="p-button-sm" onClick={handlePrint} />
+        <Button label="Print Receipt" icon="pi pi-print" className="p-button-sm p-button-primary" onClick={handlePrint} />
       </div>
 
+      {/* Strict Thermal POS Print Styles */}
       <style>{`
         @media print {
           @page {
             margin: 0;
+            size: ${slipWidth} auto;
           }
           body {
             margin: 0;
             padding: 0;
+            background: #ffffff !important;
           }
           body * {
             visibility: hidden;
           }
-          /* Reset PrimeReact Dialog positioning for print */
           .p-dialog-mask, .p-dialog, .p-dialog-content {
             position: static !important;
             transform: none !important;
@@ -124,9 +326,10 @@ const IssueSlip = ({ data, onHide }) => {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 80mm !important;
-            margin: 0;
-            padding: 10px !important;
+            width: ${slipWidth} !important;
+            max-width: ${slipWidth} !important;
+            margin: 0 !important;
+            padding: ${is58mm ? '4px' : '8px'} !important;
             border: none !important;
             box-shadow: none !important;
           }
@@ -140,8 +343,3 @@ const IssueSlip = ({ data, onHide }) => {
 };
 
 export default IssueSlip;
-
-
-
-
-

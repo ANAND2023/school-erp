@@ -1814,6 +1814,137 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.5 DYNAMIC INVENTORY STORE & SLIP BUILDER
+        // ==========================================
+        [HttpGet("inventory-slip-config")]
+        public async Task<ActionResult<ApiResponse<InventorySlipConfigDto>>> GetInventorySlipConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Global Platform Default";
+            if (schoolId.HasValue)
+            {
+                var school = await _context.Schools.FindAsync(schoolId.Value);
+                if (school != null)
+                    schoolName = school.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "INVENTORY_SLIP");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "INVENTORY_SLIP");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<InventorySlipConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        return Ok(ApiResponse<InventorySlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new InventorySlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<InventorySlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("inventory-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveInventorySlipConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] InventorySlipConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "INVENTORY_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "INVENTORY_SLIP_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "INVENTORY_SLIP",
+                    Provider = "INVENTORY_SLIP_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    IsActive = true,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "INVENTORY_SLIP_CONFIGURED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Platform Default",
+                null,
+                new { schoolId, request.StoreName, request.GstinNumber, request.PrintFormat });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Inventory store profile & slip setup saved successfully."));
+        }
+
+        [HttpDelete("inventory-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetInventorySlipConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "INVENTORY_SLIP");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "INVENTORY_SLIP_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School inventory store profile reset to platform default successfully."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

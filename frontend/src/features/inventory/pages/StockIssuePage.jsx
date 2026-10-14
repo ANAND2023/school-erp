@@ -16,11 +16,13 @@ import { Column } from 'primereact/column';
 import { Dialog } from 'primereact/dialog';
 import { AutoComplete } from 'primereact/autocomplete';
 import { Tag } from 'primereact/tag';
+import { useNavigate } from 'react-router-dom';
 import { inventoryApi } from '../api';
 import { studentApi } from '../../students/api';
 import IssueSlip from '../components/IssueSlip';
 
 const StockIssuePage = () => {
+  const navigate = useNavigate();
   const [issueType, setIssueType] = useState('Registered');
   
   // Student Search
@@ -290,7 +292,20 @@ const StockIssuePage = () => {
         <Typography variant="h5" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <i className="pi pi-send text-primary" style={{ fontSize: '1.5rem' }} /> Stock Issue POS
         </Typography>
-        <Button label="View History" icon="pi pi-history" className="p-button-outlined p-button-sm" onClick={() => setHistoryDialogVisible(true)} />
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+          <Button 
+            label="Store & Slip Setup" 
+            icon="pi pi-cog" 
+            className="p-button-outlined p-button-help p-button-sm" 
+            onClick={() => navigate('/inventory/store-setup')} 
+          />
+          <Button 
+            label="View History" 
+            icon="pi pi-history" 
+            className="p-button-outlined p-button-sm" 
+            onClick={() => setHistoryDialogVisible(true)} 
+          />
+        </Box>
       </Box>
 
       {/* TOP SECTION: Search & Select Student */}

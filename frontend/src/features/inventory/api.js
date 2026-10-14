@@ -34,6 +34,10 @@ export const inventoryApi = {
 
   // Stock Ledger
   getStockLogs: (params) => apiClient.get('/inventory/stock-logs', { params }),
+
+  // Store & Slip Setup Profile (When selling under custom bookstore/vendor name)
+  getSlipConfig: () => apiClient.get('/inventory/slip-config'),
+  saveSlipConfig: (data) => apiClient.post('/inventory/slip-config', data),
 };
 
 export default inventoryApi;
