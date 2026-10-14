@@ -389,6 +389,7 @@ namespace SchoolERP.API.Controllers
                             {
                                 FeeHeadName = due.FeeHead?.Name ?? "Fee",
                                 InstallmentName = due.Installment?.Name ?? "",
+                                Month = due.Installment?.Name ?? "",
                                 AmountPaid = item.AmountToPay,
                                 FinePaid = item.FineToPay,
                                 BalanceCarried = due.BalanceAmount
@@ -602,6 +603,7 @@ namespace SchoolERP.API.Controllers
                 {
                     FeeHeadName = d.FeeHead?.Name ?? "",
                     InstallmentName = d.Installment?.Name ?? "",
+                    Month = d.Installment?.Name ?? monthStr ?? "",
                     AmountPaid = d.AmountPaid,
                     FinePaid = d.FinePaid,
                     BalanceCarried = d.BalanceCarried
@@ -687,6 +689,69 @@ namespace SchoolERP.API.Controllers
                     return StatusCode(500, ApiResponse.Fail($"Failed to cancel receipt: {ex.Message}"));
                 }
             });
+        }
+
+        [HttpGet("receipt-config")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<FeeSlipConfigDto>>> GetFeeReceiptConfig()
+        {
+            var branchId = _currentUserService.BranchId;
+            long? schoolId = null;
+
+            if (branchId > 0)
+            {
+                schoolId = await _context.Branches
+                    .Where(b => b.Id == branchId)
+                    .Select(b => (long?)b.SchoolId)
+                    .FirstOrDefaultAsync();
+            }
+
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "FEE_RECEIPT_SLIP" && g.IsActive);
+            }
+
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "FEE_RECEIPT_SLIP" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<FeeSlipConfigDto>(
+                        config.CredentialsEncrypted,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        var defaultSecs = FeeSlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<FeeSlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(ApiResponse<FeeSlipConfigDto>.Ok(new FeeSlipConfigDto()));
         }
     }
 }

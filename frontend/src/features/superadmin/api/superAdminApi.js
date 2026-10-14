@@ -150,4 +150,36 @@ export const superAdminApi = {
     const res = await apiClient.delete('/superadmin/enquiry-slip-config', { params: { schoolId } });
     return res.data;
   },
+
+  // 11. Dynamic Fee Receipt Slip Designer (School-wise)
+  getFeeSlipConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/fee-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveFeeSlipConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/fee-slip-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetFeeSlipConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/fee-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  // 12. Dynamic Admission Slip Designer (School-wise)
+  getAdmissionSlipConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/admission-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveAdmissionSlipConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/admission-slip-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetAdmissionSlipConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/admission-slip-config', { params: { schoolId } });
+    return res.data;
+  },
 };

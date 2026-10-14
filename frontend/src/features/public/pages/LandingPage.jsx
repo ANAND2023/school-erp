@@ -3,7 +3,8 @@ import AOS from 'aos';
 import { 
   Box, Typography, Button, Container, Grid, CardMedia, 
   Paper, AppBar, Toolbar, IconButton, TextField, 
-  Snackbar, Alert, Chip, Drawer, List, ListItem, ListItemButton, ListItemText, Divider
+  Snackbar, Alert, Chip, Drawer, List, ListItem, ListItemButton, ListItemText, Divider,
+  Dialog, DialogTitle, DialogContent, DialogActions, Tooltip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -22,6 +23,8 @@ export const LandingPage = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('all');
+  const [moduleSearch, setModuleSearch] = useState('');
+  const [selectedModule, setSelectedModule] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [formData, setFormData] = useState({ name: '', school: '', phone: '', email: '', message: '' });
   const [toastOpen, setToastOpen] = useState(false);
@@ -135,126 +138,253 @@ export const LandingPage = () => {
       category: 'admissions',
       title: 'Online Enquiries & Admissions',
       icon: 'pi pi-user-plus',
-      tag: 'Admissions',
-      desc: 'Digital registration, merit ranking, multi-step student admission forms, document verification, and auto admission number allocation.'
+      tag: 'Admissions & CRM',
+      badge: 'Fast Onboarding',
+      color: '#ea580c',
+      lightColor: '#fff7ed',
+      gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+      desc: 'Digital registration, merit ranking, multi-step student admission forms, document verification, and auto admission number allocation.',
+      highlights: ['Merit Ranking Lists', 'Online Document KYC', 'Auto Roll & Reg Number'],
+      targetUser: 'Admissions Desk & Counselors',
+      workflow: 'Public Enquiry -> Form Verification -> Fee Deposit -> Student ID Created'
     },
     {
       category: 'finance',
       title: 'Fee Collection Counter POS',
       icon: 'pi pi-wallet',
-      tag: 'Finance',
-      desc: 'Custom heads (Tuition, Lab, Transport), concessions, online gateway integration, instant thermal/A4 receipts, and auto demand notices.'
+      tag: 'Finance & Accounts',
+      badge: 'High Impact',
+      color: '#059669',
+      lightColor: '#ecfdf5',
+      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      desc: 'Custom heads (Tuition, Lab, Transport), concessions, online gateway integration, instant thermal/A4 receipts, and auto demand notices.',
+      highlights: ['Thermal & A4 Receipts', 'Custom Fee Heads & Concessions', 'Auto WhatsApp Alerts'],
+      targetUser: 'Accountants & Cashiers',
+      workflow: 'Student Lookup -> Head Selection -> Cash/UPI/Gateway -> Instant Printed Slip'
     },
     {
       category: 'academics',
       title: 'Smart Attendance & Leaves',
       icon: 'pi pi-check-circle',
-      tag: 'Daily Ops',
-      desc: 'Class-wise daily student roll-call attendance registers, monthly percentage reports, staff presence logs, and leave approval workflows.'
+      tag: 'Daily Operations',
+      badge: 'Automated',
+      color: '#2563eb',
+      lightColor: '#eff6ff',
+      gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+      desc: 'Class-wise daily student roll-call attendance registers, monthly percentage reports, staff presence logs, and leave approval workflows.',
+      highlights: ['1-Click Roll-Call Register', 'Monthly % Attendance Reports', 'Parent Absent Alerts'],
+      targetUser: 'Class Teachers & HR',
+      workflow: 'Class Selection -> Mark Present/Absent -> Save Register -> Instant Parent Alert'
     },
     {
       category: 'academics',
       title: 'Timetable & Bell Scheduler',
       icon: 'pi pi-calendar',
-      tag: 'Academics',
-      desc: 'Weekly class & teacher period grids, bell schedules, and intelligent automated substitution suggesting proxy faculty for absent teachers.'
+      tag: 'Academic Planning',
+      badge: 'Smart Proxy',
+      color: '#0284c7',
+      lightColor: '#f0f9ff',
+      gradient: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+      desc: 'Weekly class & teacher period grids, bell schedules, and intelligent automated substitution suggesting proxy faculty for absent teachers.',
+      highlights: ['Visual Weekly Grids', 'Automated Bell Timings', 'Smart Proxy Substitution'],
+      targetUser: 'Academic Coordinators',
+      workflow: 'Period Matrix -> Teacher Assignment -> Conflict Check -> Live Display'
     },
     {
       category: 'academics',
       title: 'Exams & Automated Report Cards',
       icon: 'pi pi-file-edit',
       tag: 'Assessments',
-      desc: 'Term-wise date sheets, subject teacher marks entry, automated grading/percentage calculations, and printable CBSE/ICSE report cards.'
+      badge: 'CBSE / ICSE',
+      color: '#4f46e5',
+      lightColor: '#eef2ff',
+      gradient: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+      desc: 'Term-wise date sheets, subject teacher marks entry, automated grading/percentage calculations, and printable CBSE/ICSE report cards.',
+      highlights: ['Subject Marks Entry Grid', 'Automated Grade & Rank Calc', '1-Click Multi-Term Slips'],
+      targetUser: 'Exam Cell & Faculty',
+      workflow: 'Exam Date Sheet -> Faculty Marks Entry -> Auto Grading -> Download Report Cards'
     },
     {
-      category: 'lifecycle',
+      category: 'academics',
       title: 'Promotion & Transfer Certificates',
       icon: 'pi pi-arrow-up-right',
-      tag: 'Lifecycle',
-      desc: 'Session-end 1-click bulk student promotion and formal verifiable Transfer Certificate (TC) issuance with QR verification.'
+      tag: 'Student Lifecycle',
+      badge: 'QR Verifiable',
+      color: '#0891b2',
+      lightColor: '#ecfeff',
+      gradient: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+      desc: 'Session-end 1-click bulk student promotion and formal verifiable Transfer Certificate (TC) issuance with QR verification.',
+      highlights: ['Bulk Class Promotion', 'Official TC Numbering', 'Tamper-Proof QR Code'],
+      targetUser: 'Principals & Registrars',
+      workflow: 'Select Class -> Academic Criteria -> 1-Click Promote -> Formal TC Archive'
     },
     {
-      category: 'identity',
+      category: 'admissions',
       title: 'Dynamic ID Card Studio',
       icon: 'pi pi-id-card',
-      tag: 'Identity',
-      desc: 'Built-in visual ID card designer with custom school templates, photo alignment, QR codes/barcodes, and bulk print sheets.'
+      tag: 'Identity & Security',
+      badge: 'Built-in Designer',
+      color: '#d97706',
+      lightColor: '#fffbeb',
+      gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+      desc: 'Built-in visual ID card designer with custom school templates, photo alignment, QR codes/barcodes, and bulk print sheets.',
+      highlights: ['Custom Template Layouts', 'Live Photo & Barcode', 'A4 Multi-Up Bulk Print'],
+      targetUser: 'Admin Office & Printing',
+      workflow: 'Choose Template -> Select Class/Staff -> Live Preview -> Print High-Res PDF'
     },
     {
       category: 'hr',
       title: 'Staff Directory & HR Payroll',
       icon: 'pi pi-users',
       tag: 'Staff HR',
-      desc: 'Complete employee credentials, qualification tracking, salary structures, class teacher allocations, and faculty subject mapping.'
+      badge: 'Full Lifecycle',
+      color: '#7c3aed',
+      lightColor: '#f5f3ff',
+      gradient: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+      desc: 'Complete employee credentials, qualification tracking, salary structures, class teacher allocations, and faculty subject mapping.',
+      highlights: ['Employee KYC & Records', 'Teacher Subject Allocations', 'Monthly Salary & Leaves'],
+      targetUser: 'HR & Administrative Head',
+      workflow: 'Staff Onboarding -> Class Mapping -> Biometric Attendance -> Payroll Generation'
     },
     {
       category: 'logistics',
       title: 'Transport Fleet & Route Tracking',
       icon: 'pi pi-car',
-      tag: 'Logistics',
-      desc: 'Bus vehicles, driver licensing, pickup/drop route stops, timings, distance slabs, and student/staff seat allocations.'
+      tag: 'Fleet Logistics',
+      badge: 'Route Mapping',
+      color: '#dc2626',
+      lightColor: '#fef2f2',
+      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+      desc: 'Bus vehicles, driver licensing, pickup/drop route stops, timings, distance slabs, and student/staff seat allocations.',
+      highlights: ['Vehicle & Driver Matrix', 'Route Stops & Pick Timings', 'Distance Fare Slabs'],
+      targetUser: 'Transport In-charge',
+      workflow: 'Create Route & Stops -> Assign Bus & Driver -> Allocate Students -> Fee Sync'
     },
     {
       category: 'logistics',
       title: 'Inventory & Stock Management',
       icon: 'pi pi-box',
       tag: 'Supply Chain',
-      desc: 'Uniforms, books, stationery, item categories, supplier directory, purchase inward bills, department stock issue, and stock ledger.'
+      badge: 'Real-time Stock',
+      color: '#b45309',
+      lightColor: '#fffbeb',
+      gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+      desc: 'Uniforms, books, stationery, item categories, supplier directory, purchase inward bills, department stock issue, and stock ledger.',
+      highlights: ['Purchase Inward Bills', 'Department Issue Slips', 'Real-Time Stock Ledger'],
+      targetUser: 'Storekeeper & Procurement',
+      workflow: 'Supplier PO -> Inward Stock Verification -> Department Issue -> Ledger Audit'
     },
     {
       category: 'finance',
       title: 'School Expense Management',
       icon: 'pi pi-chart-line',
-      tag: 'Finance',
-      desc: 'Petty cash tracking, operational expense categories, bill attachments, voucher receipts, and branch-level financial auditing.'
+      tag: 'Expense & Audit',
+      badge: 'Audit Trail',
+      color: '#0d9488',
+      lightColor: '#f0fdfa',
+      gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+      desc: 'Petty cash tracking, operational expense categories, bill attachments, voucher receipts, and branch-level financial auditing.',
+      highlights: ['Petty Cash Accounts', 'Voucher Numbering Series', 'Expense Trend Analytics'],
+      targetUser: 'Accountant & Manager',
+      workflow: 'Voucher Request -> Bill Document Upload -> Manager Approval -> Ledger Entry'
     },
     {
       category: 'platform',
       title: 'Super Admin Multi-Tenant SaaS',
       icon: 'pi pi-building',
-      tag: 'Platform',
-      desc: 'Executive portal to onboard infinite schools, toggle module catalogs, configure subscription plans, and inspect global audit logs.'
+      tag: 'Enterprise Cloud',
+      badge: 'Multi-Tenant',
+      color: '#0f172a',
+      lightColor: '#f8fafc',
+      gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      desc: 'Executive portal to onboard infinite schools, toggle module catalogs, configure subscription plans, and inspect global audit logs.',
+      highlights: ['Infinite School Onboarding', 'Module Feature Flags', 'Subscription Tier Engine'],
+      targetUser: 'Trustees & Central Management',
+      workflow: 'Tenant Onboarding -> Select Plan -> Assign Admin -> Global Dashboard'
     },
     {
       category: 'platform',
       title: 'Granular Role-Based Security',
       icon: 'pi pi-shield',
-      tag: 'Security',
-      desc: 'Screen-level View, Add, Edit, Delete, Print and Export permissions for Principals, Accountants, Teachers, and Clerks.'
+      tag: 'Security & RBAC',
+      badge: 'Bank Grade',
+      color: '#1e3a8a',
+      lightColor: '#eff6ff',
+      gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+      desc: 'Screen-level View, Add, Edit, Delete, Print and Export permissions for Principals, Accountants, Teachers, and Clerks.',
+      highlights: ['Granular Screen Permissions', 'Print & Export Locks', 'Full Mutation Audit Trail'],
+      targetUser: 'System Administrator',
+      workflow: 'Define Custom Roles -> Matrix Checkboxes -> Assign Users -> Active Policy'
     },
     {
       category: 'platform',
       title: 'Central Analytical Reports Hub',
       icon: 'pi pi-chart-bar',
-      tag: 'Analytics',
-      desc: 'Consolidated multi-branch reporting covering fee collection trends, defaulters, daily attendance ratios, and institutional growth.'
+      tag: 'BI & Analytics',
+      badge: 'Executive BI',
+      color: '#4338ca',
+      lightColor: '#eef2ff',
+      gradient: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
+      desc: 'Consolidated multi-branch reporting covering fee collection trends, defaulters, daily attendance ratios, and institutional growth.',
+      highlights: ['Fee Defaulter Rosters', 'Attendance Ratio Graphs', 'Export to Excel & PDF'],
+      targetUser: 'Trustees & Directors',
+      workflow: 'Select Branch & Range -> Live Calculation -> Chart Visualization -> Export'
     },
     {
       category: 'portal',
       title: 'Student & Parent Self-Service Portal',
       icon: 'pi pi-user',
-      tag: 'Portals',
-      desc: 'Dedicated login for students and parents featuring multi-child switching, live period timetables, attendance tracking, and instant fee receipts.'
+      tag: 'Family Portal',
+      badge: 'Multi-Child',
+      color: '#9333ea',
+      lightColor: '#faf5ff',
+      gradient: 'linear-gradient(135deg, #9333ea 0%, #a855f7 100%)',
+      desc: 'Dedicated login for students and parents featuring multi-child switching, live period timetables, attendance tracking, and instant fee receipts.',
+      highlights: ['Multi-Sibling Switcher', 'Live Timetable Schedule', 'Instant Download Fee Slips'],
+      targetUser: 'Parents & Students',
+      workflow: 'Parent Login -> Choose Child -> View Attendance & Dues -> Download Receipts'
     },
     {
       category: 'portal',
       title: 'NCERT E-Books Digital Reader (Class 6-12)',
       icon: 'pi pi-book',
-      tag: 'E-Learning',
-      desc: 'Complete syllabus textbooks for Mathematics, Science, English, Social Science & Physics with embedded HD reader, chapters breakdown, and direct PDF downloads.'
+      tag: 'Digital Library',
+      badge: 'Free Library',
+      color: '#0284c7',
+      lightColor: '#f0f9ff',
+      gradient: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)',
+      desc: 'Complete syllabus textbooks for Mathematics, Science, English, Social Science & Physics with embedded HD reader, chapters breakdown, and direct PDF downloads.',
+      highlights: ['Classes 6 to 12 Covered', 'Chapter-wise HD Reader', 'Offline PDF Downloads'],
+      targetUser: 'Students & Faculty',
+      workflow: 'Select Class -> Select Subject -> Open Chapter -> Read or Download'
     },
     {
       category: 'portal',
       title: 'AI Study Buddy (24/7 Doubt Solver)',
       icon: 'pi pi-sparkles',
-      tag: 'AI Tutor',
-      desc: 'Smart interactive study buddy providing instantaneous, curriculum-aligned homework explanations, mathematical concept breakdowns, and grammar practice.'
+      tag: 'Next-Gen AI Tutor',
+      badge: 'AI Powered',
+      color: '#ec4899',
+      lightColor: '#fdf2f8',
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+      desc: 'Smart interactive study buddy providing instantaneous, curriculum-aligned homework explanations, mathematical concept breakdowns, and grammar practice.',
+      highlights: ['Instant Doubt Clarification', 'CBSE Syllabus Aligned', 'Step-by-Step Explanations'],
+      targetUser: 'Students & Self-Learners',
+      workflow: 'Type Homework Question -> Instant AI Explanation -> Interactive Practice Qs'
     }
   ];
 
-  const filteredModules = activeTab === 'all' 
-    ? categorizedModules 
-    : categorizedModules.filter(m => m.category === activeTab);
+  const filteredModules = categorizedModules.filter(item => {
+    const matchesTab = activeTab === 'all' || item.category === activeTab;
+    const q = moduleSearch.trim().toLowerCase();
+    const matchesSearch = !q || 
+      item.title.toLowerCase().includes(q) ||
+      item.desc.toLowerCase().includes(q) ||
+      item.tag.toLowerCase().includes(q) ||
+      (item.targetUser && item.targetUser.toLowerCase().includes(q)) ||
+      (item.highlights && item.highlights.some(h => h.toLowerCase().includes(q)));
+    return matchesTab && matchesSearch;
+  });
 
   const edumarshalFaqs = [
     {
@@ -1099,120 +1229,609 @@ export const LandingPage = () => {
         </Container>
       </Box>
 
-      {/* 65+ Modules Ecosystem Suite with Tabs (Edumarshal Style) */}
-      <Box id="modules-suite" sx={{ py: 10, bgcolor: '#ffffff' }}>
-        <Container maxWidth="xl">
+      {/* 65+ Modules Ecosystem Suite with Modern Segmented Tabs, Live Search & Interactive Workflow Modal */}
+      <Box id="modules-suite" sx={{ 
+        py: { xs: 8, md: 12 }, 
+        bgcolor: '#fbfcfd', 
+        position: 'relative', 
+        overflow: 'hidden',
+        borderTop: '1px solid #eef2f6',
+        borderBottom: '1px solid #eef2f6'
+      }}>
+        {/* Subtle Ambient Background Mesh */}
+        <Box sx={{
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100%', maxWidth: 1400, height: 500,
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.06) 0%, rgba(255,176,0,0.03) 40%, transparent 70%)',
+          pointerEvents: 'none', zIndex: 0
+        }} />
+
+        <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
           
-          <Box sx={{ textAlign: 'center', mb: 6 }} data-aos="fade-up">
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-              <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
-              <Typography sx={{ color: '#0a387c', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                MODULE SUITE ECOSYSTEM
+          <Box sx={{ textAlign: 'center', mb: 5 }} data-aos="fade-up">
+            {/* Live Indicator Pill */}
+            <Box sx={{ 
+              display: 'inline-flex', alignItems: 'center', gap: 1.2, 
+              px: 2.2, py: 0.8, borderRadius: 99, 
+              bgcolor: '#f0fdf4', border: '1px solid #bbf7d0',
+              mb: 2.2, boxShadow: '0 4px 12px rgba(16,185,129,0.08)' 
+            }}>
+              <Box sx={{ 
+                width: 8, height: 8, borderRadius: '50%', 
+                bgcolor: '#16a34a',
+                boxShadow: '0 0 0 4px rgba(22,163,74,0.2)' 
+              }} />
+              <Typography sx={{ color: '#15803d', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Modular Institutional Ecosystem • 65+ Connected Capabilities
               </Typography>
-              <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
             </Box>
-            <Typography variant="h3" fontWeight="900" sx={{ color: '#0a387c', mb: 1.5 }}>
-              Complete End-to-End Institutional Modules
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b', maxWidth: '720px', mx: 'auto' }}>
-              From initial admissions and fee collections to grade cards and alumni records — everything is connected in one database.
+
+            {/* Main Heading */}
+            <Typography variant="h3" fontWeight="900" sx={{ 
+              color: '#0a387c', 
+              fontSize: { xs: '2rem', sm: '2.6rem', md: '3.2rem' },
+              lineHeight: 1.18,
+              letterSpacing: '-0.03em',
+              mb: 1.8 
+            }}>
+              Complete End-to-End{' '}
+              <Box component="span" sx={{ 
+                background: 'linear-gradient(135deg, #0a387c 20%, #2563eb 80%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: { xs: 'block', sm: 'inline' }
+              }}>
+                Institutional Modules
+              </Box>
             </Typography>
 
-            {/* Filter Pills */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap', mt: 4 }}>
-              {[
-                { id: 'all', label: 'All Modules' },
-                { id: 'portal', label: 'Student, Parent & AI' },
-                { id: 'finance', label: 'Fees & Accounts' },
-                { id: 'academics', label: 'Academics & Attendance' },
-                { id: 'admissions', label: 'Admissions & CRM' },
-                { id: 'logistics', label: 'Transport & Inventory' },
-                { id: 'hr', label: 'Staff & HR Payroll' },
-                { id: 'platform', label: 'Super Admin & RBAC' }
-              ].map(tab => (
-                <Button 
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  sx={{ 
-                    borderRadius: 99, 
-                    px: 3, py: 1, 
-                    fontWeight: 700, 
-                    fontSize: '0.86rem',
-                    textTransform: 'none',
-                    bgcolor: activeTab === tab.id ? '#0a387c' : '#f1f5f9',
-                    color: activeTab === tab.id ? '#ffffff' : '#334155',
-                    '&:hover': { bgcolor: activeTab === tab.id ? '#072554' : '#e2e8f0' }
+            {/* Subtitle */}
+            <Typography variant="body1" sx={{ color: '#64748b', maxWidth: '780px', mx: 'auto', fontSize: { xs: '0.96rem', md: '1.08rem' }, lineHeight: 1.65 }}>
+              From online admissions and POS fee collections to GPS bus tracking, CBSE report cards, and 24/7 AI study tutors — every operation seamlessly synchronizes in one unified database.
+            </Typography>
+
+            {/* Live Search & Quick Filter Bar */}
+            <Box sx={{ maxWidth: 660, mx: 'auto', mt: 4, mb: 3 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                bgcolor: '#ffffff',
+                borderRadius: 99,
+                p: '6px 10px 6px 20px',
+                border: '1.5px solid #e2e8f0',
+                boxShadow: '0 10px 28px -8px rgba(10,56,124,0.08)',
+                transition: 'all 0.25s ease',
+                '&:focus-within': {
+                  borderColor: '#2563eb',
+                  boxShadow: '0 14px 34px -8px rgba(37,99,235,0.22)'
+                }
+              }}>
+                <i className="pi pi-search" style={{ color: '#64748b', fontSize: '1.15rem', marginRight: 12 }}></i>
+                <input
+                  type="text"
+                  placeholder="Quick search any module (e.g. Fees, Attendance, AI Tutor, Bus, ID Cards...)"
+                  value={moduleSearch}
+                  onChange={(e) => setModuleSearch(e.target.value)}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    width: '100%',
+                    fontSize: '0.94rem',
+                    fontFamily: 'inherit',
+                    color: '#0f172a',
+                    background: 'transparent'
                   }}
-                >
-                  {tab.label}
-                </Button>
-              ))}
+                />
+                {moduleSearch && (
+                  <IconButton size="small" onClick={() => setModuleSearch('')} sx={{ color: '#94a3b8', mr: 0.8 }}>
+                    <CloseIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                )}
+                <Box sx={{ 
+                  bgcolor: '#eff6ff', 
+                  color: '#1d4ed8', 
+                  px: 2, py: 0.65, 
+                  borderRadius: 99, 
+                  fontSize: '0.78rem', 
+                  fontWeight: 800,
+                  whiteSpace: 'nowrap',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  {filteredModules.length} Modules
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Segmented Category Navigation Tabs */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: 1, 
+              flexWrap: 'wrap', 
+              p: 1.2,
+              bgcolor: 'rgba(241, 245, 249, 0.82)',
+              backdropFilter: 'blur(12px)',
+              borderRadius: { xs: 4, md: 99 },
+              border: '1px solid #e2e8f0',
+              maxWidth: 1160,
+              mx: 'auto',
+              mt: 3.5,
+              mb: 2,
+              boxShadow: '0 4px 16px rgba(10,56,124,0.03)'
+            }}>
+              {[
+                { id: 'all', label: 'All Modules', icon: 'pi pi-th-large' },
+                { id: 'portal', label: 'Student, Parent & AI', icon: 'pi pi-sparkles' },
+                { id: 'finance', label: 'Fees & Accounts', icon: 'pi pi-wallet' },
+                { id: 'academics', label: 'Academics & Exams', icon: 'pi pi-graduation-cap' },
+                { id: 'admissions', label: 'Admissions & Identity', icon: 'pi pi-user-plus' },
+                { id: 'logistics', label: 'Transport & Stock', icon: 'pi pi-truck' },
+                { id: 'hr', label: 'Staff & HR Payroll', icon: 'pi pi-users' },
+                { id: 'platform', label: 'Super Admin & RBAC', icon: 'pi pi-shield' }
+              ].map(tab => {
+                const isActive = activeTab === tab.id;
+                const count = tab.id === 'all' 
+                  ? categorizedModules.length 
+                  : categorizedModules.filter(m => m.category === tab.id).length;
+                return (
+                  <Button 
+                    key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); }}
+                    sx={{ 
+                      borderRadius: 99, 
+                      px: { xs: 1.6, md: 2.2 }, 
+                      py: 0.9, 
+                      fontWeight: 700, 
+                      fontSize: { xs: '0.8rem', sm: '0.85rem' },
+                      textTransform: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                      background: isActive 
+                        ? 'linear-gradient(135deg, #0a387c 0%, #1e40af 100%)' 
+                        : 'transparent',
+                      color: isActive ? '#ffffff' : '#475569',
+                      boxShadow: isActive ? '0 8px 18px -4px rgba(10, 56, 124, 0.45)' : 'none',
+                      border: isActive ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
+                      '&:hover': { 
+                        bgcolor: isActive ? '#072554' : '#ffffff',
+                        color: isActive ? '#ffffff' : '#0a387c',
+                        transform: 'translateY(-1px)',
+                        boxShadow: isActive 
+                          ? '0 10px 22px -4px rgba(10, 56, 124, 0.5)' 
+                          : '0 4px 12px rgba(0,0,0,0.05)'
+                      }
+                    }}
+                  >
+                    <i className={tab.icon} style={{ fontSize: '0.95rem', color: isActive ? goldColor : '#64748b' }}></i>
+                    <span>{tab.label}</span>
+                    <Box component="span" sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      px: 0.8,
+                      py: 0.2,
+                      borderRadius: 99,
+                      bgcolor: isActive ? 'rgba(255,255,255,0.22)' : '#e2e8f0',
+                      color: isActive ? '#ffffff' : '#64748b',
+                      lineHeight: 1
+                    }}>
+                      {count}
+                    </Box>
+                  </Button>
+                );
+              })}
             </Box>
           </Box>
 
-          {/* Modules Grid (Edumarshal Card UI with Hover Lift and Staggered Animations) */}
-          <Grid container spacing={3}>
+          {/* Empty Search State */}
+          {filteredModules.length === 0 && (
+            <Box sx={{ 
+              textAlign: 'center', 
+              py: 8, px: 3, 
+              bgcolor: '#ffffff', 
+              borderRadius: 4, 
+              border: '1.5px dashed #cbd5e1', 
+              maxWidth: 500, 
+              mx: 'auto',
+              my: 4
+            }}>
+              <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+                <i className="pi pi-search" style={{ fontSize: '1.8rem', color: '#94a3b8' }}></i>
+              </Box>
+              <Typography variant="h6" fontWeight="800" color="#1e293b" gutterBottom>
+                No modules match "{moduleSearch}"
+              </Typography>
+              <Typography variant="body2" color="#64748b" sx={{ mb: 2.5 }}>
+                Try searching for general keywords like "fee", "attendance", "books", or clear the filter.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={() => { setModuleSearch(''); setActiveTab('all'); }}
+                sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
+              >
+                Clear Search & View All
+              </Button>
+            </Box>
+          )}
+
+          {/* Modules Grid - Elevated High-Tech Cards with Feature Highlights & Color Squircles */}
+          <Grid container spacing={3.2}>
             {filteredModules.map((item, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={idx} data-aos="fade-up" data-aos-delay={(idx % 6) * 70}>
+              <Grid item xs={12} sm={6} md={4} key={idx} data-aos="fade-up" data-aos-delay={(idx % 6) * 50}>
                 <Paper 
-                  className="eduerp-3d-card"
+                  elevation={0}
+                  onClick={() => setSelectedModule(item)}
                   sx={{ 
-                    p: 3.5, 
+                    p: 0, 
                     height: '100%', 
-                    borderRadius: 3.5, 
+                    borderRadius: 4, 
                     bgcolor: '#ffffff',
-                    border: '1px solid rgba(44, 90, 160, 0.16)',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.02)',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 16px -2px rgba(18, 35, 63, 0.04)',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                     '&:hover': {
-                      transform: 'translateY(-6px)',
-                      borderColor: goldColor,
-                      boxShadow: '0 22px 44px -20px rgba(10, 56, 124, 0.35)'
+                      transform: 'translateY(-8px)',
+                      borderColor: item.color,
+                      boxShadow: `0 24px 44px -16px ${item.color}35`,
+                      '& .card-top-accent': {
+                        height: '5px'
+                      },
+                      '& .card-icon-squircle': {
+                        transform: 'scale(1.1) rotate(5deg)'
+                      },
+                      '& .card-arrow-icon': {
+                        transform: 'translateX(6px)'
+                      }
                     }
                   }}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-                    <Box sx={{ 
-                      width: 48, height: 48, borderRadius: 2.5, 
-                      bgcolor: '#e8f0fc', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#0a387c',
-                      transition: 'transform 0.3s ease',
-                      '&:hover': { transform: 'scale(1.1) rotate(6deg)' }
-                    }}>
-                      <i className={item.icon} style={{ fontSize: '1.4rem' }}></i>
+                  {/* Category Accent Top Line */}
+                  <Box 
+                    className="card-top-accent"
+                    sx={{ 
+                      height: '3.5px', 
+                      background: item.gradient || `linear-gradient(90deg, ${item.color} 0%, #2563eb 100%)`, 
+                      width: '100%',
+                      transition: 'height 0.25s ease'
+                    }} 
+                  />
+
+                  <Box sx={{ p: 3.5, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                    {/* Header Row: Squircle Icon & Badges */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
+                      {/* Squircle Icon */}
+                      <Box 
+                        className="card-icon-squircle"
+                        sx={{ 
+                          width: 52, 
+                          height: 52, 
+                          borderRadius: 3, 
+                          background: item.lightColor || '#eff6ff', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          color: item.color || '#0a387c',
+                          boxShadow: `0 8px 16px -6px ${item.color}30`,
+                          border: `1px solid ${item.color}25`,
+                          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                        }}
+                      >
+                        <i className={item.icon} style={{ fontSize: '1.5rem', color: item.color }}></i>
+                      </Box>
+
+                      {/* Category & Status Badges */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.6 }}>
+                        <Box sx={{ 
+                          px: 1.3, py: 0.4, 
+                          borderRadius: 99, 
+                          bgcolor: item.lightColor || '#f8fafc', 
+                          color: item.color || '#0a387c', 
+                          fontWeight: 800,
+                          border: `1px solid ${item.color}30`,
+                          fontSize: '0.72rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.6
+                        }}>
+                          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: item.color }} />
+                          {item.tag}
+                        </Box>
+
+                        {item.badge && (
+                          <Typography variant="caption" sx={{ 
+                            color: '#94a3b8', 
+                            fontWeight: 700, 
+                            fontSize: '0.68rem',
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase'
+                          }}>
+                            {item.badge}
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        px: 1.4, py: 0.5, 
-                        borderRadius: 1.5, 
-                        bgcolor: '#f8fafc', 
-                        color: '#0a387c', 
-                        fontWeight: 800,
-                        border: '1px solid #e2e8f0',
-                        fontSize: '0.72rem'
-                      }}
-                    >
-                      {item.tag}
+
+                    {/* Module Title */}
+                    <Typography variant="h6" fontWeight="900" sx={{ 
+                      mb: 1.2, 
+                      color: '#0f172a', 
+                      fontSize: '1.18rem',
+                      lineHeight: 1.3,
+                      letterSpacing: '-0.02em',
+                      transition: 'color 0.2s ease',
+                      '&:hover': { color: item.color }
+                    }}>
+                      {item.title}
                     </Typography>
+
+                    {/* Description */}
+                    <Typography variant="body2" sx={{ 
+                      color: '#64748b', 
+                      lineHeight: 1.65, 
+                      fontSize: '0.88rem',
+                      mb: 2.5 
+                    }}>
+                      {item.desc}
+                    </Typography>
+
+                    {/* Micro Feature Highlight Chips */}
+                    {item.highlights && item.highlights.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mb: 3, mt: 'auto' }}>
+                        {item.highlights.map((hl, hIdx) => (
+                          <Box 
+                            key={hIdx}
+                            sx={{ 
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.6,
+                              px: 1.1,
+                              py: 0.4,
+                              borderRadius: 1.5,
+                              bgcolor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              color: '#334155'
+                            }}
+                          >
+                            <i className="pi pi-check" style={{ fontSize: '0.65rem', color: item.color, fontWeight: 'bold' }}></i>
+                            <span>{hl}</span>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
+                    {/* Card Footer Bar */}
+                    <Divider sx={{ my: 0, borderColor: '#f1f5f9' }} />
+                    
+                    <Box sx={{ 
+                      pt: 2, 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center' 
+                    }}>
+                      <Typography variant="caption" sx={{ 
+                        color: '#94a3b8', 
+                        fontWeight: 600, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.6,
+                        fontSize: '0.74rem'
+                      }}>
+                        <i className="pi pi-cloud" style={{ fontSize: '0.8rem' }}></i> Cloud Sync
+                      </Typography>
+
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.8, 
+                        color: item.color || '#0a387c', 
+                        fontWeight: 800,
+                        fontSize: '0.84rem'
+                      }}>
+                        <span>Explore Workflow</span>
+                        <i className="pi pi-arrow-right card-arrow-icon" style={{ 
+                          fontSize: '0.8rem', 
+                          transition: 'transform 0.25s ease' 
+                        }}></i>
+                      </Box>
+                    </Box>
+
                   </Box>
-
-                  <Typography variant="h6" fontWeight="800" sx={{ mb: 1.2, color: '#12233f', fontSize: '1.15rem' }}>
-                    {item.title}
-                  </Typography>
-
-                  <Typography variant="body2" sx={{ color: '#565656', lineHeight: 1.65, mt: 'auto' }}>
-                    {item.desc}
-                  </Typography>
                 </Paper>
               </Grid>
             ))}
           </Grid>
 
         </Container>
+
+        {/* Interactive Module Workflow Preview Modal */}
+        <Dialog 
+          open={Boolean(selectedModule)} 
+          onClose={() => setSelectedModule(null)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { 
+              borderRadius: 4, 
+              overflow: 'hidden', 
+              p: 0,
+              boxShadow: '0 25px 60px -15px rgba(10, 56, 124, 0.35)'
+            }
+          }}
+        >
+          {selectedModule && (
+            <>
+              {/* Top Color Accent */}
+              <Box sx={{ height: 6, background: selectedModule.gradient }} />
+              
+              <DialogTitle sx={{ 
+                p: 3, 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                borderBottom: '1px solid #e2e8f0',
+                bgcolor: '#fafcff'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ 
+                    width: 52, height: 52, borderRadius: 2.5, 
+                    bgcolor: selectedModule.lightColor, 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: selectedModule.color,
+                    boxShadow: `0 8px 18px -4px ${selectedModule.color}40`,
+                    border: `1px solid ${selectedModule.color}30`
+                  }}>
+                    <i className={selectedModule.icon} style={{ fontSize: '1.6rem', color: selectedModule.color }}></i>
+                  </Box>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Typography variant="caption" sx={{ 
+                        px: 1.2, py: 0.3, borderRadius: 99, 
+                        bgcolor: selectedModule.lightColor, 
+                        color: selectedModule.color, 
+                        fontWeight: 800, fontSize: '0.72rem' 
+                      }}>
+                        {selectedModule.tag}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.72rem' }}>
+                        • {selectedModule.badge}
+                      </Typography>
+                    </Box>
+                    <Typography variant="h5" fontWeight="900" sx={{ color: '#0a387c', lineHeight: 1.2 }}>
+                      {selectedModule.title}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <IconButton onClick={() => setSelectedModule(null)} sx={{ bgcolor: '#f1f5f9', '&:hover': { bgcolor: '#e2e8f0' } }}>
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+
+              <DialogContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
+                <Typography variant="body1" sx={{ color: '#475569', fontSize: '1.02rem', lineHeight: 1.6, mb: 3 }}>
+                  {selectedModule.desc}
+                </Typography>
+
+                {/* Operational Workflow Steps */}
+                <Box sx={{ mb: 3.5, p: 2.5, borderRadius: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <Typography variant="subtitle2" fontWeight="800" sx={{ color: '#0a387c', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <i className="pi pi-compass" style={{ color: selectedModule.color }}></i> Operational Workflow
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+                    {selectedModule.workflow?.split('->').map((step, sIdx, arr) => (
+                      <React.Fragment key={sIdx}>
+                        <Box sx={{ 
+                          px: 1.8, py: 0.8, 
+                          borderRadius: 2, 
+                          bgcolor: '#ffffff', 
+                          border: '1px solid #cbd5e1',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                          display: 'flex', alignItems: 'center', gap: 1
+                        }}>
+                          <Box sx={{ 
+                            width: 20, height: 20, borderRadius: '50%', 
+                            bgcolor: selectedModule.color, color: '#ffffff', 
+                            fontSize: '0.72rem', fontWeight: 800,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                          }}>
+                            {sIdx + 1}
+                          </Box>
+                          <Typography variant="body2" fontWeight="700" sx={{ color: '#1e293b', fontSize: '0.84rem' }}>
+                            {step.trim()}
+                          </Typography>
+                        </Box>
+                        {sIdx < arr.length - 1 && (
+                          <i className="pi pi-arrow-right" style={{ color: '#94a3b8', fontSize: '0.85rem' }}></i>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </Box>
+                </Box>
+
+                <Grid container spacing={2.5}>
+                  {/* Primary Stakeholders */}
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 2, borderRadius: 2.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5 }}>
+                        Primary Stakeholders
+                      </Typography>
+                      <Typography variant="body1" fontWeight="700" sx={{ color: '#0f172a' }}>
+                        {selectedModule.targetUser}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  {/* Architecture & Compliance */}
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 2, borderRadius: 2.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5 }}>
+                        Architecture & Compliance
+                      </Typography>
+                      <Typography variant="body1" fontWeight="700" sx={{ color: '#0f172a' }}>
+                        Real-time Cloud Sync • ISO 27001 Secure
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                {/* Capabilities Checklist */}
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight="800" sx={{ color: '#0a387c', mb: 1.5 }}>
+                    Core Capabilities Included:
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.2 }}>
+                    {selectedModule.highlights?.map((hl, hlIdx) => (
+                      <Box key={hlIdx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <i className="pi pi-check-circle" style={{ color: selectedModule.color, fontSize: '1rem' }}></i>
+                        <Typography variant="body2" fontWeight="600" sx={{ color: '#334155' }}>
+                          {hl}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              </DialogContent>
+
+              <DialogActions sx={{ p: 3, pt: 0, gap: 1.5 }}>
+                <Button 
+                  variant="outlined" 
+                  onClick={() => setSelectedModule(null)}
+                  sx={{ borderRadius: 99, px: 3, fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#64748b' }}
+                >
+                  Close Preview
+                </Button>
+                <Button 
+                  variant="contained"
+                  onClick={() => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      message: `Hi, I would like to schedule a demonstration of the "${selectedModule.title}" module for our institution.` 
+                    }));
+                    setSelectedModule(null);
+                    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  sx={{ 
+                    borderRadius: 99, px: 3.5, py: 1.1, 
+                    fontWeight: 800, textTransform: 'none',
+                    background: 'linear-gradient(135deg, #0a387c 0%, #1e40af 100%)',
+                    boxShadow: '0 8px 20px -4px rgba(10, 56, 124, 0.4)'
+                  }}
+                >
+                  Book Live Demo For This Module &rarr;
+                </Button>
+              </DialogActions>
+            </>
+          )}
+        </Dialog>
       </Box>
 
       {/* Why Choose Us - 3 Pillars (Academics, Administration, Finance) */}

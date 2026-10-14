@@ -206,6 +206,7 @@ namespace SchoolERP.Application.DTOs
     {
         public string FeeHeadName { get; set; } = string.Empty;
         public string InstallmentName { get; set; } = string.Empty;
+        public string Month { get; set; } = string.Empty;
         public decimal AmountPaid { get; set; }
         public decimal FinePaid { get; set; }
         public decimal BalanceCarried { get; set; }

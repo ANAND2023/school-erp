@@ -24,13 +24,17 @@ import {
   ArrowForward as ArrowForwardIcon,
   Add as AddIcon,
   WhatsApp as WhatsAppIcon,
+  QrCode2 as QrCodeIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import apiClient from '../../../api/client';
 import { studentApi } from '../api';
 import { branchApi } from '../../masters/api';
 import { useAuthStore } from '../../../store/authStore';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { printWithTitle } from '../../../utils/printUtils';
+
+let cachedAdmissionConfig = null;
 
 // Helper to convert date to words
 const dateToWords = (dateStr) => {
@@ -72,6 +76,89 @@ const dateToWords = (dateStr) => {
   return `${dayWord} ${monthWord} ${yearWord}`;
 };
 
+const DEFAULT_ADMISSION_CONFIG = {
+  primaryColor: '#065f46',
+  secondaryColor: '#ecfdf5',
+  accentColor: '#064e3b',
+  borderColor: '#065f46',
+  fontFamily: 'Inter, "Segoe UI", Roboto, sans-serif',
+  baseFontSize: 12,
+  headerLayout: 'Classic',
+  borderStyle: 'Solid',
+  logoSize: 52,
+  photoWidth: 78,
+  photoHeight: 94,
+  headerSchoolNameCustom: '',
+  headerSchoolNameFontSize: 21,
+  headerSchoolNameColor: '#065f46',
+  headerSchoolNameFontWeight: '900',
+  headerSchoolNameTransform: 'uppercase',
+  headerSchoolNameLetterSpacing: '0.8px',
+  headerSubtitleCustom: '',
+  headerSubtitleFontSize: 11.5,
+  headerSubtitleColor: '#334155',
+  headerAddressCustom: '',
+  headerAddressFontSize: 10.5,
+  headerAddressColor: '#475569',
+  headerAlignment: 'center',
+  headerDividerStyle: 'Double',
+  headerDividerColor: '#065f46',
+  slipTitle: 'OFFICIAL STUDENT ADMISSION & REGISTRATION ACKNOWLEDGEMENT',
+  slipSubtitle: 'Academic Enrollment & Verification Document',
+  slipTitleBgColor: '#065f46',
+  slipTitleTextColor: '#ffffff',
+  slipTitleFontSize: 12,
+  watermarkText: 'CONFIRMED ADMISSION',
+  showWatermark: false,
+  showSchoolLogo: true,
+  showAffiliationNo: true,
+  showStudentPhotoBox: true,
+  showFatherPhotoBox: true,
+  showMotherPhotoBox: true,
+  showGuardianPhotoBox: true,
+  showSchoolSealBox: true,
+  showQrCode: true,
+  showDobInWords: true,
+  showBloodGroup: true,
+  showAadhaarNo: true,
+  showCategory: true,
+  showEmergencyContact: true,
+  showPreviousSchool: true,
+  showTransportDetails: true,
+  showHostelDetails: false,
+  showDocumentsChecklist: true,
+  showDeclaration: true,
+  showSignatures: true,
+  signature1: 'Parent / Guardian Signature',
+  signature2: 'Admission Counselor / Clerk',
+  signature3: 'Principal / Head of Institution',
+  declarationTitle: 'DECLARATION BY PARENT / GUARDIAN:',
+  declarationText:
+    'I hereby declare that all particulars stated in this admission application form are true, correct, and complete to the best of my knowledge and belief. I agree to abide by all the rules, regulations, code of conduct, and fee policies of the school as in force from time to time.',
+  documentsRequired: [
+    '1. Original Birth Certificate (Municipal Corp / Gram Panchayat)',
+    '2. Student & Parents\' Aadhaar Cards (Photocopies)',
+    '3. Transfer Certificate (TC) from Previous School (Countersigned)',
+    '4. Previous Class Marksheet / Progress Report Card',
+    '5. 4 Passport-size Photographs of Student & 2 of Parents',
+    '6. Valid Address Proof (Electricity Bill / Voter ID / Passport / Domicile)',
+  ],
+  footerText: 'Generated from DVS ERP (Digital Vidya Sarthi) • Official Student Admission Slip',
+  sections: [
+    { key: 'header', title: 'School Header & Affiliation', visible: true, order: 1 },
+    { key: 'meta_bar', title: 'Admission Reference & Status Bar', visible: true, order: 2 },
+    { key: 'student_profile', title: 'Student Personal & Contact Details', visible: true, order: 3 },
+    { key: 'parents_info', title: 'Parents / Guardian Information', visible: true, order: 4 },
+    { key: 'academic_admission', title: 'Class, Section, Roll & Academic Info', visible: true, order: 5 },
+    { key: 'additional_details', title: 'Category, Blood Group, Aadhaar & Transport', visible: true, order: 6 },
+    { key: 'photos_strip', title: 'Student & Parents Photographs Strip', visible: true, order: 7 },
+    { key: 'documents_checklist', title: 'Admission Documents Verification Checklist', visible: true, order: 8 },
+    { key: 'declaration', title: 'Parent Undertaking & Declaration', visible: true, order: 9 },
+    { key: 'signatures', title: 'Signatures & School Seal', visible: true, order: 10 },
+    { key: 'footer', title: 'Footer System Note', visible: true, order: 11 },
+  ],
+};
+
 export const AdmissionReportModal = ({
   open,
   onClose,
@@ -80,12 +167,42 @@ export const AdmissionReportModal = ({
   isNewlyAdmitted = false,
   onAdmitAnother,
   onNavigateDirectory,
+  slipConfig = null,
 }) => {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [student, setStudent] = useState(initialStudentData || null);
   const [branchInfo, setBranchInfo] = useState(null);
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+  const [activeConfig, setActiveConfig] = useState(slipConfig || cachedAdmissionConfig || DEFAULT_ADMISSION_CONFIG);
+
+  useEffect(() => {
+    if (slipConfig) {
+      setActiveConfig(slipConfig);
+      return;
+    }
+    if (cachedAdmissionConfig) {
+      setActiveConfig(cachedAdmissionConfig);
+      return;
+    }
+
+    let isMounted = true;
+    apiClient
+      .get('/students/admission-slip-config')
+      .then((res) => {
+        if (isMounted && res.data?.success && res.data.data) {
+          cachedAdmissionConfig = res.data.data;
+          setActiveConfig(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load dynamic admission slip config:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slipConfig]);
 
   useEffect(() => {
     let isMounted = true;
@@ -118,7 +235,7 @@ export const AdmissionReportModal = ({
       try {
         const bRes = await branchApi.getBranches();
         if (isMounted && bRes.data?.success && Array.isArray(bRes.data.data)) {
-          const matchedBranch = bRes.data.data.find(b => b.id === (user?.branchId || 1)) || bRes.data.data[0];
+          const matchedBranch = bRes.data.data.find((b) => b.id === (user?.branchId || 1)) || bRes.data.data[0];
           setBranchInfo(matchedBranch);
         }
       } catch (err) {
@@ -135,12 +252,6 @@ export const AdmissionReportModal = ({
     };
   }, [open, studentId, initialStudentData, user?.branchId]);
 
-  const handlePrint = () => {
-    const sName = studentFullName && studentFullName !== '—' ? studentFullName : 'Student';
-    const aNo = admissionNo && admissionNo !== 'Pending Confirmation' ? `_${admissionNo}` : '';
-    printWithTitle(`Admission_Report_${sName}${aNo}`);
-  };
-
   if (!open) return null;
 
   // Derive display values
@@ -149,7 +260,7 @@ export const AdmissionReportModal = ({
   const admissionDate = student?.admissionDate ? dayjs(student.admissionDate).format('DD MMM YYYY') : dayjs().format('DD MMM YYYY');
   const dobFigures = student?.dateOfBirth ? dayjs(student.dateOfBirth).format('DD-MM-YYYY') : '—';
   const dobWords = student?.dateOfBirth ? dateToWords(student.dateOfBirth) : '—';
-  
+
   const className = student?.currentEnrollment?.className || student?.className || '—';
   const sectionName = student?.currentEnrollment?.sectionName || student?.sectionName || '—';
   const rollNo = student?.currentEnrollment?.rollNo || student?.rollNo || null;
@@ -160,14 +271,14 @@ export const AdmissionReportModal = ({
   const mother = guardians.find((g) => g.relation?.toLowerCase() === 'mother') || null;
   const primaryGuardian = guardians.find((g) => g.isPrimary) || guardians[0] || null;
 
-  const schoolName = branchInfo?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const schoolName = activeConfig.headerSchoolNameCustom || branchInfo?.schoolName || 'DELHI PUBLIC SCHOOL';
   const branchName = branchInfo?.name ? `${branchInfo.name} Branch` : (user?.branchName || 'Main Campus');
-  const branchAddress = branchInfo?.address || 'Sector 12, RK Puram, New Delhi - 110022';
+  const branchAddress = activeConfig.headerAddressCustom || branchInfo?.address || 'Sector 12, RK Puram, New Delhi - 110022';
   const branchPhone = branchInfo?.phone || '+91 11 2617 8900';
   const branchEmail = branchInfo?.email || 'admissions@dpsdelhi.edu.in';
   const affiliationNo = branchInfo?.affiliationNo || '2130892';
 
-  // 4 Photos (Student, Father, Mother, Guardian)
+  // 4 Photos
   const studentPhoto = student?.photoUrl || null;
   const fatherPhoto =
     student?.fatherPhotoUrl ||
@@ -183,48 +294,51 @@ export const AdmissionReportModal = ({
     null;
 
   const photoList = [
-    { label: "Student's Photo", url: studentPhoto, sub: 'Pupil' },
-    { label: "Father's Photo", url: fatherPhoto, sub: 'Father' },
-    { label: "Mother's Photo", url: motherPhoto, sub: 'Mother' },
-    { label: "Guardian's Photo", url: guardianPhoto, sub: 'Guardian' },
-  ];
+    { label: "Student's Photo", url: studentPhoto, show: activeConfig.showStudentPhotoBox },
+    { label: "Father's Photo", url: fatherPhoto, show: activeConfig.showFatherPhotoBox },
+    { label: "Mother's Photo", url: motherPhoto, show: activeConfig.showMotherPhotoBox },
+    { label: "Guardian's Photo", url: guardianPhoto, show: activeConfig.showGuardianPhotoBox },
+  ].filter((p) => p.show !== false);
 
-  // Verified Document Checklist based on actually uploaded student documents
+  // Verified Document Checklist based on uploaded documents & config
   const docs = student?.documents || [];
   const docTitles = docs.map((d) => (d.title || d.documentTypeName || '').toLowerCase());
 
-  const checklistItems = [
-    {
-      id: 1,
-      name: '1. Birth Certificate',
-      isSubmitted: docTitles.some((t) => t.includes('birth') || t.includes('dob') || t.includes('janm')),
-    },
-    {
-      id: 2,
-      name: '2. Student Aadhaar Card',
-      isSubmitted: docTitles.some((t) => t.includes('aadhaar') || t.includes('aadhar') || t.includes('uid')),
-    },
-    {
-      id: 3,
-      name: '3. Transfer Certificate (TC)',
-      isSubmitted: docTitles.some((t) => t.includes('transfer') || t.includes('tc') || t.includes('leaving') || t.includes('school leaving')),
-    },
-    {
-      id: 4,
-      name: '4. Previous Marksheet',
-      isSubmitted: docTitles.some((t) => t.includes('marksheet') || t.includes('mark sheet') || t.includes('report card') || t.includes('result') || t.includes('previous')),
-    },
-    {
-      id: 5,
-      name: '5. 4 Passport Photographs',
-      isSubmitted: Boolean(studentPhoto && (fatherPhoto || motherPhoto || guardianPhoto)),
-    },
-    {
-      id: 6,
-      name: '6. Address Proof',
-      isSubmitted: docTitles.some((t) => t.includes('address') || t.includes('domicile') || t.includes('electricity') || t.includes('ration') || t.includes('voter') || t.includes('rent') || t.includes('residence') || t.includes('niwas')),
-    },
-  ];
+  const configuredDocs = Array.isArray(activeConfig.documentsRequired) && activeConfig.documentsRequired.length > 0
+    ? activeConfig.documentsRequired
+    : DEFAULT_ADMISSION_CONFIG.documentsRequired;
+
+  const checklistItems = configuredDocs.map((docText, idx) => {
+    const lower = docText.toLowerCase();
+    const isSubmitted =
+      (lower.includes('birth') || lower.includes('dob')) && docTitles.some((t) => t.includes('birth') || t.includes('dob')) ||
+      (lower.includes('aadhaar') || lower.includes('aadhar')) && docTitles.some((t) => t.includes('aadhaar') || t.includes('aadhar')) ||
+      (lower.includes('transfer') || lower.includes('tc')) && docTitles.some((t) => t.includes('transfer') || t.includes('tc')) ||
+      (lower.includes('marksheet') || lower.includes('report') || lower.includes('result')) && docTitles.some((t) => t.includes('marksheet') || t.includes('report') || t.includes('result')) ||
+      lower.includes('photo') && Boolean(studentPhoto) ||
+      (lower.includes('address') || lower.includes('domicile')) && docTitles.some((t) => t.includes('address') || t.includes('domicile') || t.includes('voter') || t.includes('electricity')) ||
+      docTitles.some((t) => lower.split(' ').some((word) => word.length > 3 && t.includes(word)));
+
+    return {
+      id: idx + 1,
+      name: docText,
+      isSubmitted: Boolean(isSubmitted),
+    };
+  });
+
+  const isVisible = (key) => {
+    const sec = activeConfig.sections?.find((s) => s.key === key);
+    return sec ? sec.visible : true;
+  };
+
+  const primaryCol = activeConfig.primaryColor || '#065f46';
+  const secondaryCol = activeConfig.secondaryColor || '#ecfdf5';
+
+  const handlePrint = () => {
+    const sName = studentFullName && studentFullName !== '—' ? studentFullName : 'Student';
+    const aNo = admissionNo && admissionNo !== 'Pending Confirmation' ? `_${admissionNo}` : '';
+    printWithTitle(`Admission_Report_${sName}${aNo}`);
+  };
 
   return (
     <>
@@ -232,8 +346,8 @@ export const AdmissionReportModal = ({
       <style>
         {`
           @page {
-            size: A4 portrait;
-            margin: 6mm 6mm;
+            size: ${activeConfig.pageSize || 'A4'} ${activeConfig.pageOrientation || 'portrait'};
+            margin: ${activeConfig.pageMargin || '6mm'};
           }
           @media print {
             html, body {
@@ -246,12 +360,13 @@ export const AdmissionReportModal = ({
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            /* Hide root and backdrop outside modal */
             #root,
-            body > *:not(.MuiDialog-root) {
+            body > *:not(.MuiDialog-root):not(#printable-admission-report) {
               display: none !important;
             }
-            /* Unconstrain Dialog modal */
+            .MuiBackdrop-root {
+              display: none !important;
+            }
             .MuiDialog-root {
               position: static !important;
               display: block !important;
@@ -263,9 +378,6 @@ export const AdmissionReportModal = ({
               background: #ffffff !important;
               z-index: auto !important;
             }
-            .MuiBackdrop-root {
-              display: none !important;
-            }
             .MuiDialog-container {
               position: static !important;
               display: block !important;
@@ -276,6 +388,7 @@ export const AdmissionReportModal = ({
               overflow: visible !important;
             }
             .MuiPaper-root.MuiDialog-paper,
+            .MuiPaper-root,
             .MuiDialogContent-root {
               position: static !important;
               display: block !important;
@@ -290,14 +403,8 @@ export const AdmissionReportModal = ({
             }
             .MuiDialogTitle-root,
             .MuiDialogActions-root,
-            [class*="MuiDialogTitle"],
             .no-print {
               display: none !important;
-              visibility: hidden !important;
-              height: 0 !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              overflow: hidden !important;
             }
             #printable-admission-report {
               display: flex !important;
@@ -308,7 +415,7 @@ export const AdmissionReportModal = ({
               min-height: auto !important;
               margin: 0 auto !important;
               padding: 12px 16px !important;
-              border: 2px solid #1e3a8a !important;
+              border: 2px solid ${primaryCol} !important;
               border-radius: 4px !important;
               box-sizing: border-box !important;
               background: #ffffff !important;
@@ -321,13 +428,6 @@ export const AdmissionReportModal = ({
             }
             #printable-admission-report * {
               visibility: visible !important;
-            }
-            #printable-admission-report .MuiGrid-root {
-              display: flex !important;
-              flex-wrap: wrap !important;
-            }
-            #printable-admission-report .MuiGrid-item {
-              display: block !important;
             }
           }
         `}
@@ -355,23 +455,20 @@ export const AdmissionReportModal = ({
             px: 3,
             bgcolor: isNewlyAdmitted ? '#f0fdf4' : 'inherit',
             borderBottom: '1px solid #e2e8f0',
-            '@media print': {
-              display: 'none !important',
-            },
           }}
         >
           <Stack direction="row" spacing={1.5} alignItems="center">
             {isNewlyAdmitted ? (
               <CheckIcon sx={{ color: 'success.main', fontSize: 28 }} />
             ) : (
-              <SchoolIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+              <SchoolIcon sx={{ color: primaryCol, fontSize: 28 }} />
             )}
             <Box>
               <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.1rem', lineHeight: 1.2 }}>
                 {isNewlyAdmitted ? 'Admission Successfully Registered!' : 'Official Admission Slip & Report'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                CBSE Standard Pupil Enrollment Record & Acknowledgement Slip (Full A4 Page Format &bull; 4 Photos)
+                Standard Pupil Enrollment Record & Acknowledgement Slip (Full A4 Page Format)
               </Typography>
             </Box>
           </Stack>
@@ -387,7 +484,7 @@ export const AdmissionReportModal = ({
                 Student enrolled successfully with Admission Number: <strong>{admissionNo}</strong>
               </Typography>
               <Typography variant="caption" display="block">
-                Please print this official full A4 admission report for the school records, student master file, and parent acknowledgement.
+                Please print this official admission report for school records and parent acknowledgement.
               </Typography>
             </Alert>
           )}
@@ -400,465 +497,510 @@ export const AdmissionReportModal = ({
               </Typography>
             </Box>
           ) : (
-            /* Printable Admission Report Form (Full A4 Page Layout) */
             <Box
               id="printable-admission-report"
               sx={{
                 p: { xs: 1.5, sm: 2 },
                 bgcolor: '#ffffff',
-                border: '2px solid #1e3a8a',
+                border: `2px solid ${primaryCol}`,
                 borderRadius: 2,
                 boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
-                fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontFamily: activeConfig.fontFamily || 'Inter, sans-serif',
                 color: '#1e293b',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 minHeight: '800px',
+                position: 'relative',
               }}
             >
-              {/* Institution Header */}
-              <Box sx={{ textAlign: 'center', pb: 0.8, borderBottom: '2px double #1e3a8a' }}>
-                <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
-                  {branchInfo?.logoUrl ? (
-                    <Box
-                      component="img"
-                      src={branchInfo.logoUrl}
-                      alt="Logo"
-                      sx={{
-                        width: 50,
-                        height: 50,
-                        objectFit: 'contain',
-                        borderRadius: 1,
-                      }}
-                    />
-                  ) : (
-                    <SchoolIcon sx={{ fontSize: 34, color: '#1e3a8a' }} />
-                  )}
-                  <Box>
-                    <Typography
-                      variant="h5"
-                      fontWeight={900}
-                      sx={{ color: '#1e3a8a', letterSpacing: 1.1, fontSize: '1.45rem', lineHeight: 1.15 }}
-                    >
-                      {branchInfo?.printHeader || schoolName}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: '0.78rem' }}>
-                      {branchName} &bull; Affiliated to CBSE, New Delhi (Affiliation No: {affiliationNo})
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mt: 0.2 }}>
-                  Address: {branchAddress} | Phone: {branchPhone} | Email: {branchEmail}
-                </Typography>
-                <Box
-                  sx={{
-                    mt: 0.6,
-                    display: 'inline-block',
-                    px: 2.5,
-                    py: 0.25,
-                    bgcolor: '#1e3a8a',
-                    color: '#ffffff',
-                    borderRadius: 1,
-                    fontWeight: 700,
-                    letterSpacing: 0.8,
-                    fontSize: '0.76rem',
+              {/* Background Watermark */}
+              {activeConfig.showWatermark && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%) rotate(-30deg)',
+                    fontSize: '32px',
+                    fontWeight: 900,
+                    color: 'rgba(6, 95, 70, 0.08)',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
                     textTransform: 'uppercase',
+                    letterSpacing: '3px',
+                    zIndex: 0,
                   }}
                 >
-                  Student Admission Report & Official Enrollment Slip
-                </Box>
-              </Box>
-
-              {/* Enrollment Summary Row */}
-              <Box
-                sx={{
-                  my: 0.8,
-                  p: 0.8,
-                  bgcolor: '#f1f5f9',
-                  borderRadius: 1,
-                  border: '1.5px solid #cbd5e1',
-                }}
-              >
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
-                      ADMISSION NUMBER
-                    </Typography>
-                    <Typography variant="subtitle1" fontWeight={800} color="#1e3a8a" sx={{ fontSize: '0.92rem', lineHeight: 1.2 }}>
-                      {admissionNo}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
-                      DATE OF ADMISSION
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
-                      {admissionDate}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
-                      CLASS & SECTION
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
-                      {className} - {sectionName}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
-                      SESSION / ROLL NO
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
-                      {academicYear} {rollNo ? `(Roll #${rollNo})` : '(Roll: Pending)'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-
-              {/* SECTION 1: Pupil Personal Information */}
-              <Box sx={{ mb: 0.8 }}>
-                <Box
-                  sx={{
-                    bgcolor: '#e2e8f0',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: 0.6,
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    color: '#0f172a',
-                    letterSpacing: 0.6,
-                    textTransform: 'uppercase',
-                    mb: 0.6,
-                  }}
-                >
-                  1. Pupil Personal Information
-                </Box>
-
-                <Grid container spacing={0.8} rowSpacing={0.6}>
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Full Name of Student:</Typography>
-                    <Typography variant="body2" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '0.84rem', lineHeight: 1.2 }}>
-                      {studentFullName}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={2}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Gender:</Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
-                      {student?.gender || '—'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={2}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Blood Group:</Typography>
-                    <Typography variant="body2" fontWeight={800} color="error.main" sx={{ fontSize: '0.78rem' }}>
-                      {student?.bloodGroup || '—'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Aadhaar No:</Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
-                      {student?.aadhaarNo || '—'}
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Date of Birth (in figures):</Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
-                      {dobFigures}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={8}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Date of Birth (in words):</Typography>
-                    <Typography variant="body2" fontStyle="italic" color="text.primary" sx={{ fontSize: '0.74rem' }}>
-                      {dobWords}
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Category:</Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
-                      {student?.categoryName || 'General'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Religion:</Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
-                      {student?.religionName || 'Hindu'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Nationality:</Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
-                      Indian
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Emergency Contact:</Typography>
-                    <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontSize: '0.78rem' }}>
-                      {student?.emergencyContact || primaryGuardian?.mobile || '—'}
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Residential Address:</Typography>
-                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.74rem', lineHeight: 1.25 }}>
-                      {student?.address ? `${student.address}, ${student.city || ''}, ${student.state || ''} - ${student.pincode || ''}` : '—'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-
-              {/* SECTION 2: Parents & Guardian Information */}
-              <Box sx={{ mb: 0.8 }}>
-                <Box
-                  sx={{
-                    bgcolor: '#e2e8f0',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: 0.6,
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    color: '#0f172a',
-                    letterSpacing: 0.6,
-                    textTransform: 'uppercase',
-                    mb: 0.6,
-                  }}
-                >
-                  2. Parents & Guardians Information
-                </Box>
-
-                <Grid container spacing={1}>
-                  {/* Father Details */}
-                  <Grid item xs={6}>
-                    <Box sx={{ p: 0.8, border: '1px solid #cbd5e1', borderRadius: 1, bgcolor: '#fafafa' }}>
-                      <Typography variant="caption" fontWeight={700} color="primary" sx={{ fontSize: '0.68rem', display: 'block', mb: 0.2 }}>
-                        FATHER'S DETAILS
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Name: <strong>{father?.name || student?.fatherName || primaryGuardian?.name || '—'}</strong>
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Mobile: <strong>{father?.mobile || student?.fatherMobile || primaryGuardian?.mobile || '—'}</strong>
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Occupation: {father?.occupation || student?.fatherOccupation || '—'} &bull; Email: {father?.email || student?.fatherEmail || '—'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  {/* Mother Details */}
-                  <Grid item xs={6}>
-                    <Box sx={{ p: 0.8, border: '1px solid #cbd5e1', borderRadius: 1, bgcolor: '#fafafa' }}>
-                      <Typography variant="caption" fontWeight={700} color="primary" sx={{ fontSize: '0.68rem', display: 'block', mb: 0.2 }}>
-                        MOTHER'S DETAILS
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Name: <strong>{mother?.name || student?.motherName || '—'}</strong>
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Mobile: <strong>{mother?.mobile || student?.motherMobile || '—'}</strong>
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
-                        Occupation: {mother?.occupation || student?.motherOccupation || '—'} &bull; Income: {mother?.annualIncome ? `₹ ${mother.annualIncome.toLocaleString()}` : '—'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </Box>
-
-              {/* SECTION 3: Official Identity Photographs (4 Photos) */}
-              <Box sx={{ mb: 0.8 }}>
-                <Box
-                  sx={{
-                    bgcolor: '#e2e8f0',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: 0.6,
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    color: '#0f172a',
-                    letterSpacing: 0.6,
-                    textTransform: 'uppercase',
-                    mb: 0.6,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span>3. Official Identification Photographs (Student, Father, Mother, Guardian)</span>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 600, color: '#475569' }}>Standard Passport Size (3.5cm x 4.5cm)</span>
-                </Box>
-
-                <Grid container spacing={1.5} justifyContent="space-between">
-                  {photoList.map((item, idx) => (
-                    <Grid item xs={3} key={idx} sx={{ textAlign: 'center' }}>
-                      <Box
-                        sx={{
-                          width: 82,
-                          height: 98,
-                          mx: 'auto',
-                          border: item.url ? '1.5px solid #1e3a8a' : '1.5px dashed #94a3b8',
-                          borderRadius: 1,
-                          bgcolor: '#f8fafc',
-                          overflow: 'hidden',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          p: 0.3,
-                        }}
-                      >
-                        {item.url ? (
-                          <Box
-                            component="img"
-                            src={item.url}
-                            alt={item.label}
-                            sx={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              borderRadius: 0.6,
-                            }}
-                          />
-                        ) : (
-                          <>
-                            <PersonIcon sx={{ fontSize: 28, color: '#94a3b8' }} />
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.58rem', mt: 0.2, lineHeight: 1.1 }}>
-                              Affix Photo
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
-                      <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.68rem', display: 'block', mt: 0.3, color: '#1e293b' }}>
-                        {item.label}
-                      </Typography>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-
-              {/* Sibling Information (If any) */}
-              {student?.siblings && student.siblings.length > 0 && (
-                <Box sx={{ mb: 0.8, p: 0.6, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 0.8 }}>
-                  <Typography variant="caption" fontWeight={700} color="#0f172a" sx={{ fontSize: '0.68rem', display: 'block', mb: 0.2 }}>
-                    ENROLLED SIBLINGS IN SCHOOL:
-                  </Typography>
-                  {student.siblings.map((sib, sIdx) => (
-                    <Typography key={sIdx} variant="caption" sx={{ fontSize: '0.68rem', display: 'block' }}>
-                      &bull; <strong>{sib.fullName}</strong> (Adm No: <strong>{sib.admissionNo}</strong> &bull; Class: {sib.className} - {sib.sectionName})
-                    </Typography>
-                  ))}
-                </Box>
+                  {activeConfig.watermarkText || 'CONFIRMED ADMISSION'}
+                </div>
               )}
 
-              {/* SECTION 4: Document Submission Checklist */}
-              <Box sx={{ mb: 0.8 }}>
-                <Box
-                  sx={{
-                    bgcolor: '#e2e8f0',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: 0.6,
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    color: '#0f172a',
-                    letterSpacing: 0.6,
-                    textTransform: 'uppercase',
-                    mb: 0.5,
-                  }}
-                >
-                  4. Document Submission & Verification Checklist
-                </Box>
-                <Grid container spacing={0.5}>
-                  {checklistItems.map((doc) => (
-                    <Grid item xs={4} key={doc.id}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          fontSize: '0.72rem',
-                          color: doc.isSubmitted ? '#0f172a' : '#64748b',
-                        }}
-                      >
-                        {doc.isSubmitted ? (
-                          <span style={{ marginRight: 5, color: '#16a34a', fontWeight: 900, fontSize: '0.8rem' }}>&#x2714;</span>
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* 1. Header */}
+                {isVisible('header') && (
+                  <Box sx={{ textAlign: activeConfig.headerAlignment === 'left' ? 'left' : 'center', pb: 0.8, borderBottom: `2.5px double ${primaryCol}` }}>
+                    <Stack direction="row" spacing={2} justifyContent={activeConfig.headerAlignment === 'left' ? 'flex-start' : 'center'} alignItems="center">
+                      {activeConfig.showSchoolLogo && (
+                        branchInfo?.logoUrl ? (
+                          <Box
+                            component="img"
+                            src={branchInfo.logoUrl}
+                            alt="Logo"
+                            sx={{ width: activeConfig.logoSize || 52, height: activeConfig.logoSize || 52, objectFit: 'contain', borderRadius: 1 }}
+                          />
                         ) : (
-                          <span style={{ marginRight: 5, color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>&#x25A2;</span>
-                        )}
-                        <span style={{ fontWeight: doc.isSubmitted ? 600 : 400 }}>{doc.name}</span>
-                        {!doc.isSubmitted && (
-                          <span style={{ fontSize: '0.6rem', color: '#94a3b8', marginLeft: 4, fontStyle: 'italic' }}>(Pending)</span>
-                        )}
+                          <SchoolIcon sx={{ fontSize: 36, color: primaryCol }} />
+                        )
+                      )}
+                      <Box>
+                        <Typography
+                          variant="h5"
+                          fontWeight={activeConfig.headerSchoolNameFontWeight || 900}
+                          sx={{
+                            color: activeConfig.headerSchoolNameColor || primaryCol,
+                            letterSpacing: activeConfig.headerSchoolNameLetterSpacing || '0.8px',
+                            fontSize: `${activeConfig.headerSchoolNameFontSize || 21}px`,
+                            textTransform: activeConfig.headerSchoolNameTransform || 'uppercase',
+                            lineHeight: 1.15,
+                          }}
+                        >
+                          {schoolName}
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${activeConfig.headerSubtitleFontSize || 11.5}px` }}>
+                          {activeConfig.headerSubtitleCustom || `${branchName} • Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})`}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mt: 0.2 }}>
+                      Address: {branchAddress} | Phone: {branchPhone} | Email: {branchEmail}
+                    </Typography>
+                    <Box
+                      sx={{
+                        mt: 0.6,
+                        display: 'inline-block',
+                        px: 2.5,
+                        py: 0.25,
+                        bgcolor: primaryCol,
+                        color: '#ffffff',
+                        borderRadius: 1,
+                        fontWeight: 700,
+                        letterSpacing: 0.8,
+                        fontSize: '0.76rem',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {activeConfig.slipTitle || 'Official Student Admission & Registration Acknowledgement'}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* 2. Meta Bar */}
+                {isVisible('meta_bar') && (
+                  <Box sx={{ my: 0.8, p: 0.8, bgcolor: secondaryCol, borderRadius: 1, border: `1.5px solid ${primaryCol}` }}>
+                    <Grid container spacing={1} alignItems="center">
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
+                          ADMISSION NUMBER
+                        </Typography>
+                        <Typography variant="subtitle1" fontWeight={800} sx={{ color: primaryCol, fontSize: '0.92rem', lineHeight: 1.2 }}>
+                          {admissionNo}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
+                          DATE OF ADMISSION
+                        </Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
+                          {admissionDate}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
+                          CLASS & SECTION
+                        </Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
+                          {className} - {sectionName}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem', display: 'block', fontWeight: 600 }}>
+                          SESSION / ROLL NO
+                        </Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
+                          {academicYear} {rollNo ? `(Roll #${rollNo})` : '(Roll: Pending)'}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* 3. Pupil Personal Information */}
+                {isVisible('student_profile') && (
+                  <Box sx={{ mb: 0.8 }}>
+                    <Box
+                      sx={{
+                        bgcolor: secondaryCol,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.6,
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        color: primaryCol,
+                        letterSpacing: 0.6,
+                        textTransform: 'uppercase',
+                        mb: 0.6,
+                      }}
+                    >
+                      1. Pupil Personal Information
+                    </Box>
+
+                    <Grid container spacing={0.8} rowSpacing={0.6}>
+                      <Grid item xs={4}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Full Name of Student:</Typography>
+                        <Typography variant="body2" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '0.84rem', lineHeight: 1.2 }}>
+                          {studentFullName}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={2}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Gender:</Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
+                          {student?.gender || '—'}
+                        </Typography>
+                      </Grid>
+                      {activeConfig.showBloodGroup && (
+                        <Grid item xs={2}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Blood Group:</Typography>
+                          <Typography variant="body2" fontWeight={800} color="error.main" sx={{ fontSize: '0.78rem' }}>
+                            {student?.bloodGroup || '—'}
+                          </Typography>
+                        </Grid>
+                      )}
+                      {activeConfig.showAadhaarNo && (
+                        <Grid item xs={activeConfig.showBloodGroup ? 4 : 6}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Aadhaar No:</Typography>
+                          <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
+                            {student?.aadhaarNo || '—'}
+                          </Typography>
+                        </Grid>
+                      )}
+
+                      <Grid item xs={4}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Date of Birth (in figures):</Typography>
+                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>
+                          {dobFigures}
+                        </Typography>
+                      </Grid>
+                      {activeConfig.showDobInWords && (
+                        <Grid item xs={8}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Date of Birth (in words):</Typography>
+                          <Typography variant="body2" fontStyle="italic" color="text.primary" sx={{ fontSize: '0.74rem' }}>
+                            {dobWords}
+                          </Typography>
+                        </Grid>
+                      )}
+
+                      {activeConfig.showCategory && (
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Category:</Typography>
+                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
+                            {student?.categoryName || 'General'}
+                          </Typography>
+                        </Grid>
+                      )}
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Religion:</Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
+                          {student?.religionName || 'Hindu'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Nationality:</Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.74rem' }}>
+                          Indian
+                        </Typography>
+                      </Grid>
+                      {activeConfig.showEmergencyContact && (
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Emergency Contact:</Typography>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: primaryCol, fontSize: '0.78rem' }}>
+                            {student?.emergencyContact || primaryGuardian?.mobile || '—'}
+                          </Typography>
+                        </Grid>
+                      )}
+
+                      <Grid item xs={12}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>Residential Address:</Typography>
+                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.74rem', lineHeight: 1.25 }}>
+                          {student?.address ? `${student.address}, ${student.city || ''}, ${student.state || ''} - ${student.pincode || ''}` : '—'}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* 4. Parents & Guardians Information */}
+                {isVisible('parents_info') && (
+                  <Box sx={{ mb: 0.8 }}>
+                    <Box
+                      sx={{
+                        bgcolor: secondaryCol,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.6,
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        color: primaryCol,
+                        letterSpacing: 0.6,
+                        textTransform: 'uppercase',
+                        mb: 0.6,
+                      }}
+                    >
+                      2. Parents & Guardians Information
+                    </Box>
+
+                    <Grid container spacing={1}>
+                      <Grid item xs={6}>
+                        <Box sx={{ p: 0.8, border: '1px solid #cbd5e1', borderRadius: 1, bgcolor: '#fafafa' }}>
+                          <Typography variant="caption" fontWeight={700} sx={{ color: primaryCol, fontSize: '0.68rem', display: 'block', mb: 0.2 }}>
+                            FATHER'S DETAILS
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Name: <strong>{father?.name || student?.fatherName || primaryGuardian?.name || '—'}</strong>
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Mobile: <strong>{father?.mobile || student?.fatherMobile || primaryGuardian?.mobile || '—'}</strong>
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Occupation: {father?.occupation || student?.fatherOccupation || '—'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Box sx={{ p: 0.8, border: '1px solid #cbd5e1', borderRadius: 1, bgcolor: '#fafafa' }}>
+                          <Typography variant="caption" fontWeight={700} sx={{ color: primaryCol, fontSize: '0.68rem', display: 'block', mb: 0.2 }}>
+                            MOTHER'S DETAILS
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Name: <strong>{mother?.name || student?.motherName || '—'}</strong>
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Mobile: <strong>{mother?.mobile || student?.motherMobile || '—'}</strong>
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontSize: '0.74rem', lineHeight: 1.3 }}>
+                            Occupation: {mother?.occupation || student?.motherOccupation || '—'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* 5. Photographs Strip */}
+                {isVisible('photos_strip') && photoList.length > 0 && (
+                  <Box sx={{ mb: 0.8 }}>
+                    <Box
+                      sx={{
+                        bgcolor: secondaryCol,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.6,
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        color: primaryCol,
+                        letterSpacing: 0.6,
+                        textTransform: 'uppercase',
+                        mb: 0.6,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>3. Official Identification Photographs</span>
+                      <span style={{ fontSize: '0.6rem', fontWeight: 600, color: '#475569' }}>Standard Passport Size</span>
+                    </Box>
+
+                    <Grid container spacing={1.5} justifyContent="space-between">
+                      {photoList.map((item, idx) => (
+                        <Grid item xs={12 / photoList.length} key={idx} sx={{ textAlign: 'center' }}>
+                          <Box
+                            sx={{
+                              width: activeConfig.photoWidth || 78,
+                              height: activeConfig.photoHeight || 94,
+                              mx: 'auto',
+                              border: item.url ? `1.5px solid ${primaryCol}` : '1.5px dashed #94a3b8',
+                              borderRadius: 1,
+                              bgcolor: '#f8fafc',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              p: 0.3,
+                            }}
+                          >
+                            {item.url ? (
+                              <Box
+                                component="img"
+                                src={item.url}
+                                alt={item.label}
+                                sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0.6 }}
+                              />
+                            ) : (
+                              <>
+                                <PersonIcon sx={{ fontSize: 26, color: '#94a3b8' }} />
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.58rem', mt: 0.2, lineHeight: 1.1 }}>
+                                  Affix Photo
+                                </Typography>
+                              </>
+                            )}
+                          </Box>
+                          <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.68rem', display: 'block', mt: 0.3, color: '#1e293b' }}>
+                            {item.label}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* 6. Document Submission Checklist */}
+                {isVisible('documents_checklist') && activeConfig.showDocumentsChecklist && (
+                  <Box sx={{ mb: 0.8 }}>
+                    <Box
+                      sx={{
+                        bgcolor: secondaryCol,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.6,
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        color: primaryCol,
+                        letterSpacing: 0.6,
+                        textTransform: 'uppercase',
+                        mb: 0.5,
+                      }}
+                    >
+                      4. Document Submission & Verification Checklist
+                    </Box>
+                    <Grid container spacing={0.5}>
+                      {checklistItems.map((doc) => (
+                        <Grid item xs={6} key={doc.id}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              fontSize: '0.72rem',
+                              color: doc.isSubmitted ? '#0f172a' : '#64748b',
+                            }}
+                          >
+                            {doc.isSubmitted ? (
+                              <span style={{ marginRight: 5, color: '#16a34a', fontWeight: 900, fontSize: '0.8rem' }}>&#x2714;</span>
+                            ) : (
+                              <span style={{ marginRight: 5, color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>&#x25A2;</span>
+                            )}
+                            <span style={{ fontWeight: doc.isSubmitted ? 600 : 400 }}>{doc.name}</span>
+                            {!doc.isSubmitted && (
+                              <span style={{ fontSize: '0.6rem', color: '#94a3b8', marginLeft: 4, fontStyle: 'italic' }}>(Pending)</span>
+                            )}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* 7. Parent Undertaking / Declaration */}
+                {isVisible('declaration') && activeConfig.showDeclaration && (
+                  <Box sx={{ mb: 0.8, p: 0.7, border: '1px dashed #94a3b8', borderRadius: 0.8, bgcolor: '#fafafa' }}>
+                    <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.68rem', mb: 0.2, color: primaryCol }}>
+                      {activeConfig.declarationTitle || 'PARENT / GUARDIAN UNDERTAKING:'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.64rem', lineHeight: 1.25 }}>
+                      {activeConfig.declarationText}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* 8. Signatures */}
+                {isVisible('signatures') && activeConfig.showSignatures && (
+                  <Grid container spacing={2} sx={{ mt: 0.5, pt: 0.5 }}>
+                    <Grid item xs={activeConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
+                      <Box sx={{ height: 26 }} />
+                      <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
+                      <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
+                        {activeConfig.signature1 || 'Parent / Guardian Signature'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
+                        Date: {dayjs().format('DD-MM-YYYY')}
                       </Typography>
                     </Grid>
-                  ))}
-                </Grid>
-              </Box>
 
-              {/* Parent Declaration */}
-              <Box sx={{ mb: 0.8, p: 0.7, border: '1px dashed #94a3b8', borderRadius: 0.8, bgcolor: '#fafafa' }}>
-                <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.68rem', mb: 0.2 }}>
-                  PARENT / GUARDIAN UNDERTAKING:
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.64rem', lineHeight: 1.25 }}>
-                  I hereby certify that all information submitted in this admission form is true and verified. I undertake to abide by the school rules, discipline norms, fee payment schedules, and academic regulations of the institution.
-                </Typography>
-              </Box>
-
-              {/* Official Signatures Row */}
-              <Grid container spacing={2} sx={{ mt: 0.5, pt: 0.5 }}>
-                <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                  <Box sx={{ height: 26 }} />
-                  <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
-                  <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
-                    Parent / Guardian Signature
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
-                    Date: {dayjs().format('DD-MM-YYYY')}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                  <Box sx={{ height: 26 }} />
-                  <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
-                  <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
-                    Admission In-charge / Clerk
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
-                    Verified & Entered
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                  <Box sx={{ height: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                    {branchInfo?.principalSignatureUrl ? (
-                      <Box
-                        component="img"
-                        src={branchInfo.principalSignatureUrl}
-                        alt="Principal Signature"
-                        sx={{ maxHeight: 30, maxWidth: 120, objectFit: 'contain' }}
-                      />
-                    ) : (
-                      <Box sx={{ height: 26 }} />
+                    {activeConfig.showSchoolSealBox && (
+                      <Grid item xs={3} sx={{ textAlign: 'center' }}>
+                        <Box
+                          sx={{
+                            width: 60,
+                            height: 38,
+                            mx: 'auto',
+                            border: '1px dashed #94a3b8',
+                            borderRadius: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.6rem',
+                            color: '#94a3b8',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          School Seal
+                        </Box>
+                      </Grid>
                     )}
-                  </Box>
-                  <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
-                  <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
-                    Principal / Head of Institution
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
-                    (With Official School Seal)
-                  </Typography>
-                </Grid>
-              </Grid>
 
-              {/* Footer Note */}
-              <Box sx={{ mt: 0.8, textAlign: 'center', borderTop: '1px solid #e2e8f0', pt: 0.4 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
-                  Generated from DVS ERP (Digital Vidya Sarthi) on {dayjs().format('DD MMM YYYY, hh:mm A')} &bull; System Verified Student Enrollment Record
-                </Typography>
-              </Box>
+                    <Grid item xs={activeConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
+                      <Box sx={{ height: 26 }} />
+                      <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
+                      <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
+                        {activeConfig.signature2 || 'Admission In-charge / Clerk'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
+                        Verified & Entered
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={activeConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
+                      <Box sx={{ height: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                        {branchInfo?.principalSignatureUrl ? (
+                          <Box
+                            component="img"
+                            src={branchInfo.principalSignatureUrl}
+                            alt="Principal Signature"
+                            sx={{ maxHeight: 30, maxWidth: 120, objectFit: 'contain' }}
+                          />
+                        ) : (
+                          <Box sx={{ height: 26 }} />
+                        )}
+                      </Box>
+                      <Divider sx={{ mb: 0.5, borderColor: '#475569' }} />
+                      <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: '0.72rem' }}>
+                        {activeConfig.signature3 || 'Principal / Head of Institution'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                )}
+
+                {/* 9. Footer */}
+                {isVisible('footer') && (
+                  <Box sx={{ mt: 0.8, textAlign: 'center', borderTop: '1px solid #e2e8f0', pt: 0.4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.64rem' }}>
+                      {activeConfig.footerText} &bull; Generated on {dayjs().format('DD MMM YYYY, hh:mm A')}
+                    </Typography>
+                  </Box>
+                )}
+              </div>
             </Box>
           )}
         </DialogContent>
@@ -875,22 +1017,12 @@ export const AdmissionReportModal = ({
         >
           <Box>
             {isNewlyAdmitted && onAdmitAnother && (
-              <Button
-                variant="outlined"
-                color="secondary"
-                startIcon={<AddIcon />}
-                onClick={onAdmitAnother}
-                sx={{ mr: 1 }}
-              >
+              <Button variant="outlined" color="secondary" startIcon={<AddIcon />} onClick={onAdmitAnother} sx={{ mr: 1 }}>
                 Admit Another Student
               </Button>
             )}
             {isNewlyAdmitted && onNavigateDirectory && (
-              <Button
-                variant="text"
-                endIcon={<ArrowForwardIcon />}
-                onClick={onNavigateDirectory}
-              >
+              <Button variant="text" endIcon={<ArrowForwardIcon />} onClick={onNavigateDirectory}>
                 Student Directory
               </Button>
             )}
@@ -916,11 +1048,10 @@ export const AdmissionReportModal = ({
             </Button>
             <Button
               variant="contained"
-              color="primary"
               startIcon={<PrintIcon />}
               onClick={handlePrint}
               disabled={loading || !student}
-              sx={{ px: 3, fontWeight: 700 }}
+              sx={{ px: 3, fontWeight: 700, bgcolor: primaryCol, '&:hover': { bgcolor: activeConfig.accentColor || '#064e3b' } }}
             >
               Print Admission Report
             </Button>

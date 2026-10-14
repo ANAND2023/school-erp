@@ -648,7 +648,7 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
     // Fee Head Table
     const tableBody = items.map((item) => [
       (item.feeHeadName || 'FEE').toUpperCase(),
-      item.installmentName || (items.length === 1 ? month : ''),
+      item.installmentName || item.month || item.installment || item.periodName || (items.length === 1 ? month : '') || month || '—',
       Number(item.amountPaid || 0).toFixed(2),
       Number(item.balanceCarried || 0).toFixed(2),
     ]);

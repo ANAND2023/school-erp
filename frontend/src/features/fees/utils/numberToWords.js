@@ -95,7 +95,7 @@ export function numberToIndianWords(num) {
 export function formatReceiptMonths(monthStr, items = []) {
   let list = [];
   if (Array.isArray(items) && items.length > 0) {
-    const raw = items.map((i) => i.installmentName).filter(Boolean);
+    const raw = items.map((i) => i.installmentName || i.month || i.installment || i.periodName || i.feeMonth).filter(Boolean);
     list = Array.from(new Set(raw));
   }
 
@@ -103,7 +103,7 @@ export function formatReceiptMonths(monthStr, items = []) {
     list = monthStr.split(',').map((s) => s.trim()).filter(Boolean);
   }
 
-  if (list.length === 0) return 'April';
+  if (list.length === 0) return monthStr || '';
   if (list.length === 1) return list[0];
   if (list.length === 2) return `${list[0]}, ${list[1]}`;
 

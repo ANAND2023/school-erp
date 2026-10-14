@@ -1296,6 +1296,7 @@ namespace SchoolERP.API.Controllers.Portal
                 {
                     FeeHeadName = d.FeeHead?.Name ?? "",
                     InstallmentName = d.Installment?.Name ?? "",
+                    Month = d.Installment?.Name ?? monthStr ?? "",
                     AmountPaid = d.AmountPaid,
                     FinePaid = d.FinePaid,
                     BalanceCarried = d.BalanceCarried

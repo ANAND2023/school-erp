@@ -1518,6 +1518,302 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.3 DYNAMIC FEE RECEIPT SLIP BUILDER (SCHOOL-WISE)
+        // ==========================================
+        [HttpGet("fee-slip-config")]
+        public async Task<ActionResult<ApiResponse<FeeSlipConfigDto>>> GetFeeSlipConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "FEE_RECEIPT_SLIP");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "FEE_RECEIPT_SLIP");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<FeeSlipConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        var defaultSecs = FeeSlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<FeeSlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new FeeSlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<FeeSlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("fee-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveFeeSlipConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] FeeSlipConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "FEE_RECEIPT_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "FEE_SLIP_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "FEE_RECEIPT_SLIP",
+                    Provider = "FEE_SLIP_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "FEE_SLIP_CONFIGURED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Platform Default",
+                null,
+                new { schoolId, request.PrimaryColor, request.FontFamily });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Fee receipt slip layout & styling saved successfully."));
+        }
+
+        [HttpDelete("fee-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetFeeSlipConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "FEE_RECEIPT_SLIP");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "FEE_SLIP_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School fee receipt slip reset to platform default successfully."));
+        }
+
+        // ==========================================
+        // 10.4 DYNAMIC ADMISSION SLIP BUILDER (SCHOOL-WISE)
+        // ==========================================
+        [HttpGet("admission-slip-config")]
+        public async Task<ActionResult<ApiResponse<AdmissionSlipConfigDto>>> GetAdmissionSlipConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ADMISSION_SLIP");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "ADMISSION_SLIP");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<AdmissionSlipConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        var defaultSecs = AdmissionSlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<AdmissionSlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new AdmissionSlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<AdmissionSlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("admission-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveAdmissionSlipConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] AdmissionSlipConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ADMISSION_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "ADMISSION_SLIP_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "ADMISSION_SLIP",
+                    Provider = "ADMISSION_SLIP_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "ADMISSION_SLIP_CONFIGURED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Platform Default",
+                null,
+                new { schoolId, request.PrimaryColor, request.FontFamily });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Admission slip layout & styling saved successfully."));
+        }
+
+        [HttpDelete("admission-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetAdmissionSlipConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "ADMISSION_SLIP");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "ADMISSION_SLIP_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School admission slip reset to platform default successfully."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]
