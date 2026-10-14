@@ -19,7 +19,9 @@ import {
   DialogActions,
   Grid,
   Stack,
-  Container
+  Container,
+  MenuItem,
+  Chip,
 } from '@mui/material';
 import {
   VisibilityOutlined,
@@ -60,6 +62,11 @@ export const LoginPage = () => {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
 
+  // Multi-School Single Domain Support
+  const [schools, setSchools] = useState([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+
   const from = location.state?.from?.pathname || '/dashboard';
 
   // Load remembered username if exists
@@ -70,12 +77,72 @@ export const LoginPage = () => {
     }
   }, []);
 
+  // Fetch active schools for single-domain login & check URL parameter ?school= / ?code=
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        setSchoolsLoading(true);
+        const res = await apiClient.get('/auth/schools');
+        if (res.data?.success && res.data.data) {
+          const schoolList = res.data.data;
+          setSchools(schoolList);
+
+          // 1. Check URL query params for ?school= or ?code= or ?slug=
+          const searchParams = new URLSearchParams(location.search);
+          const schoolParam = searchParams.get('school') || searchParams.get('code') || searchParams.get('slug');
+
+          if (schoolParam) {
+            const matched = schoolList.find(
+              (s) =>
+                s.code?.toLowerCase() === schoolParam.toLowerCase() ||
+                s.slug?.toLowerCase() === schoolParam.toLowerCase() ||
+                String(s.id) === schoolParam
+            );
+            if (matched) {
+              setSelectedSchoolId(matched.id);
+              localStorage.setItem('dvs_selected_school_id', String(matched.id));
+              return;
+            }
+          }
+
+          // 2. Check localStorage saved school
+          const savedSchoolId = localStorage.getItem('dvs_selected_school_id');
+          if (savedSchoolId && schoolList.some((s) => String(s.id) === savedSchoolId)) {
+            setSelectedSchoolId(Number(savedSchoolId));
+          } else if (schoolList.length === 1) {
+            setSelectedSchoolId(schoolList[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load schools list:', err);
+      } finally {
+        setSchoolsLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, [location.search]);
+
+  const handleSchoolChange = (newSchoolId) => {
+    setSelectedSchoolId(newSchoolId);
+    if (newSchoolId) {
+      localStorage.setItem('dvs_selected_school_id', String(newSchoolId));
+    } else {
+      localStorage.removeItem('dvs_selected_school_id');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!username.trim() || !password) {
       setErrorMessage('Please enter both username and password.');
+      return;
+    }
+
+    if ((portalType === 'student' || portalType === 'parent') && !selectedSchoolId && schools.length > 1) {
+      setErrorMessage('Please select your school to proceed.');
       return;
     }
 
@@ -88,7 +155,13 @@ export const LoginPage = () => {
         localStorage.removeItem('dvs_remembered_user');
       }
 
-      const res = await apiClient.post('/auth/login', { username, password });
+      const payload = {
+        username: username.trim(),
+        password,
+        schoolId: selectedSchoolId ? Number(selectedSchoolId) : null,
+      };
+
+      const res = await apiClient.post('/auth/login', payload);
       if (res.data.success) {
         const { user, accessToken, refreshToken, permissions } = res.data.data;
         setAuth({ user, accessToken, refreshToken, permissions });
@@ -328,6 +401,124 @@ export const LoginPage = () => {
 
               {/* Form */}
               <Box component="form" onSubmit={handleSubmit} noValidate>
+                {/* School Selector (for Student/Parent or when multiple schools exist) */}
+                {(portalType === 'student' || portalType === 'parent' || schools.length > 1) && (
+                  <Box sx={{ mb: 1.8 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#38bdf8',
+                        fontWeight: 700,
+                        fontSize: '0.73rem',
+                        letterSpacing: 0.5,
+                        textTransform: 'uppercase',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 0.6,
+                      }}
+                    >
+                      <span>🏫 Select Your School</span>
+                      {selectedSchoolId && (
+                        <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓ Saved for Next Time</span>
+                      )}
+                    </Typography>
+                    <TextField
+                      select
+                      fullWidth
+                      id="school-select"
+                      value={selectedSchoolId}
+                      onChange={(e) => handleSchoolChange(e.target.value)}
+                      disabled={loading || schoolsLoading}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (val) => {
+                          if (!val) {
+                            return <span style={{ color: '#94a3b8' }}>-- Choose Your School --</span>;
+                          }
+                          const found = schools.find((s) => s.id === val);
+                          return found ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden' }}>
+                              <Typography variant="body2" noWrap sx={{ color: '#ffffff', fontWeight: 600 }}>
+                                {found.name}
+                              </Typography>
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontSize: '0.7rem',
+                                  bgcolor: 'rgba(56, 189, 248, 0.2)',
+                                  color: '#38bdf8',
+                                  px: 0.8,
+                                  py: 0.1,
+                                  borderRadius: '4px',
+                                  fontWeight: 800,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {found.code}
+                              </Box>
+                            </Box>
+                          ) : (
+                            val
+                          );
+                        },
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          bgcolor: 'rgba(255, 255, 255, 0.07)',
+                          color: '#ffffff',
+                          fontSize: '0.9rem',
+                          '& fieldset': {
+                            borderColor: selectedSchoolId ? '#38bdf8' : 'rgba(255, 255, 255, 0.18)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#38bdf8',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#38bdf8',
+                            boxShadow: '0 0 14px rgba(56, 189, 248, 0.35)',
+                          },
+                        },
+                        '& .MuiSelect-icon': {
+                          color: '#38bdf8',
+                        },
+                      }}
+                    >
+                      <MenuItem value="" disabled sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                        -- Choose Your School --
+                      </MenuItem>
+                      {schools.map((s) => (
+                        <MenuItem key={s.id} value={s.id} sx={{ py: 1 }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" fontWeight={700} color="#0f172a">
+                                {s.name}
+                              </Typography>
+                              <Chip
+                                label={s.code}
+                                size="small"
+                                sx={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  height: 20,
+                                  bgcolor: '#e0f2fe',
+                                  color: '#0369a1',
+                                }}
+                              />
+                            </Box>
+                            {s.city && (
+                              <Typography variant="caption" color="text.secondary">
+                                {s.city}
+                              </Typography>
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
+                )}
+
                 {/* Input 1: Email or Username */}
                 <Box sx={{ mb: 1.8 }}>
                   <TextField

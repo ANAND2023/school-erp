@@ -8,6 +8,18 @@ namespace SchoolERP.Application.DTOs
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public long? SchoolId { get; set; }
+        public string? SchoolCode { get; set; }
+    }
+
+    public class PublicSchoolItemDto
+    {
+        public long Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? City { get; set; }
     }
 
     public class LoginResponseDto

@@ -32,6 +32,27 @@ namespace SchoolERP.API.Controllers
             _currentUserService = currentUserService;
         }
 
+        [HttpGet("schools")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<List<PublicSchoolItemDto>>>> GetPublicSchools()
+        {
+            var schools = await _context.Schools
+                .Where(s => s.Status == "Active")
+                .OrderBy(s => s.Name)
+                .Select(s => new PublicSchoolItemDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Code = s.Code,
+                    Slug = s.Slug,
+                    LogoUrl = s.LogoUrl,
+                    City = s.City
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<List<PublicSchoolItemDto>>.Ok(schools));
+        }
+
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Login([FromBody] LoginRequestDto request)
@@ -43,74 +64,67 @@ namespace SchoolERP.API.Controllers
 
             var usernameInput = request.Username.Trim();
 
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .ThenInclude(r => r!.Permissions)
-                .FirstOrDefaultAsync(u => u.Username == usernameInput || u.Email == usernameInput || u.Mobile == usernameInput);
-
-            // If user not explicitly in Users table, check if it's a student (AdmissionNo) or Parent (Guardian Mobile)
-            if (user == null)
+            // Resolve target school if provided
+            long? targetSchoolId = request.SchoolId;
+            if (!targetSchoolId.HasValue && !string.IsNullOrWhiteSpace(request.SchoolCode))
             {
-                // 1. Check Student by Admission Number or First Name
+                var sCode = request.SchoolCode.Trim().ToLower();
+                var matchedSchool = await _context.Schools
+                    .FirstOrDefaultAsync(s => s.Code.ToLower() == sCode || s.Slug.ToLower() == sCode);
+                if (matchedSchool != null)
+                {
+                    targetSchoolId = matchedSchool.Id;
+                }
+            }
+
+            User? user = null;
+
+            if (targetSchoolId.HasValue && targetSchoolId.Value > 0)
+            {
+                var branchIds = await _context.Branches
+                    .Where(b => b.SchoolId == targetSchoolId.Value)
+                    .Select(b => b.Id)
+                    .ToListAsync();
+
+                // 1. School-specific Student check
                 var studentMatch = await _context.Students
-                    .FirstOrDefaultAsync(s => s.AdmissionNo == usernameInput || s.AdmissionNo.Replace("/", "").ToLower() == usernameInput.Replace("/", "").ToLower());
+                    .FirstOrDefaultAsync(s => branchIds.Contains(s.BranchId) &&
+                                              (s.AdmissionNo == usernameInput || s.AdmissionNo.Replace("/", "").ToLower() == usernameInput.Replace("/", "").ToLower()));
 
                 if (studentMatch != null)
                 {
-                    // Create or find student user
-                    var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
-                    if (studentRole == null)
-                    {
-                        studentRole = new Role { Name = "Student", Description = "Student Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
-                        _context.Roles.Add(studentRole);
-                        await _context.SaveChangesAsync();
-                    }
+                    user = await _context.Users
+                        .Include(u => u.Role)
+                        .ThenInclude(r => r!.Permissions)
+                        .FirstOrDefaultAsync(u => u.UserType == UserType.Student && u.LinkedEntityId == studentMatch.Id);
 
-                    user = new User
+                    if (user == null)
                     {
-                        Username = studentMatch.AdmissionNo,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-                        FullName = studentMatch.FullName,
-                        UserType = UserType.Student,
-                        RoleId = studentRole.Id,
-                        BranchId = studentMatch.BranchId,
-                        LinkedEntityId = studentMatch.Id,
-                        MustChangePassword = false,
-                        IsActive = true,
-                        CreatedBy = 1,
-                        CreatedOn = DateTime.UtcNow
-                    };
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    // 2. Check Parent / Guardian by Mobile number
-                    var guardianMatch = await _context.Set<StudentGuardian>()
-                        .Include(g => g.Student)
-                        .FirstOrDefaultAsync(g => g.Mobile == usernameInput || (g.Email != null && g.Email == usernameInput));
-
-                    if (guardianMatch != null)
-                    {
-                        var parentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Parent");
-                        if (parentRole == null)
+                        var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+                        if (studentRole == null)
                         {
-                            parentRole = new Role { Name = "Parent", Description = "Parent Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
-                            _context.Roles.Add(parentRole);
+                            studentRole = new Role { Name = "Student", Description = "Student Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                            _context.Roles.Add(studentRole);
                             await _context.SaveChangesAsync();
+                        }
+
+                        var schoolInfo = await _context.Schools.FirstOrDefaultAsync(s => s.Id == targetSchoolId.Value);
+                        var sCode = schoolInfo?.Code ?? $"SCH{targetSchoolId.Value}";
+                        var uniqueUsername = $"{sCode}_{studentMatch.AdmissionNo}";
+                        if (await _context.Users.AnyAsync(u => u.Username == uniqueUsername))
+                        {
+                            uniqueUsername = $"{sCode}_{studentMatch.AdmissionNo}_{studentMatch.Id}";
                         }
 
                         user = new User
                         {
-                            Username = !string.IsNullOrWhiteSpace(guardianMatch.Mobile) ? guardianMatch.Mobile : guardianMatch.Name.Replace(" ", "").ToLower(),
+                            Username = uniqueUsername,
                             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-                            FullName = guardianMatch.Name,
-                            Mobile = guardianMatch.Mobile,
-                            Email = guardianMatch.Email,
-                            UserType = UserType.Parent,
-                            RoleId = parentRole.Id,
-                            BranchId = guardianMatch.Student?.BranchId ?? 1,
-                            LinkedEntityId = guardianMatch.StudentId,
+                            FullName = studentMatch.FullName,
+                            UserType = UserType.Student,
+                            RoleId = studentRole.Id,
+                            BranchId = studentMatch.BranchId,
+                            LinkedEntityId = studentMatch.Id,
                             MustChangePassword = false,
                             IsActive = true,
                             CreatedBy = 1,
@@ -118,6 +132,198 @@ namespace SchoolERP.API.Controllers
                         };
                         _context.Users.Add(user);
                         await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    // 2. School-specific Parent check
+                    var guardianMatch = await _context.Set<StudentGuardian>()
+                        .Include(g => g.Student)
+                        .FirstOrDefaultAsync(g => g.Student != null && branchIds.Contains(g.Student.BranchId) &&
+                                                  (g.Mobile == usernameInput || (g.Email != null && g.Email == usernameInput)));
+
+                    if (guardianMatch != null && guardianMatch.Student != null)
+                    {
+                        user = await _context.Users
+                            .Include(u => u.Role)
+                            .ThenInclude(r => r!.Permissions)
+                            .FirstOrDefaultAsync(u => u.UserType == UserType.Parent && u.LinkedEntityId == guardianMatch.StudentId);
+
+                        if (user == null)
+                        {
+                            var parentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Parent");
+                            if (parentRole == null)
+                            {
+                                parentRole = new Role { Name = "Parent", Description = "Parent Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                                _context.Roles.Add(parentRole);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            var schoolInfo = await _context.Schools.FirstOrDefaultAsync(s => s.Id == targetSchoolId.Value);
+                            var sCode = schoolInfo?.Code ?? $"SCH{targetSchoolId.Value}";
+                            var candidateParentUsername = $"{sCode}_P_{guardianMatch.Mobile ?? guardianMatch.Id.ToString()}";
+                            if (await _context.Users.AnyAsync(u => u.Username == candidateParentUsername))
+                            {
+                                candidateParentUsername = $"{sCode}_P_{guardianMatch.Mobile ?? guardianMatch.Id.ToString()}_{guardianMatch.Id}";
+                            }
+
+                            user = new User
+                            {
+                                Username = candidateParentUsername,
+                                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                                FullName = guardianMatch.Name,
+                                Mobile = guardianMatch.Mobile,
+                                Email = guardianMatch.Email,
+                                UserType = UserType.Parent,
+                                RoleId = parentRole.Id,
+                                BranchId = guardianMatch.Student.BranchId,
+                                LinkedEntityId = guardianMatch.StudentId,
+                                MustChangePassword = false,
+                                IsActive = true,
+                                CreatedBy = 1,
+                                CreatedOn = DateTime.UtcNow
+                            };
+                            _context.Users.Add(user);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else
+                    {
+                        // 3. School-specific Staff check
+                        user = await _context.Users
+                            .Include(u => u.Role)
+                            .ThenInclude(r => r!.Permissions)
+                            .FirstOrDefaultAsync(u => (u.Username == usernameInput || u.Email == usernameInput || u.Mobile == usernameInput) &&
+                                                      (u.BranchId == 0 || branchIds.Contains(u.BranchId)));
+                    }
+                }
+            }
+            else
+            {
+                // No School specified - standard search
+                var existingUsers = await _context.Users
+                    .Include(u => u.Role)
+                    .ThenInclude(r => r!.Permissions)
+                    .Where(u => u.Username == usernameInput || u.Email == usernameInput || u.Mobile == usernameInput)
+                    .ToListAsync();
+
+                if (existingUsers.Count == 1)
+                {
+                    user = existingUsers.First();
+                }
+                else if (existingUsers.Count > 1)
+                {
+                    return BadRequest(ApiResponse<LoginResponseDto>.Fail("Multiple school accounts found for this user. Please select your school to log in."));
+                }
+                else
+                {
+                    // Check student match across all schools
+                    var studentMatches = await _context.Students
+                        .Where(s => s.AdmissionNo == usernameInput || s.AdmissionNo.Replace("/", "").ToLower() == usernameInput.Replace("/", "").ToLower())
+                        .ToListAsync();
+
+                    if (studentMatches.Count > 1)
+                    {
+                        return BadRequest(ApiResponse<LoginResponseDto>.Fail("Multiple schools found with this Admission Number. Please select your school to log in."));
+                    }
+                    else if (studentMatches.Count == 1)
+                    {
+                        var studentMatch = studentMatches.First();
+                        user = await _context.Users
+                            .Include(u => u.Role)
+                            .ThenInclude(r => r!.Permissions)
+                            .FirstOrDefaultAsync(u => u.UserType == UserType.Student && u.LinkedEntityId == studentMatch.Id);
+
+                        if (user == null)
+                        {
+                            var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+                            if (studentRole == null)
+                            {
+                                studentRole = new Role { Name = "Student", Description = "Student Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                                _context.Roles.Add(studentRole);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            var stBranch = await _context.Branches.Include(b => b.School).FirstOrDefaultAsync(b => b.Id == studentMatch.BranchId);
+                            var sCode = stBranch?.School?.Code ?? $"SCH{studentMatch.BranchId}";
+                            var uniqueUsername = $"{sCode}_{studentMatch.AdmissionNo}";
+                            if (await _context.Users.AnyAsync(u => u.Username == uniqueUsername))
+                            {
+                                uniqueUsername = $"{sCode}_{studentMatch.AdmissionNo}_{studentMatch.Id}";
+                            }
+
+                            user = new User
+                            {
+                                Username = uniqueUsername,
+                                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                                FullName = studentMatch.FullName,
+                                UserType = UserType.Student,
+                                RoleId = studentRole.Id,
+                                BranchId = studentMatch.BranchId,
+                                LinkedEntityId = studentMatch.Id,
+                                MustChangePassword = false,
+                                IsActive = true,
+                                CreatedBy = 1,
+                                CreatedOn = DateTime.UtcNow
+                            };
+                            _context.Users.Add(user);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else
+                    {
+                        // Check Guardian match across all schools
+                        var guardianMatches = await _context.Set<StudentGuardian>()
+                            .Include(g => g.Student)
+                            .Where(g => g.Student != null && (g.Mobile == usernameInput || (g.Email != null && g.Email == usernameInput)))
+                            .ToListAsync();
+
+                        if (guardianMatches.Count > 1)
+                        {
+                            return BadRequest(ApiResponse<LoginResponseDto>.Fail("Multiple school accounts found for this mobile number. Please select your school to log in."));
+                        }
+                        else if (guardianMatches.Count == 1)
+                        {
+                            var guardianMatch = guardianMatches.First();
+                            user = await _context.Users
+                                .Include(u => u.Role)
+                                .ThenInclude(r => r!.Permissions)
+                                .FirstOrDefaultAsync(u => u.UserType == UserType.Parent && u.LinkedEntityId == guardianMatch.StudentId);
+
+                            if (user == null)
+                            {
+                                var parentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Parent");
+                                if (parentRole == null)
+                                {
+                                    parentRole = new Role { Name = "Parent", Description = "Parent Portal Role", IsSystemRole = true, CreatedBy = 1, IsActive = true };
+                                    _context.Roles.Add(parentRole);
+                                    await _context.SaveChangesAsync();
+                                }
+
+                                var gBranch = await _context.Branches.Include(b => b.School).FirstOrDefaultAsync(b => b.Id == guardianMatch.Student!.BranchId);
+                                var sCode = gBranch?.School?.Code ?? "SCH";
+                                var candidateParentUsername = $"{sCode}_P_{guardianMatch.Mobile ?? guardianMatch.Id.ToString()}";
+
+                                user = new User
+                                {
+                                    Username = candidateParentUsername,
+                                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                                    FullName = guardianMatch.Name,
+                                    Mobile = guardianMatch.Mobile,
+                                    Email = guardianMatch.Email,
+                                    UserType = UserType.Parent,
+                                    RoleId = parentRole.Id,
+                                    BranchId = guardianMatch.Student!.BranchId,
+                                    LinkedEntityId = guardianMatch.StudentId,
+                                    MustChangePassword = false,
+                                    IsActive = true,
+                                    CreatedBy = 1,
+                                    CreatedOn = DateTime.UtcNow
+                                };
+                                _context.Users.Add(user);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
                     }
                 }
             }
