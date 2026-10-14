@@ -15,8 +15,20 @@ namespace SchoolERP.Application.DTOs
         public string BorderColor { get; set; } = "#0f766e";       // Slip outer border
         public string FontFamily { get; set; } = "Inter";          // Inter, Roboto, Poppins, Montserrat, Playfair Display, Segoe UI
         public string FontScale { get; set; } = "Normal";          // Compact, Normal, Large
+        public int BaseFontSize { get; set; } = 13;                // Base font size in px (10px - 18px)
+        public int FontScalePercent { get; set; } = 100;           // Font scale percent (75% - 135%)
         public string HeaderLayout { get; set; } = "Classic";      // Classic, Modern, Banner, Minimal
         public string BorderStyle { get; set; } = "Solid";         // Solid, Double, Dashed, None
+
+        // Sizing Controls (Logo, Photo, Page)
+        public int LogoSize { get; set; } = 52;                    // School logo diameter/size in px (30px - 120px)
+        public int PhotoWidth { get; set; } = 86;                  // Student photo box width in px (50px - 140px)
+        public int PhotoHeight { get; set; } = 104;                // Student photo box height in px (70px - 180px)
+        public string PageSize { get; set; } = "A4";               // "A4", "A5", "Letter"
+        public string PageOrientation { get; set; } = "portrait";  // "portrait", "landscape"
+        public string PageMargin { get; set; } = "8mm";            // "5mm", "8mm", "12mm", "16mm"
+        public int PagePadding { get; set; } = 20;                 // Inner slip padding in px (8px - 36px)
+        public int PageMaxWidth { get; set; } = 760;               // Maximum slip container width in px
 
         // Titles & Headings
         public string SlipTitle { get; set; } = "Visitor & Admission Enquiry Slip";

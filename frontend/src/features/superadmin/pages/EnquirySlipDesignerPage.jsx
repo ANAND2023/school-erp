@@ -30,12 +30,6 @@ const FONT_OPTIONS = [
   { label: 'Segoe UI (System Standard)', value: '"Segoe UI", -apple-system, sans-serif' },
 ];
 
-const FONT_SCALES = [
-  { label: 'Compact (0.9x)', value: 'Compact' },
-  { label: 'Standard (1.0x)', value: 'Normal' },
-  { label: 'Spacious / Large (1.1x)', value: 'Large' },
-];
-
 const HEADER_LAYOUTS = [
   { label: 'Classic Centered', value: 'Classic', desc: 'Centered school logo and details with double-line divider' },
   { label: 'Modern Side-by-Side', value: 'Modern', desc: 'Logo on left, school details center, enquiry badge & QR on right' },
@@ -45,9 +39,27 @@ const HEADER_LAYOUTS = [
 
 const BORDER_STYLES = [
   { label: 'Solid Border (2px)', value: 'Solid' },
-  { label: 'Double Border (3px)', value: 'Double' },
-  { label: 'Dashed Outline (1.5px)', value: 'Dashed' },
+  { label: 'Double Border (3.5px)', value: 'Double' },
+  { label: 'Dashed Outline (2px)', value: 'Dashed' },
   { label: 'Borderless / Clean', value: 'None' },
+];
+
+const PAGE_SIZE_OPTIONS = [
+  { label: 'A4 Paper (210 × 297 mm - Standard)', value: 'A4' },
+  { label: 'A5 Paper (148 × 210 mm - Half Sheet / Voucher)', value: 'A5' },
+  { label: 'Letter (8.5 × 11 in)', value: 'Letter' },
+];
+
+const ORIENTATION_OPTIONS = [
+  { label: 'Portrait (Vertical)', value: 'portrait' },
+  { label: 'Landscape (Horizontal)', value: 'landscape' },
+];
+
+const PAGE_MARGIN_OPTIONS = [
+  { label: 'Compact Margins (5mm / 0.2 in)', value: '5mm' },
+  { label: 'Standard Margins (8mm / 0.3 in)', value: '8mm' },
+  { label: 'Comfortable Margins (12mm / 0.5 in)', value: '12mm' },
+  { label: 'Spacious Margins (16mm / 0.65 in)', value: '16mm' },
 ];
 
 export const EnquirySlipDesignerPage = () => {
@@ -56,7 +68,7 @@ export const EnquirySlipDesignerPage = () => {
   const [saving, setSaving] = useState(false);
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState(null); // null = Global default
-  const [activeTab, setActiveTab] = useState('sections'); // 'sections' | 'styling' | 'content' | 'toggles'
+  const [activeTab, setActiveTab] = useState('sizing'); // 'sizing' | 'sections' | 'styling' | 'layout' | 'content'
 
   // Drag and drop state
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -66,14 +78,29 @@ export const EnquirySlipDesignerPage = () => {
     schoolId: null,
     schoolName: 'Platform Default (All Schools)',
     isSchoolOverride: false,
+
+    // Colors & Borders
     primaryColor: '#0f766e',
     secondaryColor: '#f0fdfa',
     accentColor: '#115e59',
     borderColor: '#0f766e',
     fontFamily: 'Inter, sans-serif',
-    fontScale: 'Normal',
     headerLayout: 'Classic',
     borderStyle: 'Solid',
+
+    // Sizing Controls (Requested by User)
+    logoSize: 52, // 30px to 120px
+    photoWidth: 86, // 50px to 140px
+    photoHeight: 104, // 70px to 180px
+    baseFontSize: 13, // 10px to 18px
+    fontScalePercent: 100, // 70% to 140%
+    pageSize: 'A4', // 'A4' | 'A5' | 'Letter'
+    pageOrientation: 'portrait', // 'portrait' | 'landscape'
+    pageMargin: '8mm', // '5mm' | '8mm' | '12mm' | '16mm'
+    pagePadding: 20, // 8px to 36px
+    pageMaxWidth: 760, // 540px to 960px
+
+    // Titles & Toggles
     slipTitle: 'Visitor & Admission Enquiry Slip',
     slipSubtitle: 'Official Visitor Acknowledgement & Follow-up Lead Slip',
     watermarkText: 'OFFICIAL ADMISSION ENQUIRY',
@@ -85,6 +112,8 @@ export const EnquirySlipDesignerPage = () => {
     showQrCode: true,
     showNextFollowupDate: true,
     showCounselorRemarks: true,
+
+    // Content texts
     instructionsTitle: 'IMPORTANT INSTRUCTIONS FOR PARENTS:',
     termsText:
       '• Admissions are processed on a first-come, first-served basis subject to seat availability in the sought class.\n• School admission desk is operational from Monday to Saturday, 9:00 AM to 2:00 PM.\n• For any enquiry queries or admission confirmation, please quote the Reference Number.',
@@ -135,7 +164,21 @@ export const EnquirySlipDesignerPage = () => {
       setLoading(true);
       const res = await superAdminApi.getEnquirySlipConfig(schoolId);
       if (res?.success && res.data) {
-        setConfig(res.data);
+        setConfig((prev) => ({
+          ...prev,
+          ...res.data,
+          // ensure sizing defaults if null/undefined
+          logoSize: res.data.logoSize || 52,
+          photoWidth: res.data.photoWidth || 86,
+          photoHeight: res.data.photoHeight || 104,
+          baseFontSize: res.data.baseFontSize || 13,
+          fontScalePercent: res.data.fontScalePercent || 100,
+          pageSize: res.data.pageSize || 'A4',
+          pageOrientation: res.data.pageOrientation || 'portrait',
+          pageMargin: res.data.pageMargin || '8mm',
+          pagePadding: res.data.pagePadding || 20,
+          pageMaxWidth: res.data.pageMaxWidth || 760,
+        }));
       }
     } catch (err) {
       toastRef.current?.show({
@@ -236,7 +279,6 @@ export const EnquirySlipDesignerPage = () => {
     const item = updatedSections.splice(draggedIndex, 1)[0];
     updatedSections.splice(index, 0, item);
 
-    // Update order indices
     const reordered = updatedSections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
     setDraggedIndex(index);
     setConfig((prev) => ({ ...prev, sections: reordered }));
@@ -275,6 +317,29 @@ export const EnquirySlipDesignerPage = () => {
     }));
   };
 
+  // Calculation helpers for live preview & print
+  const fontMultiplier = (config.fontScalePercent || 100) / 100;
+  const logoPx = config.logoSize || 52;
+  const photoW = config.photoWidth || 86;
+  const photoH = config.photoHeight || 104;
+  const slipPadding = config.pagePadding || 20;
+  const maxWidthPx = config.pageMaxWidth || 760;
+
+  const getBorderCss = () => {
+    switch (config.borderStyle) {
+      case 'Solid':
+        return `2px solid ${config.borderColor}`;
+      case 'Double':
+        return `3.5px double ${config.borderColor}`;
+      case 'Dashed':
+        return `2px dashed ${config.borderColor}`;
+      case 'None':
+        return '1px solid #e2e8f0';
+      default:
+        return `2px solid ${config.borderColor}`;
+    }
+  };
+
   // Mock enquiry data for live preview
   const mockEnquiry = {
     refNo: 'ENQ-2026-0042',
@@ -298,35 +363,7 @@ export const EnquirySlipDesignerPage = () => {
     address: 'Sector 12, RK Puram, New Delhi - 110022 | Helpline: +91 11 2617 8900 | Email: admissions@school.edu.in',
   };
 
-  const getBorderCss = () => {
-    switch (config.borderStyle) {
-      case 'Solid':
-        return `2px solid ${config.borderColor}`;
-      case 'Double':
-        return `3.5px double ${config.borderColor}`;
-      case 'Dashed':
-        return `2px dashed ${config.borderColor}`;
-      case 'None':
-        return '1px solid #e2e8f0';
-      default:
-        return `2px solid ${config.borderColor}`;
-    }
-  };
-
-  const getFontScaleFactor = () => {
-    switch (config.fontScale) {
-      case 'Compact':
-        return 0.9;
-      case 'Large':
-        return 1.1;
-      default:
-        return 1.0;
-    }
-  };
-
-  const fontScale = getFontScaleFactor();
-
-  // Render individual preview section according to key
+  // Render individual preview section
   const renderPreviewSection = (sectionKey) => {
     switch (sectionKey) {
       case 'header':
@@ -337,49 +374,49 @@ export const EnquirySlipDesignerPage = () => {
               style={{
                 backgroundColor: config.primaryColor,
                 color: '#ffffff',
-                padding: '14px 18px',
+                padding: `${12 * fontMultiplier}px ${16 * fontMultiplier}px`,
                 borderRadius: '6px',
-                marginBottom: '12px',
+                marginBottom: `${10 * fontMultiplier}px`,
                 textAlign: 'center',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: `${14 * fontMultiplier}px` }}>
                 {config.showSchoolLogo && (
                   <div
                     style={{
-                      width: '46px',
-                      height: '46px',
+                      width: `${logoPx}px`,
+                      height: `${logoPx}px`,
                       backgroundColor: '#ffffff',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: config.primaryColor,
-                      fontWeight: 800,
-                      fontSize: '18px',
+                      fontSize: `${Math.round(logoPx * 0.45)}px`,
+                      flexShrink: 0,
                     }}
                   >
                     <i className="pi pi-building"></i>
                   </div>
                 )}
                 <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.4 * fontScale}rem`, fontWeight: 800, letterSpacing: '0.5px' }}>
+                  <h2 style={{ margin: 0, fontSize: `${1.4 * fontMultiplier}rem`, fontWeight: 800, letterSpacing: '0.5px' }}>
                     {mockEnquiry.schoolName}
                   </h2>
-                  <div style={{ fontSize: `${0.75 * fontScale}rem`, opacity: 0.95, marginTop: '2px' }}>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, opacity: 0.95, marginTop: '2px' }}>
                     {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: `${0.68 * fontScale}rem`, opacity: 0.9, marginTop: '5px' }}>{mockEnquiry.address}</div>
+              <div style={{ fontSize: `${0.68 * fontMultiplier}rem`, opacity: 0.9, marginTop: '5px' }}>{mockEnquiry.address}</div>
               <div
                 style={{
                   display: 'inline-block',
                   marginTop: '8px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  padding: '3px 14px',
+                  backgroundColor: 'rgba(255,255,255,0.22)',
+                  padding: `${3 * fontMultiplier}px ${14 * fontMultiplier}px`,
                   borderRadius: '12px',
-                  fontSize: `${0.72 * fontScale}rem`,
+                  fontSize: `${0.72 * fontMultiplier}rem`,
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.8px',
@@ -399,17 +436,17 @@ export const EnquirySlipDesignerPage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingBottom: '10px',
+                paddingBottom: `${10 * fontMultiplier}px`,
                 borderBottom: `2px solid ${config.borderColor}`,
-                marginBottom: '12px',
+                marginBottom: `${12 * fontMultiplier}px`,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: `${14 * fontMultiplier}px` }}>
                 {config.showSchoolLogo && (
                   <div
                     style={{
-                      width: '54px',
-                      height: '54px',
+                      width: `${logoPx}px`,
+                      height: `${logoPx}px`,
                       backgroundColor: config.secondaryColor,
                       border: `1.5px solid ${config.primaryColor}`,
                       borderRadius: '8px',
@@ -417,20 +454,21 @@ export const EnquirySlipDesignerPage = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: config.primaryColor,
-                      fontSize: '22px',
+                      fontSize: `${Math.round(logoPx * 0.45)}px`,
+                      flexShrink: 0,
                     }}
                   >
                     <i className="pi pi-building"></i>
                   </div>
                 )}
                 <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.3 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+                  <h2 style={{ margin: 0, fontSize: `${1.3 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                     {mockEnquiry.schoolName}
                   </h2>
-                  <div style={{ fontSize: `${0.76 * fontScale}rem`, color: '#64748b', fontWeight: 600 }}>
+                  <div style={{ fontSize: `${0.76 * fontMultiplier}rem`, color: '#64748b', fontWeight: 600 }}>
                     {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
                   </div>
-                  <div style={{ fontSize: `${0.68 * fontScale}rem`, color: '#64748b', marginTop: '2px' }}>
+                  <div style={{ fontSize: `${0.68 * fontMultiplier}rem`, color: '#64748b', marginTop: '2px' }}>
                     {mockEnquiry.address}
                   </div>
                 </div>
@@ -441,9 +479,9 @@ export const EnquirySlipDesignerPage = () => {
                   style={{
                     backgroundColor: config.primaryColor,
                     color: '#ffffff',
-                    padding: '4px 10px',
+                    padding: `${4 * fontMultiplier}px ${10 * fontMultiplier}px`,
                     borderRadius: '4px',
-                    fontSize: `${0.7 * fontScale}rem`,
+                    fontSize: `${0.7 * fontMultiplier}rem`,
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
@@ -460,11 +498,11 @@ export const EnquirySlipDesignerPage = () => {
                       alignItems: 'center',
                       justifyContent: 'flex-end',
                       gap: '4px',
-                      fontSize: `${0.65 * fontScale}rem`,
+                      fontSize: `${0.65 * fontMultiplier}rem`,
                       color: '#64748b',
                     }}
                   >
-                    <i className="pi pi-qrcode" style={{ fontSize: '18px', color: config.primaryColor }}></i>
+                    <i className="pi pi-qrcode" style={{ fontSize: `${18 * fontMultiplier}px`, color: config.primaryColor }}></i>
                     <span>Verify QR</span>
                   </div>
                 )}
@@ -479,17 +517,17 @@ export const EnquirySlipDesignerPage = () => {
               key="header"
               style={{
                 textAlign: 'left',
-                paddingBottom: '8px',
+                paddingBottom: `${8 * fontMultiplier}px`,
                 borderBottom: '1px solid #cbd5e1',
-                marginBottom: '12px',
+                marginBottom: `${10 * fontMultiplier}px`,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: `${1.25 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+                  <h2 style={{ margin: 0, fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                     {mockEnquiry.schoolName}
                   </h2>
-                  <div style={{ fontSize: `${0.74 * fontScale}rem`, color: '#475569', marginTop: '2px' }}>
+                  <div style={{ fontSize: `${0.74 * fontMultiplier}rem`, color: '#475569', marginTop: '2px' }}>
                     {mockEnquiry.branchName} | {mockEnquiry.address}
                   </div>
                 </div>
@@ -497,9 +535,9 @@ export const EnquirySlipDesignerPage = () => {
                   style={{
                     border: `1.5px solid ${config.primaryColor}`,
                     color: config.primaryColor,
-                    padding: '3px 10px',
+                    padding: `${3 * fontMultiplier}px ${10 * fontMultiplier}px`,
                     borderRadius: '4px',
-                    fontSize: `${0.7 * fontScale}rem`,
+                    fontSize: `${0.7 * fontMultiplier}rem`,
                     fontWeight: 700,
                     textTransform: 'uppercase',
                   }}
@@ -511,23 +549,23 @@ export const EnquirySlipDesignerPage = () => {
           );
         }
 
-        // Default 'Classic' Layout
+        // Classic Layout (Default)
         return (
           <div
             key="header"
             style={{
               textAlign: 'center',
-              paddingBottom: '10px',
+              paddingBottom: `${10 * fontMultiplier}px`,
               borderBottom: `2.5px double ${config.borderColor}`,
-              marginBottom: '12px',
+              marginBottom: `${12 * fontMultiplier}px`,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: `${12 * fontMultiplier}px` }}>
               {config.showSchoolLogo && (
                 <div
                   style={{
-                    width: '46px',
-                    height: '46px',
+                    width: `${logoPx}px`,
+                    height: `${logoPx}px`,
                     backgroundColor: config.secondaryColor,
                     border: `1.5px solid ${config.primaryColor}`,
                     borderRadius: '8px',
@@ -535,7 +573,8 @@ export const EnquirySlipDesignerPage = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: config.primaryColor,
-                    fontSize: '22px',
+                    fontSize: `${Math.round(logoPx * 0.45)}px`,
+                    flexShrink: 0,
                   }}
                 >
                   <i className="pi pi-building"></i>
@@ -546,29 +585,29 @@ export const EnquirySlipDesignerPage = () => {
                   style={{
                     margin: 0,
                     color: config.primaryColor,
-                    fontSize: `${1.45 * fontScale}rem`,
+                    fontSize: `${1.45 * fontMultiplier}rem`,
                     fontWeight: 900,
                     letterSpacing: '0.8px',
                   }}
                 >
                   {mockEnquiry.schoolName}
                 </h2>
-                <div style={{ fontSize: `${0.78 * fontScale}rem`, fontWeight: 600, color: '#475569', marginTop: '2px' }}>
+                <div style={{ fontSize: `${0.78 * fontMultiplier}rem`, fontWeight: 600, color: '#475569', marginTop: '2px' }}>
                   {mockEnquiry.branchName} • {config.showAffiliationNo && mockEnquiry.affiliation}
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: `${0.7 * fontScale}rem`, color: '#64748b', marginTop: '4px' }}>{mockEnquiry.address}</div>
+            <div style={{ fontSize: `${0.7 * fontMultiplier}rem`, color: '#64748b', marginTop: '4px' }}>{mockEnquiry.address}</div>
             <div
               style={{
                 display: 'inline-block',
                 marginTop: '8px',
-                padding: '3px 16px',
+                padding: `${3 * fontMultiplier}px ${16 * fontMultiplier}px`,
                 backgroundColor: config.primaryColor,
                 color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 textTransform: 'uppercase',
                 letterSpacing: '0.6px',
               }}
@@ -583,8 +622,8 @@ export const EnquirySlipDesignerPage = () => {
           <div
             key="meta_bar"
             style={{
-              marginBottom: '12px',
-              padding: '8px 12px',
+              marginBottom: `${12 * fontMultiplier}px`,
+              padding: `${8 * fontMultiplier}px ${12 * fontMultiplier}px`,
               backgroundColor: config.secondaryColor,
               borderRadius: '6px',
               border: `1.5px solid ${config.borderColor}`,
@@ -596,7 +635,7 @@ export const EnquirySlipDesignerPage = () => {
             <div>
               <span
                 style={{
-                  fontSize: `${0.65 * fontScale}rem`,
+                  fontSize: `${0.65 * fontMultiplier}rem`,
                   color: '#64748b',
                   display: 'block',
                   fontWeight: 600,
@@ -605,14 +644,14 @@ export const EnquirySlipDesignerPage = () => {
               >
                 Enquiry Ref No
               </span>
-              <span style={{ fontSize: `${0.92 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+              <span style={{ fontSize: `${0.92 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                 {mockEnquiry.refNo}
               </span>
             </div>
             <div>
               <span
                 style={{
-                  fontSize: `${0.65 * fontScale}rem`,
+                  fontSize: `${0.65 * fontMultiplier}rem`,
                   color: '#64748b',
                   display: 'block',
                   fontWeight: 600,
@@ -621,14 +660,14 @@ export const EnquirySlipDesignerPage = () => {
               >
                 Date & Time
               </span>
-              <span style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+              <span style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                 {mockEnquiry.dateTime}
               </span>
             </div>
             <div>
               <span
                 style={{
-                  fontSize: `${0.65 * fontScale}rem`,
+                  fontSize: `${0.65 * fontMultiplier}rem`,
                   color: '#64748b',
                   display: 'block',
                   fontWeight: 600,
@@ -637,14 +676,14 @@ export const EnquirySlipDesignerPage = () => {
               >
                 Enquiry Source
               </span>
-              <span style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+              <span style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                 {mockEnquiry.source}
               </span>
             </div>
             <div>
               <span
                 style={{
-                  fontSize: `${0.65 * fontScale}rem`,
+                  fontSize: `${0.65 * fontMultiplier}rem`,
                   color: '#64748b',
                   display: 'block',
                   fontWeight: 600,
@@ -653,7 +692,7 @@ export const EnquirySlipDesignerPage = () => {
               >
                 Status
               </span>
-              <span style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+              <span style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                 {mockEnquiry.statusText}
               </span>
             </div>
@@ -662,7 +701,7 @@ export const EnquirySlipDesignerPage = () => {
 
       case 'student_guardian':
         return (
-          <div key="student_guardian" style={{ marginBottom: '12px' }}>
+          <div key="student_guardian" style={{ marginBottom: `${12 * fontMultiplier}px` }}>
             <div
               style={{
                 backgroundColor: config.secondaryColor,
@@ -670,7 +709,7 @@ export const EnquirySlipDesignerPage = () => {
                 padding: '4px 8px',
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: config.accentColor,
                 textTransform: 'uppercase',
                 marginBottom: '8px',
@@ -681,24 +720,26 @@ export const EnquirySlipDesignerPage = () => {
             >
               <span>1. Prospective Student & Guardian Information</span>
               {config.showStudentPhotoBox && (
-                <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Passport Photo Area</span>
+                <span style={{ fontSize: '0.62rem', color: '#64748b' }}>
+                  Photo Box: {photoW}×{photoH}px
+                </span>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
               <div
                 style={{
                   flex: 1,
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: '8px 14px',
+                  gap: `${8 * fontMultiplier}px ${14 * fontMultiplier}px`,
                 }}
               >
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Candidate / Student Name:</div>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Candidate / Student Name:</div>
                   <div
                     style={{
-                      fontSize: `${0.9 * fontScale}rem`,
+                      fontSize: `${0.9 * fontMultiplier}rem`,
                       fontWeight: 800,
                       color: '#0f172a',
                       textTransform: 'uppercase',
@@ -709,34 +750,34 @@ export const EnquirySlipDesignerPage = () => {
                 </div>
 
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Seeking Admission to Class:</div>
-                  <div style={{ fontSize: `${0.88 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Seeking Admission to Class:</div>
+                  <div style={{ fontSize: `${0.88 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                     {mockEnquiry.className}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Father / Guardian Name:</div>
-                  <div style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Father / Guardian Name:</div>
+                  <div style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                     {mockEnquiry.guardianName}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Primary Contact Mobile:</div>
-                  <div style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Primary Contact Mobile:</div>
+                  <div style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                     {mockEnquiry.mobile}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Email Address:</div>
-                  <div style={{ fontSize: `${0.8 * fontScale}rem`, color: '#334155' }}>{mockEnquiry.email}</div>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Email Address:</div>
+                  <div style={{ fontSize: `${0.8 * fontMultiplier}rem`, color: '#334155' }}>{mockEnquiry.email}</div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b' }}>Academic Session:</div>
-                  <div style={{ fontSize: `${0.82 * fontScale}rem`, fontWeight: 700, color: config.primaryColor }}>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b' }}>Academic Session:</div>
+                  <div style={{ fontSize: `${0.82 * fontMultiplier}rem`, fontWeight: 700, color: config.primaryColor }}>
                     {mockEnquiry.academicSession}
                   </div>
                 </div>
@@ -745,8 +786,8 @@ export const EnquirySlipDesignerPage = () => {
               {config.showStudentPhotoBox && (
                 <div
                   style={{
-                    width: '84px',
-                    height: '98px',
+                    width: `${photoW}px`,
+                    height: `${photoH}px`,
                     border: '1.5px dashed #94a3b8',
                     borderRadius: '4px',
                     display: 'flex',
@@ -756,10 +797,14 @@ export const EnquirySlipDesignerPage = () => {
                     padding: '4px',
                     textAlign: 'center',
                     backgroundColor: '#fafafa',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <i className="pi pi-user" style={{ fontSize: '20px', color: '#94a3b8', marginBottom: '4px' }}></i>
-                  <span style={{ fontSize: '0.6rem', color: '#64748b', lineHeight: 1.1 }}>Affix Student Photo</span>
+                  <i className="pi pi-user" style={{ fontSize: `${Math.round(photoW * 0.28)}px`, color: '#94a3b8', marginBottom: '4px' }}></i>
+                  <span style={{ fontSize: `${0.6 * fontMultiplier}rem`, color: '#64748b', lineHeight: 1.1 }}>
+                    Affix Photo
+                  </span>
                 </div>
               )}
             </div>
@@ -768,7 +813,7 @@ export const EnquirySlipDesignerPage = () => {
 
       case 'discussion_notes':
         return (
-          <div key="discussion_notes" style={{ marginBottom: '12px' }}>
+          <div key="discussion_notes" style={{ marginBottom: `${12 * fontMultiplier}px` }}>
             <div
               style={{
                 backgroundColor: config.secondaryColor,
@@ -776,7 +821,7 @@ export const EnquirySlipDesignerPage = () => {
                 padding: '4px 8px',
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: config.accentColor,
                 textTransform: 'uppercase',
                 marginBottom: '8px',
@@ -785,19 +830,19 @@ export const EnquirySlipDesignerPage = () => {
               2. Discussion Notes & Follow-up
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1.2fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: config.showNextFollowupDate ? '3fr 1.2fr' : '1fr', gap: '10px' }}>
               <div>
-                <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b', marginBottom: '3px' }}>
+                <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b', marginBottom: '3px' }}>
                   Counselor Notes / Inquiries Raised:
                 </div>
                 <div
                   style={{
-                    padding: '8px',
+                    padding: `${8 * fontMultiplier}px`,
                     minHeight: '44px',
                     backgroundColor: '#f8fafc',
                     border: '1px solid #e2e8f0',
                     borderRadius: '4px',
-                    fontSize: `${0.78 * fontScale}rem`,
+                    fontSize: `${0.78 * fontMultiplier}rem`,
                     color: '#334155',
                     lineHeight: 1.35,
                   }}
@@ -808,19 +853,19 @@ export const EnquirySlipDesignerPage = () => {
 
               {config.showNextFollowupDate && (
                 <div>
-                  <div style={{ fontSize: `${0.66 * fontScale}rem`, color: '#64748b', marginBottom: '3px' }}>
+                  <div style={{ fontSize: `${0.66 * fontMultiplier}rem`, color: '#64748b', marginBottom: '3px' }}>
                     Scheduled Follow-up Date:
                   </div>
                   <div
                     style={{
-                      padding: '8px',
+                      padding: `${8 * fontMultiplier}px`,
                       backgroundColor: config.secondaryColor,
                       border: `1px solid ${config.borderColor}`,
                       borderRadius: '4px',
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ fontSize: `${0.9 * fontScale}rem`, fontWeight: 800, color: config.primaryColor }}>
+                    <div style={{ fontSize: `${0.9 * fontMultiplier}rem`, fontWeight: 800, color: config.primaryColor }}>
                       {mockEnquiry.nextFollowup}
                     </div>
                   </div>
@@ -832,7 +877,7 @@ export const EnquirySlipDesignerPage = () => {
 
       case 'documents_checklist':
         return (
-          <div key="documents_checklist" style={{ marginBottom: '12px' }}>
+          <div key="documents_checklist" style={{ marginBottom: `${12 * fontMultiplier}px` }}>
             <div
               style={{
                 backgroundColor: config.secondaryColor,
@@ -840,7 +885,7 @@ export const EnquirySlipDesignerPage = () => {
                 padding: '4px 8px',
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: config.accentColor,
                 textTransform: 'uppercase',
                 marginBottom: '6px',
@@ -854,7 +899,7 @@ export const EnquirySlipDesignerPage = () => {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: '4px 12px',
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: '#334155',
               }}
             >
@@ -873,8 +918,8 @@ export const EnquirySlipDesignerPage = () => {
           <div
             key="instructions"
             style={{
-              marginBottom: '12px',
-              padding: '8px 12px',
+              marginBottom: `${12 * fontMultiplier}px`,
+              padding: `${8 * fontMultiplier}px ${12 * fontMultiplier}px`,
               border: `1px dashed ${config.borderColor}`,
               borderRadius: '6px',
               backgroundColor: config.secondaryColor,
@@ -882,7 +927,7 @@ export const EnquirySlipDesignerPage = () => {
           >
             <div
               style={{
-                fontSize: `${0.72 * fontScale}rem`,
+                fontSize: `${0.72 * fontMultiplier}rem`,
                 fontWeight: 800,
                 color: config.primaryColor,
                 marginBottom: '4px',
@@ -893,7 +938,7 @@ export const EnquirySlipDesignerPage = () => {
             </div>
             <div
               style={{
-                fontSize: `${0.68 * fontScale}rem`,
+                fontSize: `${0.68 * fontMultiplier}rem`,
                 color: '#475569',
                 lineHeight: 1.35,
                 whiteSpace: 'pre-line',
@@ -909,7 +954,7 @@ export const EnquirySlipDesignerPage = () => {
           <div
             key="signatures"
             style={{
-              marginTop: '12px',
+              marginTop: `${12 * fontMultiplier}px`,
               paddingTop: '6px',
               display: 'grid',
               gridTemplateColumns: config.showSchoolSealBox ? '1.2fr 1.2fr 1.2fr 1fr' : 'repeat(3, 1fr)',
@@ -917,30 +962,30 @@ export const EnquirySlipDesignerPage = () => {
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <div style={{ height: '32px' }}></div>
+              <div style={{ height: `${32 * fontMultiplier}px` }}></div>
               <div style={{ borderTop: '1px solid #475569', margin: '4px 0' }}></div>
-              <div style={{ fontSize: `${0.74 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+              <div style={{ fontSize: `${0.74 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                 Parent / Visitor Signature
               </div>
-              <div style={{ fontSize: `${0.65 * fontScale}rem`, color: '#64748b' }}>Date: 14-10-2026</div>
+              <div style={{ fontSize: `${0.65 * fontMultiplier}rem`, color: '#64748b' }}>Date: 14-10-2026</div>
             </div>
 
             <div style={{ textAlign: 'center' }}>
-              <div style={{ height: '32px' }}></div>
+              <div style={{ height: `${32 * fontMultiplier}px` }}></div>
               <div style={{ borderTop: '1px solid #475569', margin: '4px 0' }}></div>
-              <div style={{ fontSize: `${0.74 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+              <div style={{ fontSize: `${0.74 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                 Admission Counselor
               </div>
-              <div style={{ fontSize: `${0.65 * fontScale}rem`, color: '#64748b' }}>Front-Desk Verification</div>
+              <div style={{ fontSize: `${0.65 * fontMultiplier}rem`, color: '#64748b' }}>Front-Desk Verification</div>
             </div>
 
             <div style={{ textAlign: 'center' }}>
-              <div style={{ height: '32px' }}></div>
+              <div style={{ height: `${32 * fontMultiplier}px` }}></div>
               <div style={{ borderTop: '1px solid #475569', margin: '4px 0' }}></div>
-              <div style={{ fontSize: `${0.74 * fontScale}rem`, fontWeight: 700, color: '#1e293b' }}>
+              <div style={{ fontSize: `${0.74 * fontMultiplier}rem`, fontWeight: 700, color: '#1e293b' }}>
                 Principal / Authorized Signatory
               </div>
-              <div style={{ fontSize: `${0.65 * fontScale}rem`, color: '#64748b' }}>Official School Authorization</div>
+              <div style={{ fontSize: `${0.65 * fontMultiplier}rem`, color: '#64748b' }}>Official School Authorization</div>
             </div>
 
             {config.showSchoolSealBox && (
@@ -948,7 +993,7 @@ export const EnquirySlipDesignerPage = () => {
                 style={{
                   border: '1.5px dashed #94a3b8',
                   borderRadius: '4px',
-                  height: '56px',
+                  height: `${56 * fontMultiplier}px`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -956,7 +1001,9 @@ export const EnquirySlipDesignerPage = () => {
                   padding: '4px',
                 }}
               >
-                <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 600 }}>OFFICIAL SCHOOL SEAL / STAMP</span>
+                <span style={{ fontSize: `${0.62 * fontMultiplier}rem`, color: '#64748b', fontWeight: 600 }}>
+                  OFFICIAL SCHOOL SEAL
+                </span>
               </div>
             )}
           </div>
@@ -967,11 +1014,11 @@ export const EnquirySlipDesignerPage = () => {
           <div
             key="footer"
             style={{
-              marginTop: '12px',
+              marginTop: `${12 * fontMultiplier}px`,
               paddingTop: '6px',
               borderTop: '1px solid #e2e8f0',
               textAlign: 'center',
-              fontSize: `${0.66 * fontScale}rem`,
+              fontSize: `${0.66 * fontMultiplier}rem`,
               color: '#64748b',
             }}
           >
@@ -1014,7 +1061,7 @@ export const EnquirySlipDesignerPage = () => {
             Enquiry Slip Designer (Dynamic & School-Wise)
           </h1>
           <p className="text-xs text-slate-300 mt-1 mb-0">
-            Customize drag-and-drop section order, brand colors, typography, and visible elements for admission slips.
+            Adjust logo size, student photo dimensions, typography scaling, page format (A4/A5), and drag-and-drop sections.
           </p>
         </div>
 
@@ -1070,19 +1117,20 @@ export const EnquirySlipDesignerPage = () => {
           <Card className="shadow-2 border-round-xl p-0 overflow-hidden mb-3">
             {/* Navigation Tabs */}
             <div
-              className="flex border-bottom-1 surface-border"
+              className="flex border-bottom-1 surface-border overflow-x-auto"
               style={{ backgroundColor: '#f1f5f9', padding: '6px 8px' }}
             >
               {[
-                { id: 'sections', label: 'Drag & Reorder', icon: 'pi pi-bars' },
+                { id: 'sizing', label: 'Sizes & Dimensions', icon: 'pi pi-arrows-alt', badge: 'New' },
+                { id: 'sections', label: 'Drag & Order', icon: 'pi pi-bars' },
                 { id: 'styling', label: 'Colors & Font', icon: 'pi pi-palette' },
-                { id: 'layout', label: 'Header & Layout', icon: 'pi pi-table' },
+                { id: 'layout', label: 'Header Style', icon: 'pi pi-table' },
                 { id: 'content', label: 'Texts & Notes', icon: 'pi pi-pencil' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex-1 py-2 px-2 text-xs font-bold border-round transition-all border-none cursor-pointer flex align-items-center justify-content-center gap-1.5"
+                  className="flex-1 py-2 px-2 text-xs font-bold border-round transition-all border-none cursor-pointer flex align-items-center justify-content-center gap-1.5 whitespace-nowrap"
                   style={{
                     backgroundColor: activeTab === tab.id ? '#ffffff' : 'transparent',
                     color: activeTab === tab.id ? '#4f46e5' : '#64748b',
@@ -1096,7 +1144,288 @@ export const EnquirySlipDesignerPage = () => {
             </div>
 
             <div className="p-3">
-              {/* TAB 1: DRAG & DROP SECTIONS REORDER */}
+              {/* TAB 1: SIZES & DIMENSIONS (LOGO, PHOTO, FONT, FULL PAGE) */}
+              {activeTab === 'sizing' && (
+                <div className="flex flex-column gap-3">
+                  {/* 1. School Logo Size Adjustment */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-image text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">1. School Logo Size</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
+                        {config.logoSize} px
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={30}
+                      max={120}
+                      step={2}
+                      value={config.logoSize}
+                      onChange={(e) => setConfig({ ...config, logoSize: Number(e.target.value) })}
+                      className="w-full cursor-pointer accent-indigo-600"
+                    />
+
+                    {/* Quick Presets */}
+                    <div className="flex gap-1.5 mt-2">
+                      {[
+                        { label: 'Small (38px)', val: 38 },
+                        { label: 'Normal (52px)', val: 52 },
+                        { label: 'Large (70px)', val: 70 },
+                        { label: 'X-Large (94px)', val: 94 },
+                      ].map((p) => (
+                        <button
+                          key={p.val}
+                          type="button"
+                          onClick={() => setConfig({ ...config, logoSize: p.val })}
+                          className="px-2 py-1 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
+                          style={{
+                            backgroundColor: config.logoSize === p.val ? '#e0e7ff' : '#f8fafc',
+                            color: config.logoSize === p.val ? '#3730a3' : '#475569',
+                          }}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Student Photo Box Dimensions */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-user text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">2. Student Photo Box Size</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
+                        {config.photoWidth} × {config.photoHeight} px
+                      </span>
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-500 font-semibold block mb-1">
+                          Photo Width: <strong>{config.photoWidth}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={50}
+                          max={140}
+                          step={2}
+                          value={config.photoWidth}
+                          onChange={(e) => setConfig({ ...config, photoWidth: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="text-xs text-slate-500 font-semibold block mb-1">
+                          Photo Height: <strong>{config.photoHeight}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={70}
+                          max={180}
+                          step={2}
+                          value={config.photoHeight}
+                          onChange={(e) => setConfig({ ...config, photoHeight: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {[
+                        { label: 'Passport (86×104)', w: 86, h: 104 },
+                        { label: 'Compact (70×86)', w: 70, h: 86 },
+                        { label: 'Large (100×130)', w: 100, h: 130 },
+                        { label: 'Square (85×85)', w: 85, h: 85 },
+                      ].map((p) => (
+                        <button
+                          key={p.label}
+                          type="button"
+                          onClick={() => setConfig({ ...config, photoWidth: p.w, photoHeight: p.h })}
+                          className="px-2 py-1 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
+                          style={{
+                            backgroundColor: config.photoWidth === p.w && config.photoHeight === p.h ? '#e0e7ff' : '#f8fafc',
+                            color: config.photoWidth === p.w && config.photoHeight === p.h ? '#3730a3' : '#475569',
+                          }}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Font Size Scaling */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-align-left text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">3. Text & Font Size Scale</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
+                        {config.fontScalePercent}% ({config.baseFontSize}px base)
+                      </span>
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-500 font-semibold block mb-1">
+                          Font Scale: <strong>{config.fontScalePercent}%</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={70}
+                          max={140}
+                          step={5}
+                          value={config.fontScalePercent}
+                          onChange={(e) => setConfig({ ...config, fontScalePercent: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="text-xs text-slate-500 font-semibold block mb-1">
+                          Base Font: <strong>{config.baseFontSize}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={10}
+                          max={18}
+                          step={1}
+                          value={config.baseFontSize}
+                          onChange={(e) => setConfig({ ...config, baseFontSize: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex gap-1.5 mt-2">
+                      {[
+                        { label: 'Compact (85%)', scale: 85, base: 12 },
+                        { label: 'Normal (100%)', scale: 100, base: 13 },
+                        { label: 'Large (115%)', scale: 115, base: 14 },
+                        { label: 'Spacious (130%)', scale: 130, base: 15 },
+                      ].map((p) => (
+                        <button
+                          key={p.label}
+                          type="button"
+                          onClick={() => setConfig({ ...config, fontScalePercent: p.scale, baseFontSize: p.base })}
+                          className="px-2 py-1 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
+                          style={{
+                            backgroundColor: config.fontScalePercent === p.scale ? '#e0e7ff' : '#f8fafc',
+                            color: config.fontScalePercent === p.scale ? '#3730a3' : '#475569',
+                          }}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 4. Page Size & Layout Adjustments (Pure Page Ki Size) */}
+                  <div className="p-3 border-round-lg border-1 border-slate-200" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="flex align-items-center justify-content-between mb-2">
+                      <div className="flex align-items-center gap-2">
+                        <i className="pi pi-file text-indigo-600 font-bold"></i>
+                        <span className="text-sm font-bold text-slate-800">4. Pure Page Size & Print Format</span>
+                      </div>
+                      <span className="px-2 py-0.5 border-round font-mono text-xs font-bold bg-indigo-50 text-indigo-700">
+                        {config.pageSize} ({config.pageOrientation})
+                      </span>
+                    </div>
+
+                    <div className="grid">
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Paper Sheet Size:</label>
+                        <Dropdown
+                          value={config.pageSize}
+                          onChange={(e) => setConfig({ ...config, pageSize: e.value })}
+                          options={PAGE_SIZE_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Paper Orientation:</label>
+                        <Dropdown
+                          value={config.pageOrientation}
+                          onChange={(e) => setConfig({ ...config, pageOrientation: e.value })}
+                          options={ORIENTATION_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">Print Page Margin:</label>
+                        <Dropdown
+                          value={config.pageMargin}
+                          onChange={(e) => setConfig({ ...config, pageMargin: e.value })}
+                          options={PAGE_MARGIN_OPTIONS}
+                          className="p-inputtext-sm w-full"
+                        />
+                      </div>
+
+                      <div className="col-6">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">
+                          Slip Inner Padding: <strong>{config.pagePadding}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={8}
+                          max={36}
+                          step={2}
+                          value={config.pagePadding}
+                          onChange={(e) => setConfig({ ...config, pagePadding: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600 mt-2"
+                        />
+                      </div>
+
+                      <div className="col-12">
+                        <label className="text-xs text-slate-600 font-semibold block mb-1">
+                          Max Container Width: <strong>{config.pageMaxWidth}px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={540}
+                          max={960}
+                          step={20}
+                          value={config.pageMaxWidth}
+                          onChange={(e) => setConfig({ ...config, pageMaxWidth: Number(e.target.value) })}
+                          className="w-full cursor-pointer accent-indigo-600"
+                        />
+                        <div className="flex gap-2 mt-1">
+                          {[
+                            { label: 'Compact (600px)', val: 600 },
+                            { label: 'Standard (760px)', val: 760 },
+                            { label: 'Wide A4 (860px)', val: 860 },
+                            { label: 'Full Width (960px)', val: 960 },
+                          ].map((pw) => (
+                            <button
+                              key={pw.val}
+                              type="button"
+                              onClick={() => setConfig({ ...config, pageMaxWidth: pw.val })}
+                              className="px-2 py-0.5 text-xs border-round border-1 border-slate-200 cursor-pointer font-semibold"
+                              style={{
+                                backgroundColor: config.pageMaxWidth === pw.val ? '#e0e7ff' : '#f8fafc',
+                                color: config.pageMaxWidth === pw.val ? '#3730a3' : '#475569',
+                              }}
+                            >
+                              {pw.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: DRAG & DROP SECTIONS REORDER */}
               {activeTab === 'sections' && (
                 <div>
                   <div className="flex align-items-center justify-content-between mb-2">
@@ -1151,7 +1480,6 @@ export const EnquirySlipDesignerPage = () => {
                         </div>
 
                         <div className="flex align-items-center gap-2">
-                          {/* Up/Down buttons for quick touch adjustment */}
                           <Button
                             icon="pi pi-arrow-up"
                             className="p-button-text p-button-rounded p-button-sm text-slate-400 p-0"
@@ -1166,8 +1494,6 @@ export const EnquirySlipDesignerPage = () => {
                             disabled={idx === config.sections.length - 1}
                             onClick={() => moveSection(idx, 1)}
                           />
-
-                          {/* Visibility Toggle */}
                           <InputSwitch
                             checked={section.visible}
                             onChange={() => toggleSectionVisibility(idx)}
@@ -1187,10 +1513,9 @@ export const EnquirySlipDesignerPage = () => {
                 </div>
               )}
 
-              {/* TAB 2: STYLING & COLORS */}
+              {/* TAB 3: STYLING & COLORS */}
               {activeTab === 'styling' && (
                 <div className="flex flex-column gap-3">
-                  {/* Preset Color Palettes */}
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-2">Preset Color Schemes:</label>
                     <div className="grid">
@@ -1222,7 +1547,6 @@ export const EnquirySlipDesignerPage = () => {
 
                   <Divider className="my-1" />
 
-                  {/* Custom Hex Pickers */}
                   <div className="grid">
                     <div className="col-6">
                       <label className="text-xs font-semibold text-slate-600 block mb-1">Primary Brand Color:</label>
@@ -1306,7 +1630,6 @@ export const EnquirySlipDesignerPage = () => {
 
                   <Divider className="my-1" />
 
-                  {/* Typography & Font Scaling */}
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-1">Slip Font Family:</label>
                     <Dropdown
@@ -1315,19 +1638,11 @@ export const EnquirySlipDesignerPage = () => {
                       options={FONT_OPTIONS}
                       className="p-inputtext-sm w-full mb-2"
                     />
-
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Font Scaling / Density:</label>
-                    <Dropdown
-                      value={config.fontScale}
-                      onChange={(e) => setConfig({ ...config, fontScale: e.value })}
-                      options={FONT_SCALES}
-                      className="p-inputtext-sm w-full"
-                    />
                   </div>
                 </div>
               )}
 
-              {/* TAB 3: HEADER & LAYOUT */}
+              {/* TAB 4: HEADER & LAYOUT */}
               {activeTab === 'layout' && (
                 <div className="flex flex-column gap-3">
                   <div>
@@ -1357,7 +1672,6 @@ export const EnquirySlipDesignerPage = () => {
 
                   <Divider className="my-1" />
 
-                  {/* Component Toggles */}
                   <div>
                     <label className="text-xs font-bold text-slate-600 block mb-2">Visual Elements & Placeholders:</label>
                     <div className="flex flex-column gap-2">
@@ -1413,7 +1727,7 @@ export const EnquirySlipDesignerPage = () => {
                 </div>
               )}
 
-              {/* TAB 4: TEXTS & CONTENT */}
+              {/* TAB 5: TEXTS & CONTENT */}
               {activeTab === 'content' && (
                 <div className="flex flex-column gap-3">
                   <div>
@@ -1485,7 +1799,9 @@ export const EnquirySlipDesignerPage = () => {
               <div className="flex align-items-center gap-2">
                 <i className="pi pi-eye text-indigo-600"></i>
                 <span className="text-sm font-bold text-slate-800">Interactive Live Slip Preview</span>
-                <span className="text-xs text-slate-400 font-semibold">(A4 Page Ratio)</span>
+                <span className="text-xs text-indigo-600 font-bold px-2 py-0.5 border-round bg-indigo-50">
+                  {config.pageSize} {config.pageOrientation} • Max: {maxWidthPx}px
+                </span>
               </div>
 
               <div className="flex align-items-center gap-2">
@@ -1499,21 +1815,36 @@ export const EnquirySlipDesignerPage = () => {
               </div>
             </div>
 
-            {/* Live Slip Paper Preview */}
-            <div className="p-3" style={{ backgroundColor: '#e2e8f0', minHeight: '620px', overflowY: 'auto' }}>
+            {/* Live Slip Paper Preview Background */}
+            <div
+              className="p-3"
+              style={{
+                backgroundColor: '#cbd5e1',
+                minHeight: '640px',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+              }}
+            >
+              {/* Slip Paper Container with Dynamic Width, Padding & Border */}
               <div
                 id="printable-enquiry-slip"
                 style={{
                   backgroundColor: '#ffffff',
                   border: getBorderCss(),
                   borderRadius: '6px',
-                  padding: '20px 24px',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+                  padding: `${slipPadding}px`,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                   fontFamily: config.fontFamily,
                   color: '#1e293b',
-                  maxWidth: '720px',
+                  width: '100%',
+                  maxWidth: `${maxWidthPx}px`,
+                  minHeight: config.pageSize === 'A5' && config.pageOrientation === 'landscape' ? '420px' : '620px',
                   margin: '0 auto',
                   transition: 'all 0.2s ease-in-out',
+                  fontSize: `${config.baseFontSize || 13}px`,
                 }}
               >
                 {/* Dynamically render ordered and visible sections */}

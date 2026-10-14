@@ -41,6 +41,19 @@ const DEFAULT_SLIP_CONFIG = {
   fontScale: 'Normal',
   headerLayout: 'Classic',
   borderStyle: 'Solid',
+
+  // Sizing controls (Logo, Photo, Font, Page)
+  logoSize: 52,
+  photoWidth: 86,
+  photoHeight: 104,
+  baseFontSize: 13,
+  fontScalePercent: 100,
+  pageSize: 'A4',
+  pageOrientation: 'portrait',
+  pageMargin: '8mm',
+  pagePadding: 20,
+  pageMaxWidth: 760,
+
   slipTitle: 'Visitor & Admission Enquiry Slip',
   slipSubtitle: 'Official Visitor Acknowledgement & Follow-up Lead Slip',
   watermarkText: 'OFFICIAL ADMISSION ENQUIRY',
@@ -131,7 +144,20 @@ export const EnquirySlipModal = ({
       try {
         const cfgRes = await apiClient.get('/enquiries/slip-config');
         if (isMounted && cfgRes.data?.success && cfgRes.data?.data) {
-          setSlipConfig(cfgRes.data.data);
+          setSlipConfig((prev) => ({
+            ...prev,
+            ...cfgRes.data.data,
+            logoSize: cfgRes.data.data.logoSize || 52,
+            photoWidth: cfgRes.data.data.photoWidth || 86,
+            photoHeight: cfgRes.data.data.photoHeight || 104,
+            baseFontSize: cfgRes.data.data.baseFontSize || 13,
+            fontScalePercent: cfgRes.data.data.fontScalePercent || 100,
+            pageSize: cfgRes.data.data.pageSize || 'A4',
+            pageOrientation: cfgRes.data.data.pageOrientation || 'portrait',
+            pageMargin: cfgRes.data.data.pageMargin || '8mm',
+            pagePadding: cfgRes.data.data.pagePadding || 20,
+            pageMaxWidth: cfgRes.data.data.pageMaxWidth || 760,
+          }));
         }
       } catch (err) {
         console.warn('Could not load custom slip config, using defaults:', err);
@@ -204,19 +230,13 @@ export const EnquirySlipModal = ({
     }
   };
 
-  // Font scale helper
-  const getFontScaleFactor = () => {
-    switch (slipConfig.fontScale) {
-      case 'Compact':
-        return 0.9;
-      case 'Large':
-        return 1.1;
-      default:
-        return 1.0;
-    }
-  };
-
-  const fontScale = getFontScaleFactor();
+  // Sizing calculations
+  const fontMultiplier = (slipConfig.fontScalePercent || 100) / 100;
+  const logoPx = slipConfig.logoSize || 52;
+  const photoW = slipConfig.photoWidth || 86;
+  const photoH = slipConfig.photoHeight || 104;
+  const slipPadding = slipConfig.pagePadding || 20;
+  const maxWidthPx = slipConfig.pageMaxWidth || 760;
 
   // Dynamic Section Renderers
   const renderSection = (sectionKey) => {
@@ -229,9 +249,9 @@ export const EnquirySlipModal = ({
               sx={{
                 bgcolor: slipConfig.primaryColor,
                 color: '#ffffff',
-                p: { xs: 1.5, sm: 2 },
+                p: `${12 * fontMultiplier}px ${16 * fontMultiplier}px`,
                 borderRadius: 1.5,
-                mb: 1.5,
+                mb: `${10 * fontMultiplier}px`,
                 textAlign: 'center',
               }}
             >
@@ -243,28 +263,30 @@ export const EnquirySlipModal = ({
                       src={branchInfo.logoUrl}
                       alt="Logo"
                       sx={{
-                        width: 50,
-                        height: 50,
+                        width: `${logoPx}px`,
+                        height: `${logoPx}px`,
                         objectFit: 'contain',
                         bgcolor: '#ffffff',
                         borderRadius: '50%',
                         p: 0.5,
+                        flexShrink: 0,
                       }}
                     />
                   ) : (
                     <Box
                       sx={{
-                        width: 44,
-                        height: 44,
+                        width: `${logoPx}px`,
+                        height: `${logoPx}px`,
                         bgcolor: '#ffffff',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: slipConfig.primaryColor,
+                        flexShrink: 0,
                       }}
                     >
-                      <SchoolIcon sx={{ fontSize: 28 }} />
+                      <SchoolIcon sx={{ fontSize: Math.round(logoPx * 0.55) }} />
                     </Box>
                   )
                 )}
@@ -272,16 +294,16 @@ export const EnquirySlipModal = ({
                   <Typography
                     variant="h4"
                     fontWeight={900}
-                    sx={{ letterSpacing: 1, fontSize: `${1.45 * fontScale}rem`, lineHeight: 1.15 }}
+                    sx={{ letterSpacing: 1, fontSize: `${1.45 * fontMultiplier}rem`, lineHeight: 1.15 }}
                   >
                     {branchInfo?.printHeader || schoolName}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontSize: `${0.78 * fontScale}rem`, opacity: 0.95 }}>
+                  <Typography variant="body2" sx={{ fontSize: `${0.78 * fontMultiplier}rem`, opacity: 0.95 }}>
                     {branchName} {slipConfig.showAffiliationNo && `• Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})`}
                   </Typography>
                 </Box>
               </Stack>
-              <Typography variant="caption" sx={{ fontSize: `${0.7 * fontScale}rem`, opacity: 0.9, display: 'block', mt: 0.5 }}>
+              <Typography variant="caption" sx={{ fontSize: `${0.7 * fontMultiplier}rem`, opacity: 0.9, display: 'block', mt: 0.5 }}>
                 Address: {branchAddress} | Helpline: {branchPhone} | Email: {branchEmail}
               </Typography>
               <Box
@@ -293,7 +315,7 @@ export const EnquirySlipModal = ({
                   bgcolor: 'rgba(255,255,255,0.25)',
                   borderRadius: 1,
                   fontWeight: 700,
-                  fontSize: `${0.75 * fontScale}rem`,
+                  fontSize: `${0.75 * fontMultiplier}rem`,
                   textTransform: 'uppercase',
                   letterSpacing: 0.8,
                 }}
@@ -312,9 +334,9 @@ export const EnquirySlipModal = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                pb: 1.2,
+                pb: `${10 * fontMultiplier}px`,
                 borderBottom: `2px solid ${slipConfig.borderColor || slipConfig.primaryColor}`,
-                mb: 1.5,
+                mb: `${12 * fontMultiplier}px`,
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
@@ -324,24 +346,24 @@ export const EnquirySlipModal = ({
                       component="img"
                       src={branchInfo.logoUrl}
                       alt="Logo"
-                      sx={{ width: 54, height: 54, objectFit: 'contain', borderRadius: 1 }}
+                      sx={{ width: `${logoPx}px`, height: `${logoPx}px`, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
                     />
                   ) : (
-                    <SchoolIcon sx={{ fontSize: 44, color: slipConfig.primaryColor }} />
+                    <SchoolIcon sx={{ fontSize: logoPx, color: slipConfig.primaryColor, flexShrink: 0 }} />
                   )
                 )}
                 <Box>
                   <Typography
                     variant="h5"
                     fontWeight={900}
-                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.35 * fontScale}rem`, lineHeight: 1.2 }}
+                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.35 * fontMultiplier}rem`, lineHeight: 1.2 }}
                   >
                     {branchInfo?.printHeader || schoolName}
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.78 * fontScale}rem` }}>
+                  <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.78 * fontMultiplier}rem` }}>
                     {branchName} {slipConfig.showAffiliationNo && `• Affiliation No: ${affiliationNo}`}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem`, display: 'block' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block' }}>
                     {branchAddress} | {branchPhone}
                   </Typography>
                 </Box>
@@ -357,7 +379,7 @@ export const EnquirySlipModal = ({
                     color: '#ffffff',
                     borderRadius: 1,
                     fontWeight: 700,
-                    fontSize: `${0.72 * fontScale}rem`,
+                    fontSize: `${0.72 * fontMultiplier}rem`,
                     textTransform: 'uppercase',
                     letterSpacing: 0.6,
                     mb: 0.5,
@@ -367,8 +389,8 @@ export const EnquirySlipModal = ({
                 </Box>
                 {slipConfig.showQrCode && (
                   <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end">
-                    <QrCodeIcon sx={{ fontSize: 20, color: slipConfig.primaryColor }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.65 * fontScale}rem` }}>
+                    <QrCodeIcon sx={{ fontSize: Math.round(18 * fontMultiplier), color: slipConfig.primaryColor }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.65 * fontMultiplier}rem` }}>
                       Ref QR Verify
                     </Typography>
                   </Stack>
@@ -383,9 +405,9 @@ export const EnquirySlipModal = ({
             <Box
               key="header"
               sx={{
-                pb: 1,
+                pb: `${8 * fontMultiplier}px`,
                 borderBottom: '1px solid #cbd5e1',
-                mb: 1.5,
+                mb: `${10 * fontMultiplier}px`,
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -393,11 +415,11 @@ export const EnquirySlipModal = ({
                   <Typography
                     variant="h5"
                     fontWeight={800}
-                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.3 * fontScale}rem` }}
+                    sx={{ color: slipConfig.primaryColor, fontSize: `${1.3 * fontMultiplier}rem` }}
                   >
                     {branchInfo?.printHeader || schoolName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: `${0.76 * fontScale}rem` }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: `${0.76 * fontMultiplier}rem` }}>
                     {branchName} | {branchAddress} | {branchPhone}
                   </Typography>
                 </Box>
@@ -409,7 +431,7 @@ export const EnquirySlipModal = ({
                     py: 0.3,
                     borderRadius: 1,
                     fontWeight: 700,
-                    fontSize: `${0.72 * fontScale}rem`,
+                    fontSize: `${0.72 * fontMultiplier}rem`,
                     textTransform: 'uppercase',
                   }}
                 >
@@ -426,9 +448,9 @@ export const EnquirySlipModal = ({
             key="header"
             sx={{
               textAlign: 'center',
-              pb: 1,
+              pb: `${10 * fontMultiplier}px`,
               borderBottom: `2.5px double ${slipConfig.borderColor || slipConfig.primaryColor}`,
-              mb: 1.5,
+              mb: `${12 * fontMultiplier}px`,
             }}
           >
             <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
@@ -438,10 +460,10 @@ export const EnquirySlipModal = ({
                     component="img"
                     src={branchInfo.logoUrl}
                     alt="Logo"
-                    sx={{ width: 52, height: 52, objectFit: 'contain', borderRadius: 1 }}
+                    sx={{ width: `${logoPx}px`, height: `${logoPx}px`, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
                   />
                 ) : (
-                  <SchoolIcon sx={{ fontSize: 38, color: slipConfig.primaryColor }} />
+                  <SchoolIcon sx={{ fontSize: logoPx, color: slipConfig.primaryColor, flexShrink: 0 }} />
                 )
               )}
               <Box>
@@ -451,18 +473,18 @@ export const EnquirySlipModal = ({
                   sx={{
                     color: slipConfig.primaryColor,
                     letterSpacing: 1.2,
-                    fontSize: `${1.5 * fontScale}rem`,
+                    fontSize: `${1.5 * fontMultiplier}rem`,
                     lineHeight: 1.15,
                   }}
                 >
                   {branchInfo?.printHeader || schoolName}
                 </Typography>
-                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.8 * fontScale}rem` }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ fontSize: `${0.8 * fontMultiplier}rem` }}>
                   {branchName} {slipConfig.showAffiliationNo && `• Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNo})`}
                 </Typography>
               </Box>
             </Stack>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.72 * fontScale}rem`, display: 'block', mt: 0.3 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.7 * fontMultiplier}rem`, display: 'block', mt: 0.3 }}>
               Address: {branchAddress} | Helpline: {branchPhone} | Email: {branchEmail}
             </Typography>
             <Box
@@ -476,7 +498,7 @@ export const EnquirySlipModal = ({
                 borderRadius: 1,
                 fontWeight: 700,
                 letterSpacing: 1,
-                fontSize: `${0.78 * fontScale}rem`,
+                fontSize: `${0.78 * fontMultiplier}rem`,
                 textTransform: 'uppercase',
               }}
             >
@@ -490,8 +512,8 @@ export const EnquirySlipModal = ({
           <Box
             key="meta_bar"
             sx={{
-              mb: 1.2,
-              p: 1.2,
+              mb: `${12 * fontMultiplier}px`,
+              p: `${8 * fontMultiplier}px ${12 * fontMultiplier}px`,
               bgcolor: slipConfig.secondaryColor,
               borderRadius: 1.5,
               border: `1.5px solid ${slipConfig.borderColor || slipConfig.primaryColor}`,
@@ -499,34 +521,34 @@ export const EnquirySlipModal = ({
           >
             <Grid container spacing={1} alignItems="center">
               <Grid item xs={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem`, display: 'block', fontWeight: 600 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block', fontWeight: 600 }}>
                   ENQUIRY REF. NO
                 </Typography>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.96 * fontScale}rem` }}>
+                <Typography variant="subtitle1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.96 * fontMultiplier}rem` }}>
                   {enqNum}
                 </Typography>
               </Grid>
               <Grid item xs={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem`, display: 'block', fontWeight: 600 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block', fontWeight: 600 }}>
                   DATE & TIME
                 </Typography>
-                <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.85 * fontScale}rem` }}>
+                <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.85 * fontMultiplier}rem` }}>
                   {enquiryDate}
                 </Typography>
               </Grid>
               <Grid item xs={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem`, display: 'block', fontWeight: 600 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block', fontWeight: 600 }}>
                   ENQUIRY SOURCE
                 </Typography>
-                <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.85 * fontScale}rem` }}>
+                <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.85 * fontMultiplier}rem` }}>
                   {enquiry?.source || 'Walk-in Visit'}
                 </Typography>
               </Grid>
               <Grid item xs={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem`, display: 'block', fontWeight: 600 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem`, display: 'block', fontWeight: 600 }}>
                   CURRENT STATUS
                 </Typography>
-                <Typography variant="body2" fontWeight={800} sx={{ color: statusInfo.color, fontSize: `${0.85 * fontScale}rem` }}>
+                <Typography variant="body2" fontWeight={800} sx={{ color: statusInfo.color, fontSize: `${0.85 * fontMultiplier}rem` }}>
                   {statusInfo.text}
                 </Typography>
               </Grid>
@@ -536,7 +558,7 @@ export const EnquirySlipModal = ({
 
       case 'student_guardian':
         return (
-          <Box key="student_guardian" sx={{ mb: 1.2 }}>
+          <Box key="student_guardian" sx={{ mb: `${12 * fontMultiplier}px` }}>
             <Box
               sx={{
                 bgcolor: slipConfig.secondaryColor,
@@ -545,7 +567,7 @@ export const EnquirySlipModal = ({
                 py: 0.35,
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: slipConfig.accentColor || slipConfig.primaryColor,
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
@@ -557,62 +579,64 @@ export const EnquirySlipModal = ({
             >
               <span>1. Prospective Student & Guardian Information</span>
               {slipConfig.showStudentPhotoBox && (
-                <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Passport Photo Area</span>
+                <span style={{ fontSize: '0.62rem', color: '#64748b' }}>
+                  Photo Box: {photoW}×{photoH}px
+                </span>
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
               <Grid container spacing={1.5} sx={{ flex: 1 }}>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Candidate / Student Name:
                   </Typography>
-                  <Typography variant="body1" fontWeight={800} sx={{ color: '#0f172a', textTransform: 'uppercase', fontSize: `${0.92 * fontScale}rem` }}>
+                  <Typography variant="body1" fontWeight={800} sx={{ color: '#0f172a', textTransform: 'uppercase', fontSize: `${0.92 * fontMultiplier}rem` }}>
                     {enquiry?.studentName || '—'}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Seeking Admission to Class:
                   </Typography>
-                  <Typography variant="body1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.92 * fontScale}rem` }}>
+                  <Typography variant="body1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.92 * fontMultiplier}rem` }}>
                     {enquiry?.className || `Class ID: ${enquiry?.classId || '—'}`}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Father / Guardian Name:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.82 * fontScale}rem` }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.82 * fontMultiplier}rem` }}>
                     {enquiry?.guardianName || '—'}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Primary Contact Mobile:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.82 * fontScale}rem` }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ fontSize: `${0.82 * fontMultiplier}rem` }}>
                     {enquiry?.mobile || '—'}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Email Address:
                   </Typography>
-                  <Typography variant="body2" sx={{ fontSize: `${0.8 * fontScale}rem` }}>
+                  <Typography variant="body2" sx={{ fontSize: `${0.8 * fontMultiplier}rem` }}>
                     {enquiry?.email || '—'}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Academic Session:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} sx={{ color: slipConfig.primaryColor, fontSize: `${0.82 * fontScale}rem` }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: slipConfig.primaryColor, fontSize: `${0.82 * fontMultiplier}rem` }}>
                     {enquiry?.academicYearName || activeAcademicYearName || user?.academicYearName || '2026-27'}
                   </Typography>
                 </Grid>
@@ -621,8 +645,8 @@ export const EnquirySlipModal = ({
               {slipConfig.showStudentPhotoBox && (
                 <Box
                   sx={{
-                    width: 86,
-                    height: 102,
+                    width: `${photoW}px`,
+                    height: `${photoH}px`,
                     border: '1.5px dashed #94a3b8',
                     borderRadius: 1,
                     display: 'flex',
@@ -632,11 +656,12 @@ export const EnquirySlipModal = ({
                     p: 0.5,
                     textAlign: 'center',
                     bgcolor: '#fafafa',
+                    flexShrink: 0,
                   }}
                 >
-                  <PersonIcon sx={{ fontSize: 26, color: '#94a3b8', mb: 0.5 }} />
-                  <Typography variant="caption" sx={{ fontSize: '0.62rem', color: '#64748b', lineHeight: 1.1 }}>
-                    Affix Student Photo
+                  <PersonIcon sx={{ fontSize: Math.round(photoW * 0.28), color: '#94a3b8', mb: 0.5 }} />
+                  <Typography variant="caption" sx={{ fontSize: `${0.6 * fontMultiplier}rem`, color: '#64748b', lineHeight: 1.1 }}>
+                    Affix Photo
                   </Typography>
                 </Box>
               )}
@@ -646,7 +671,7 @@ export const EnquirySlipModal = ({
 
       case 'discussion_notes':
         return (
-          <Box key="discussion_notes" sx={{ mb: 1.2 }}>
+          <Box key="discussion_notes" sx={{ mb: `${12 * fontMultiplier}px` }}>
             <Box
               sx={{
                 bgcolor: slipConfig.secondaryColor,
@@ -655,7 +680,7 @@ export const EnquirySlipModal = ({
                 py: 0.35,
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: slipConfig.accentColor || slipConfig.primaryColor,
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
@@ -667,17 +692,17 @@ export const EnquirySlipModal = ({
 
             <Grid container spacing={1.5}>
               <Grid item xs={slipConfig.showNextFollowupDate ? 8 : 12}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                   Counselor Notes / Inquiries Raised:
                 </Typography>
                 <Box
                   sx={{
-                    p: 1.2,
+                    p: `${8 * fontMultiplier}px`,
                     minHeight: 46,
                     bgcolor: '#fafafa',
                     border: '1px solid #e2e8f0',
                     borderRadius: 1,
-                    fontSize: `${0.8 * fontScale}rem`,
+                    fontSize: `${0.8 * fontMultiplier}rem`,
                     lineHeight: 1.35,
                   }}
                 >
@@ -687,19 +712,19 @@ export const EnquirySlipModal = ({
 
               {slipConfig.showNextFollowupDate && (
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontScale}rem` }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.68 * fontMultiplier}rem` }}>
                     Next Follow-up / Visit Date:
                   </Typography>
                   <Box
                     sx={{
-                      p: 1.2,
+                      p: `${8 * fontMultiplier}px`,
                       bgcolor: slipConfig.secondaryColor,
                       border: `1px solid ${slipConfig.borderColor || slipConfig.primaryColor}`,
                       borderRadius: 1,
                       textAlign: 'center',
                     }}
                   >
-                    <Typography variant="subtitle1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.92 * fontScale}rem` }}>
+                    <Typography variant="subtitle1" fontWeight={800} sx={{ color: slipConfig.primaryColor, fontSize: `${0.92 * fontMultiplier}rem` }}>
                       {nextFollowup}
                     </Typography>
                   </Box>
@@ -711,7 +736,7 @@ export const EnquirySlipModal = ({
 
       case 'documents_checklist':
         return (
-          <Box key="documents_checklist" sx={{ mb: 1.2 }}>
+          <Box key="documents_checklist" sx={{ mb: `${12 * fontMultiplier}px` }}>
             <Box
               sx={{
                 bgcolor: slipConfig.secondaryColor,
@@ -720,7 +745,7 @@ export const EnquirySlipModal = ({
                 py: 0.35,
                 borderRadius: '0 4px 4px 0',
                 fontWeight: 700,
-                fontSize: `${0.74 * fontScale}rem`,
+                fontSize: `${0.74 * fontMultiplier}rem`,
                 color: slipConfig.accentColor || slipConfig.primaryColor,
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
@@ -733,7 +758,7 @@ export const EnquirySlipModal = ({
             <Grid container spacing={0.8}>
               {slipConfig.documentsRequired?.map((doc, idx) => (
                 <Grid item xs={6} key={idx}>
-                  <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', fontSize: `${0.78 * fontScale}rem` }}>
+                  <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', fontSize: `${0.78 * fontMultiplier}rem` }}>
                     <span style={{ marginRight: 6, color: slipConfig.primaryColor, fontWeight: 900 }}>&#x2714;</span> {doc}
                   </Typography>
                 </Grid>
@@ -747,8 +772,8 @@ export const EnquirySlipModal = ({
           <Box
             key="instructions"
             sx={{
-              mb: 1.5,
-              p: 1,
+              mb: `${12 * fontMultiplier}px`,
+              p: `${8 * fontMultiplier}px ${12 * fontMultiplier}px`,
               border: `1px dashed ${slipConfig.borderColor || slipConfig.primaryColor}`,
               borderRadius: 1,
               bgcolor: slipConfig.secondaryColor,
@@ -757,7 +782,7 @@ export const EnquirySlipModal = ({
             <Typography
               variant="caption"
               fontWeight={700}
-              sx={{ color: slipConfig.primaryColor, fontSize: `${0.72 * fontScale}rem`, mb: 0.2, display: 'block' }}
+              sx={{ color: slipConfig.primaryColor, fontSize: `${0.72 * fontMultiplier}rem`, mb: 0.2, display: 'block' }}
             >
               {slipConfig.instructionsTitle}
             </Typography>
@@ -765,7 +790,7 @@ export const EnquirySlipModal = ({
               variant="caption"
               color="text.secondary"
               display="block"
-              sx={{ fontSize: `${0.68 * fontScale}rem`, lineHeight: 1.35, whiteSpace: 'pre-line' }}
+              sx={{ fontSize: `${0.68 * fontMultiplier}rem`, lineHeight: 1.35, whiteSpace: 'pre-line' }}
             >
               {slipConfig.termsText}
             </Typography>
@@ -778,32 +803,32 @@ export const EnquirySlipModal = ({
             container
             spacing={2}
             key="signatures"
-            sx={{ mt: 1, pt: 1, alignItems: 'flex-end' }}
+            sx={{ mt: `${10 * fontMultiplier}px`, pt: 1, alignItems: 'flex-end' }}
           >
             <Grid item xs={slipConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
-              <Box sx={{ height: 35 }} />
+              <Box sx={{ height: `${32 * fontMultiplier}px` }} />
               <Divider sx={{ mb: 0.6, borderColor: '#475569' }} />
-              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontScale}rem` }}>
+              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontMultiplier}rem` }}>
                 Parent / Visitor Signature
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontScale}rem` }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontMultiplier}rem` }}>
                 Date: {dayjs().format('DD-MM-YYYY')}
               </Typography>
             </Grid>
 
             <Grid item xs={slipConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
-              <Box sx={{ height: 35 }} />
+              <Box sx={{ height: `${32 * fontMultiplier}px` }} />
               <Divider sx={{ mb: 0.6, borderColor: '#475569' }} />
-              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontScale}rem` }}>
+              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontMultiplier}rem` }}>
                 Admission Counselor
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontScale}rem` }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontMultiplier}rem` }}>
                 Front-Desk Verification
               </Typography>
             </Grid>
 
             <Grid item xs={slipConfig.showSchoolSealBox ? 3 : 4} sx={{ textAlign: 'center' }}>
-              <Box sx={{ height: 38, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <Box sx={{ height: `${35 * fontMultiplier}px`, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                 {branchInfo?.principalSignatureUrl || branchInfo?.authorizedSignatureUrl ? (
                   <Box
                     component="img"
@@ -812,14 +837,14 @@ export const EnquirySlipModal = ({
                     sx={{ maxHeight: 36, maxWidth: 120, objectFit: 'contain' }}
                   />
                 ) : (
-                  <Box sx={{ height: 35 }} />
+                  <Box sx={{ height: 32 }} />
                 )}
               </Box>
               <Divider sx={{ mb: 0.6, borderColor: '#475569' }} />
-              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontScale}rem` }}>
+              <Typography variant="caption" fontWeight={700} display="block" sx={{ fontSize: `${0.74 * fontMultiplier}rem` }}>
                 Principal / Authorized Signatory
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontScale}rem` }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontMultiplier}rem` }}>
                 Official School Verification
               </Typography>
             </Grid>
@@ -830,15 +855,15 @@ export const EnquirySlipModal = ({
                   sx={{
                     border: '1.5px dashed #94a3b8',
                     borderRadius: 1,
-                    height: 54,
+                    height: `${54 * fontMultiplier}px`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     p: 0.5,
                   }}
                 >
-                  <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600 }}>
-                    OFFICIAL SCHOOL SEAL / STAMP
+                  <Typography variant="caption" sx={{ fontSize: `${0.6 * fontMultiplier}rem`, color: '#64748b', fontWeight: 600 }}>
+                    OFFICIAL SCHOOL SEAL
                   </Typography>
                 </Box>
               </Grid>
@@ -850,9 +875,9 @@ export const EnquirySlipModal = ({
         return (
           <Box
             key="footer"
-            sx={{ mt: 1.5, textAlign: 'center', borderTop: '1px solid #e2e8f0', pt: 0.6 }}
+            sx={{ mt: `${12 * fontMultiplier}px`, textAlign: 'center', borderTop: '1px solid #e2e8f0', pt: 0.6 }}
           >
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontScale}rem` }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: `${0.66 * fontMultiplier}rem` }}>
               {slipConfig.footerText}
             </Typography>
           </Box>
@@ -865,12 +890,12 @@ export const EnquirySlipModal = ({
 
   return (
     <>
-      {/* FULL A4 PAGE PRINT CSS */}
+      {/* DYNAMIC PAGE PRINT CSS RESPECTING USER CONFIGURED PAGE SIZE, ORIENTATION & MARGINS */}
       <style>
         {`
           @page {
-            size: A4 portrait;
-            margin: 8mm 8mm;
+            size: ${slipConfig.pageSize || 'A4'} ${slipConfig.pageOrientation || 'portrait'};
+            margin: ${slipConfig.pageMargin || '8mm'};
           }
           @media print {
             html, body {
@@ -939,10 +964,10 @@ export const EnquirySlipModal = ({
               flex-direction: column !important;
               position: static !important;
               width: 100% !important;
-              max-width: 100% !important;
+              max-width: ${maxWidthPx}px !important;
               min-height: auto !important;
               margin: 0 auto !important;
-              padding: 16px 20px !important;
+              padding: ${slipPadding}px !important;
               border: ${getBorderCss()} !important;
               border-radius: 6px !important;
               box-sizing: border-box !important;
@@ -954,6 +979,7 @@ export const EnquirySlipModal = ({
               break-after: avoid !important;
               overflow: visible !important;
               font-family: ${slipConfig.fontFamily} !important;
+              font-size: ${slipConfig.baseFontSize || 13}px !important;
             }
             #printable-enquiry-slip * {
               visibility: visible !important;
@@ -1007,7 +1033,7 @@ export const EnquirySlipModal = ({
                 {isNew ? 'Enquiry Registered Successfully!' : slipConfig.slipTitle}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Official Visitor Acknowledgement & Follow-up Lead Slip (Dynamic School Format)
+                Official Visitor Acknowledgement & Follow-up Lead Slip ({slipConfig.pageSize} {slipConfig.pageOrientation})
               </Typography>
             </Box>
           </Stack>
@@ -1040,7 +1066,9 @@ export const EnquirySlipModal = ({
             <Box
               id="printable-enquiry-slip"
               sx={{
-                p: { xs: 2, sm: 3 },
+                p: `${slipPadding}px`,
+                maxWidth: `${maxWidthPx}px`,
+                margin: '0 auto',
                 bgcolor: '#ffffff',
                 border: getBorderCss(),
                 borderRadius: 2,
@@ -1050,7 +1078,8 @@ export const EnquirySlipModal = ({
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                minHeight: '800px',
+                minHeight: slipConfig.pageSize === 'A5' ? '450px' : '750px',
+                fontSize: `${slipConfig.baseFontSize || 13}px`,
               }}
             >
               {/* Dynamically render sections in configured order & visibility */}
