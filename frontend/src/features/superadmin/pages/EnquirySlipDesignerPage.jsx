@@ -1171,6 +1171,82 @@ export const EnquirySlipDesignerPage = () => {
               color: #000000 !important;
             }
           }
+
+          /* Screen styling for independent scrollable panels */
+          .designer-controls-card .p-card-body,
+          .designer-controls-card .p-card-content,
+          .designer-preview-card .p-card-body,
+          .designer-preview-card .p-card-content {
+            padding: 0 !important;
+          }
+          @media (min-width: 992px) {
+            .designer-controls-card.sticky-desktop {
+              position: sticky !important;
+              top: 76px !important;
+              z-index: 2;
+            }
+            .designer-controls-scroll {
+              max-height: calc(100vh - 190px) !important;
+              overflow-y: auto !important;
+            }
+            .designer-preview-card.sticky-desktop {
+              position: sticky !important;
+              top: 76px !important;
+              z-index: 2;
+            }
+            .designer-preview-canvas {
+              max-height: calc(100vh - 190px) !important;
+              overflow-y: auto !important;
+            }
+          }
+          @media (max-width: 991px) {
+            .designer-controls-scroll {
+              max-height: 70vh !important;
+              overflow-y: auto !important;
+            }
+            .designer-preview-canvas {
+              max-height: 75vh !important;
+              overflow-y: auto !important;
+            }
+          }
+          /* Custom styled scrollbars so users can clearly see and grab them */
+          .designer-controls-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #818cf8 #f1f5f9;
+          }
+          .designer-controls-scroll::-webkit-scrollbar {
+            width: 8px;
+          }
+          .designer-controls-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+          }
+          .designer-controls-scroll::-webkit-scrollbar-thumb {
+            background: #818cf8;
+            border-radius: 4px;
+          }
+          .designer-controls-scroll::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+          }
+
+          .designer-preview-canvas {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #64748b;
+          }
+          .designer-preview-canvas::-webkit-scrollbar {
+            width: 8px;
+          }
+          .designer-preview-canvas::-webkit-scrollbar-track {
+            background: #64748b;
+            border-radius: 4px;
+          }
+          .designer-preview-canvas::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+          }
+          .designer-preview-canvas::-webkit-scrollbar-thumb:hover {
+            background: #ffffff;
+          }
         `}
       </style>
 
@@ -1253,10 +1329,10 @@ export const EnquirySlipDesignerPage = () => {
       <div className="grid">
         {/* Left Column: Customization Controls */}
         <div className="col-12 lg:col-5 designer-controls-column no-print">
-          <Card className="shadow-2 border-round-xl p-0 overflow-hidden mb-3">
-            {/* Navigation Tabs */}
+          <Card className="shadow-2 border-round-xl p-0 overflow-hidden mb-3 designer-controls-card sticky-desktop">
+            {/* Navigation Tabs (Fixed at the top of the card) */}
             <div
-              className="flex border-bottom-1 surface-border overflow-x-auto"
+              className="flex border-bottom-1 surface-border overflow-x-auto flex-shrink-0"
               style={{ backgroundColor: '#f1f5f9', padding: '6px 8px' }}
             >
               {[
@@ -1282,7 +1358,8 @@ export const EnquirySlipDesignerPage = () => {
               ))}
             </div>
 
-            <div className="p-3">
+            {/* Scrollable Control Form Body with visible scrollbar */}
+            <div className="p-3 designer-controls-scroll">
               {/* TAB 1: FULL HEADER & SCHOOL NAME CONTROLS (Requested by user) */}
               {activeTab === 'header' && (
                 <div className="flex flex-column gap-3">
@@ -2144,9 +2221,9 @@ export const EnquirySlipDesignerPage = () => {
 
         {/* Right Column: Interactive Live Preview */}
         <div className="col-12 lg:col-7 designer-preview-column">
-          <Card className="shadow-2 border-round-xl p-0 overflow-hidden sticky" style={{ top: '16px' }}>
+          <Card className="shadow-2 border-round-xl p-0 overflow-hidden designer-preview-card sticky-desktop">
             <div
-              className="no-print flex flex-wrap align-items-center justify-content-between p-3 border-bottom-1 surface-border gap-2"
+              className="no-print flex flex-wrap align-items-center justify-content-between p-3 border-bottom-1 surface-border gap-2 flex-shrink-0"
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex align-items-center gap-2">
@@ -2189,9 +2266,7 @@ export const EnquirySlipDesignerPage = () => {
               className="p-3 designer-preview-canvas"
               style={{
                 backgroundColor: '#94a3b8',
-                minHeight: '640px',
-                maxHeight: '85vh',
-                overflowY: 'auto',
+                minHeight: '480px',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'flex-start',
