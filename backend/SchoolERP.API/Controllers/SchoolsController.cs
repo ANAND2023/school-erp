@@ -12,6 +12,7 @@ using SchoolERP.Application.DTOs;
 using SchoolERP.Domain.Entities;
 using SchoolERP.Domain.Enums;
 using SchoolERP.Infrastructure.Persistence;
+using SchoolERP.API.Helpers;
 
 namespace SchoolERP.API.Controllers
 {
@@ -240,6 +241,9 @@ namespace SchoolERP.API.Controllers
 
                         _context.AcademicYears.Add(academicYear);
                         await _context.SaveChangesAsync();
+
+                        // Auto-seed default classes (NUR to X), sections (A, B) and subjects
+                        await SchoolDefaultsHelper.SeedBranchDefaultsAsync(_context, branch.Id, academicYear.Id);
 
                         branches.Add(new BranchDto
                         {
