@@ -31,6 +31,7 @@ export const inventoryApi = {
   getIssues: () => apiClient.get('/inventory/issues'),
   createIssue: (data) => apiClient.post('/inventory/issues', data),
   returnIssueItem: (data) => apiClient.post('/inventory/issues/return', data),
+  batchReturnIssue: (data) => apiClient.post('/inventory/issues/batch-return', data),
 
   // Stock Ledger
   getStockLogs: (params) => apiClient.get('/inventory/stock-logs', { params }),

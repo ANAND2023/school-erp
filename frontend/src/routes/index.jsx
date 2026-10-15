@@ -83,6 +83,7 @@ import ItemSuppliersPage from '../features/inventory/pages/ItemSuppliersPage';
 import ManufactureMasterPage from '../features/inventory/pages/ManufactureMasterPage';
 import StockInwardPage from '../features/inventory/pages/StockInwardPage';
 import StockIssuePage from '../features/inventory/pages/StockIssuePage';
+import StockReturnPage from '../features/inventory/pages/StockReturnPage';
 import StockLedgerPage from '../features/inventory/pages/StockLedgerPage';
 import InventoryStoreSetupPage from '../features/inventory/pages/InventoryStoreSetupPage';
 
@@ -651,6 +652,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="StockIssue">
               <StockIssuePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="inventory/returns"
+          element={
+            <ProtectedRoute requiredMenu="StockIssue">
+              <StockReturnPage />
             </ProtectedRoute>
           }
         />

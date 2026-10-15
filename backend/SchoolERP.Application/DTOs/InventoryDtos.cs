@@ -200,6 +200,9 @@ namespace SchoolERP.Application.DTOs
         public string? Remarks { get; set; }
         public string? PaymentMode { get; set; }
         public int TotalItems { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal TotalReturnedAmount { get; set; }
+        public bool CanReturn { get; set; }
         public List<InventoryIssueItemDto> Items { get; set; } = new();
     }
 
@@ -216,6 +219,10 @@ namespace SchoolERP.Application.DTOs
         public bool IsReturned { get; set; }
         public DateTime? ReturnDate { get; set; }
         public string? Remarks { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal SellingPrice { get; set; }
+        public decimal TotalAmount { get; set; }
+        public int RemainingQuantity => Math.Max(0, Quantity - ReturnedQuantity);
     }
 
     public class CreateInventoryIssueDto
@@ -244,6 +251,46 @@ namespace SchoolERP.Application.DTOs
         public long IssueItemId { get; set; }
         public int ReturnQuantity { get; set; } = 1;
         public string? Remarks { get; set; }
+    }
+
+
+    public class BatchReturnIssueDto
+    {
+        public long IssueId { get; set; }
+        public string? RefundMode { get; set; } = "Cash";
+        public string? Remarks { get; set; }
+        public List<BatchReturnItemLineDto> Items { get; set; } = new();
+    }
+
+    public class BatchReturnItemLineDto
+    {
+        public long IssueItemId { get; set; }
+        public int ReturnQuantity { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class ReturnSlipDto
+    {
+        public string ReturnNumber { get; set; } = string.Empty;
+        public DateTime ReturnDate { get; set; } = DateTime.UtcNow;
+        public string IssueNumber { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerType { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public string RefundMode { get; set; } = "Cash";
+        public decimal TotalRefundAmount { get; set; }
+        public string? Remarks { get; set; }
+        public List<ReturnSlipItemDto> ReturnedItems { get; set; } = new();
+    }
+
+    public class ReturnSlipItemDto
+    {
+        public string ItemName { get; set; } = string.Empty;
+        public string ItemCode { get; set; } = string.Empty;
+        public int ReturnedQuantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalRefund { get; set; }
+        public string? Reason { get; set; }
     }
 
     // Stock Movement Log DTO

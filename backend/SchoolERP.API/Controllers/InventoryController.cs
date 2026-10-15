@@ -851,13 +851,42 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<List<InventoryIssueDto>>>> GetIssues()
         {
             var branchId = CurrentBranchId;
-            var issues = await _context.InventoryIssues
+            var rawIssues = await _context.InventoryIssues
                 .Where(i => i.BranchId == branchId && i.IsActive)
                 .Include(i => i.IssueItems)
                 .ThenInclude(ii => ii.Item)
                 .OrderByDescending(i => i.IssueDate)
                 .ThenByDescending(i => i.Id)
-                .Select(i => new InventoryIssueDto
+                .ToListAsync();
+
+            var issues = rawIssues.Select(i => {
+                var items = i.IssueItems.Where(ii => ii.IsActive).Select(ii => {
+                    var unitPrice = ii.Item?.UnitPrice ?? 0;
+                    var sellingPrice = ii.Item?.SellingPrice ?? unitPrice;
+                    return new InventoryIssueItemDto
+                    {
+                        Id = ii.Id,
+                        IssueId = ii.IssueId,
+                        ItemId = ii.ItemId,
+                        ItemName = ii.Item != null ? ii.Item.ItemName : "",
+                        ItemCode = ii.Item != null ? ii.Item.ItemCode : "",
+                        Unit = ii.Item != null ? ii.Item.Unit : "Pcs",
+                        Quantity = ii.Quantity,
+                        ReturnedQuantity = ii.ReturnedQuantity,
+                        IsReturned = ii.IsReturned,
+                        ReturnDate = ii.ReturnDate,
+                        Remarks = ii.Remarks,
+                        UnitPrice = unitPrice,
+                        SellingPrice = sellingPrice,
+                        TotalAmount = ii.Quantity * sellingPrice
+                    };
+                }).ToList();
+
+                var totalAmt = items.Sum(it => it.TotalAmount);
+                var totalReturnedAmt = items.Sum(it => it.ReturnedQuantity * it.SellingPrice);
+                var canReturn = items.Any(it => it.Quantity > it.ReturnedQuantity);
+
+                return new InventoryIssueDto
                 {
                     Id = i.Id,
                     BranchId = i.BranchId,
@@ -872,23 +901,13 @@ namespace SchoolERP.API.Controllers
                     Status = i.Status,
                     Remarks = i.Remarks,
                     PaymentMode = i.PaymentMode,
-                    TotalItems = i.IssueItems.Count,
-                    Items = i.IssueItems.Select(ii => new InventoryIssueItemDto
-                    {
-                        Id = ii.Id,
-                        IssueId = ii.IssueId,
-                        ItemId = ii.ItemId,
-                        ItemName = ii.Item != null ? ii.Item.ItemName : "",
-                        ItemCode = ii.Item != null ? ii.Item.ItemCode : "",
-                        Unit = ii.Item != null ? ii.Item.Unit : "Pcs",
-                        Quantity = ii.Quantity,
-                        ReturnedQuantity = ii.ReturnedQuantity,
-                        IsReturned = ii.IsReturned,
-                        ReturnDate = ii.ReturnDate,
-                        Remarks = ii.Remarks
-                    }).ToList()
-                })
-                .ToListAsync();
+                    TotalItems = items.Count,
+                    TotalAmount = totalAmt,
+                    TotalReturnedAmount = totalReturnedAmt,
+                    CanReturn = canReturn,
+                    Items = items
+                };
+            }).ToList();
 
             return Ok(ApiResponse<List<InventoryIssueDto>>.Ok(issues));
         }
@@ -1080,6 +1099,115 @@ namespace SchoolERP.API.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<bool>.Ok(true, $"{returnQty} quantity returned and added back to stock successfully"));
+        }
+
+        [HttpPost("issues/batch-return")]
+        public async Task<ActionResult<ApiResponse<ReturnSlipDto>>> BatchReturnIssue([FromBody] BatchReturnIssueDto dto)
+        {
+            var branchId = CurrentBranchId;
+            var issue = await _context.InventoryIssues
+                .Include(i => i.IssueItems)
+                .ThenInclude(ii => ii.Item)
+                .FirstOrDefaultAsync(i => i.Id == dto.IssueId && i.BranchId == branchId && i.IsActive);
+
+            if (issue == null)
+                return NotFound(ApiResponse<ReturnSlipDto>.Fail("Issue record not found"));
+
+            if (dto.Items == null || !dto.Items.Any(it => it.ReturnQuantity > 0))
+                return BadRequest(ApiResponse<ReturnSlipDto>.Fail("At least one item with valid return quantity is required"));
+
+            var returnSlip = new ReturnSlipDto
+            {
+                ReturnNumber = $"RET-{DateTime.UtcNow:yyyyMMdd}-{issue.Id:D4}",
+                ReturnDate = DateTime.UtcNow,
+                IssueNumber = issue.IssueNumber,
+                CustomerName = issue.IssuedToName,
+                CustomerType = issue.IssuedToType,
+                Department = issue.Department,
+                RefundMode = dto.RefundMode ?? "Cash",
+                Remarks = dto.Remarks,
+                ReturnedItems = new List<ReturnSlipItemDto>()
+            };
+
+            decimal totalRefund = 0;
+
+            foreach (var reqItem in dto.Items.Where(it => it.ReturnQuantity > 0))
+            {
+                var issueItem = issue.IssueItems.FirstOrDefault(ii => ii.Id == reqItem.IssueItemId && ii.IsActive);
+                if (issueItem == null) continue;
+
+                var remaining = issueItem.Quantity - issueItem.ReturnedQuantity;
+                if (remaining <= 0) continue;
+
+                var returnQty = Math.Min(reqItem.ReturnQuantity, remaining);
+                issueItem.ReturnedQuantity += returnQty;
+                if (issueItem.ReturnedQuantity >= issueItem.Quantity)
+                {
+                    issueItem.IsReturned = true;
+                    issueItem.ReturnDate = DateTime.UtcNow;
+                }
+                issueItem.ModifiedBy = CurrentUserId;
+                issueItem.ModifiedOn = DateTime.UtcNow;
+
+                var unitPrice = issueItem.Item?.SellingPrice ?? issueItem.Item?.UnitPrice ?? 0;
+                var lineRefund = returnQty * unitPrice;
+                totalRefund += lineRefund;
+
+                returnSlip.ReturnedItems.Add(new ReturnSlipItemDto
+                {
+                    ItemName = issueItem.Item?.ItemName ?? "Item",
+                    ItemCode = issueItem.Item?.ItemCode ?? "",
+                    ReturnedQuantity = returnQty,
+                    UnitPrice = unitPrice,
+                    TotalRefund = lineRefund,
+                    Reason = reqItem.Reason
+                });
+
+                // Restore Item stock
+                if (issueItem.Item != null)
+                {
+                    issueItem.Item.CurrentStock += returnQty;
+                    issueItem.Item.ModifiedBy = CurrentUserId;
+                    issueItem.Item.ModifiedOn = DateTime.UtcNow;
+
+                    var log = new InventoryStockLog
+                    {
+                        BranchId = branchId,
+                        ItemId = issueItem.Item.Id,
+                        TransactionType = "RETURN",
+                        ReferenceNumber = issue.IssueNumber,
+                        Quantity = returnQty,
+                        BalanceAfter = issueItem.Item.CurrentStock,
+                        TransactionDate = DateTime.UtcNow,
+                        Remarks = $"Sale return by {issue.IssuedToName}: {returnQty}x {issueItem.Item.ItemName}. Reason: {reqItem.Reason ?? dto.Remarks ?? "Returned to stock"}",
+                        CreatedBy = CurrentUserId,
+                        CreatedOn = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    _context.InventoryStockLogs.Add(log);
+                }
+            }
+
+            if (!returnSlip.ReturnedItems.Any())
+                return BadRequest(ApiResponse<ReturnSlipDto>.Fail("No eligible items could be returned. They may have already been fully returned."));
+
+            returnSlip.TotalRefundAmount = totalRefund;
+
+            // Update parent issue status
+            var activeItems = issue.IssueItems.Where(ii => ii.IsActive).ToList();
+            if (activeItems.All(ii => ii.IsReturned))
+            {
+                issue.Status = "Returned";
+            }
+            else if (activeItems.Any(ii => ii.ReturnedQuantity > 0))
+            {
+                issue.Status = "Partially Returned";
+            }
+            issue.ModifiedBy = CurrentUserId;
+            issue.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<ReturnSlipDto>.Ok(returnSlip, $"Return processed successfully for {returnSlip.ReturnedItems.Count} item(s). Refund: ₹{totalRefund}"));
         }
 
         #endregion

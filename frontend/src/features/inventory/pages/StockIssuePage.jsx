@@ -294,6 +294,12 @@ const StockIssuePage = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button 
+            label="Item Returns (वापसी)" 
+            icon="pi pi-replay" 
+            className="p-button-danger p-button-sm" 
+            onClick={() => navigate('/inventory/returns')} 
+          />
+          <Button 
             label="Store & Slip Setup" 
             icon="pi pi-cog" 
             className="p-button-outlined p-button-help p-button-sm" 
@@ -511,6 +517,7 @@ const StockIssuePage = () => {
           <Column field="issuedToType" header="Type" />
           <Column header="Action" body={(row) => (
             <div className="flex gap-2">
+              <Button icon="pi pi-replay" label="Return" className="p-button-danger p-button-outlined p-button-sm" onClick={() => navigate('/inventory/returns')} tooltip="Process Return / Exchange" />
               <Button icon="pi pi-print" label="Print" className="p-button-outlined p-button-sm" onClick={() => setPrintIssue(row)} />
             </div>
           )} />

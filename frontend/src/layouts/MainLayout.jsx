@@ -142,6 +142,7 @@ const navItems = [
       { title: 'Manufactures', path: '/inventory/manufactures', menuKey: 'Manufactures' },
       { title: 'Stock Inward (Purchase)', path: '/inventory/purchases', menuKey: 'StockInward' },
       { title: 'Stock Issue (Outward)', path: '/inventory/issues', menuKey: 'StockIssue' },
+      { title: 'Item Return (Sale Return)', path: '/inventory/returns', menuKey: 'StockIssue' },
       { title: 'Stock Movement Ledger', path: '/inventory/ledger', menuKey: 'StockLedger' },
     ],
   },
