@@ -86,6 +86,18 @@ export const StudentPortalDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [portalData, setPortalData] = useState(null);
 
+  // Safety guard: prevent accidental browser back out of portal to login
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // Tab 3: Exams & Report Cards states
   const [examsList, setExamsList] = useState([]);
   const [loadingExams, setLoadingExams] = useState(false);

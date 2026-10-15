@@ -49,7 +49,15 @@ import apiClient from '../../../api/client';
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuth } = useAuthStore();
+  const { setAuth, isAuthenticated, user } = useAuthStore();
+
+  // If already authenticated, redirect immediately so user never sees login form
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const target = (user.userType === 6 || user.userType === 7) ? '/portal' : '/dashboard';
+      navigate(target, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -166,12 +174,14 @@ export const LoginPage = () => {
         const { user, accessToken, refreshToken, permissions } = res.data.data;
         setAuth({ user, accessToken, refreshToken, permissions });
 
+        const safeDestination = (from && from !== '/login' && from !== '/') ? from : '/dashboard';
+
         if (user.mustChangePassword) {
           navigate('/change-password', { replace: true });
         } else if (user.userType === 6 || user.userType === 7) {
           navigate('/portal', { replace: true });
         } else {
-          navigate(from, { replace: true });
+          navigate(safeDestination, { replace: true });
         }
       } else {
         setErrorMessage(res.data.message || 'Login failed. Please verify credentials.');

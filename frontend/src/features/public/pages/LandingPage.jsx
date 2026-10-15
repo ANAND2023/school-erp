@@ -19,9 +19,20 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../../../api/client';
 import { updateThemeCssVariables } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+  const homeRoute = (user?.userType === 6 || user?.userType === 7) ? '/portal' : '/dashboard';
+
+  // If already authenticated and user pressed browser back from dashboard, auto-return to dashboard
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (isAuthenticated && !searchParams.has('browse')) {
+      navigate(homeRoute, { replace: true });
+    }
+  }, [isAuthenticated, homeRoute, navigate]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('all');
   const [moduleSearch, setModuleSearch] = useState('');
@@ -495,14 +506,19 @@ export const LandingPage = () => {
                   px: 2.5, py: 0.9, 
                   fontWeight: 800, 
                   fontSize: '0.88rem',
-                  borderColor: '#cbd5e1', 
-                  color: '#0a387c',
+                  borderColor: isAuthenticated ? '#0284c7' : '#cbd5e1', 
+                  bgcolor: isAuthenticated ? '#0284c7' : 'transparent',
+                  color: isAuthenticated ? '#ffffff' : '#0a387c',
                   textTransform: 'none',
-                  '&:hover': { borderColor: '#0a387c', bgcolor: '#f1f5f9' }
+                  boxShadow: isAuthenticated ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                  '&:hover': {
+                    borderColor: '#0284c7',
+                    bgcolor: isAuthenticated ? '#0369a1' : '#f1f5f9'
+                  }
                 }} 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate(isAuthenticated ? homeRoute : '/login')}
               >
-                Portal Login
+                {isAuthenticated ? 'Go to Dashboard →' : 'Portal Login'}
               </Button>
               <Button 
                 variant="contained" 
@@ -623,23 +639,28 @@ export const LandingPage = () => {
           </Button>
 
           <Button 
-            variant="outlined" 
+            variant={isAuthenticated ? "contained" : "outlined"} 
             fullWidth
             sx={{ 
               borderRadius: 99, 
               py: 1.1, 
               fontWeight: 800, 
               fontSize: '0.92rem',
-              borderColor: '#0a387c', 
-              color: '#0a387c',
-              textTransform: 'none'
+              borderColor: isAuthenticated ? '#0284c7' : '#0a387c', 
+              bgcolor: isAuthenticated ? '#0284c7' : 'transparent',
+              color: isAuthenticated ? '#ffffff' : '#0a387c',
+              textTransform: 'none',
+              boxShadow: isAuthenticated ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+              '&:hover': {
+                bgcolor: isAuthenticated ? '#0369a1' : 'rgba(10, 56, 124, 0.06)'
+              }
             }} 
             onClick={() => {
               setMobileDrawerOpen(false);
-              navigate('/login');
+              navigate(isAuthenticated ? homeRoute : '/login');
             }}
           >
-            Portal Login
+            {isAuthenticated ? 'Go to Dashboard →' : 'Portal Login'}
           </Button>
 
           <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0', textAlign: 'center' }}>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { ProtectedRoute } from './ProtectedRoute';
+import { PublicRoute } from './PublicRoute';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { ChangePasswordPage } from '../features/auth/pages/ChangePasswordPage';
 import { UnauthorizedPage } from '../features/auth/pages/UnauthorizedPage';
@@ -126,7 +127,14 @@ export const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       {/* Protected routes within MainLayout */}

@@ -88,6 +88,18 @@ export const DashboardPage = () => {
   const currentAY = academicYears.find((y) => y.id === activeAcademicYearId) || academicYears[0];
   const activeYearLabel = activeAcademicYearName || (currentAY ? (currentAY.rawName || currentAY.name.replace('Session: ', '').replace(' (Current)', '')) : (user?.academicYearName || '2026-27'));
 
+  // Safety guard: prevent accidental browser back out of the main dashboard to login
+  React.useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   const {
     data: statsRes,
     isLoading,
