@@ -200,6 +200,13 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse<ItemCategoryDto>.Fail("Category name is required"));
 
             var branchId = CurrentBranchId;
+            var cleanCatName = dto.Name.Trim();
+            var duplicateCat = await _context.ItemCategories.AnyAsync(c => c.BranchId == branchId && c.IsActive && c.Name.ToLower() == cleanCatName.ToLower());
+            if (duplicateCat)
+            {
+                return BadRequest(ApiResponse<ItemCategoryDto>.Fail($"Item Category '{cleanCatName}' already exists."));
+            }
+
             var category = new ItemCategory
             {
                 BranchId = branchId,
@@ -525,6 +532,17 @@ namespace SchoolERP.API.Controllers
             {
                 var count = await _context.InventoryItems.CountAsync(i => i.BranchId == branchId) + 1;
                 itemCode = $"ITM-{count:D4}";
+            }
+
+            var cleanItemName = dto.ItemName.Trim().ToLower();
+            var duplicateItem = await _context.InventoryItems.AnyAsync(i =>
+                i.BranchId == branchId &&
+                i.IsActive &&
+                (i.ItemCode == itemCode || i.ItemName.ToLower() == cleanItemName));
+
+            if (duplicateItem)
+            {
+                return BadRequest(ApiResponse<InventoryItemDto>.Fail($"An inventory item with code '{itemCode}' or name '{dto.ItemName.Trim()}' already exists."));
             }
 
             var item = new InventoryItem

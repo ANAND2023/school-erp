@@ -206,6 +206,13 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse<EmployeeDetailDto>.Fail("Mobile number is mandatory."));
             }
 
+            var cleanMobile = request.Mobile.Trim();
+            var duplicateMobile = await _context.Employees.AnyAsync(e => e.BranchId == branchId && e.Mobile == cleanMobile && e.Status == EmployeeStatus.Active);
+            if (duplicateMobile)
+            {
+                return BadRequest(ApiResponse<EmployeeDetailDto>.Fail($"An active employee with mobile number '{cleanMobile}' already exists."));
+            }
+
             var strategy = _context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync<ActionResult<ApiResponse<EmployeeDetailDto>>>(async () =>
             {

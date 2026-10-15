@@ -280,6 +280,38 @@ namespace SchoolERP.API.Controllers
 
             if (targetDues.Any())
             {
+                // Prevent duplicate DueId in the request
+                if (request.DuesToPay.GroupBy(d => d.DueId).Any(g => g.Count() > 1))
+                {
+                    return BadRequest(ApiResponse<ReceiptPrintDto>.Fail("Duplicate fee due entries detected in payment request. Each due can only be paid once per receipt."));
+                }
+
+                // Validate that all dues exist, belong to this student and branch, and are not already fully paid
+                foreach (var item in request.DuesToPay)
+                {
+                    var due = targetDues.FirstOrDefault(d => d.Id == item.DueId);
+                    if (due == null)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Fee due ID #{item.DueId} not found or does not exist."));
+                    }
+                    if (due.StudentId != request.StudentId || due.BranchId != branchId)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Fee due #{item.DueId} does not belong to the selected student."));
+                    }
+                    if (due.BalanceAmount <= 0 || due.Status == DueStatus.Paid)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Fee due for '{due.FeeHead?.Name ?? "Item"}' ({due.Installment?.Name ?? "Installment"}) is already fully paid. Duplicate payment is not allowed."));
+                    }
+                    if (item.AmountToPay <= 0 && item.FineToPay <= 0)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Payment amount for '{due.FeeHead?.Name ?? "Item"}' must be greater than zero."));
+                    }
+                    if (item.AmountToPay > due.BalanceAmount)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Payment amount (₹{item.AmountToPay}) cannot exceed outstanding balance (₹{due.BalanceAmount}) for '{due.FeeHead?.Name ?? "Item"}'."));
+                    }
+                }
+
                 var minTargetOrder = targetDues.Min(d => d.Installment?.DisplayOrder ?? 0);
                 var minTargetDueDate = targetDues.Min(d => d.Installment?.DueDate ?? DateTime.MaxValue);
 
