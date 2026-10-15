@@ -406,6 +406,49 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse<StudentDetailDto>.Fail("At least one guardian with a valid mobile number is mandatory (BR-3.4)."));
             }
 
+            // 1. Prevent Duplicate Student Admission (Same student name + primary guardian mobile)
+            var primaryMobile = request.Guardians.FirstOrDefault(g => g.IsPrimary)?.Mobile?.Trim() 
+                             ?? request.Guardians.FirstOrDefault()?.Mobile?.Trim();
+
+            var cleanFirst = request.FirstName.Trim().ToLower();
+            var cleanLast = (request.LastName ?? "").Trim().ToLower();
+
+            if (!string.IsNullOrEmpty(primaryMobile))
+            {
+                var duplicateStudent = await _context.Students
+                    .Include(s => s.Guardians)
+                    .Where(s => s.BranchId == branchId && s.Status == StudentStatus.Active)
+                    .FirstOrDefaultAsync(s =>
+                        s.FirstName.ToLower() == cleanFirst &&
+                        (s.LastName == null ? "" : s.LastName.ToLower()).Trim() == cleanLast &&
+                        s.Guardians.Any(g => g.Mobile == primaryMobile));
+
+                if (duplicateStudent != null)
+                {
+                    return BadRequest(ApiResponse<StudentDetailDto>.Fail(
+                        $"Duplicate Admission Error: A student named '{request.FirstName} {request.LastName}' with guardian contact '{primaryMobile}' is already admitted (Admission No: {duplicateStudent.AdmissionNo}). Duplicate admissions are not allowed."));
+                }
+            }
+
+            // 2. Prevent Duplicate Roll Number in the same Section & Academic Year
+            if (request.RollNo.HasValue && request.RollNo.Value > 0)
+            {
+                var existingRollStudent = await _context.StudentEnrollments
+                    .Include(e => e.Student)
+                    .Where(e => e.AcademicYearId == yearId &&
+                                e.SectionId == request.SectionId &&
+                                e.RollNo == request.RollNo.Value &&
+                                e.Status == StudentStatus.Active)
+                    .Select(e => e.Student!.FullName)
+                    .FirstOrDefaultAsync();
+
+                if (existingRollStudent != null)
+                {
+                    return BadRequest(ApiResponse<StudentDetailDto>.Fail(
+                        $"Roll Number #{request.RollNo.Value} is already assigned to student '{existingRollStudent}' in this section. Each student must have a unique roll number."));
+                }
+            }
+
             // Check Section Capacity (BR-3.2)
             var section = await _context.Sections.FirstOrDefaultAsync(s => s.Id == request.SectionId && s.ClassId == request.ClassId);
             if (section == null)

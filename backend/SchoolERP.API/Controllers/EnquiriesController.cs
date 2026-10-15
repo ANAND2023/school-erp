@@ -164,6 +164,25 @@ namespace SchoolERP.API.Controllers
             var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
             var currentAY = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId);
 
+            // Prevent Duplicate Enquiry: Same student name and mobile number in the same academic session
+            var cleanStudentName = request.StudentName.Trim().ToLower();
+            var cleanMobile = request.Mobile.Trim();
+
+            var existingEnquiry = await _context.Enquiries
+                .Where(e => e.BranchId == branchId &&
+                            e.AcademicYearId == yearId &&
+                            e.Mobile == cleanMobile &&
+                            e.StudentName.ToLower() == cleanStudentName &&
+                            e.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (existingEnquiry != null)
+            {
+                var statusText = existingEnquiry.Status == EnquiryStatus.Converted ? "already converted to admission" : $"currently in '{existingEnquiry.Status}' status";
+                return BadRequest(ApiResponse<EnquiryDto>.Fail(
+                    $"Duplicate Enquiry: An enquiry ({existingEnquiry.EnquiryNo}) for '{request.StudentName}' with mobile '{cleanMobile}' already exists ({statusText})."));
+            }
+
             var enquiryNo = await _numberingService.GetNextNumberAsync(branchId, "Enquiry", branch?.Code, currentAY?.Name);
 
             var enquiry = new Enquiry
