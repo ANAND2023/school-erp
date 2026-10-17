@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { numberToIndianWords, formatReceiptMonths } from '../utils/numberToWords';
 import apiClient from '../../../api/client';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 // Cache for receipt config
 let cachedFeeConfig = null;
@@ -105,7 +106,7 @@ const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
   const address = config.headerAddressCustom || data.address || 'Plot No 999, Main road Surya\nVihar, Part 3 Sec 91';
   const contact = data.contact || data.guardianMobile || '9911360909';
   const receiptNo = data.receiptNo || 'KU7304';
-  const dateFormatted = data.receiptDate ? dayjs(data.receiptDate).format('DD-MM-YYYY') : dayjs().format('DD-MM-YYYY');
+  const dateFormatted = data.receiptDate ? formatDateTime(data.receiptDate, 'DD-MM-YYYY') : dayjs().format('DD-MM-YYYY');
   const studentName = (data.studentName || '').toUpperCase();
   const admNo = data.admissionNo || '';
   const className = data.className || (data.classSection ? data.classSection.split('-')[0].trim() : '');

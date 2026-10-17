@@ -578,7 +578,7 @@ namespace SchoolERP.API.Controllers
                     {
                         ReceiptId = receipt.Id,
                         ReceiptNo = receipt.ReceiptNo,
-                        ReceiptDate = receipt.ReceiptDate,
+                        ReceiptDate = DateTime.SpecifyKind(receipt.ReceiptDate, DateTimeKind.Utc),
                         SchoolName = schoolName,
                         BranchName = branch?.Name ?? "Main Campus",
                         Address = branchAddress,
@@ -686,7 +686,7 @@ namespace SchoolERP.API.Controllers
             {
                 ReceiptId = receipt.Id,
                 ReceiptNo = receipt.ReceiptNo,
-                ReceiptDate = receipt.ReceiptDate,
+                ReceiptDate = DateTime.SpecifyKind(receipt.ReceiptDate, DateTimeKind.Utc),
                 SchoolName = schoolName,
                 BranchName = receipt.Branch?.Name ?? "Main Campus",
                 Address = branchAddress,

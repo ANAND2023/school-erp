@@ -79,6 +79,7 @@ import { FeeReceiptSlip } from '../components/FeeReceiptSlip';
 import { StudentFeeHistoryModal } from '../components/StudentFeeHistoryModal';
 import { AppDatePicker, AppSelect, AppModal } from '../../../components/common';
 import { printWithTitle } from '../../../utils/printUtils';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 const PAYMENT_MODES = [
   { label: 'All Payment Modes', value: 'ALL' },
@@ -266,7 +267,7 @@ export default function FeeReportsPage() {
     ];
     const rows = collectionList.map((r) => [
       `"${r.receiptNo}"`,
-      `"${dayjs(r.receiptDate).format('YYYY-MM-DD HH:mm')}"`,
+      `"${formatDateTime(r.receiptDate, 'YYYY-MM-DD HH:mm')}"`,
       `"${r.admissionNo}"`,
       `"${r.studentName}"`,
       `"${r.classSection}"`,
@@ -805,7 +806,7 @@ export default function FeeReportsPage() {
                               {r.receiptNo}
                             </Typography>
                           </TableCell>
-                          <TableCell>{dayjs(r.receiptDate).format('DD MMM YYYY, hh:mm A')}</TableCell>
+                          <TableCell>{formatDateTime(r.receiptDate)}</TableCell>
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
                               {r.studentName}
@@ -2106,7 +2107,7 @@ export default function FeeReportsPage() {
                                     </TableCell>
                                     <TableCell>
                                       <Typography variant="caption" color="text.secondary">
-                                        {dayjs(r.receiptDate).format('DD MMM YYYY, hh:mm A')}
+                                        {formatDateTime(r.receiptDate)}
                                       </Typography>
                                     </TableCell>
                                     <TableCell>
@@ -2320,7 +2321,7 @@ export default function FeeReportsPage() {
                     <TableRow key={r.receiptId}>
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{r.receiptNo}</TableCell>
-                      <TableCell>{dayjs(r.receiptDate).format('DD/MM/YY hh:mm A')}</TableCell>
+                      <TableCell>{formatDateTime(r.receiptDate, 'DD/MM/YY hh:mm A')}</TableCell>
                       <TableCell>{r.admissionNo}</TableCell>
                       <TableCell sx={{ fontWeight: 500 }}>{r.studentName}</TableCell>
                       <TableCell>{r.classSection}</TableCell>

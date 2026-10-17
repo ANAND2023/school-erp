@@ -39,6 +39,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { feesApi } from '../api';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 export const StudentFeeHistoryModal = ({
   open,
@@ -338,7 +339,7 @@ export const StudentFeeHistoryModal = ({
                             {r.receiptNo}
                           </TableCell>
                           <TableCell sx={{ fontSize: 12 }}>
-                            {dayjs(r.receiptDate).format('DD MMM YYYY, hh:mm A')}
+                            {formatDateTime(r.receiptDate)}
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={0.5} flexWrap="wrap">

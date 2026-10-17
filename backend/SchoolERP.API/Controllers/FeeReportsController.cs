@@ -72,7 +72,7 @@ namespace SchoolERP.API.Controllers
             {
                 ReceiptId = r.Id,
                 ReceiptNo = r.ReceiptNo,
-                ReceiptDate = r.ReceiptDate,
+                ReceiptDate = DateTime.SpecifyKind(r.ReceiptDate, DateTimeKind.Utc),
                 AdmissionNo = r.Student?.AdmissionNo ?? "",
                 StudentName = r.Student?.FullName ?? "",
                 ClassSection = $"{r.Class?.Name ?? ""} - {r.Section?.Name ?? ""}",

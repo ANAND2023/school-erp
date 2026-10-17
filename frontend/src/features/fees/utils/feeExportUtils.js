@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
 import { numberToIndianWords, formatReceiptMonths } from './numberToWords';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 /**
  * Export Fee Daily Collection to Excel (.xlsx)
@@ -52,7 +53,7 @@ export const exportCollectionToExcel = ({
     ...collectionList.map((r, index) => [
       index + 1,
       r.receiptNo || '—',
-      dayjs(r.receiptDate).format('YYYY-MM-DD hh:mm A'),
+      formatDateTime(r.receiptDate, 'YYYY-MM-DD hh:mm A'),
       r.admissionNo || '—',
       r.studentName || '—',
       r.classSection || '—',
@@ -149,7 +150,7 @@ export const exportCollectionToPdf = ({
   const tableData = collectionList.map((r, idx) => [
     idx + 1,
     r.receiptNo || '—',
-    dayjs(r.receiptDate).format('DD/MM/YY hh:mm A'),
+    formatDateTime(r.receiptDate, 'DD/MM/YY hh:mm A'),
     r.admissionNo || '—',
     r.studentName || '—',
     r.classSection || '—',
