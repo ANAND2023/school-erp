@@ -126,6 +126,8 @@ namespace SchoolERP.Domain.Entities
         public decimal TotalConcession { get; set; }
         public decimal TotalFine { get; set; }
         public decimal TotalPaid { get; set; }
+        public decimal TotalDiscount { get; set; } = 0;
+        public string? DiscountRemarks { get; set; }
 
         public ReceiptStatus Status { get; set; } = ReceiptStatus.Paid;
         public string? CancelReason { get; set; }

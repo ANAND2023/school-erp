@@ -118,12 +118,43 @@ const ReturnSlip = ({ data, config: propConfig, onHide }) => {
             display: 'inline-block',
             fontWeight: 800, 
             fontSize: '9pt', 
-            border: '1px solid #000', 
+            color: '#dc2626',
+            border: '1.5px solid #dc2626', 
             padding: '2px 8px',
             borderRadius: '2px',
-            backgroundColor: '#f5f5f5'
+            backgroundColor: '#fef2f2'
           }}>
             GOODS RETURN MEMO
+          </div>
+
+          {/* Prominent REFUND Red Stamp Banner */}
+          <div style={{
+            margin: '8px auto 4px auto',
+            padding: '5px 10px',
+            backgroundColor: '#fee2e2',
+            border: '2px dashed #dc2626',
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            <div style={{ 
+              color: '#dc2626', 
+              fontWeight: 900, 
+              fontSize: '15pt', 
+              letterSpacing: '3px', 
+              lineHeight: 1.1,
+              textTransform: 'uppercase' 
+            }}>
+              ★ REFUND ★
+            </div>
+            <div style={{ 
+              color: '#b91c1c', 
+              fontWeight: 800, 
+              fontSize: '8.5pt', 
+              letterSpacing: '0.5px',
+              marginTop: '2px'
+            }}>
+              AMOUNT REFUNDED: {cfg.currencySymbol}{totalRefund} ({data?.refundMode || 'Cash'})
+            </div>
           </div>
         </div>
 
@@ -137,9 +168,9 @@ const ReturnSlip = ({ data, config: propConfig, onHide }) => {
             <span><strong>Orig Issue No:</strong> {data?.issueNumber || '-'}</span>
             <span><strong>Refund Mode:</strong> {data?.refundMode || 'Cash'}</span>
           </div>
-          <div style={{ marginTop: '2px' }}>
-            <span><strong>Customer:</strong> {data?.customerName || data?.issuedToName || 'Customer'}</span>
-            {data?.customerType && <span style={{ marginLeft: '4px', color: '#555' }}>({data.customerType})</span>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+            <span><strong>Customer:</strong> {data?.customerName || data?.issuedToName || 'Customer'} {data?.customerType ? `(${data.customerType})` : ''}</span>
+            <span style={{ color: '#dc2626', fontWeight: 800 }}>[REFUNDED]</span>
           </div>
           {data?.department && (
             <div style={{ marginTop: '2px', color: '#555' }}>
@@ -155,7 +186,7 @@ const ReturnSlip = ({ data, config: propConfig, onHide }) => {
               <th style={{ textAlign: 'left', padding: '3px 0' }}>Item Description</th>
               <th style={{ textAlign: 'center', padding: '3px 0', width: '35px' }}>Qty</th>
               <th style={{ textAlign: 'right', padding: '3px 0', width: '50px' }}>Rate</th>
-              <th style={{ textAlign: 'right', padding: '3px 0', width: '60px' }}>Refund</th>
+              <th style={{ textAlign: 'right', padding: '3px 0', width: '60px', color: '#dc2626' }}>Refund</th>
             </tr>
           </thead>
           <tbody>
@@ -171,23 +202,38 @@ const ReturnSlip = ({ data, config: propConfig, onHide }) => {
                 <td style={{ textAlign: 'right', padding: '3px 0', verticalAlign: 'top' }}>
                   {cfg.currencySymbol}{it.unitPrice || it.sellingPrice || 0}
                 </td>
-                <td style={{ textAlign: 'right', padding: '3px 0', fontWeight: 600, verticalAlign: 'top' }}>
+                <td style={{ textAlign: 'right', padding: '3px 0', fontWeight: 800, verticalAlign: 'top', color: '#dc2626' }}>
                   {cfg.currencySymbol}{it.totalRefund || ((it.returnedQuantity || 1) * (it.unitPrice || 0))}
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: '1.5px dashed #000', borderBottom: '1.5px dashed #000' }}>
-              <td colSpan="3" style={{ padding: '4px 0', fontWeight: 800, textAlign: 'right' }}>
+            <tr style={{ borderTop: '1.5px dashed #dc2626', borderBottom: '1.5px dashed #dc2626', backgroundColor: '#fef2f2' }}>
+              <td colSpan="3" style={{ padding: '4px 0', fontWeight: 900, textAlign: 'right', color: '#dc2626' }}>
                 TOTAL REFUND AMOUNT:
               </td>
-              <td style={{ padding: '4px 0', fontWeight: 900, fontSize: '9.5pt', textAlign: 'right', color: '#b91c1c' }}>
+              <td style={{ padding: '4px 0', fontWeight: 900, fontSize: '10.5pt', textAlign: 'right', color: '#dc2626' }}>
                 {cfg.currencySymbol}{totalRefund}
               </td>
             </tr>
           </tfoot>
         </table>
+
+        {/* Verification banner in red */}
+        <div style={{ 
+          margin: '6px 0', 
+          textAlign: 'center', 
+          borderTop: '1px dashed #fca5a5', 
+          borderBottom: '1px dashed #fca5a5', 
+          padding: '3px 0',
+          color: '#dc2626',
+          fontSize: '7.5pt',
+          fontWeight: 800,
+          letterSpacing: '1px'
+        }}>
+          *** CASH / STORE CREDIT REFUND VOUCHER ***
+        </div>
 
         {/* Remarks */}
         {data?.remarks && (
@@ -232,6 +278,8 @@ const ReturnSlip = ({ data, config: propConfig, onHide }) => {
           }
           #printable-return-slip, #printable-return-slip * {
             visibility: visible;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           #printable-return-slip {
             position: absolute;

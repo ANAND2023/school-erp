@@ -87,7 +87,9 @@ namespace SchoolERP.API.Controllers
                     RoleName = u.Role != null ? u.Role.Name : "",
                     BranchId = u.BranchId,
                     IsActive = u.IsActive,
-                    IsLocked = u.IsLocked
+                    IsLocked = u.IsLocked,
+                    CanGiveDiscount = u.CanGiveDiscount,
+                    MaxDiscountLimit = u.MaxDiscountLimit
                 })
                 .ToListAsync();
 
@@ -130,7 +132,9 @@ namespace SchoolERP.API.Controllers
                 RoleName = user.Role?.Name ?? "",
                 BranchId = user.BranchId,
                 IsActive = user.IsActive,
-                IsLocked = user.IsLocked
+                IsLocked = user.IsLocked,
+                CanGiveDiscount = user.CanGiveDiscount,
+                MaxDiscountLimit = user.MaxDiscountLimit
             }));
         }
 
@@ -145,6 +149,8 @@ namespace SchoolERP.API.Controllers
             public long RoleId { get; set; }
             public long? BranchId { get; set; }
             public long? LinkedEntityId { get; set; }
+            public bool CanGiveDiscount { get; set; } = false;
+            public decimal MaxDiscountLimit { get; set; } = 0;
         }
 
         [HttpPost]
@@ -188,7 +194,9 @@ namespace SchoolERP.API.Controllers
                 BranchId = targetBranchId,
                 LinkedEntityId = request.LinkedEntityId,
                 MustChangePassword = true, // FR-1.4: User must change password on first login
-                IsActive = true
+                IsActive = true,
+                CanGiveDiscount = request.CanGiveDiscount,
+                MaxDiscountLimit = request.MaxDiscountLimit
             };
 
             _context.Users.Add(user);
@@ -202,7 +210,7 @@ namespace SchoolERP.API.Controllers
                 Module = "Users",
                 EntityName = "User",
                 RecordId = user.Id.ToString(),
-                NewValues = $"Username: {user.Username}, RoleId: {user.RoleId}",
+                NewValues = $"Username: {user.Username}, RoleId: {user.RoleId}, CanDiscount: {user.CanGiveDiscount}, MaxDiscount: {user.MaxDiscountLimit}",
                 IpAddress = _currentUserService.IpAddress,
                 BranchId = user.BranchId
             });
@@ -218,7 +226,9 @@ namespace SchoolERP.API.Controllers
                 UserType = user.UserType,
                 RoleId = user.RoleId,
                 BranchId = user.BranchId,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                CanGiveDiscount = user.CanGiveDiscount,
+                MaxDiscountLimit = user.MaxDiscountLimit
             }, "User created successfully."));
         }
 
@@ -230,6 +240,8 @@ namespace SchoolERP.API.Controllers
             public UserType UserType { get; set; }
             public long RoleId { get; set; }
             public long? BranchId { get; set; }
+            public bool CanGiveDiscount { get; set; } = false;
+            public decimal MaxDiscountLimit { get; set; } = 0;
         }
 
         [HttpPut("{id}")]
@@ -247,13 +259,15 @@ namespace SchoolERP.API.Controllers
                 return StatusCode(403, ApiResponse.Fail("Access denied to user from other school."));
             }
 
-            var oldValues = $"FullName: {user.FullName}, RoleId: {user.RoleId}, UserType: {user.UserType}";
+            var oldValues = $"FullName: {user.FullName}, RoleId: {user.RoleId}, UserType: {user.UserType}, CanDiscount: {user.CanGiveDiscount}, MaxDiscount: {user.MaxDiscountLimit}";
 
             user.FullName = request.FullName.Trim();
             user.Email = request.Email;
             user.Mobile = request.Mobile;
             user.UserType = request.UserType;
             user.RoleId = request.RoleId;
+            user.CanGiveDiscount = request.CanGiveDiscount;
+            user.MaxDiscountLimit = request.MaxDiscountLimit;
             if (isSuperAdmin && request.BranchId.HasValue) user.BranchId = request.BranchId.Value;
 
             _context.AuditLogs.Add(new AuditLog
@@ -265,7 +279,7 @@ namespace SchoolERP.API.Controllers
                 EntityName = "User",
                 RecordId = user.Id.ToString(),
                 OldValues = oldValues,
-                NewValues = $"FullName: {user.FullName}, RoleId: {user.RoleId}, UserType: {user.UserType}",
+                NewValues = $"FullName: {user.FullName}, RoleId: {user.RoleId}, UserType: {user.UserType}, CanDiscount: {user.CanGiveDiscount}, MaxDiscount: {user.MaxDiscountLimit}",
                 IpAddress = _currentUserService.IpAddress,
                 BranchId = user.BranchId
             });

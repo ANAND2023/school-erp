@@ -244,12 +244,52 @@ namespace SchoolERP.API.Controllers
             return Ok(ApiResponse<StudentFeeDuesSummaryDto>.Ok(summary));
         }
 
+        [HttpGet("discount-eligibility")]
+        public async Task<ActionResult<ApiResponse<object>>> GetDiscountEligibility()
+        {
+            var userId = _currentUserService.UserId;
+            var userType = _currentUserService.UserType;
+
+            if (userType == UserType.SuperAdmin)
+            {
+                return Ok(ApiResponse<object>.Ok(new
+                {
+                    canGiveDiscount = true,
+                    maxDiscountLimit = 0m,
+                    isUnlimited = true,
+                    roleName = "SuperAdmin"
+                }));
+            }
+
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return Ok(ApiResponse<object>.Ok(new
+                {
+                    canGiveDiscount = false,
+                    maxDiscountLimit = 0m,
+                    isUnlimited = false,
+                    roleName = "Unknown"
+                }));
+            }
+
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                canGiveDiscount = user.CanGiveDiscount,
+                maxDiscountLimit = user.MaxDiscountLimit,
+                isUnlimited = user.CanGiveDiscount && user.MaxDiscountLimit <= 0,
+                roleName = user.UserType.ToString()
+            }));
+        }
+
         [HttpPost("collect")]
         [HasPermission("FeeCollection", "Add")]
         public async Task<ActionResult<ApiResponse<ReceiptPrintDto>>> CollectFee([FromBody] CollectFeeRequestDto request)
         {
             var branchId = _currentUserService.BranchId;
             var yearId = _currentUserService.AcademicYearId;
+            var isSuperAdmin = _currentUserService.UserType == UserType.SuperAdmin;
+            var currentUserId = _currentUserService.UserId;
 
             if (request.DuesToPay == null || !request.DuesToPay.Any())
             {
@@ -263,11 +303,42 @@ namespace SchoolERP.API.Controllers
             var totalDuesPaid = request.DuesToPay.Sum(d => d.AmountToPay);
             var totalFinePaid = request.DuesToPay.Sum(d => d.FineToPay);
             var totalPayable = totalDuesPaid + totalFinePaid;
+
+            if (totalPayable <= 0)
+            {
+                return BadRequest(ApiResponse<ReceiptPrintDto>.Fail("Total payment amount across all selected dues must be greater than zero."));
+            }
+
+            // Overall Discount Handling & Eligibility Validation
+            var discount = request.OverallDiscount > 0 ? request.OverallDiscount : 0;
+            if (discount > 0)
+            {
+                if (!isSuperAdmin)
+                {
+                    var currentUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == currentUserId);
+                    if (currentUser == null || !currentUser.CanGiveDiscount)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail("You are not authorized to grant fee discounts. Please contact your school administrator."));
+                    }
+
+                    if (currentUser.MaxDiscountLimit > 0 && discount > currentUser.MaxDiscountLimit)
+                    {
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Discount amount (₹{discount}) exceeds your maximum authorized discount limit of ₹{currentUser.MaxDiscountLimit}."));
+                    }
+                }
+
+                if (discount > totalPayable)
+                {
+                    return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Discount amount (₹{discount}) cannot exceed total payable dues + fine (₹{totalPayable})."));
+                }
+            }
+
+            var netPayable = Math.Max(0, totalPayable - discount);
             var totalPaidByModes = request.Payments.Sum(p => p.Amount);
 
-            if (totalPaidByModes != totalPayable)
+            if (totalPaidByModes != netPayable)
             {
-                return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Total payment modes (₹{totalPaidByModes}) must match total payable dues + fine (₹{totalPayable})."));
+                return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Total payment modes (₹{totalPaidByModes}) must match net payable dues + fine - discount (₹{netPayable})."));
             }
 
             // Strict Sequential Dues (FIFO) validation:
@@ -302,9 +373,9 @@ namespace SchoolERP.API.Controllers
                     {
                         return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Fee due for '{due.FeeHead?.Name ?? "Item"}' ({due.Installment?.Name ?? "Installment"}) is already fully paid. Duplicate payment is not allowed."));
                     }
-                    if (item.AmountToPay <= 0 && item.FineToPay <= 0)
+                    if (item.AmountToPay < 0 || item.FineToPay < 0)
                     {
-                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Payment amount for '{due.FeeHead?.Name ?? "Item"}' must be greater than zero."));
+                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Payment amount for '{due.FeeHead?.Name ?? "Item"}' cannot be negative."));
                     }
                     if (item.AmountToPay > due.BalanceAmount)
                     {
@@ -370,6 +441,7 @@ namespace SchoolERP.API.Controllers
                         .ToListAsync();
 
                     var totalConcessionPaid = dbDues.Sum(d => d.ConcessionAmount);
+                    var installmentTotalGross = dbDues.Sum(d => d.OriginalAmount > 0 ? d.OriginalAmount : (d.PaidAmount + d.BalanceAmount + d.ConcessionAmount));
 
                     var receipt = new FeeReceipt
                     {
@@ -380,10 +452,12 @@ namespace SchoolERP.API.Controllers
                         StudentId = student.Id,
                         ClassId = enrollment?.ClassId ?? 0,
                         SectionId = enrollment?.SectionId ?? 0,
-                        TotalDue = totalDuesPaid,
+                        TotalDue = installmentTotalGross > 0 ? installmentTotalGross : totalDuesPaid,
                         TotalConcession = totalConcessionPaid,
                         TotalFine = totalFinePaid,
-                        TotalPaid = totalPayable,
+                        TotalPaid = netPayable,
+                        TotalDiscount = discount,
+                        DiscountRemarks = request.DiscountRemarks?.Trim(),
                         Status = ReceiptStatus.Paid,
                         Remarks = request.Remarks?.Trim(),
                         IsActive = true
@@ -422,6 +496,8 @@ namespace SchoolERP.API.Controllers
                                 FeeHeadName = due.FeeHead?.Name ?? "Fee",
                                 InstallmentName = due.Installment?.Name ?? "",
                                 Month = due.Installment?.Name ?? "",
+                                OriginalAmount = due.OriginalAmount,
+                                ConcessionAmount = due.ConcessionAmount,
                                 AmountPaid = item.AmountToPay,
                                 FinePaid = item.FineToPay,
                                 BalanceCarried = due.BalanceAmount
@@ -457,7 +533,7 @@ namespace SchoolERP.API.Controllers
                         Module = "Fees",
                         EntityName = "FeeReceipt",
                         RecordId = receipt.Id.ToString(),
-                        NewValues = $"Receipt: {receiptNo}, Student: {student.FullName}, Paid: {totalPayable}",
+                        NewValues = $"Receipt: {receiptNo}, Student: {student.FullName}, Paid: {netPayable}, Discount: {discount}",
                         IpAddress = _currentUserService.IpAddress,
                         BranchId = branchId
                     });
@@ -521,10 +597,12 @@ namespace SchoolERP.API.Controllers
                         GuardianMobile = primaryGuardian?.Mobile ?? "",
                         Month = monthStr,
                         PaymentModeName = paymentModeStr,
-                        TotalDue = totalDuesPaid,
+                        TotalDue = receipt.TotalDue,
                         TotalConcession = totalConcessionPaid,
                         TotalFine = totalFinePaid,
-                        TotalPaid = totalPayable,
+                        TotalPaid = netPayable,
+                        TotalDiscount = receipt.TotalDiscount,
+                        DiscountRemarks = receipt.DiscountRemarks,
                         RemainingTotalDues = remainingDues,
                         Status = receipt.Status,
                         Items = printItems,
@@ -561,6 +639,8 @@ namespace SchoolERP.API.Controllers
                     .ThenInclude(d => d.FeeHead)
                 .Include(r => r.Details)
                     .ThenInclude(d => d.Installment)
+                .Include(r => r.Details)
+                    .ThenInclude(d => d.StudentFeeDue)
                 .Include(r => r.Payments)
                 .FirstOrDefaultAsync(r => r.Id == id && r.BranchId == branchId);
 
@@ -629,6 +709,8 @@ namespace SchoolERP.API.Controllers
                 TotalConcession = receipt.TotalConcession,
                 TotalFine = receipt.TotalFine,
                 TotalPaid = receipt.TotalPaid,
+                TotalDiscount = receipt.TotalDiscount,
+                DiscountRemarks = receipt.DiscountRemarks,
                 RemainingTotalDues = remainingDues,
                 Status = receipt.Status,
                 Items = receipt.Details.Select(d => new ReceiptPrintItemDto
@@ -636,6 +718,8 @@ namespace SchoolERP.API.Controllers
                     FeeHeadName = d.FeeHead?.Name ?? "",
                     InstallmentName = d.Installment?.Name ?? "",
                     Month = d.Installment?.Name ?? monthStr ?? "",
+                    OriginalAmount = d.StudentFeeDue?.OriginalAmount ?? (d.AmountPaid + d.BalanceCarried),
+                    ConcessionAmount = d.StudentFeeDue?.ConcessionAmount ?? 0,
                     AmountPaid = d.AmountPaid,
                     FinePaid = d.FinePaid,
                     BalanceCarried = d.BalanceCarried

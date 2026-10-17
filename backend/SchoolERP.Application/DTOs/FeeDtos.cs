@@ -199,6 +199,8 @@ namespace SchoolERP.Application.DTOs
         public long StudentId { get; set; }
         public List<CollectDuePaymentItemDto> DuesToPay { get; set; } = new List<CollectDuePaymentItemDto>();
         public List<PaymentSplitDto> Payments { get; set; } = new List<PaymentSplitDto>();
+        public decimal OverallDiscount { get; set; } = 0;
+        public string? DiscountRemarks { get; set; }
         public string? Remarks { get; set; }
     }
 
@@ -207,6 +209,8 @@ namespace SchoolERP.Application.DTOs
         public string FeeHeadName { get; set; } = string.Empty;
         public string InstallmentName { get; set; } = string.Empty;
         public string Month { get; set; } = string.Empty;
+        public decimal OriginalAmount { get; set; }
+        public decimal ConcessionAmount { get; set; }
         public decimal AmountPaid { get; set; }
         public decimal FinePaid { get; set; }
         public decimal BalanceCarried { get; set; }
@@ -243,6 +247,8 @@ namespace SchoolERP.Application.DTOs
         public decimal TotalConcession { get; set; }
         public decimal TotalFine { get; set; }
         public decimal TotalPaid { get; set; }
+        public decimal TotalDiscount { get; set; } = 0;
+        public string? DiscountRemarks { get; set; }
         public decimal RemainingTotalDues { get; set; }
         public ReceiptStatus Status { get; set; }
 

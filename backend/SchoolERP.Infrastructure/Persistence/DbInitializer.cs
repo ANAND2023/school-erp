@@ -73,7 +73,7 @@ namespace SchoolERP.Infrastructure.Persistence
             }
             catch { }
 
-            // Ensure ID card template columns exist on schools table
+            // Ensure ID card template columns exist on schools and branches table
             try
             {
                 await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN id_card_front LONGTEXT NULL;");
@@ -83,6 +83,18 @@ namespace SchoolERP.Infrastructure.Persistence
             try
             {
                 await context.Database.ExecuteSqlRawAsync("ALTER TABLE schools ADD COLUMN id_card_back LONGTEXT NULL;");
+            }
+            catch { }
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE branches ADD COLUMN id_card_front LONGTEXT NULL;");
+            }
+            catch { }
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE branches ADD COLUMN id_card_back LONGTEXT NULL;");
             }
             catch { }
 

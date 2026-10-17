@@ -509,17 +509,27 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
   const totalPaid = Number(receiptData.totalPaid || 0);
   const totalConcession = Number(receiptData.totalConcession || 0);
   const totalFine = Number(receiptData.totalFine || 0) || items.reduce((sum, item) => sum + Number(item.finePaid || 0), 0);
+  const totalDiscount = Number(receiptData.totalDiscount || 0);
+  const discountRemarks = receiptData.discountRemarks || '';
 
   // Month-scoped dues: only for the month(s) on this receipt (not the entire year)
   const itemsDuesSum = items.reduce((sum, item) => sum + Number(item.balanceCarried || 0), 0);
   const remainingDues = items.length > 0 ? itemsDuesSum : Number(receiptData.remainingTotalDues || 0);
 
-  // Month-scoped total fee: only for the month(s) on this receipt
-  const itemsTotalFee = items.reduce(
-    (sum, item) => sum + Number(item.amountPaid || 0) + Number(item.balanceCarried || 0),
-    0
-  );
-  const totalFeeAmount = itemsTotalFee > 0 ? (itemsTotalFee + totalConcession) : (totalPaid - totalFine + remainingDues + totalConcession);
+  const totalActualAmount = items.length > 0
+    ? items.reduce(
+        (sum, item) =>
+          sum +
+          Number(
+            item.originalAmount !== undefined && item.originalAmount !== null && Number(item.originalAmount) > 0
+              ? item.originalAmount
+              : Number(item.amountPaid || 0) + Number(item.balanceCarried || 0) + Number(item.concessionAmount || 0)
+          ),
+        0
+      )
+    : Number(receiptData.totalDue || 0) || (totalPaid + remainingDues + totalConcession);
+
+  const totalPayableAmount = Math.max(0, totalActualAmount + totalFine - totalConcession - totalDiscount);
 
   const amountInWords = numberToIndianWords(totalPaid);
 
@@ -645,54 +655,84 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
       y += metaH;
     });
 
-    // Fee Head Table
-    const tableBody = items.map((item) => [
-      (item.feeHeadName || 'FEE').toUpperCase(),
-      item.installmentName || item.month || item.installment || item.periodName || (items.length === 1 ? month : '') || month || '—',
-      Number(item.amountPaid || 0).toFixed(2),
-      Number(item.balanceCarried || 0).toFixed(2),
-    ]);
+    // Fee Head Table - 2 columns: FEE HEAD and AMOUNT (grouped by fee head for multiple months)
+    const itemMap = new Map();
+    items.forEach((item) => {
+      const name = (item.feeHeadName || 'FEE').toUpperCase().trim();
+      const itemActual = Number(
+        item.originalAmount !== undefined && item.originalAmount !== null && Number(item.originalAmount) > 0
+          ? item.originalAmount
+          : Number(item.amountPaid || 0) + Number(item.balanceCarried || 0) + Number(item.concessionAmount || 0)
+      );
 
-    if (totalFine > 0) {
-      tableBody.push([
-        'LATE FINE PENALTY',
-        month,
-        totalFine.toFixed(2),
-        '0.00',
-      ]);
+      if (!itemMap.has(name)) {
+        itemMap.set(name, {
+          name,
+          totalAmount: itemActual,
+          count: 1,
+          rates: [itemActual],
+        });
+      } else {
+        const existing = itemMap.get(name);
+        existing.totalAmount += itemActual;
+        existing.count += 1;
+        existing.rates.push(itemActual);
+      }
+    });
+
+    const tableBody = Array.from(itemMap.values()).map((g) => {
+      const allSameRate = g.rates.every((r) => Math.abs(r - g.rates[0]) < 0.01);
+      let displayName = g.name;
+      if (g.count > 1) {
+        if (allSameRate) {
+          displayName = `${g.name} (${g.count} MONTHS × RS. ${g.rates[0].toFixed(0)})`;
+        } else {
+          displayName = `${g.name} (${g.count} MONTHS)`;
+        }
+      }
+      return [displayName, g.totalAmount.toFixed(2)];
+    });
+
+    if (tableBody.length === 0) {
+      tableBody.push(['FEE INSTALLMENT', totalActualAmount.toFixed(2)]);
     }
 
-    // Totals rows with Rs. instead of ₹ (prevents font rendering issue)
+    // Totals rows matching requested financial breakdown:
+    // Total Amount, Fine, Concession, Discount, Total Payable Amount, Total Paid Amt, Remaining Due
     tableBody.push([
-      { content: 'Total Fee Amount.', colSpan: 2 },
-      { content: `Rs. ${totalFeeAmount.toFixed(2)}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
-    ]);
-    if (totalConcession > 0) {
-      tableBody.push([
-        { content: 'Concession Amount', colSpan: 2 },
-        { content: `Rs. ${totalConcession.toFixed(2)}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
-      ]);
-    }
-    if (totalFine > 0) {
-      tableBody.push([
-        { content: 'Late Fine', colSpan: 2 },
-        { content: `Rs. ${totalFine.toFixed(2)}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', textColor: [185, 28, 28] } },
-      ]);
-    }
-    tableBody.push([
-      { content: 'Paid Amount', colSpan: 2 },
-      { content: `Rs. ${totalPaid.toFixed(2)}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+      { content: 'Total Amount', styles: { fontStyle: 'bold' } },
+      { content: `Rs. ${totalActualAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
     ]);
     tableBody.push([
-      { content: 'Total Dues', colSpan: 2 },
-      { content: `Rs. ${remainingDues.toFixed(2)}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+      { content: 'Fine', styles: { fontStyle: 'bold' } },
+      { content: totalFine > 0 ? `+ Rs. ${totalFine.toFixed(2)}` : 'Rs. 0.00', styles: { halign: 'right', fontStyle: 'bold', textColor: totalFine > 0 ? [185, 28, 28] : [0, 0, 0] } },
+    ]);
+    tableBody.push([
+      { content: 'Concession', styles: { fontStyle: 'bold' } },
+      { content: totalConcession > 0 ? `- Rs. ${totalConcession.toFixed(2)}` : 'Rs. 0.00', styles: { halign: 'right', fontStyle: 'bold', textColor: totalConcession > 0 ? [126, 34, 206] : [0, 0, 0] } },
+    ]);
+    tableBody.push([
+      { content: discountRemarks ? `Discount (${discountRemarks})` : 'Discount', styles: { fontStyle: 'bold' } },
+      { content: totalDiscount > 0 ? `- Rs. ${totalDiscount.toFixed(2)}` : 'Rs. 0.00', styles: { halign: 'right', fontStyle: 'bold', textColor: totalDiscount > 0 ? [21, 128, 61] : [0, 0, 0] } },
+    ]);
+    tableBody.push([
+      { content: 'Total Payable Amount', styles: { fontStyle: 'bold', fillColor: [243, 244, 246] } },
+      { content: `Rs. ${totalPayableAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [243, 244, 246] } },
+    ]);
+    tableBody.push([
+      { content: 'Total Paid Amt', styles: { fontStyle: 'bold', fillColor: [240, 253, 244] } },
+      { content: `Rs. ${totalPaid.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: [21, 128, 61], fillColor: [240, 253, 244] } },
+    ]);
+    tableBody.push([
+      { content: 'Remaining Due', styles: { fontStyle: 'bold' } },
+      { content: remainingDues > 0 ? `Rs. ${remainingDues.toFixed(2)}` : 'Cleared', styles: { halign: 'right', fontStyle: 'bold', textColor: remainingDues > 0 ? [185, 28, 28] : [21, 128, 61] } },
     ]);
 
     autoTable(doc, {
       startY: y,
       margin: { left: startX },
       tableWidth: slipW,
-      head: [['FEE HEAD', 'Month', 'AMOUNT (Rs.)', 'DUES']],
+      head: [['FEE HEAD', 'AMOUNT (Rs.)']],
       body: tableBody,
       theme: 'plain',
       styles: {
@@ -710,10 +750,8 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
         fontSize: 7,
       },
       columnStyles: {
-        0: { cellWidth: 33, fontStyle: 'bold' },
-        1: { cellWidth: 23 },
-        2: { cellWidth: 21, halign: 'right' },
-        3: { cellWidth: 15, halign: 'right' },
+        0: { cellWidth: 64, fontStyle: 'bold' },
+        1: { cellWidth: 28, halign: 'right' },
       },
     });
 

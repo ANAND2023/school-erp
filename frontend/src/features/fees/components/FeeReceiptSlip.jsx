@@ -68,7 +68,7 @@ const DEFAULT_CONFIG = {
   showPaymentMode: true,
   showChequeDetails: true,
   showFeeBreakdownTable: true,
-  showMonthColumn: true,
+  showMonthColumn: false,
   showPreviousDues: true,
   showConcession: true,
   showFine: true,
@@ -118,13 +118,74 @@ const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
   const totalPaid = Number(data.totalPaid || 0);
   const totalConcession = Number(data.totalConcession || 0);
   const totalFine = Number(data.totalFine || 0) || items.reduce((sum, item) => sum + Number(item.finePaid || 0), 0);
+  const totalDiscount = Number(data.totalDiscount || 0);
+  const discountRemarks = data.discountRemarks || '';
 
-  const itemsDuesSum = items.reduce((sum, item) => sum + Number(item.balanceCarried || 0), 0);
+  const itemsDuesSum = items.reduce((sum, item) => sum + Number(item.balanceCarried || item.due || 0), 0);
   const remainingDues = items.length > 0 ? itemsDuesSum : Number(data.remainingTotalDues || 0);
 
+  const totalActualAmount = items.length > 0
+    ? items.reduce(
+        (sum, item) =>
+          sum +
+          Number(
+            item.originalAmount !== undefined && item.originalAmount !== null && Number(item.originalAmount) > 0
+              ? item.originalAmount
+              : Number(item.amountPaid || item.paid || 0) + Number(item.balanceCarried || item.due || 0) + Number(item.concessionAmount || 0)
+          ),
+        0
+      )
+    : Number(data.totalDue || 0) || (totalPaid + remainingDues + totalConcession);
+
+  const totalPayableAmount = Math.max(0, totalActualAmount + totalFine - totalConcession - totalDiscount);
+  const cur = config.currencySymbol || '₹';
   const amountInWords = numberToIndianWords(totalPaid);
   const logoSrc = data.logoUrl || data.schoolLogo;
-  const cur = config.currencySymbol || '₹';
+
+  // Consolidate duplicate fee heads across multiple months into a single clean row
+  const groupedItems = React.useMemo(() => {
+    if (!items || items.length === 0) return [];
+    const map = new Map();
+
+    items.forEach((item) => {
+      const name = (item.feeHeadName || item.feeHead || 'Tuition Fee').trim();
+      const itemActual = Number(
+        item.originalAmount !== undefined && item.originalAmount !== null && Number(item.originalAmount) > 0
+          ? item.originalAmount
+          : Number(item.amountPaid || item.paid || 0) + Number(item.balanceCarried || item.due || 0) + Number(item.concessionAmount || 0)
+      );
+
+      if (!map.has(name)) {
+        map.set(name, {
+          feeHeadName: name,
+          totalAmount: itemActual,
+          count: 1,
+          rates: [itemActual],
+        });
+      } else {
+        const existing = map.get(name);
+        existing.totalAmount += itemActual;
+        existing.count += 1;
+        existing.rates.push(itemActual);
+      }
+    });
+
+    return Array.from(map.values()).map((g) => {
+      const allSameRate = g.rates.every((r) => Math.abs(r - g.rates[0]) < 0.01);
+      let displayName = g.feeHeadName;
+      if (g.count > 1) {
+        if (allSameRate) {
+          displayName = `${g.feeHeadName} (${g.count} Months × ${cur}${g.rates[0].toFixed(0)})`;
+        } else {
+          displayName = `${g.feeHeadName} (${g.count} Months)`;
+        }
+      }
+      return {
+        feeHeadName: displayName,
+        amount: g.totalAmount,
+      };
+    });
+  }, [items, cur]);
 
   const isVisible = (key) => {
     const sec = config.sections?.find((s) => s.key === key);
@@ -342,66 +403,40 @@ const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
           >
             <thead>
               <tr style={{ backgroundColor: config.secondaryColor || '#ffffff', borderBottom: `1px solid ${config.borderColor || '#000000'}` }}>
-                <th style={{ width: config.showMonthColumn !== false ? '35%' : '52%', borderRight: `1px solid ${config.borderColor || '#000000'}`, padding: '2px 4px', textAlign: 'left', fontWeight: 'bold' }}>
+                <th style={{ width: '72%', borderRight: `1px solid ${config.borderColor || '#000000'}`, padding: '2px 4px', textAlign: 'left', fontWeight: 'bold' }}>
                   FEE HEAD
                 </th>
-                {config.showMonthColumn !== false && (
-                  <th style={{ width: '22%', borderRight: `1px solid ${config.borderColor || '#000000'}`, padding: '2px 4px', textAlign: 'center', fontWeight: 'bold' }}>
-                    MONTH
-                  </th>
-                )}
-                <th style={{ width: config.showMonthColumn !== false ? '21%' : '24%', borderRight: `1px solid ${config.borderColor || '#000000'}`, padding: '2px 4px', textAlign: 'right', fontWeight: 'bold' }}>
-                  PAID ({cur})
-                </th>
-                <th style={{ width: config.showMonthColumn !== false ? '22%' : '24%', padding: '2px 4px', textAlign: 'right', fontWeight: 'bold' }}>
-                  DUE ({cur})
+                <th style={{ width: '28%', padding: '2px 4px', textAlign: 'right', fontWeight: 'bold' }}>
+                  AMOUNT ({cur})
                 </th>
               </tr>
             </thead>
             <tbody>
-              {items.length > 0 ? (
-                items.map((item, idx) => {
-                  const itemMonth = item.installmentName || item.installment || item.month || item.periodName || item.feeMonth || (items.length === 1 ? monthDisplay : '') || monthDisplay || data.month || '—';
-                  return (
-                    <tr key={idx} style={{ borderBottom: `1px solid ${config.borderColor || '#000000'}`, minHeight: '17px' }}>
-                      <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.feeHeadName || item.feeHead || 'Tuition Fee'}
-                      </td>
-                      {config.showMonthColumn !== false && (
-                        <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'center', whiteSpace: 'nowrap', fontSize: '9px' }}>
-                          {itemMonth}
-                        </td>
-                      )}
-                      <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'right', fontWeight: 600 }}>
-                        {Number(item.amountPaid || item.paid || 0).toFixed(0)}
-                      </td>
-                      <td style={{ padding: '2px 4px', textAlign: 'right' }}>
-                        {Number(item.balanceCarried || item.due || 0).toFixed(0)}
-                      </td>
-                    </tr>
-                  );
-                })
+              {groupedItems.length > 0 ? (
+                groupedItems.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: `1px solid ${config.borderColor || '#000000'}`, minHeight: '17px' }}>
+                    <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.feeHeadName}>
+                      {item.feeHeadName}
+                    </td>
+                    <td style={{ padding: '2px 4px', textAlign: 'right', fontWeight: 600 }}>
+                      {item.amount.toFixed(0)}
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr style={{ borderBottom: `1px solid ${config.borderColor || '#000000'}` }}>
                   <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}` }}>Fee Installment</td>
-                  {config.showMonthColumn !== false && (
-                    <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'center', fontSize: '9px' }}>{monthDisplay || data.month || '—'}</td>
-                  )}
-                  <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'right', fontWeight: 600 }}>{totalPaid.toFixed(0)}</td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right' }}>{remainingDues.toFixed(0)}</td>
+                  <td style={{ padding: '2px 4px', textAlign: 'right', fontWeight: 600 }}>{totalActualAmount.toFixed(0)}</td>
                 </tr>
               )}
 
               {/* Totals Row */}
               <tr style={{ backgroundColor: config.secondaryColor || '#f9fafb', fontWeight: 'bold' }}>
-                <td colSpan={config.showMonthColumn !== false ? 2 : 1} style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'left' }}>
-                  TOTAL PAID
+                <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'left' }}>
+                  TOTAL FEE
                 </td>
-                <td style={{ padding: '2px 4px', borderRight: `1px solid ${config.borderColor || '#000000'}`, textAlign: 'right', color: config.primaryColor || '#1e3a8a' }}>
-                  {cur} {totalPaid.toFixed(0)}
-                </td>
-                <td style={{ padding: '2px 4px', textAlign: 'right' }}>
-                  {cur} {remainingDues.toFixed(0)}
+                <td style={{ padding: '2px 4px', textAlign: 'right', color: config.primaryColor || '#1e3a8a' }}>
+                  {cur} {totalActualAmount.toFixed(0)}
                 </td>
               </tr>
             </tbody>
@@ -420,20 +455,101 @@ const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
               backgroundColor: '#ffffff',
             }}
           >
-            {config.showAmountInWords && (
-              <div style={{ marginBottom: '2px' }}>
-                <b>Rupees:</b> <span style={{ textTransform: 'capitalize' }}>{amountInWords}</span>
+            {/* Financial Calculation Breakdown */}
+            <div
+              style={{
+                display: 'flex',
+                borderBottom: `1px solid ${config.borderColor || '#e5e7eb'}`,
+                paddingBottom: '3px',
+                marginBottom: '3px',
+              }}
+            >
+              {/* Left Column: Components */}
+              <div
+                style={{
+                  width: '48%',
+                  paddingRight: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.5px',
+                  fontSize: '9.5px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#4b5563' }}>Total Amount:</span>
+                  <span style={{ fontWeight: 600 }}>{cur} {totalActualAmount.toFixed(0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#4b5563' }}>Fine:</span>
+                  <span style={{ fontWeight: 600, color: totalFine > 0 ? '#b91c1c' : '#4b5563' }}>
+                    {totalFine > 0 ? `+ ${cur}${totalFine.toFixed(0)}` : `${cur}0`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#4b5563' }}>Concession:</span>
+                  <span style={{ fontWeight: 600, color: totalConcession > 0 ? '#7e22ce' : '#4b5563' }}>
+                    {totalConcession > 0 ? `- ${cur}${totalConcession.toFixed(0)}` : `${cur}0`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#4b5563' }}>Discount:</span>
+                  <span style={{ fontWeight: 600, color: totalDiscount > 0 ? '#15803d' : '#4b5563' }}>
+                    {totalDiscount > 0 ? `- ${cur}${totalDiscount.toFixed(0)}` : `${cur}0`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Column: Settlement & Payable */}
+              <div
+                style={{
+                  width: '52%',
+                  borderLeft: `1px solid ${config.borderColor || '#cbd5e1'}`,
+                  paddingLeft: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  fontSize: '9.5px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                  <span style={{ color: config.primaryColor || '#1e3a8a' }}>Total Payable Amount:</span>
+                  <span style={{ color: config.primaryColor || '#1e3a8a' }}>{cur} {totalPayableAmount.toFixed(0)}</span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontWeight: 'bold',
+                    backgroundColor: '#f0fdf4',
+                    padding: '1px 3px',
+                    borderRadius: '2px',
+                  }}
+                >
+                  <span style={{ color: '#166534' }}>Total Paid Amt:</span>
+                  <span style={{ color: '#166534' }}>{cur} {totalPaid.toFixed(0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1px' }}>
+                  <span style={{ fontWeight: 600, color: remainingDues > 0 ? '#b91c1c' : '#4b5563' }}>
+                    Remaining Due:
+                  </span>
+                  <span style={{ fontWeight: 'bold', color: remainingDues > 0 ? '#b91c1c' : '#15803d' }}>
+                    {remainingDues > 0 ? `${cur} ${remainingDues.toFixed(0)}` : 'Cleared'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {totalDiscount > 0 && discountRemarks && (
+              <div style={{ fontSize: '9px', color: '#065f46', marginBottom: '2px', fontStyle: 'italic' }}>
+                <b>Discount Note:</b> {discountRemarks}
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4b5563', fontSize: '9.5px' }}>
-              {config.showConcession && <span>Concession: {cur}{totalConcession}</span>}
-              {config.showFine && <span>Fine: {cur}{totalFine}</span>}
-              {config.showBalanceDue && (
-                <span style={{ fontWeight: 'bold', color: remainingDues > 0 ? '#b91c1c' : '#15803d' }}>
-                  Remaining Due: {cur}{remainingDues}
-                </span>
-              )}
-            </div>
+
+            {config.showAmountInWords && (
+              <div style={{ fontSize: '9.5px', color: '#1f2937', marginTop: '1px' }}>
+                <b>Rupees:</b> <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{amountInWords}</span>
+              </div>
+            )}
           </div>
         )}
 

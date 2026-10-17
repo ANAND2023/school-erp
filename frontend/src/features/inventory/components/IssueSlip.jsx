@@ -174,6 +174,39 @@ const IssueSlip = ({ data, config: propConfig, onHide }) => {
               <div style={{ fontSize: `${(cfg.baseFontSize || 10) - 2}px` }}>{cfg.receiptSubtitle}</div>
             )}
           </div>
+
+          {/* Prominent REFUND / RETURN Red Stamp Banner */}
+          {(data.status === 'Returned' || data.status === 'Partially Returned' || (data.totalReturnedAmount && data.totalReturnedAmount > 0) || (data.items && data.items.some(i => i.isReturned || (i.returnedQuantity && i.returnedQuantity > 0)))) && (
+            <div style={{
+              margin: '6px auto 4px auto',
+              padding: '4px 8px',
+              backgroundColor: '#fee2e2',
+              border: '2px dashed #dc2626',
+              borderRadius: '4px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                color: '#dc2626',
+                fontWeight: 900,
+                fontSize: '13pt',
+                letterSpacing: '2px',
+                lineHeight: 1.1,
+                textTransform: 'uppercase'
+              }}>
+                ★ {data.status === 'Partially Returned' ? 'PARTIALLY REFUNDED' : 'REFUND / ITEM RETURNED'} ★
+              </div>
+              {data.totalReturnedAmount > 0 && (
+                <div style={{
+                  color: '#991b1b',
+                  fontWeight: 800,
+                  fontSize: '8pt',
+                  marginTop: '2px'
+                }}>
+                  REFUND VALUE: {cfg.currencySymbol || '₹'}{Number(data.totalReturnedAmount).toFixed(2)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Voucher & Customer Metadata */}
@@ -195,6 +228,14 @@ const IssueSlip = ({ data, config: propConfig, onHide }) => {
               <span><strong>Payment:</strong> {data.paymentMode || 'Cash'}</span>
             )}
           </div>
+          {(data.status === 'Returned' || data.status === 'Partially Returned') && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+              <span><strong>Status:</strong> {data.status}</span>
+              <span style={{ color: '#dc2626', fontWeight: 800 }}>
+                [{data.status === 'Partially Returned' ? 'PARTIAL REFUND' : 'REFUNDED'}]
+              </span>
+            </div>
+          )}
         </div>
 
         <div style={{ borderBottom: '1px dashed #000', margin: '4px 0 6px 0' }}></div>
@@ -213,11 +254,17 @@ const IssueSlip = ({ data, config: propConfig, onHide }) => {
               const qty = Number(item.quantity || item.qty || 1);
               const rate = Number(item.sellingPrice || item.unitPrice || 0);
               const total = item.totalAmount || (qty * rate);
+              const isItemRefunded = Boolean(item.isReturned || (item.returnedQuantity && item.returnedQuantity > 0));
               return (
-                <tr key={idx} style={{ borderBottom: '1px dotted #ccc' }}>
+                <tr key={idx} style={{ borderBottom: '1px dotted #ccc', backgroundColor: isItemRefunded ? '#fef2f2' : 'transparent' }}>
                   <td className="py-1 text-left" style={{ wordBreak: 'break-word', verticalAlign: 'top' }}>
                     <strong>{idx + 1}.</strong> {item.itemName || 'Item'}
                     {item.itemCode && <div style={{ fontSize: '8px', color: '#555' }}>Code: {item.itemCode}</div>}
+                    {isItemRefunded && (
+                      <div style={{ fontSize: '8px', color: '#dc2626', fontWeight: 800, marginTop: '1px' }}>
+                        ⚠ REFUNDED: {item.returnedQuantity || item.quantity} {item.unit || 'Pcs'}
+                      </div>
+                    )}
                   </td>
                   <td className="py-1 text-center" style={{ verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                     {qty} x {cfg.currencySymbol || '₹'}{rate}
@@ -238,6 +285,13 @@ const IssueSlip = ({ data, config: propConfig, onHide }) => {
           <span>TOTAL AMOUNT:</span>
           <span>{cfg.currencySymbol || '₹'}{grandTotal.toFixed(2)}</span>
         </div>
+
+        {Boolean(data.totalReturnedAmount && data.totalReturnedAmount > 0) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${(cfg.baseFontSize || 10) + 1}px`, fontWeight: 'bold', margin: '4px 0', color: '#dc2626' }}>
+            <span>REFUNDED AMOUNT:</span>
+            <span>- {cfg.currencySymbol || '₹'}{Number(data.totalReturnedAmount).toFixed(2)}</span>
+          </div>
+        )}
 
         <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
 
@@ -321,6 +375,8 @@ const IssueSlip = ({ data, config: propConfig, onHide }) => {
           }
           #printable-issue-slip, #printable-issue-slip * {
             visibility: visible;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           #printable-issue-slip {
             position: absolute !important;

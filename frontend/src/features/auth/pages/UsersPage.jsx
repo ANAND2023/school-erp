@@ -15,6 +15,8 @@ import {
   DialogActions,
   Grid,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -57,6 +59,8 @@ export const UsersPage = () => {
     mobile: '',
     userType: 2, // Default SchoolAdmin or Teacher
     roleId: '',
+    canGiveDiscount: false,
+    maxDiscountLimit: 0,
   });
 
   // Reset Password Modal
@@ -128,6 +132,8 @@ export const UsersPage = () => {
       mobile: '',
       userType: 4, // Teacher
       roleId: roles.length > 0 ? roles[0].id : '',
+      canGiveDiscount: false,
+      maxDiscountLimit: 0,
     });
     setUserModalOpen(true);
   };
@@ -142,6 +148,8 @@ export const UsersPage = () => {
       mobile: user.mobile || '',
       userType: user.userType,
       roleId: user.roleId,
+      canGiveDiscount: Boolean(user.canGiveDiscount),
+      maxDiscountLimit: user.maxDiscountLimit || 0,
     });
     setUserModalOpen(true);
   };
@@ -156,10 +164,16 @@ export const UsersPage = () => {
           mobile: formData.mobile,
           userType: formData.userType,
           roleId: formData.roleId,
+          canGiveDiscount: formData.canGiveDiscount,
+          maxDiscountLimit: formData.canGiveDiscount ? (Number(formData.maxDiscountLimit) || 0) : 0,
         });
         showSnackbar('User updated successfully', 'success');
       } else {
-        await userApi.createUser(formData);
+        await userApi.createUser({
+          ...formData,
+          canGiveDiscount: formData.canGiveDiscount,
+          maxDiscountLimit: formData.canGiveDiscount ? (Number(formData.maxDiscountLimit) || 0) : 0,
+        });
         showSnackbar('User created successfully', 'success');
       }
       setUserModalOpen(false);
@@ -216,6 +230,26 @@ export const UsersPage = () => {
     { field: 'email', headerName: 'Email', flex: 1.2, minWidth: 160 },
     { field: 'mobile', headerName: 'Mobile', width: 130 },
     { field: 'roleName', headerName: 'Role', width: 140 },
+    {
+      field: 'canGiveDiscount',
+      headerName: 'Fee Discount',
+      width: 140,
+      renderCell: (params) => {
+        const row = params.row;
+        if (!row.canGiveDiscount) {
+          return <Chip label="No Access" size="small" variant="outlined" color="default" />;
+        }
+        const limit = Number(row.maxDiscountLimit || 0);
+        return (
+          <Chip
+            label={limit > 0 ? `Max ₹${limit.toLocaleString('en-IN')}` : 'Unlimited'}
+            size="small"
+            color="success"
+            variant="filled"
+          />
+        );
+      },
+    },
     {
       field: 'isActive',
       headerName: 'Status',
@@ -456,6 +490,40 @@ export const UsersPage = () => {
                 ))}
               </TextField>
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={Boolean(formData.canGiveDiscount)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        canGiveDiscount: e.target.checked,
+                        maxDiscountLimit: e.target.checked ? formData.maxDiscountLimit : 0,
+                      })
+                    }
+                    color="primary"
+                  />
+                }
+                label="Allow Fee Discount"
+                sx={{ mt: 1 }}
+              />
+            </Grid>
+            {formData.canGiveDiscount && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Max Discount Limit (₹)"
+                  helperText="Enter 0 for Unlimited discount authority"
+                  value={formData.maxDiscountLimit}
+                  onChange={(e) =>
+                    setFormData({ ...formData, maxDiscountLimit: Math.max(0, Number(e.target.value)) })
+                  }
+                  inputProps={{ min: 0, step: 'any' }}
+                />
+              </Grid>
+            )}
           </Grid>
         </Box>
       </Modal>

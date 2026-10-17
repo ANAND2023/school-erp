@@ -486,7 +486,7 @@ export const StockReturnPage = () => {
                       size="small"
                       className="p-button-outlined p-button-secondary p-button-sm"
                       onClick={() => setPrintOriginalIssue(row)}
-                      tooltip="Print Original Invoice Memo"
+                      tooltip="Print Invoice Memo"
                     />
                   </Box>
                 );

@@ -52,6 +52,8 @@ namespace SchoolERP.Application.DTOs
         public string? AcademicYearName { get; set; }
         public long? LinkedEntityId { get; set; }
         public bool MustChangePassword { get; set; }
+        public bool CanGiveDiscount { get; set; } = false;
+        public decimal MaxDiscountLimit { get; set; } = 0;
     }
 
     public class RefreshTokenRequestDto
@@ -106,5 +108,7 @@ namespace SchoolERP.Application.DTOs
         public long BranchId { get; set; }
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }
+        public bool CanGiveDiscount { get; set; } = false;
+        public decimal MaxDiscountLimit { get; set; } = 0;
     }
 }

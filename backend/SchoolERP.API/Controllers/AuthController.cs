@@ -449,7 +449,9 @@ namespace SchoolERP.API.Controllers
                     BranchName = branch?.Name,
                     AcademicYearId = 1,
                     LinkedEntityId = user.LinkedEntityId,
-                    MustChangePassword = user.MustChangePassword
+                    MustChangePassword = user.MustChangePassword,
+                    CanGiveDiscount = user.CanGiveDiscount,
+                    MaxDiscountLimit = user.MaxDiscountLimit
                 },
                 Permissions = permissions
             };

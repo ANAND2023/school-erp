@@ -77,7 +77,7 @@ import {
 } from '../utils/feeExportUtils';
 import { FeeReceiptSlip } from '../components/FeeReceiptSlip';
 import { StudentFeeHistoryModal } from '../components/StudentFeeHistoryModal';
-import { AppDatePicker, AppSelect } from '../../../components/common';
+import { AppDatePicker, AppSelect, AppModal } from '../../../components/common';
 import { printWithTitle } from '../../../utils/printUtils';
 
 const PAYMENT_MODES = [
@@ -129,8 +129,6 @@ export default function FeeReportsPage() {
   const { activeBranchId } = useAuthStore();
   const [printReceiptData, setPrintReceiptData] = useState(null);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
-  const [isEditingHeader, setIsEditingHeader] = useState(false);
-  const [headerSaveLoading, setHeaderSaveLoading] = useState(false);
 
   // Full Register Print Previews
   const [isCollectionPrintOpen, setIsCollectionPrintOpen] = useState(false);
@@ -499,44 +497,86 @@ export default function FeeReportsPage() {
 
 
       {/* Tabs */}
-      <Card sx={{ mb: 3, boxShadow: 1 }}>
+      <Card sx={{ mb: 1.5, boxShadow: 1, borderRadius: 2 }}>
         <Tabs
           value={activeTab}
           onChange={(e, val) => setActiveTab(val)}
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            px: 1,
+            minHeight: 40,
+            '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
+          }}
           variant="scrollable"
           scrollButtons="auto"
         >
           <Tab
-            icon={<ReceiptIcon fontSize="small" />}
+            icon={<ReceiptIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
             label={`1. Daily Collection Register (${collectionList.length})`}
+            sx={{
+              minHeight: 40,
+              py: 0.75,
+              px: 1.75,
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              letterSpacing: 0,
+            }}
           />
           <Tab
-            icon={<DefaulterIcon fontSize="small" />}
+            icon={<DefaulterIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
             label={`2. Fee Defaulters List (${defaultersList.length})`}
+            sx={{
+              minHeight: 40,
+              py: 0.75,
+              px: 1.75,
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              letterSpacing: 0,
+            }}
           />
           <Tab
-            icon={<CalendarMonthIcon fontSize="small" />}
+            icon={<CalendarMonthIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
             label="3. Class & Month-wise Status"
+            sx={{
+              minHeight: 40,
+              py: 0.75,
+              px: 1.75,
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              letterSpacing: 0,
+            }}
           />
           <Tab
-            icon={<HistoryIcon fontSize="small" />}
+            icon={<HistoryIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
             label="4. Student Fee History"
+            sx={{
+              minHeight: 40,
+              py: 0.75,
+              px: 1.75,
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              letterSpacing: 0,
+            }}
           />
         </Tabs>
       </Card>
 
       {/* Tab 0: Daily Collection Register */}
       {activeTab === 0 && (
-        <Stack spacing={3}>
+        <Stack spacing={1.5}>
           {/* Filters & Export Toolbar Card */}
           <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Grid container spacing={2} alignItems="center">
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Grid container spacing={1.5} alignItems="center">
                 <Grid item xs={12} sm={3}>
                   <AppDatePicker
                     label="From Date"
@@ -582,37 +622,43 @@ export default function FeeReportsPage() {
                   <Paper
                     variant="outlined"
                     sx={{
-                      p: 1.2,
-                      px: 2,
+                      py: 0.6,
+                      px: 1.5,
                       bgcolor: '#f0fdf4',
                       borderColor: '#86efac',
                       borderRadius: 1.5,
-                      textAlign: 'right',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      minHeight: 40,
+                      boxSizing: 'border-box',
                     }}
                   >
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
-                      Net Active Collection
-                    </Typography>
-                    <Typography variant="h6" fontWeight={800} color="#166534">
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#166534', lineHeight: 1.2 }}>
+                        Net Active Collection
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.68rem', color: '#15803d', lineHeight: 1.1 }}>
+                        {activeReceipts.length} Active {cancelledReceiptsCount > 0 && `(${cancelledReceiptsCount} Can.)`}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534', lineHeight: 1, ml: 1 }}>
                       ₹{totalCollectedPeriod.toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {activeReceipts.length} Active {cancelledReceiptsCount > 0 && `(${cancelledReceiptsCount} Cancelled)`}
                     </Typography>
                   </Paper>
                 </Grid>
               </Grid>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 1.25 }} />
 
               {/* Action Buttons: Excel, PDF, Print, CSV */}
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
-                spacing={1.5}
+                spacing={1}
                 alignItems="center"
                 justifyContent="space-between"
               >
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ fontSize: '0.8125rem' }}>
                   Showing <b>{collectionList.length}</b> receipt(s)
                   {paymentModeFilter !== 'ALL' && (
                     <span>
@@ -625,8 +671,9 @@ export default function FeeReportsPage() {
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {/* Excel (.xlsx) Download Button */}
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<ExcelIcon />}
+                    startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
                     onClick={handleDownloadCollectionExcel}
                     disabled={!collectionList.length}
                     sx={{
@@ -635,6 +682,9 @@ export default function FeeReportsPage() {
                       fontWeight: 700,
                       textTransform: 'none',
                       borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
                     }}
                   >
                     Export Excel (.xlsx)
@@ -642,8 +692,9 @@ export default function FeeReportsPage() {
 
                   {/* PDF (.pdf) Direct Download Button */}
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<PdfIcon />}
+                    startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
                     onClick={handleDownloadCollectionPdf}
                     disabled={!collectionList.length}
                     sx={{
@@ -652,6 +703,9 @@ export default function FeeReportsPage() {
                       fontWeight: 700,
                       textTransform: 'none',
                       borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
                     }}
                   >
                     Export PDF (.pdf)
@@ -659,24 +713,40 @@ export default function FeeReportsPage() {
 
                   {/* Print / Preview Register Button */}
                   <Button
+                    size="small"
                     variant="outlined"
                     color="primary"
-                    startIcon={<PrintIcon />}
+                    startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
                     onClick={() => setIsCollectionPrintOpen(true)}
                     disabled={!collectionList.length}
-                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                    sx={{
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
+                    }}
                   >
                     Print Register
                   </Button>
 
                   {/* CSV Export Button */}
                   <Button
+                    size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<FileDownloadIcon />}
+                    startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
                     onClick={handleExportCollectionCSV}
                     disabled={!collectionList.length}
-                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                    sx={{
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
+                    }}
                   >
                     CSV
                   </Button>
@@ -822,11 +892,11 @@ export default function FeeReportsPage() {
 
       {/* Tab 1: Defaulters List */}
       {activeTab === 1 && (
-        <Stack spacing={3}>
+        <Stack spacing={1.5}>
           {/* Filter Bar & Export Toolbar Card */}
           <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Grid container spacing={2.5} alignItems="center">
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Grid container spacing={1.5} alignItems="center">
                 <Grid item xs={12} sm={3}>
                   <AppSelect
                     label="Filter Class"
@@ -859,46 +929,52 @@ export default function FeeReportsPage() {
                 <Grid item xs={12} sm={6}>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
-                    spacing={2}
+                    spacing={1.5}
                     justifyContent="flex-end"
                     alignItems={{ xs: 'flex-start', sm: 'center' }}
                   >
                     <Paper
                       variant="outlined"
                       sx={{
-                        p: 1.2,
-                        px: 2,
+                        py: 0.6,
+                        px: 1.5,
                         bgcolor: '#fef2f2',
                         borderColor: '#fca5a5',
                         borderRadius: 1.5,
-                        textAlign: { xs: 'left', sm: 'right' },
-                        minWidth: 160,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        minHeight: 40,
+                        boxSizing: 'border-box',
+                        minWidth: 230,
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
-                        Total Outstanding Overdue
-                      </Typography>
-                      <Typography variant="h6" fontWeight={800} color="#b91c1c">
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#991b1b', lineHeight: 1.2 }}>
+                          Total Overdue
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.68rem', color: '#b91c1c', lineHeight: 1.1 }}>
+                          {defaultersList.length} Defaulter Student(s)
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ fontSize: '1.05rem', fontWeight: 800, color: '#b91c1c', lineHeight: 1, ml: 1.5 }}>
                         ₹{totalOverduePeriod.toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {defaultersList.length} Students with Overdue Fees
                       </Typography>
                     </Paper>
                   </Stack>
                 </Grid>
               </Grid>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 1.25 }} />
 
               {/* Action Buttons: Excel, PDF, Print, CSV */}
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
-                spacing={1.5}
+                spacing={1}
                 alignItems="center"
                 justifyContent="space-between"
               >
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ fontSize: '0.8125rem' }}>
                   Showing <b>{defaultersList.length}</b> defaulter student(s){' '}
                   {defaulterClassId ? `in Class ${selectedDefaulterClass?.name}` : 'across all classes'}
                 </Typography>
@@ -906,8 +982,9 @@ export default function FeeReportsPage() {
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {/* Excel (.xlsx) Download Button */}
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<ExcelIcon />}
+                    startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
                     onClick={handleDownloadDefaultersExcel}
                     disabled={!defaultersList.length}
                     sx={{
@@ -916,6 +993,9 @@ export default function FeeReportsPage() {
                       fontWeight: 700,
                       textTransform: 'none',
                       borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
                     }}
                   >
                     Export Excel (.xlsx)
@@ -923,8 +1003,9 @@ export default function FeeReportsPage() {
 
                   {/* PDF (.pdf) Direct Download Button */}
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<PdfIcon />}
+                    startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
                     onClick={handleDownloadDefaultersPdf}
                     disabled={!defaultersList.length}
                     sx={{
@@ -933,6 +1014,9 @@ export default function FeeReportsPage() {
                       fontWeight: 700,
                       textTransform: 'none',
                       borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
                     }}
                   >
                     Export PDF (.pdf)
@@ -940,24 +1024,40 @@ export default function FeeReportsPage() {
 
                   {/* Print / Preview Defaulters Button */}
                   <Button
+                    size="small"
                     variant="outlined"
                     color="primary"
-                    startIcon={<PrintIcon />}
+                    startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
                     onClick={() => setIsDefaultersPrintOpen(true)}
                     disabled={!defaultersList.length}
-                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                    sx={{
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
+                    }}
                   >
                     Print Defaulters
                   </Button>
 
                   {/* CSV Export Button */}
                   <Button
+                    size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<FileDownloadIcon />}
+                    startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
                     onClick={handleExportDefaultersCSV}
                     disabled={!defaultersList.length}
-                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
+                    sx={{
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      py: 0.4,
+                      px: 1.5,
+                    }}
                   >
                     CSV
                   </Button>
@@ -2507,186 +2607,104 @@ export default function FeeReportsPage() {
         </DialogActions>
       </Dialog>
 
-      {/* 3. Reprint Single Receipt Modal */}
-      <Dialog open={isPrintOpen} onClose={() => setIsPrintOpen(false)} maxWidth="lg" fullWidth>
-        <DialogTitle className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, fontWeight: 800 }}>
-          <Box sx={{ width: 140 }} />
-          <Typography variant="h6" fontWeight={800}>
-            Fee Payment Receipt Slip (Dual Copy)
-          </Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<SettingsIcon />}
-            onClick={() => setIsEditingHeader(!isEditingHeader)}
-            sx={{ textTransform: 'none', fontSize: 12 }}
-          >
-            {isEditingHeader ? 'Hide School Settings' : 'Edit School Info'}
-          </Button>
-        </DialogTitle>
-        <DialogContent sx={{ p: { xs: 1, sm: 2 }, bgcolor: '#f8fafc' }}>
-          {isEditingHeader && printReceiptData && (
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: '#ffffff', borderColor: '#3b82f6' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="primary" sx={{ mb: 1 }}>
-                Edit School Details on Slip (Updates in Real-Time):
-              </Typography>
-              <Grid container spacing={1.5}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="School Name"
-                    value={printReceiptData.schoolName || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, schoolName: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Contact Number"
-                    value={printReceiptData.contact || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, contact: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={8}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="School Address"
-                    value={printReceiptData.address || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, address: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Logo Image URL (Optional)"
-                    placeholder="https://... or data:image/..."
-                    value={printReceiptData.logoUrl || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, logoUrl: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Cashier Signature URL (Optional)"
-                    placeholder="https://... or data:image/..."
-                    value={printReceiptData.cashierSignatureUrl || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, cashierSignatureUrl: e.target.value })}
-                  />
-                </Grid>
-              </Grid>
-              <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  disabled={headerSaveLoading}
-                  onClick={async () => {
-                    try {
-                      setHeaderSaveLoading(true);
-                      await branchApi.updateBranch(activeBranchId || 1, {
-                        name: printReceiptData.branchName || 'Main Campus',
-                        code: 'MAIN',
-                        printHeader: printReceiptData.schoolName,
-                        address: printReceiptData.address,
-                        phone: printReceiptData.contact,
-                        logoUrl: printReceiptData.logoUrl,
-                        cashierSignatureUrl: printReceiptData.cashierSignatureUrl,
-                      });
-                      setIsEditingHeader(false);
-                    } catch (e) {
-                      console.error(e);
-                    } finally {
-                      setHeaderSaveLoading(false);
-                    }
-                  }}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Save as Default for All Receipts
-                </Button>
-              </Box>
-            </Paper>
-          )}
-
-          {printReceiptData && (
-            <Paper
-              elevation={2}
-              sx={{
-                p: { xs: 1, sm: 2 },
-                bgcolor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: 2,
-                overflowX: 'auto',
-              }}
-            >
-              <FeeReceiptSlip data={printReceiptData} showCuttingLine={true} />
-            </Paper>
-          )}
-        </DialogContent>
-        <DialogActions className="no-print" sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#f1f5f9' }}>
-          <Button onClick={() => setIsPrintOpen(false)} color="inherit">
-            Close
-          </Button>
-          <Stack direction="row" spacing={1.5}>
+      {/* 3. Reprint Single Receipt Dynamic Modal */}
+      <AppModal
+        open={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
+        title="Fee Payment Receipt Slip (Dual Copy)"
+        subtitle={
+          printReceiptData?.studentName
+            ? `${printReceiptData.studentName} • Adm No: ${printReceiptData.admissionNumber || printReceiptData.admissionNo || 'N/A'} • Receipt: ${printReceiptData.receiptNo || 'N/A'}`
+            : 'Official two-copy fee receipt for school records & student'
+        }
+        icon={<ReceiptLongIcon />}
+        maxWidth="lg"
+        fullWidth
+        contentSx={{ p: { xs: 1, sm: 2 }, bgcolor: '#f8fafc' }}
+        actions={
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: 1.5 }}>
             <Button
               variant="outlined"
-              color="error"
-              startIcon={<PdfIcon />}
-              onClick={() => exportDualFeeReceiptPdf(printReceiptData)}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
+              color="inherit"
+              onClick={() => setIsPrintOpen(false)}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '6px' }}
             >
-              Download PDF
+              Close
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<PrintIcon />}
-              onClick={() => {
-                const sName = printReceiptData?.studentName ? `_${printReceiptData.studentName}` : '';
-                const aNo = printReceiptData?.admissionNumber ? `_${printReceiptData.admissionNumber}` : '';
-                const rNo = printReceiptData?.receiptNo ? `_${printReceiptData.receiptNo}` : '';
-                printWithTitle(`Fee_Receipt${sName}${aNo}${rNo}`);
-              }}
-              sx={{ fontWeight: 700, textTransform: 'none', px: 3 }}
-            >
-              Print Slip (2 Copies)
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<WhatsAppIcon />}
-              onClick={() => {
-                if (!printReceiptData) return;
-                setWhatsAppModal({
-                  open: true,
-                  recipientName: printReceiptData.guardianName || printReceiptData.studentName,
-                  recipientMobile: printReceiptData.guardianMobile || printReceiptData.contact || '',
-                  moduleKey: 'feeReceipt',
-                  variables: {
-                    StudentName: printReceiptData.studentName || '',
-                    ReceiptNo: printReceiptData.receiptNo || '',
-                    Amount: String(printReceiptData.totalPaid ?? printReceiptData.amount ?? ''),
-                    Date: printReceiptData.receiptDate ? dayjs(printReceiptData.receiptDate).format('DD/MM/YYYY') : dayjs().format('DD/MM/YYYY'),
-                    PaymentMode: printReceiptData.paymentMode || 'Cash',
-                    SchoolName: printReceiptData.schoolName || schoolName,
-                  },
-                });
-              }}
-              sx={{
-                fontWeight: 700,
-                textTransform: 'none',
-                bgcolor: '#16a34a',
-                '&:hover': { bgcolor: '#15803d' },
-                color: '#ffffff',
-              }}
-            >
-              WhatsApp
-            </Button>
-          </Stack>
-        </DialogActions>
-      </Dialog>
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<PdfIcon />}
+                onClick={() => exportDualFeeReceiptPdf(printReceiptData)}
+                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '6px' }}
+              >
+                Download PDF
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<PrintIcon />}
+                onClick={() => {
+                  const sName = printReceiptData?.studentName ? `_${printReceiptData.studentName}` : '';
+                  const aNo = printReceiptData?.admissionNumber ? `_${printReceiptData.admissionNumber}` : (printReceiptData?.admissionNo ? `_${printReceiptData.admissionNo}` : '');
+                  const rNo = printReceiptData?.receiptNo ? `_${printReceiptData.receiptNo}` : '';
+                  printWithTitle(`Fee_Receipt${sName}${aNo}${rNo}`);
+                }}
+                sx={{ fontWeight: 700, textTransform: 'none', px: 3, borderRadius: '6px' }}
+              >
+                Print Slip (2 Copies)
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<WhatsAppIcon />}
+                onClick={() => {
+                  if (!printReceiptData) return;
+                  setWhatsAppModal({
+                    open: true,
+                    recipientName: printReceiptData.guardianName || printReceiptData.studentName,
+                    recipientMobile: printReceiptData.guardianMobile || printReceiptData.contact || '',
+                    moduleKey: 'feeReceipt',
+                    variables: {
+                      StudentName: printReceiptData.studentName || '',
+                      ReceiptNo: printReceiptData.receiptNo || '',
+                      Amount: String(printReceiptData.totalPaid ?? printReceiptData.amount ?? ''),
+                      Date: printReceiptData.receiptDate ? dayjs(printReceiptData.receiptDate).format('DD/MM/YYYY') : dayjs().format('DD/MM/YYYY'),
+                      PaymentMode: printReceiptData.paymentMode || 'Cash',
+                      SchoolName: printReceiptData.schoolName || schoolName,
+                    },
+                  });
+                }}
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  bgcolor: '#16a34a',
+                  '&:hover': { bgcolor: '#15803d' },
+                  color: '#ffffff',
+                  borderRadius: '6px',
+                }}
+              >
+                WhatsApp
+              </Button>
+            </Stack>
+          </Box>
+        }
+      >
+        {printReceiptData && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1, sm: 2 },
+              bgcolor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: 2,
+              overflowX: 'auto',
+            }}
+          >
+            <FeeReceiptSlip data={printReceiptData} showCuttingLine={true} />
+          </Paper>
+        )}
+      </AppModal>
 
       {/* Student Complete Fee History Modal (accessible from any row in Tab 0, 1, 2) */}
       <StudentFeeHistoryModal

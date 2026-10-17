@@ -20,6 +20,8 @@ namespace SchoolERP.Domain.Entities
         public int FailedLoginAttempts { get; set; } = 0;
         public DateTime? LockoutEndUtc { get; set; }
         public bool IsLocked { get; set; } = false;
+        public bool CanGiveDiscount { get; set; } = false;
+        public decimal MaxDiscountLimit { get; set; } = 0;
 
         public virtual Role? Role { get; set; }
         public virtual ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();

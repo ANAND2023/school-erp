@@ -33,6 +33,7 @@ export const feesApi = {
 
   // Collection & Receipts
   getStudentDues: (studentId) => apiClient.get(`/fees/students/${studentId}/dues`),
+  getDiscountEligibility: () => apiClient.get('/fees/discount-eligibility'),
   collectFee: (data) => apiClient.post('/fees/collect', data),
   getReceiptPrint: (id) => apiClient.get(`/fees/receipts/${id}/print`),
   cancelReceipt: (id, data) => apiClient.post(`/fees/receipts/${id}/cancel`, data),

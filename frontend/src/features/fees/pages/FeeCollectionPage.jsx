@@ -48,6 +48,7 @@ import {
   Settings as SettingsIcon,
   Clear as ClearIcon,
   WhatsApp as WhatsAppIcon,
+  ReceiptLong as ReceiptLongIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -61,6 +62,7 @@ import { StudentLookupDropdown } from '../components/StudentLookupDropdown';
 import { exportDualFeeReceiptPdf } from '../utils/feeExportUtils';
 import { printWithTitle } from '../../../utils/printUtils';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
+import { AppModal } from '../../../components/common';
 
 const noSpinnerSx = {
   '& input[type=number]': {
@@ -110,16 +112,28 @@ export default function FeeCollectionPage() {
     { mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' },
   ]);
   const [remarks, setRemarks] = useState('');
+  const [overallDiscount, setOverallDiscount] = useState('');
+  const [discountRemarks, setDiscountRemarks] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [paymentModeError, setPaymentModeError] = useState('');
+
+  // Discount eligibility query for current user
+  const { data: eligibilityRes } = useQuery({
+    queryKey: ['fee-discount-eligibility'],
+    queryFn: () => feesApi.getDiscountEligibility(),
+  });
+  const discountEligibility = eligibilityRes?.data?.data || {
+    canGiveDiscount: false,
+    maxDiscountLimit: 0,
+    isUnlimited: false,
+    roleName: '',
+  };
 
   // Receipt Modal
   const { activeBranchId } = useAuthStore();
   const [printReceiptData, setPrintReceiptData] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
-  const [isEditingHeader, setIsEditingHeader] = useState(false);
-  const [headerSaveLoading, setHeaderSaveLoading] = useState(false);
 
 
   // Fetch dues for selected student
@@ -144,6 +158,8 @@ export default function FeeCollectionPage() {
       setSelectedDues({});
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
       setRemarks('');
+      setOverallDiscount('');
+      setDiscountRemarks('');
       setErrorMsg('');
       refetchDues();
     },
@@ -157,6 +173,8 @@ export default function FeeCollectionPage() {
     setSearchTerm('');
     setSelectedMonthIds([]);
     setSelectedDues({});
+    setOverallDiscount('');
+    setDiscountRemarks('');
     setErrorMsg('');
     setInfoNotice('');
     setShowPaidMonths(false);
@@ -296,6 +314,22 @@ export default function FeeCollectionPage() {
     );
   }, [activeDueItems]);
 
+  const numericDiscount = Number(overallDiscount) || 0;
+  const netPayable = Math.max(0, maxTotalPayable - numericDiscount);
+
+  const discountError = React.useMemo(() => {
+    if (!discountEligibility.canGiveDiscount) return '';
+    const disc = Number(overallDiscount) || 0;
+    if (disc <= 0) return '';
+    if (!discountEligibility.isUnlimited && discountEligibility.maxDiscountLimit > 0 && disc > discountEligibility.maxDiscountLimit) {
+      return `Discount exceeds your authorized limit of ₹${discountEligibility.maxDiscountLimit.toLocaleString('en-IN')}`;
+    }
+    if (disc > maxTotalPayable) {
+      return `Discount cannot exceed total payable fee of ₹${maxTotalPayable.toLocaleString('en-IN')}`;
+    }
+    return '';
+  }, [overallDiscount, discountEligibility, maxTotalPayable]);
+
   const totalPaymentEntered = React.useMemo(() => {
     return paymentSplits.reduce(
       (sum, item) => sum + (Number(item.amount) || 0),
@@ -311,10 +345,10 @@ export default function FeeCollectionPage() {
     );
   }, [selectedDues]);
 
-  const isPartPayment = totalPaymentEntered > 0 && totalPaymentEntered < maxTotalPayable;
-  const isFullPayment = totalPaymentEntered > 0 && Math.abs(totalPaymentEntered - maxTotalPayable) < 0.01;
-  const isOverPayment = totalPaymentEntered > maxTotalPayable;
-  const remainingDuesBalance = Math.max(0, maxTotalPayable - totalPaymentEntered);
+  const isPartPayment = totalPaymentEntered > 0 && totalPaymentEntered < netPayable;
+  const isFullPayment = (totalPaymentEntered > 0 || (netPayable === 0 && maxTotalPayable > 0)) && Math.abs(totalPaymentEntered - netPayable) < 0.01;
+  const isOverPayment = totalPaymentEntered > netPayable;
+  const remainingDuesBalance = Math.max(0, netPayable - totalPaymentEntered);
 
   // Strict FIFO distribution of payment amount to active dues (Fine first, then principal heads sequentially)
   const distributeAmountToDues = (paymentAmount, items) => {
@@ -511,7 +545,9 @@ export default function FeeCollectionPage() {
           (sum, d) => sum + (Number(d.amountToPay) || 0) + (Number(d.fineToPay) || 0),
           0
         );
-        setPaymentSplits([{ ...paymentSplits[0], amount: newTotal > 0 ? newTotal : '' }]);
+        const disc = Number(overallDiscount) || 0;
+        const newNet = Math.max(0, newTotal - disc);
+        setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (newTotal > 0 && newNet === 0 ? 0 : '') }]);
       }
       return next;
     });
@@ -521,20 +557,20 @@ export default function FeeCollectionPage() {
   const handleAddPaymentMode = () => {
     setPaymentModeError('');
 
-    if (maxTotalPayable <= 0) {
-      setPaymentModeError('Please select at least one fee installment/month first.');
+    if (netPayable <= 0) {
+      setPaymentModeError('Payable amount is ₹0 or no months selected.');
       return;
     }
 
     const currentTotal = paymentSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    if (currentTotal >= maxTotalPayable) {
+    if (currentTotal >= netPayable) {
       setPaymentModeError(
-        `Full payable amount (₹${maxTotalPayable.toLocaleString()}) is already covered. Cannot add more payment modes.`
+        `Full payable amount (₹${netPayable.toLocaleString()}) is already covered. Cannot add more payment modes.`
       );
       return;
     }
 
-    const remainingAmount = Math.max(0, maxTotalPayable - currentTotal);
+    const remainingAmount = Math.max(0, netPayable - currentTotal);
     // Find next unused mode or default to 2 (UPI)
     const usedModes = paymentSplits.map((p) => Number(p.mode));
     let nextMode = 2; // Default UPI
@@ -554,24 +590,6 @@ export default function FeeCollectionPage() {
       },
     ];
     setPaymentSplits(nextSplits);
-
-    const enteredTotal = nextSplits.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    if (enteredTotal > 0 && enteredTotal <= maxTotalPayable) {
-      const allocated = distributeAmountToDues(enteredTotal, activeDueItems);
-      setSelectedDues((prev) => {
-        const merged = { ...prev };
-        Object.keys(allocated).forEach((dueId) => {
-          if (merged[dueId]) {
-            merged[dueId] = {
-              ...merged[dueId],
-              amountToPay: allocated[dueId].amountToPay,
-              fineToPay: allocated[dueId].fineToPay,
-            };
-          }
-        });
-        return merged;
-      });
-    }
   };
 
   const handleRemovePaymentMode = (index) => {
@@ -579,23 +597,6 @@ export default function FeeCollectionPage() {
     if (paymentSplits.length <= 1) return;
     const next = paymentSplits.filter((_, idx) => idx !== index);
     setPaymentSplits(next);
-    const enteredTotal = next.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    if (enteredTotal > 0 && enteredTotal <= maxTotalPayable) {
-      const allocated = distributeAmountToDues(enteredTotal, activeDueItems);
-      setSelectedDues((prev) => {
-        const merged = { ...prev };
-        Object.keys(allocated).forEach((dueId) => {
-          if (merged[dueId]) {
-            merged[dueId] = {
-              ...merged[dueId],
-              amountToPay: allocated[dueId].amountToPay,
-              fineToPay: allocated[dueId].fineToPay,
-            };
-          }
-        });
-        return merged;
-      });
-    }
   };
 
   const handlePaymentFieldChange = (index, field, value) => {
@@ -605,22 +606,11 @@ export default function FeeCollectionPage() {
     setPaymentSplits(next);
 
     if (field === 'amount') {
-      const enteredTotal = next.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-      if (enteredTotal > 0 && enteredTotal <= maxTotalPayable) {
-        const allocated = distributeAmountToDues(enteredTotal, activeDueItems);
-        setSelectedDues((prev) => {
-          const merged = { ...prev };
-          Object.keys(allocated).forEach((dueId) => {
-            if (merged[dueId]) {
-              merged[dueId] = {
-                ...merged[dueId],
-                amountToPay: allocated[dueId].amountToPay,
-                fineToPay: allocated[dueId].fineToPay,
-              };
-            }
-          });
-          return merged;
-        });
+      const newTotal = next.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const disc = Number(overallDiscount) || 0;
+      const amountToSettle = newTotal + disc;
+      if (activeDueItems.length > 0 && amountToSettle <= maxTotalPayable && amountToSettle > 0) {
+        setSelectedDues(distributeAmountToDues(amountToSettle, activeDueItems));
       }
     }
   };
@@ -628,22 +618,25 @@ export default function FeeCollectionPage() {
   // Auto-fill payment amount if single cash mode
   const handleAutoFillPayment = () => {
     if (paymentModeError) setPaymentModeError('');
-    if (maxTotalPayable > 0 && paymentSplits.length === 1) {
-      setPaymentSplits([{ ...paymentSplits[0], amount: maxTotalPayable }]);
-      const allocated = distributeAmountToDues(maxTotalPayable, activeDueItems);
-      setSelectedDues((prev) => {
-        const merged = { ...prev };
-        Object.keys(allocated).forEach((dueId) => {
-          if (merged[dueId]) {
-            merged[dueId] = {
-              ...merged[dueId],
-              amountToPay: allocated[dueId].amountToPay,
-              fineToPay: allocated[dueId].fineToPay,
-            };
-          }
-        });
-        return merged;
-      });
+    if (netPayable >= 0 && paymentSplits.length === 1) {
+      setPaymentSplits([{ ...paymentSplits[0], amount: netPayable }]);
+      if (activeDueItems.length > 0) {
+        const disc = Number(overallDiscount) || 0;
+        const amountToSettle = netPayable + disc;
+        setSelectedDues(distributeAmountToDues(amountToSettle, activeDueItems));
+      }
+    }
+  };
+
+  // Discount input change handler
+  const handleDiscountChange = (val) => {
+    const num = val === '' ? '' : Math.max(0, parseFloat(val) || 0);
+    setOverallDiscount(val === '' ? '' : num);
+
+    if (paymentSplits.length === 1) {
+      const disc = Number(num) || 0;
+      const newNet = Math.max(0, maxTotalPayable - disc);
+      setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (maxTotalPayable > 0 && newNet === 0 ? 0 : '') }]);
     }
   };
 
@@ -659,7 +652,9 @@ export default function FeeCollectionPage() {
           }
         });
       });
-      setPaymentSplits([{ mode: 1, amount: fullAmount > 0 ? fullAmount : '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
+      const disc = Number(overallDiscount) || 0;
+      const net = Math.max(0, fullAmount - disc);
+      setPaymentSplits([{ mode: 1, amount: net > 0 ? net : (fullAmount > 0 && net === 0 ? 0 : ''), transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
     } else {
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
     }
@@ -672,28 +667,35 @@ export default function FeeCollectionPage() {
       return;
     }
 
-    if (totalPaymentEntered <= 0) {
+    if (discountError) {
+      setErrorMsg(discountError);
+      return;
+    }
+
+    if (netPayable > 0 && totalPaymentEntered <= 0) {
       setErrorMsg('Please enter a payment amount greater than ₹0.');
       return;
     }
 
-    if (totalPaymentEntered > maxTotalPayable) {
+    if (totalPaymentEntered > netPayable) {
       setErrorMsg(
-        `Total payment entered (₹${totalPaymentEntered.toLocaleString()}) cannot exceed total payable fees (₹${maxTotalPayable.toLocaleString()}).`
+        `Total payment entered (₹${totalPaymentEntered.toLocaleString()}) cannot exceed net payable fees (₹${netPayable.toLocaleString()}).`
       );
       return;
     }
 
     // Allocate payment across active due items in strict FIFO order
-    // Check if table sum already matches totalPaymentEntered (customized by cashier); if not, auto-distribute
+    // Dues settlement clears the active due items up to amountToSettle (payment + discount)
+    const disc = Number(numericDiscount) || 0;
+    const amountToSettle = totalPaymentEntered + disc;
     const currentTableSum = Object.values(selectedDues).reduce(
       (sum, item) => sum + (Number(item.amountToPay) || 0) + (Number(item.fineToPay) || 0),
       0
     );
 
     let finalAllocated = selectedDues;
-    if (Math.abs(currentTableSum - totalPaymentEntered) > 0.01) {
-      finalAllocated = distributeAmountToDues(totalPaymentEntered, activeDueItems);
+    if (Math.abs(currentTableSum - amountToSettle) > 0.01) {
+      finalAllocated = distributeAmountToDues(amountToSettle, activeDueItems);
     }
 
     // Include all heads of the selected months being paid (even if amountToPay is 0 in part payment)
@@ -711,10 +713,10 @@ export default function FeeCollectionPage() {
     }
 
     const payments = paymentSplits
-      .filter((p) => Number(p.amount) > 0)
+      .filter((p) => Number(p.amount) > 0 || (netPayable === 0 && p.mode === 1))
       .map((p) => ({
         mode: Number(p.mode),
-        amount: Number(p.amount),
+        amount: Number(p.amount) || 0,
         transactionRef: p.transactionRef?.trim() || null,
         bankName: p.bankName?.trim() || null,
         chequeNo: p.chequeNo?.trim() || null,
@@ -725,6 +727,8 @@ export default function FeeCollectionPage() {
       studentId: Number(selectedStudentId),
       duesToPay,
       payments,
+      overallDiscount: numericDiscount > 0 ? numericDiscount : 0,
+      discountRemarks: discountRemarks.trim() || null,
       remarks: remarks.trim() || null,
     });
   };
@@ -749,6 +753,8 @@ export default function FeeCollectionPage() {
                   setSearchTerm('');
                   setSelectedMonthIds([]);
                   setSelectedDues({});
+                  setOverallDiscount('');
+                  setDiscountRemarks('');
                   setErrorMsg('');
                   setInfoNotice('');
                   hasInitializedStudentRef.current = null;
@@ -1634,12 +1640,32 @@ export default function FeeCollectionPage() {
                       </Typography>
                     </Stack>
 
+                    {numericDiscount > 0 && (
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Box>
+                          <Typography variant="body2" sx={{ color: '#15803d', fontWeight: 700, fontSize: 12.5 }}>
+                            Overall Discount:
+                          </Typography>
+                          {discountRemarks && (
+                            <Typography variant="caption" sx={{ color: '#166534', display: 'block', fontSize: 10.5, fontStyle: 'italic' }}>
+                              ({discountRemarks})
+                            </Typography>
+                          )}
+                        </Box>
+                        <Typography variant="body2" fontWeight={800} sx={{ color: '#15803d', fontSize: 13 }}>
+                          - ₹{numericDiscount.toLocaleString()}
+                        </Typography>
+                      </Stack>
+                    )}
+
                     <Divider />
 
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="subtitle1" fontWeight={800} color="#0f172a">Total Payable:</Typography>
+                      <Typography variant="subtitle1" fontWeight={800} color="#0f172a">
+                        {numericDiscount > 0 ? 'Net Payable:' : 'Total Payable:'}
+                      </Typography>
                       <Typography variant="h6" fontWeight={900} color="primary.main">
-                        ₹{maxTotalPayable.toLocaleString()}
+                        ₹{netPayable.toLocaleString()}
                       </Typography>
                     </Stack>
 
@@ -1661,6 +1687,68 @@ export default function FeeCollectionPage() {
                     )}
                   </Stack>
                 </Paper>
+
+                {/* Special Overall Fee Discount (Authorized Users Only) */}
+                {discountEligibility.canGiveDiscount && (
+                  <Paper
+                    sx={{
+                      p: 1.5,
+                      mb: 2,
+                      bgcolor: '#f0fdf4',
+                      border: '1px solid #86efac',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#166534', fontSize: 12.5 }}>
+                        Authorized Fee Discount
+                      </Typography>
+                      <Chip
+                        label={
+                          discountEligibility.isUnlimited
+                            ? 'Authority: Unlimited'
+                            : `Max Limit: ₹${Number(discountEligibility.maxDiscountLimit || 0).toLocaleString('en-IN')}`
+                        }
+                        size="small"
+                        sx={{
+                          bgcolor: '#dcfce7',
+                          color: '#15803d',
+                          fontWeight: 700,
+                          fontSize: 10.5,
+                          height: 20,
+                        }}
+                      />
+                    </Stack>
+                    <Grid container spacing={1.25}>
+                      <Grid item xs={12} sm={5}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="number"
+                          label="Discount (₹)"
+                          placeholder="0"
+                          value={overallDiscount}
+                          onChange={(e) => handleDiscountChange(e.target.value)}
+                          error={Boolean(discountError)}
+                          helperText={discountError}
+                          sx={{ bgcolor: '#fff', ...noSpinnerSx }}
+                          inputProps={{ min: 0, step: 'any' }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={7}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Discount Remarks"
+                          placeholder="e.g. Special concession"
+                          value={discountRemarks}
+                          onChange={(e) => setDiscountRemarks(e.target.value)}
+                          sx={{ bgcolor: '#fff' }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                )}
 
                 {/* Multi Mode Payment Rows */}
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, fontSize: 13 }}>
@@ -1814,7 +1902,7 @@ export default function FeeCollectionPage() {
                   {isOverPayment && (
                     <Alert severity="error" sx={{ mt: 1, py: 0.5 }}>
                       <Typography variant="caption" fontWeight={700} display="block">
-                        Amount exceeds total payable (₹{maxTotalPayable.toLocaleString()}) by ₹{(totalPaymentEntered - maxTotalPayable).toLocaleString()}
+                        Amount exceeds net payable (₹{netPayable.toLocaleString()}) by ₹{(totalPaymentEntered - netPayable).toLocaleString()}
                       </Typography>
                     </Alert>
                   )}
@@ -1829,8 +1917,9 @@ export default function FeeCollectionPage() {
                   disabled={
                     collectMutation.isPending ||
                     visiblePayMonths.length === 0 ||
-                    totalPaymentEntered <= 0 ||
-                    isOverPayment
+                    (netPayable > 0 && totalPaymentEntered <= 0) ||
+                    isOverPayment ||
+                    Boolean(discountError)
                   }
                   loading={collectMutation.isPending}
                   onClick={handleConfirmCollection}
@@ -1844,8 +1933,10 @@ export default function FeeCollectionPage() {
                   }}
                 >
                   {isOverPayment
-                    ? 'Amount Exceeds Payable Dues'
-                    : totalPaymentEntered <= 0
+                    ? 'Amount Exceeds Payable Amount'
+                    : Boolean(discountError)
+                    ? discountError
+                    : totalPaymentEntered <= 0 && netPayable > 0
                     ? 'Enter Payment Amount'
                     : isPartPayment
                     ? `Collect Part Payment & Generate Receipt (₹${totalPaymentEntered.toLocaleString()})`
@@ -1857,174 +1948,87 @@ export default function FeeCollectionPage() {
         </Grid>
       )}
 
-      {/* Printable Dual Fee Receipt Modal (FR-5.4, BR-5.1) */}
-      <Dialog
+      {/* Printable Dual Fee Receipt Dynamic Modal (FR-5.4, BR-5.1) */}
+      <AppModal
         open={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}
+        title="Fee Payment Receipt Slip (Dual Copy)"
+        subtitle={
+          printReceiptData?.studentName
+            ? `${printReceiptData.studentName} • Adm No: ${printReceiptData.admissionNo || printReceiptData.admissionNumber || 'N/A'} • Receipt: ${printReceiptData.receiptNo || 'N/A'}`
+            : 'Official two-copy fee receipt for school records & student'
+        }
+        icon={<ReceiptLongIcon />}
         maxWidth="lg"
         fullWidth
-      >
-        <DialogTitle className="no-print" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, fontWeight: 800 }}>
-          <Box sx={{ width: 140 }} />
-          <Typography variant="h6" fontWeight={800}>
-            Fee Payment Receipt Slip (Dual Copy)
-          </Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<SettingsIcon />}
-            onClick={() => setIsEditingHeader(!isEditingHeader)}
-            sx={{ textTransform: 'none', fontSize: 12 }}
-          >
-            {isEditingHeader ? 'Hide School Settings' : 'Edit School Info'}
-          </Button>
-        </DialogTitle>
-        <DialogContent sx={{ p: { xs: 1, sm: 2 }, bgcolor: '#f8fafc' }}>
-          {isEditingHeader && printReceiptData && (
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: '#ffffff', borderColor: '#3b82f6' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="primary" sx={{ mb: 1 }}>
-                Edit School Details on Slip (Updates in Real-Time):
-              </Typography>
-              <Grid container spacing={1.5}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="School Name"
-                    value={printReceiptData.schoolName || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, schoolName: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Contact Number"
-                    value={printReceiptData.contact || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, contact: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={8}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="School Address"
-                    value={printReceiptData.address || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, address: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Logo Image URL (Optional)"
-                    placeholder="https://... or data:image/..."
-                    value={printReceiptData.logoUrl || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, logoUrl: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Cashier Signature URL (Optional)"
-                    placeholder="https://... or data:image/..."
-                    value={printReceiptData.cashierSignatureUrl || ''}
-                    onChange={(e) => setPrintReceiptData({ ...printReceiptData, cashierSignatureUrl: e.target.value })}
-                  />
-                </Grid>
-              </Grid>
-              <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  disabled={headerSaveLoading}
-                  onClick={async () => {
-                    try {
-                      setHeaderSaveLoading(true);
-                      await branchApi.updateBranch(activeBranchId || 1, {
-                        name: printReceiptData.branchName || 'Main Campus',
-                        code: 'MAIN',
-                        printHeader: printReceiptData.schoolName,
-                        address: printReceiptData.address,
-                        phone: printReceiptData.contact,
-                        logoUrl: printReceiptData.logoUrl,
-                        cashierSignatureUrl: printReceiptData.cashierSignatureUrl
-                      });
-                      setIsEditingHeader(false);
-                    } catch (e) {
-                      console.error(e);
-                    } finally {
-                      setHeaderSaveLoading(false);
-                    }
-                  }}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Save as Default for All Receipts
-                </Button>
-              </Box>
-            </Paper>
-          )}
-
-          {printReceiptData && (
-            <Paper
-              elevation={2}
-              sx={{
-                p: { xs: 1, sm: 2 },
-                bgcolor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: 2,
-                overflowX: 'auto',
-              }}
-            >
-              <FeeReceiptSlip data={printReceiptData} showCuttingLine={true} />
-            </Paper>
-          )}
-        </DialogContent>
-        <DialogActions className="no-print" sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#f1f5f9' }}>
-          <Button onClick={() => setIsReceiptModalOpen(false)} color="inherit">
-            Close
-          </Button>
-          <Stack direction="row" spacing={1.5}>
-            <Button
-              variant="contained"
-              startIcon={<WhatsAppIcon />}
-              onClick={() => setIsWhatsAppModalOpen(true)}
-              sx={{
-                bgcolor: '#25D366',
-                '&:hover': { bgcolor: '#128C7E' },
-                fontWeight: 700,
-                textTransform: 'none',
-              }}
-            >
-              Send WhatsApp Receipt
-            </Button>
+        contentSx={{ p: { xs: 1, sm: 2 }, bgcolor: '#f8fafc' }}
+        actions={
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: 1.5 }}>
             <Button
               variant="outlined"
-              color="error"
-              startIcon={<PdfIcon />}
-              onClick={() => exportDualFeeReceiptPdf(printReceiptData)}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
+              color="inherit"
+              onClick={() => setIsReceiptModalOpen(false)}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '6px' }}
             >
-              Download PDF
+              Close
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<PrintIcon />}
-              onClick={() => {
-                const sName = printReceiptData?.studentName || 'Student';
-                const rNo = printReceiptData?.receiptNo || 'RCP';
-                const aNo = printReceiptData?.admissionNo ? `_${printReceiptData.admissionNo}` : '';
-                printWithTitle(`Fee_Receipt_${sName}${aNo}_${rNo}`);
-              }}
-              sx={{ fontWeight: 700, textTransform: 'none', px: 3 }}
-            >
-              Print Slip (2 Copies)
-            </Button>
-          </Stack>
-        </DialogActions>
-      </Dialog>
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <Button
+                variant="contained"
+                startIcon={<WhatsAppIcon />}
+                onClick={() => setIsWhatsAppModalOpen(true)}
+                sx={{
+                  bgcolor: '#25D366',
+                  '&:hover': { bgcolor: '#128C7E' },
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  borderRadius: '6px',
+                }}
+              >
+                Send WhatsApp Receipt
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<PdfIcon />}
+                onClick={() => exportDualFeeReceiptPdf(printReceiptData)}
+                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '6px' }}
+              >
+                Download PDF
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<PrintIcon />}
+                onClick={() => {
+                  const sName = printReceiptData?.studentName || 'Student';
+                  const rNo = printReceiptData?.receiptNo || 'RCP';
+                  const aNo = printReceiptData?.admissionNo ? `_${printReceiptData.admissionNo}` : '';
+                  printWithTitle(`Fee_Receipt_${sName}${aNo}_${rNo}`);
+                }}
+                sx={{ fontWeight: 700, textTransform: 'none', px: 3, borderRadius: '6px' }}
+              >
+                Print Slip (2 Copies)
+              </Button>
+            </Stack>
+          </Box>
+        }
+      >
+        {printReceiptData && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1, sm: 2 },
+              bgcolor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: 2,
+              overflowX: 'auto',
+            }}
+          >
+            <FeeReceiptSlip data={printReceiptData} showCuttingLine={true} />
+          </Paper>
+        )}
+      </AppModal>
 
       {/* WhatsApp Receipt Dialog */}
       <WhatsAppDialog
