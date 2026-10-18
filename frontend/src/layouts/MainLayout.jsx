@@ -380,10 +380,11 @@ export const MainLayout = () => {
 
       {/* Top Navbar */}
       <header
-        className="fixed left-0 w-full z-5 flex align-items-center justify-content-between px-3 text-white shadow-1"
+        className="fixed left-0 w-full flex align-items-center justify-content-between px-3 text-white shadow-1"
         style={{
           top: headerTop,
           height: '42px',
+          zIndex: 1100,
           backgroundColor: currentColorHex || 'var(--primary-color, #3B82F6)',
           transition: 'background-color 0.2s ease, top 0.2s ease',
         }}
@@ -518,15 +519,15 @@ export const MainLayout = () => {
         {/* Mobile Backdrop Overlay */}
         {isMobile && sidebarOpen && (
           <div
-            className="fixed inset-0 z-4 bg-black-alpha-50"
-            style={{ top: contentTop, bottom: '26px' }}
+            className="fixed inset-0 bg-black-alpha-50 app-mobile-backdrop"
+            style={{ top: contentTop, bottom: '26px', zIndex: 1190 }}
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Collapsible Sidebar */}
         <aside
-          className="fixed left-0 overflow-y-auto z-5 border-right-1 surface-border"
+          className="fixed left-0 overflow-y-auto border-right-1 surface-border app-sidebar-drawer"
           style={{
             top: contentTop,
             bottom: '26px',
@@ -535,6 +536,7 @@ export const MainLayout = () => {
             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
             backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
             boxShadow: sidebarOpen ? '4px 0 16px rgba(0,0,0,0.12)' : 'none',
+            zIndex: 1200,
           }}
         >
           <nav className="p-2 flex flex-column gap-1">
@@ -677,8 +679,10 @@ export const MainLayout = () => {
             paddingBottom: '36px',
           }}
         >
-          {/* Universal Styled Breadcrumb & Page Header with Background */}
-          <AppBreadcrumb />
+          {/* Universal Styled Breadcrumb & Page Header with Background (Hidden on mobile devices) */}
+          <div className="hidden md:block">
+            <AppBreadcrumb />
+          </div>
 
           <Outlet key={`${location.pathname}-${activeAcademicYearId}`} />
         </main>

@@ -559,63 +559,63 @@ export const DashboardPage = () => {
       {/* Header Banner */}
       <Box
         sx={{
-          mb: 3,
+          mb: { xs: 2, sm: 3 },
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
+          alignItems: { xs: 'stretch', sm: 'center' },
           flexDirection: { xs: 'column', sm: 'row' },
-          gap: 2,
-          p: { xs: 2, sm: 2.2 },
+          gap: { xs: 1.5, sm: 2 },
+          p: { xs: 1.5, sm: 2.2 },
           borderRadius: 2.5,
           bgcolor: isDarkMode ? '#1e293b' : '#ffffff',
           boxShadow: '0 2px 10px rgba(10,56,124,0.06)',
           border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             component="img"
             src="/dvs-logo.png"
             alt="Digital Vidya Saarthi"
             sx={{
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
+              width: { xs: 42, sm: 56 },
+              height: { xs: 42, sm: 56 },
               objectFit: 'contain',
               flexShrink: 0,
               filter: 'drop-shadow(0 2px 6px rgba(10,56,124,0.18))',
             }}
           />
-          <Box>
-            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-              <Typography variant="h4" sx={{ fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: { xs: '1.35rem', sm: '1.65rem' } }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Typography variant="h4" sx={{ fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: { xs: '1.15rem', sm: '1.55rem' }, lineHeight: 1.25 }}>
                 Welcome back, {user?.fullName || user?.username || 'Administrator'}!
               </Typography>
               <Chip
                 label={user?.roleName || 'Administrator'}
                 color="primary"
                 size="small"
-                sx={{ fontWeight: 700 }}
+                sx={{ fontWeight: 700, height: 22, fontSize: '0.72rem' }}
               />
             </Stack>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4, fontSize: { xs: '0.72rem', sm: '0.82rem' }, lineHeight: 1.35 }}>
               Digital Vidya Saarthi &bull; Real-time operational metrics for <strong>{user?.branchName || 'Main Campus'}</strong> &bull; Session {activeYearLabel}
             </Typography>
           </Box>
         </Box>
 
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
           <Tooltip title="Refresh live statistics">
-            <IconButton onClick={() => refetch()} disabled={isFetching} sx={{ bgcolor: isDarkMode ? '#1e293b' : '#ffffff', boxShadow: 1 }}>
-              <RefreshIcon sx={{ animation: isFetching ? 'spin 1s linear infinite' : 'none' }} />
+            <IconButton onClick={() => refetch()} disabled={isFetching} sx={{ bgcolor: isDarkMode ? '#1e293b' : '#ffffff', boxShadow: 1, p: { xs: 0.8, sm: 1 } }}>
+              <RefreshIcon sx={{ animation: isFetching ? 'spin 1s linear infinite' : 'none', fontSize: { xs: 18, sm: 22 } }} />
             </IconButton>
           </Tooltip>
           {(isAdmin || hasPermission?.('Admissions', 'Add')) && (
             <Button
               variant="contained"
               color="primary"
-              startIcon={<PersonAddIcon />}
+              startIcon={<PersonAddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
               onClick={() => navigate('/admissions/new')}
-              sx={{ fontWeight: 700, borderRadius: 2 }}
+              sx={{ fontWeight: 700, borderRadius: 2, flexGrow: { xs: 1, sm: 0 }, py: { xs: 0.8, sm: 1 }, fontSize: { xs: '0.78rem', sm: '0.875rem' } }}
             >
               New Admission
             </Button>
@@ -627,68 +627,113 @@ export const DashboardPage = () => {
       {isAdmin && (
         <Paper
           sx={{
-            p: 1.2,
-            mb: 3,
+            p: { xs: 1.25, sm: 1.5 },
+            mb: { xs: 2, sm: 3 },
             borderRadius: 2.5,
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
             justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 1.5,
+            gap: { xs: 1.25, sm: 1.5 },
             bgcolor: isDarkMode ? '#1e293b' : '#ffffff',
             border: '1px solid',
             borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+            overflow: 'hidden',
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <DashboardIcon sx={{ color: currentColorHex || '#3B82F6', fontSize: 20 }} />
-            <Typography variant="subtitle2" fontWeight={800} color={isDarkMode ? '#f1f5f9' : '#1e293b'}>
-              Dashboard Perspective:
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <DashboardIcon sx={{ color: currentColorHex || '#3B82F6', fontSize: 18 }} />
+              <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }} color={isDarkMode ? '#f1f5f9' : '#1e293b'}>
+                Dashboard Perspective:
+              </Typography>
+            </Stack>
+            <Typography
+              variant="caption"
+              sx={{
+                display: { xs: 'inline-flex', md: 'none' },
+                alignItems: 'center',
+                gap: 0.3,
+                color: 'text.secondary',
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                bgcolor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+              }}
+            >
+              Swipe ➔
             </Typography>
-          </Stack>
+          </Box>
 
-          <ToggleButtonGroup
-            value={activeRoleView}
-            exclusive
-            onChange={(_, val) => val && setActiveRoleView(val)}
-            size="small"
+          <Box
             sx={{
-              '& .MuiToggleButton-root': {
-                px: 2,
-                py: 0.5,
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                textTransform: 'none',
-                borderRadius: '8px !important',
-                mx: 0.3,
-                border: 'none',
-                color: isDarkMode ? '#94a3b8' : '#64748b',
-                '&.Mui-selected': {
-                  bgcolor: currentColorHex || '#3B82F6',
-                  color: '#ffffff',
-                  '&:hover': {
-                    bgcolor: currentColorHex || '#2563EB',
-                  },
-                },
-              },
+              width: '100%',
+              maxWidth: '100%',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+              py: 0.25,
+              display: 'flex',
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
             }}
           >
-            <ToggleButton value="all">
-              🌟 Full Executive (All)
-            </ToggleButton>
-            <ToggleButton value="accounts">
-              💰 Accounts & Fees
-            </ToggleButton>
-            <ToggleButton value="teacher">
-              🎓 Academics & Teaching
-            </ToggleButton>
-            <ToggleButton value="admissions">
-              📋 Admissions & Leads
-            </ToggleButton>
-            <ToggleButton value="inventory">
-              📦 Inventory & Stock
-            </ToggleButton>
-          </ToggleButtonGroup>
+            <ToggleButtonGroup
+              value={activeRoleView}
+              exclusive
+              onChange={(_, val) => val && setActiveRoleView(val)}
+              size="small"
+              sx={{
+                display: 'inline-flex',
+                flexWrap: 'nowrap',
+                gap: 0.75,
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: isDarkMode ? '1px solid #334155 !important' : '1px solid #e2e8f0 !important',
+                  borderRadius: '8px !important',
+                  mx: 0,
+                },
+                '& .MuiToggleButton-root': {
+                  px: { xs: 1.25, sm: 1.75 },
+                  py: { xs: 0.6, sm: 0.5 },
+                  fontWeight: 700,
+                  fontSize: { xs: '0.74rem', sm: '0.78rem' },
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
+                  bgcolor: isDarkMode ? '#0f172a' : '#f8fafc',
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    bgcolor: isDarkMode ? '#1e293b' : '#f1f5f9',
+                  },
+                  '&.Mui-selected': {
+                    bgcolor: `${currentColorHex || '#3B82F6'} !important`,
+                    color: '#ffffff !important',
+                    borderColor: `${currentColorHex || '#3B82F6'} !important`,
+                    boxShadow: '0 2px 6px rgba(59, 130, 246, 0.25)',
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="all">
+                🌟 Full Executive (All)
+              </ToggleButton>
+              <ToggleButton value="accounts">
+                💰 Accounts & Fees
+              </ToggleButton>
+              <ToggleButton value="teacher">
+                🎓 Academics & Teaching
+              </ToggleButton>
+              <ToggleButton value="admissions">
+                📋 Admissions & Leads
+              </ToggleButton>
+              <ToggleButton value="inventory">
+                📦 Inventory & Stock
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         </Paper>
       )}
 
@@ -700,10 +745,10 @@ export const DashboardPage = () => {
         </Box>
       ) : (
         <>
-          {/* 4 Top KPI Metric Cards */}
-          <Grid container spacing={2.5} sx={{ mb: 3 }}>
+          {/* 4 Top KPI Metric Cards (2x2 grid on mobile phones, 4-col on desktop) */}
+          <Grid container spacing={{ xs: 1.5, sm: 2.5 }} sx={{ mb: { xs: 2, sm: 3 } }}>
         {displayCards.map((card, idx) => (
-          <Grid item xs={12} sm={6} md={3} key={idx}>
+          <Grid item xs={6} sm={6} md={3} key={idx}>
             <Card
               sx={{
                 borderRadius: 2.5,
@@ -719,27 +764,42 @@ export const DashboardPage = () => {
               }}
               onClick={card.onClick}
             >
-              <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                  <Box>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2.2 }, '&:last-child': { pb: { xs: 1.5, sm: 2.2 } } }}>
+                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }} spacing={{ xs: 1, sm: 0 }}>
+                  <Box sx={{ minWidth: 0, width: '100%' }}>
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      color="text.secondary"
+                      sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: { xs: '0.65rem', sm: '0.72rem' }, display: 'block', noWrap: true }}
+                    >
                       {card.title}
                     </Typography>
-                    <Typography variant="h5" fontWeight={800} sx={{ my: 0.5, color: isDarkMode ? '#f8fafc' : '#1e293b' }}>
+                    <Typography
+                      variant="h5"
+                      fontWeight={800}
+                      sx={{ my: { xs: 0.2, sm: 0.5 }, color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: { xs: '1.15rem', sm: '1.45rem' }, noWrap: true }}
+                    >
                       {card.value}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={500}
+                      sx={{ fontSize: { xs: '0.68rem', sm: '0.75rem' }, display: { xs: 'none', sm: 'block' } }}
+                    >
                       {card.subtitle}
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      p: 1.2,
+                      p: { xs: 0.8, sm: 1.2 },
                       borderRadius: 2,
                       bgcolor: isDarkMode ? 'rgba(255,255,255,0.06)' : card.color,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      '& svg': { fontSize: { xs: 24, sm: 30 } },
                     }}
                   >
                     {card.icon}

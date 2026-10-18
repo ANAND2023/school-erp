@@ -137,73 +137,124 @@ export default function EmployeeProfilePage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1.25, sm: 2.5 }, pb: 4 }}>
       {/* Back Button */}
       <Button
-        startIcon={<ArrowBackIcon />}
+        startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
         onClick={() => navigate('/staff')}
-        sx={{ mb: 2 }}
+        size="small"
+        sx={{
+          mb: 1.5,
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: { xs: '0.78rem', sm: '0.875rem' },
+        }}
       >
         Back to Staff Directory
       </Button>
 
       {/* Header Profile Card */}
-      <Card sx={{ mb: 3, boxShadow: 2, background: 'linear-gradient(135deg, #fbfcfd 0%, #ffffff 100%)' }}>
-        <CardContent sx={{ p: 3 }}>
+      <Card sx={{ mb: { xs: 2, sm: 3 }, boxShadow: 2, background: 'linear-gradient(135deg, #fbfcfd 0%, #ffffff 100%)', borderRadius: 2.5, overflow: 'hidden' }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            spacing={3}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            spacing={{ xs: 2, md: 3 }}
           >
-            <Stack direction="row" spacing={3} alignItems="center">
-              <Avatar
-                src={employee.photoUrl}
-                sx={{
-                  width: 90,
-                  height: 90,
-                  border: '3px solid #7b1fa2',
-                  boxShadow: 2,
-                  bgcolor: 'secondary.main',
-                  fontSize: 32,
-                }}
-              >
-                {employee.fullName ? employee.fullName[0] : 'E'}
-              </Avatar>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={{ xs: 1.25, sm: 2.5 }}
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              sx={{ minWidth: 0, flex: 1 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                <Avatar
+                  src={employee.photoUrl}
+                  sx={{
+                    width: { xs: 68, sm: 90 },
+                    height: { xs: 68, sm: 90 },
+                    border: '3px solid #7b1fa2',
+                    boxShadow: 2,
+                    bgcolor: 'secondary.main',
+                    fontSize: { xs: 24, sm: 32 },
+                    flexShrink: 0,
+                  }}
+                >
+                  {employee.fullName ? employee.fullName[0] : 'E'}
+                </Avatar>
 
-              <Box>
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={800}
+                    color="text.primary"
+                    sx={{
+                      fontSize: { xs: '1.15rem', sm: '1.45rem' },
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {employee.fullName}
                   </Typography>
-                  <Chip
-                    label={employee.employeeCode}
-                    color="primary"
-                    size="small"
-                    sx={{ fontWeight: 700 }}
-                  />
-                  {getStatusChip(employee.status)}
-                </Stack>
 
-                <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mt: 0.5 }}>
+                    <Chip
+                      label={employee.employeeCode}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 700, height: 22, fontSize: '0.72rem' }}
+                    />
+                    {getStatusChip(employee.status)}
+                  </Box>
+                </Box>
+              </Box>
+
+              <Box sx={{ width: '100%', minWidth: 0 }}>
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600, fontSize: { xs: '0.82rem', sm: '0.92rem' } }}>
                   {employee.departmentName || 'General Department'} &bull; {employee.designationName || 'Staff Member'}
                 </Typography>
 
-                <Typography variant="caption" color="text.secondary">
-                  Gender: <b>{employee.gender}</b> | Joining: <b>{dayjs(employee.joiningDate).format('DD MMM YYYY')}</b> | Mobile: <b>{employee.mobile}</b>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: 'block',
+                    mt: 0.3,
+                    fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Gender: <b>{employee.gender}</b> &bull; Joining: <b>{dayjs(employee.joiningDate).format('DD MMM YYYY')}</b> &bull; Mobile: <b>{employee.mobile}</b>
                 </Typography>
               </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1.5} flexWrap="wrap">
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, auto)' },
+                gap: 1,
+                width: { xs: '100%', md: 'auto' },
+                pt: { xs: 0.5, md: 0 },
+              }}
+            >
               {can('TeacherAllocation', 'View') && (
                 <Button
                   variant="outlined"
                   color="secondary"
-                  startIcon={<AllocationIcon />}
+                  size="small"
+                  startIcon={<AllocationIcon sx={{ fontSize: 16 }} />}
                   onClick={() => navigate('/staff/allocation')}
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                    py: 0.6,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  Manage Allocations
+                  Allocations
                 </Button>
               )}
 
@@ -211,8 +262,17 @@ export default function EmployeeProfilePage() {
                 <Button
                   variant="outlined"
                   color="primary"
-                  startIcon={<EditIcon />}
+                  size="small"
+                  startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                   onClick={() => navigate(`/staff/edit/${employee.id}`)}
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                    py: 0.6,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   Edit Details
                 </Button>
@@ -222,13 +282,22 @@ export default function EmployeeProfilePage() {
                 <Button
                   variant="contained"
                   color="error"
-                  startIcon={<ExitIcon />}
+                  size="small"
+                  startIcon={<ExitIcon sx={{ fontSize: 16 }} />}
                   onClick={() => setExitDialogOpen(true)}
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                    py: 0.6,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  Relieve Employee (FR-4.5)
+                  Relieve Employee
                 </Button>
               )}
-            </Stack>
+            </Box>
           </Stack>
         </CardContent>
 
@@ -238,14 +307,27 @@ export default function EmployeeProfilePage() {
         <Tabs
           value={activeTab}
           onChange={(e, val) => setActiveTab(val)}
-          sx={{ px: 3, bgcolor: '#fafafa' }}
           variant="scrollable"
           scrollButtons="auto"
+          sx={{
+            px: { xs: 1, sm: 2 },
+            bgcolor: '#fafafa',
+            minHeight: { xs: 40, sm: 46 },
+            '& .MuiTab-root': {
+              minHeight: { xs: 40, sm: 46 },
+              py: { xs: 0.8, sm: 1.2 },
+              px: { xs: 1.25, sm: 2 },
+              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              fontWeight: 700,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+            },
+          }}
         >
-          <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Personal & Contact" />
-          <Tab icon={<WorkIcon fontSize="small" />} iconPosition="start" label="Employment & Payroll" />
-          <Tab icon={<SchoolIcon fontSize="small" />} iconPosition="start" label={`Allocated Classes & Subjects (${employee.allocations.length})`} />
-          <Tab icon={<KeyIcon fontSize="small" />} iconPosition="start" label="ERP Login Account" />
+          <Tab icon={<PersonIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Personal & Contact" />
+          <Tab icon={<WorkIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Employment & Payroll" />
+          <Tab icon={<SchoolIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Allocated Classes & Subjects (${employee.allocations.length})`} />
+          <Tab icon={<KeyIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="ERP Login Account" />
         </Tabs>
       </Card>
 

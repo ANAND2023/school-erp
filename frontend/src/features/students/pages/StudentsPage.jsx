@@ -562,27 +562,45 @@ export default function StudentsPage() {
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-      {/* Header (Single Row) */}
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'flex-start', md: 'center' },
           justifyContent: 'space-between',
-          flexWrap: { xs: 'wrap', md: 'nowrap' },
-          gap: 1.5,
+          gap: { xs: 1.25, md: 1.5 },
           mb: 1.5,
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.15rem', color: '#1e293b', m: 0 }}>
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0 }}>
             Student Directory
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Manage student records, profiles, roll numbers, and section allotments
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, auto)' },
+            gap: 1,
+            width: { xs: '100%', md: 'auto' },
+            py: 0.5,
+            '& .p-button': {
+              width: '100%',
+              justifyContent: 'center',
+              py: '6px !important',
+              fontSize: '12px !important',
+            },
+            '& .p-button .p-button-label': {
+              whiteSpace: 'nowrap',
+              overflow: 'visible',
+            },
+          }}
+        >
           <AppButton
             variant="outlined"
             severity="success"

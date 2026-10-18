@@ -889,14 +889,14 @@ export default function FeeCollectionPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       {/* Header */}
 
 
       {/* Student Search Card (Only shown when NO student is selected) */}
       {!selectedStudentId && (
-        <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2, overflow: 'visible', position: 'relative', zIndex: 20 }}>
-          <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+        <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2, overflow: 'visible', position: 'relative', zIndex: 10 }}>
+          <CardContent sx={{ p: { xs: 1.5, sm: 3 } }}>
             <Box sx={{ maxWidth: 640, mx: 'auto' }}>
               <StudentLookupDropdown
                 selectedStudentId={selectedStudentId}

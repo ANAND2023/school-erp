@@ -839,7 +839,7 @@ export default function FeeReportsPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       {/* Print CSS styling with zero-clipping margins */}
       <style>
         {`

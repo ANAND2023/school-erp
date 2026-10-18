@@ -257,22 +257,36 @@ export const MarksEntryPage = () => {
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={{ xs: 1.25, sm: 2 }}
+        sx={{ mb: { xs: 2, sm: 3 } }}
+      >
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h5" fontWeight={800} color="primary.main" sx={{ fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
             Examination Marks Entry
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
             Enter marks, absent (AB) and medical leave (ML) class-section-subject wise (Module 7: FR-7.2, BR-7.1)
           </Typography>
         </Box>
         <Button
           variant="contained"
           color="primary"
-          startIcon={<SaveIcon />}
+          size="small"
+          startIcon={<SaveIcon sx={{ fontSize: 18 }} />}
           onClick={handleSaveAll}
           disabled={saving || loading || studentRows.length === 0 || isLocked}
-          sx={{ px: 3 }}
+          sx={{
+            px: 2.5,
+            py: 0.6,
+            fontWeight: 700,
+            fontSize: { xs: '0.78rem', sm: '0.875rem' },
+            width: { xs: '100%', sm: 'auto' },
+            whiteSpace: 'nowrap',
+          }}
         >
           {saving ? 'Saving...' : 'Save Marks'}
         </Button>

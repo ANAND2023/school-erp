@@ -568,59 +568,85 @@ export default function StudentProfilePage() {
   const age = student.dateOfBirth ? dayjs().diff(dayjs(student.dateOfBirth), 'year') : null;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1.25, sm: 2.5 }, pb: 4 }}>
       {/* Back Button */}
       <Button
-        startIcon={<ArrowBackIcon />}
+        startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
         onClick={() => navigate('/students')}
-        sx={{ mb: 2 }}
+        size="small"
+        sx={{
+          mb: 1.5,
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: { xs: '0.78rem', sm: '0.875rem' },
+        }}
       >
         Back to Student Directory
       </Button>
 
       {/* Header Profile Card */}
-      <Card sx={{ mb: 3, boxShadow: 2, background: 'linear-gradient(135deg, #f8faff 0%, #ffffff 100%)' }}>
-        <CardContent sx={{ p: 3 }}>
+      <Card sx={{ mb: { xs: 2, sm: 3 }, boxShadow: 2, background: 'linear-gradient(135deg, #f8faff 0%, #ffffff 100%)', borderRadius: 2.5, overflow: 'hidden' }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            spacing={3}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            spacing={{ xs: 2, md: 3 }}
           >
-            <Stack direction="row" spacing={3} alignItems="center">
-              <Avatar
-                src={student.photoUrl}
-                sx={{
-                  width: 90,
-                  height: 90,
-                  border: '3px solid #1976d2',
-                  boxShadow: 2,
-                  bgcolor: 'primary.main',
-                  fontSize: 32,
-                }}
-              >
-                {student.fullName ? student.fullName[0] : 'S'}
-              </Avatar>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={{ xs: 1.25, sm: 2.5 }}
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              sx={{ minWidth: 0, flex: 1 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                <Avatar
+                  src={student.photoUrl}
+                  sx={{
+                    width: { xs: 68, sm: 90 },
+                    height: { xs: 68, sm: 90 },
+                    border: '3px solid #1976d2',
+                    boxShadow: 2,
+                    bgcolor: 'primary.main',
+                    fontSize: { xs: 24, sm: 32 },
+                    flexShrink: 0,
+                  }}
+                >
+                  {student.fullName ? student.fullName[0] : 'S'}
+                </Avatar>
 
-              <Box>
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={800}
+                    color="text.primary"
+                    sx={{
+                      fontSize: { xs: '1.15rem', sm: '1.45rem' },
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {student.fullName}
                   </Typography>
-                  <Chip
-                    label={student.admissionNo}
-                    color="primary"
-                    size="small"
-                    sx={{ fontWeight: 700 }}
-                  />
-                  <Chip
-                    label={student.status === 1 ? 'Active' : 'Inactive'}
-                    color={student.status === 1 ? 'success' : 'default'}
-                    size="small"
-                  />
-                </Stack>
 
-                <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mt: 0.5 }}>
+                    <Chip
+                      label={student.admissionNo}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 700, height: 22, fontSize: '0.72rem' }}
+                    />
+                    <Chip
+                      label={student.status === 1 ? 'Active' : 'Inactive'}
+                      color={student.status === 1 ? 'success' : 'default'}
+                      size="small"
+                      sx={{ height: 22, fontSize: '0.72rem' }}
+                    />
+                  </Box>
+                </Box>
+              </Box>
+
+              <Box sx={{ width: '100%', minWidth: 0 }}>
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600, fontSize: { xs: '0.82rem', sm: '0.92rem' } }}>
                   {student.currentEnrollment
                     ? `${student.currentEnrollment.className} - ${student.currentEnrollment.sectionName} (Roll No: ${
                         student.currentEnrollment.rollNo ? '#' + student.currentEnrollment.rollNo : 'Unassigned'
@@ -628,18 +654,44 @@ export default function StudentProfilePage() {
                     : 'Not currently enrolled'}
                 </Typography>
 
-                <Typography variant="caption" color="text.secondary">
-                  Gender: <b>{student.gender}</b> | DOB: <b>{student.dateOfBirth ? dayjs(student.dateOfBirth).format('DD MMM YYYY') : '—'}</b> {age !== null && `(${age} years)`} | Admitted: <b>{dayjs(student.admissionDate).format('DD MMM YYYY')}</b>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: 'block',
+                    mt: 0.3,
+                    fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Gender: <b>{student.gender}</b> &bull; DOB: <b>{student.dateOfBirth ? dayjs(student.dateOfBirth).format('DD MMM YYYY') : '—'}</b> {age !== null && `(${age} yrs)`} &bull; Admitted: <b>{dayjs(student.admissionDate).format('DD MMM YYYY')}</b>
                 </Typography>
               </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1.5} flexWrap="wrap">
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, auto)' },
+                gap: 1,
+                width: { xs: '100%', md: 'auto' },
+                pt: { xs: 0.5, md: 0 },
+              }}
+            >
               <Button
                 variant="outlined"
                 color="secondary"
-                startIcon={<BadgeIcon />}
+                size="small"
+                startIcon={<BadgeIcon sx={{ fontSize: 16 }} />}
                 onClick={() => setIsIdCardOpen(true)}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                  py: 0.6,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 1.5,
+                  whiteSpace: 'nowrap',
+                }}
               >
                 ID Card
               </Button>
@@ -647,8 +699,17 @@ export default function StudentProfilePage() {
               <Button
                 variant="outlined"
                 color="info"
-                startIcon={<ReceiptLongIcon />}
+                size="small"
+                startIcon={<ReceiptLongIcon sx={{ fontSize: 16 }} />}
                 onClick={() => setIsAdmissionSlipOpen(true)}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                  py: 0.6,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 1.5,
+                  whiteSpace: 'nowrap',
+                }}
               >
                 Admission Slip
               </Button>
@@ -657,8 +718,17 @@ export default function StudentProfilePage() {
                 <Button
                   variant="outlined"
                   color="warning"
-                  startIcon={<SwapHorizIcon />}
+                  size="small"
+                  startIcon={<SwapHorizIcon sx={{ fontSize: 16 }} />}
                   onClick={() => navigate(`/students/section-change?studentId=${student.id}`)}
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                    py: 0.6,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   Section Transfer
                 </Button>
@@ -668,13 +738,22 @@ export default function StudentProfilePage() {
                 <Button
                   variant="contained"
                   color="primary"
-                  startIcon={<EditIcon />}
+                  size="small"
+                  startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                   onClick={handleOpenEdit}
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                    py: 0.6,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   Edit Profile
                 </Button>
               )}
-            </Stack>
+            </Box>
           </Stack>
         </CardContent>
 
@@ -684,26 +763,39 @@ export default function StudentProfilePage() {
         <Tabs
           value={activeTab}
           onChange={(e, val) => setActiveTab(val)}
-          sx={{ px: 3, bgcolor: '#fafafa' }}
           variant="scrollable"
           scrollButtons="auto"
+          sx={{
+            px: { xs: 1, sm: 2 },
+            bgcolor: '#fafafa',
+            minHeight: { xs: 40, sm: 46 },
+            '& .MuiTab-root': {
+              minHeight: { xs: 40, sm: 46 },
+              py: { xs: 0.8, sm: 1.2 },
+              px: { xs: 1.25, sm: 2 },
+              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              fontWeight: 700,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+            },
+          }}
         >
-          <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Personal Details" />
-          <Tab icon={<FamilyIcon fontSize="small" />} iconPosition="start" label={`Guardians & Siblings (${student.guardians.length})`} />
-          <Tab icon={<SchoolIcon fontSize="small" />} iconPosition="start" label={`Enrollments (${student.enrollmentHistory.length})`} />
-          <Tab icon={<FolderSharedIcon fontSize="small" />} iconPosition="start" label={`Documents (${student.documents.length})`} />
-          <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label={`Section History (${student.sectionHistories.length})`} />
+          <Tab icon={<PersonIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Personal Details" />
+          <Tab icon={<FamilyIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Guardians & Siblings (${student.guardians.length})`} />
+          <Tab icon={<SchoolIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Enrollments (${student.enrollmentHistory.length})`} />
+          <Tab icon={<FolderSharedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Documents (${student.documents.length})`} />
+          <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Section History (${student.sectionHistories.length})`} />
         </Tabs>
       </Card>
 
       {/* Tab Panels */}
       {/* 1. Personal Details */}
       {activeTab === 0 && (
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 1.5, sm: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%', boxShadow: 1 }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={700} gutterBottom color="primary">
+            <Card sx={{ height: '100%', boxShadow: 1, borderRadius: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+                <Typography variant="h6" fontWeight={700} gutterBottom color="primary" sx={{ fontSize: { xs: '0.95rem', sm: '1.15rem' } }}>
                   General Information
                 </Typography>
                 <Divider sx={{ mb: 2 }} />

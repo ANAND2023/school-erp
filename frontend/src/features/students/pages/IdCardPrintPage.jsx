@@ -235,11 +235,11 @@ export const IdCardPrintPage = () => {
 
             <Toast ref={toast} />
             <div className="no-print">
-                <h2 className="text-xl font-bold mb-4" style={{ color: '#1e293b' }}>Print ID Cards</h2>
+                <h2 className="text-xl font-bold mb-3 sm:mb-4" style={{ color: '#1e293b' }}>Print ID Cards</h2>
                 
-                <Card className="mb-4">
-                    <div className="flex flex-wrap gap-3 align-items-center mb-3">
-                        <div style={{ width: '12rem' }}>
+                <Card className="mb-3 sm:mb-4 shadow-1">
+                    <div className="grid gap-2 sm:gap-3 mb-2">
+                        <div className="col-6 sm:col-auto" style={{ minWidth: '130px', flex: '1 1 130px' }}>
                             <AppSelect 
                                 label="Class"
                                 value={selectedClassId} 
@@ -250,7 +250,7 @@ export const IdCardPrintPage = () => {
                                 placeholder="Select Class" 
                             />
                         </div>
-                        <div style={{ width: '12rem' }}>
+                        <div className="col-6 sm:col-auto" style={{ minWidth: '130px', flex: '1 1 130px' }}>
                             <AppSelect 
                                 label="Section"
                                 value={selectedSectionId} 
@@ -261,7 +261,7 @@ export const IdCardPrintPage = () => {
                                 placeholder="All Sections" 
                             />
                         </div>
-                        <div style={{ width: '12rem' }}>
+                        <div className="col-12 sm:col-auto" style={{ minWidth: '140px', flex: '1 1 140px' }}>
                             <AppSelect 
                                 label="Print Sides"
                                 value={printSide} 
@@ -269,37 +269,60 @@ export const IdCardPrintPage = () => {
                                 onChange={(e) => setPrintSide(e.value)} 
                             />
                         </div>
-                        
-                        <div className="relative flex align-items-center ml-auto">
-                            <i className="pi pi-search text-400 pointer-events-none" style={{ left: '0.5rem', position: 'absolute', top: '50%', transform: 'translateY(-50%)', fontSize: '10px' }} />
+                    </div>
+
+                    <div className="flex flex-column sm:flex-row align-items-stretch sm:align-items-center gap-2 mb-2">
+                        <div className="relative flex align-items-center flex-grow-1">
+                            <i className="pi pi-search text-400 pointer-events-none" style={{ left: '0.6rem', position: 'absolute', top: '50%', transform: 'translateY(-50%)', fontSize: '11px' }} />
                             <InputText 
                                 value={searchQuery} 
                                 onChange={(e) => setSearchQuery(e.target.value)} 
                                 placeholder="Search Name/Adm..." 
-                                className="p-inputtext-sm"
-                                style={{ width: '160px', height: '28px', fontSize: '11px', paddingLeft: '1.8rem', paddingTop: '0', paddingBottom: '0', borderRadius: '4px', boxShadow: 'none' }}
+                                className="p-inputtext-sm w-full"
+                                style={{ height: '32px', fontSize: '12px', paddingLeft: '1.8rem', borderRadius: '4px' }}
                             />
                         </div>
-                        <Button label="Fetch" icon="pi pi-search" onClick={fetchStudents} loading={loading} />
-                        <Button label={`PRINT (${selectedStudentIds.length})`} icon="pi pi-print" onClick={handlePrint} severity="success" disabled={selectedStudentIds.length === 0} />
+                        <div className="flex align-items-center gap-2">
+                            <Button label="Fetch" icon="pi pi-search" onClick={fetchStudents} loading={loading} className="flex-1 sm:flex-none" style={{ height: '32px' }} />
+                            <Button label={`PRINT (${selectedStudentIds.length})`} icon="pi pi-print" onClick={handlePrint} severity="success" disabled={selectedStudentIds.length === 0} className="flex-1 sm:flex-none" style={{ height: '32px' }} />
+                        </div>
                     </div>
 
                     {filteredStudents.length > 0 && (
-                        <div className="flex align-items-center gap-2 mt-3 p-2 surface-100 border-round">
+                        <div className="flex align-items-center gap-2 mt-2 p-2 surface-100 border-round">
                             <Checkbox inputId="cb-all" checked={selectedStudentIds.length === filteredStudents.length} onChange={toggleSelectAll} />
-                            <label htmlFor="cb-all" className="font-bold cursor-pointer">Select All ({filteredStudents.length} shown)</label>
+                            <label htmlFor="cb-all" className="font-bold cursor-pointer text-sm">Select All ({filteredStudents.length} shown)</label>
                         </div>
                     )}
                 </Card>
 
                 {filteredStudents.length > 0 && (
                     <div className="mb-4">
-                        <h4 className="mb-2">Select Students to Print</h4>
-                        <div className="flex flex-wrap gap-3">
+                        <h4 className="mb-2 text-base font-bold text-slate-800">Select Students to Print ({selectedStudentIds.length} selected)</h4>
+                        <div className="grid gap-2">
                             {filteredStudents.map(s => (
-                                <div key={s.id} className="flex align-items-center gap-2 p-2 border-1 surface-border border-round">
-                                    <Checkbox inputId={`cb-${s.id}`} checked={selectedStudentIds.includes(s.id)} onChange={() => toggleStudent(s.id)} />
-                                    <label htmlFor={`cb-${s.id}`} className="cursor-pointer text-sm">{s.fullName} ({s.className}-{s.sectionName})</label>
+                                <div key={s.id} className="col-12 sm:col-6 md:col-4 p-1">
+                                    <div 
+                                        onClick={() => toggleStudent(s.id)}
+                                        className={`flex align-items-center justify-content-between gap-2 p-2.5 border-round cursor-pointer transition-all border-1 ${
+                                            selectedStudentIds.includes(s.id) ? 'bg-primary-50 border-primary shadow-1' : 'bg-white surface-border hover:surface-100'
+                                        }`}
+                                    >
+                                        <div className="flex align-items-center gap-2 min-w-0">
+                                            <Checkbox inputId={`cb-${s.id}`} checked={selectedStudentIds.includes(s.id)} onChange={() => toggleStudent(s.id)} />
+                                            <div className="min-w-0">
+                                                <span className="cursor-pointer text-sm font-semibold text-slate-800 block white-space-nowrap overflow-hidden text-overflow-ellipsis">
+                                                    {s.fullName}
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                    Adm: {s.admissionNo || '—'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs font-bold text-primary bg-primary-100 px-2 py-0.5 border-round white-space-nowrap">
+                                            {s.className}-{s.sectionName}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
                         </div>

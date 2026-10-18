@@ -484,34 +484,51 @@ export default function StaffDirectoryPage() {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1.5, sm: 2.5 } }}>
       {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={2}
-        sx={{ mb: 3 }}
+        spacing={{ xs: 1.25, sm: 2 }}
+        sx={{ mb: { xs: 1.5, sm: 3 } }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={700} color="text.primary">
+          <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
             Staff Directory
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+            Manage teachers, administrative staff, profiles, and designations
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, auto)' },
+            gap: 1,
+            width: { xs: '100%', sm: 'auto' },
+            py: 0.5,
+            '& .MuiButton-root': {
+              width: '100%',
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+            },
+          }}
+        >
           <Button
             variant="outlined"
-            size="medium"
-            startIcon={<FileDownloadIcon />}
+            size="small"
+            startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
             onClick={handleExportCSV}
             disabled={!employees.length}
             sx={{
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
-              px: 2,
-              height: 40,
+              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              px: { xs: 1.5, sm: 2 },
+              height: { xs: 34, sm: 38 },
             }}
           >
             Export CSV
@@ -521,15 +538,16 @@ export default function StaffDirectoryPage() {
             <Button
               variant="outlined"
               color="secondary"
-              size="medium"
-              startIcon={<AllocationIcon />}
+              size="small"
+              startIcon={<AllocationIcon sx={{ fontSize: 18 }} />}
               onClick={() => navigate('/staff/allocation')}
               sx={{
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                px: 2,
-                height: 40,
+                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                px: { xs: 1.5, sm: 2 },
+                height: { xs: 34, sm: 38 },
               }}
             >
               Teacher Allocation
@@ -540,22 +558,24 @@ export default function StaffDirectoryPage() {
             <Button
               variant="contained"
               color="primary"
-              size="medium"
-              startIcon={<AddIcon />}
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 18 }} />}
               onClick={() => navigate('/staff/new')}
               sx={{
                 borderRadius: 2,
                 textTransform: 'none',
-                fontWeight: 600,
-                px: 2.5,
-                height: 40,
+                fontWeight: 700,
+                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                px: { xs: 1.5, sm: 2.5 },
+                height: { xs: 34, sm: 38 },
                 boxShadow: 2,
+                gridColumn: { xs: 'span 2', sm: 'auto' }, // Primary action spans full width on row 2 on phones!
               }}
             >
               Add Staff Member
             </Button>
           )}
-        </Stack>
+        </Box>
       </Stack>
 
       {/* Filter Toolbar */}

@@ -268,15 +268,15 @@ export const ExpensePage = () => {
   return (
     <Box>
       {/* Top Header Card */}
-      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-4 border-round-lg shadow-1 border-1 surface-border mb-3">
+      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-3 sm:p-4 border-round-lg shadow-1 border-1 surface-border mb-3">
         <div>
-          <div className="flex align-items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-800 m-0">Expense Management</h2>
+          <div className="flex align-items-center gap-2 flex-wrap">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800 m-0">Expense Management</h2>
             {activeAcademicYearName && (
               <Tag
                 value={`Session: ${activeAcademicYearName}`}
                 severity="info"
-                style={{ fontSize: '11px', fontWeight: 600 }}
+                style={{ fontSize: '10px', fontWeight: 600 }}
               />
             )}
           </div>
@@ -284,7 +284,7 @@ export const ExpensePage = () => {
             Track operational school expenses, category allocations, and financial outflow for academic session {activeAcademicYearName || 'Current'}
           </p>
         </div>
-        <div className="flex align-items-center gap-2 flex-wrap">
+        <div className="flex align-items-center gap-2 w-full sm:w-auto overflow-x-auto py-1">
           <AppButton
             variant="outlined"
             label="Manage Categories"
@@ -316,45 +316,45 @@ export const ExpensePage = () => {
 
       {/* KPI Summary Cards */}
       <div className="grid mb-3">
-        <div className="col-12 sm:col-6 lg:col-3">
-          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+        <div className="col-6 sm:col-6 lg:col-3">
+          <div className="flex align-items-center justify-content-between p-2.5 sm:p-3 bg-white border-round-lg shadow-1 border-1 surface-border h-full">
             <div>
-              <span className="text-xs text-slate-500 block mb-1">Session Total Expenses</span>
-              <span className="text-2xl font-bold" style={{ color: themeColor }}>
+              <span className="text-xs text-slate-500 block mb-1">Session Expenses</span>
+              <span className="text-lg sm:text-2xl font-bold" style={{ color: themeColor }}>
                 ₹{Number(totalSessionAmount).toLocaleString()}
               </span>
             </div>
             <div
-              className="flex align-items-center justify-content-center border-round p-2"
-              style={{ width: '42px', height: '42px', backgroundColor: `${themeColor}15`, color: themeColor }}
+              className="flex align-items-center justify-content-center border-round p-1.5 sm:p-2"
+              style={{ width: '36px', height: '36px', backgroundColor: `${themeColor}15`, color: themeColor }}
             >
-              <i className="pi pi-wallet text-xl" />
+              <i className="pi pi-wallet text-base sm:text-xl" />
             </div>
           </div>
         </div>
 
-        <div className="col-12 sm:col-6 lg:col-3">
-          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+        <div className="col-6 sm:col-6 lg:col-3">
+          <div className="flex align-items-center justify-content-between p-2.5 sm:p-3 bg-white border-round-lg shadow-1 border-1 surface-border h-full">
             <div>
-              <span className="text-xs text-slate-500 block mb-1">Current Month Outflow</span>
-              <span className="text-2xl font-bold text-rose-600">
+              <span className="text-xs text-slate-500 block mb-1">This Month</span>
+              <span className="text-lg sm:text-2xl font-bold text-rose-600">
                 ₹{Number(totalCurrentMonthAmount).toLocaleString()}
               </span>
             </div>
-            <div className="flex align-items-center justify-content-center bg-rose-50 text-rose-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
-              <i className="pi pi-chart-line text-xl" />
+            <div className="flex align-items-center justify-content-center bg-rose-50 text-rose-600 border-round p-1.5 sm:p-2" style={{ width: '36px', height: '36px' }}>
+              <i className="pi pi-chart-line text-base sm:text-xl" />
             </div>
           </div>
         </div>
 
-        <div className="col-12 sm:col-6 lg:col-3">
-          <div className="flex align-items-center justify-content-between p-3 bg-white border-round-lg shadow-1 border-1 surface-border">
+        <div className="col-6 sm:col-6 lg:col-3">
+          <div className="flex align-items-center justify-content-between p-2.5 sm:p-3 bg-white border-round-lg shadow-1 border-1 surface-border h-full">
             <div>
-              <span className="text-xs text-slate-500 block mb-1">Recorded Expenses</span>
-              <span className="text-2xl font-bold text-slate-800">{expenses.length} Entries</span>
+              <span className="text-xs text-slate-500 block mb-1">Total Entries</span>
+              <span className="text-lg sm:text-2xl font-bold text-slate-800">{expenses.length}</span>
             </div>
-            <div className="flex align-items-center justify-content-center bg-blue-50 text-blue-600 border-round p-2" style={{ width: '42px', height: '42px' }}>
-              <i className="pi pi-receipt text-xl" />
+            <div className="flex align-items-center justify-content-center bg-blue-50 text-blue-600 border-round p-1.5 sm:p-2" style={{ width: '36px', height: '36px' }}>
+              <i className="pi pi-receipt text-base sm:text-xl" />
             </div>
           </div>
         </div>

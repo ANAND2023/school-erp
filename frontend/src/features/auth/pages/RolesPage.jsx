@@ -373,12 +373,12 @@ export const RolesPage = () => {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
           Role & Permission Matrix
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
           Configure roles and menu-level actions (View, Add, Edit, Delete, Print, Export)
         </Typography>
       </Box>
@@ -394,12 +394,12 @@ export const RolesPage = () => {
 
       {/* Role & Matrix Dialog */}
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
           {editingRoleId ? 'Edit Role & Permissions Matrix' : 'Create Role & Permissions Matrix'}
         </DialogTitle>
-        <Box component="form" onSubmit={handleSaveRole} sx={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
-          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 2 }}>
-            <Grid container spacing={2} sx={{ mb: 2, flexShrink: 0 }}>
+        <Box component="form" onSubmit={handleSaveRole} sx={{ display: 'flex', flexDirection: 'column', height: { xs: '90vh', sm: '80vh' } }}>
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', p: { xs: 1.5, sm: 2 } }}>
+            <Grid container spacing={{ xs: 1.25, sm: 2 }} sx={{ mb: 2, flexShrink: 0 }}>
               <Grid item xs={12} sm={4}>
                 <TextField
                   required

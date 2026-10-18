@@ -398,7 +398,7 @@ export const AppBreadcrumb = () => {
 
   return (
     <div
-      className="app-breadcrumb-container"
+      className="app-breadcrumb-container hidden md:block"
       style={{
         background: isDarkMode
           ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'

@@ -358,7 +358,7 @@ export const AppTable = ({
           {subTitle && <span className="text-sm text-500 mt-1">{subTitle}</span>}
         </div>
 
-        <div className="flex flex-wrap align-items-center gap-2">
+        <div className="flex flex-wrap align-items-center gap-1 sm:gap-2">
           {/* Global Search Box */}
           {hasSearch && (
             <div className="relative flex align-items-center">
@@ -372,7 +372,7 @@ export const AppTable = ({
                 placeholder="Search..."
                 className="p-inputtext-sm"
                 style={{
-                  width: '130px',
+                  width: '110px',
                   height: '28px',
                   fontSize: '11px',
                   paddingLeft: '1.5rem',

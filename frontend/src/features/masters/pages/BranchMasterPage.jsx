@@ -445,13 +445,33 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
   return (
     <Box sx={{ pb: 6 }}>
       {/* Header Banner */}
-      <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 2 }}>
+      {/* Header Banner */}
+      <Box sx={{ mb: { xs: 1.5, sm: 2.5 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: { xs: 1, sm: 2 } }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <SchoolIcon color="primary" sx={{ fontSize: 32 }} />
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 800,
+              color: 'text.primary',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontSize: { xs: '1.05rem', sm: '1.35rem' },
+              lineHeight: 1.25,
+            }}
+          >
+            <SchoolIcon color="primary" sx={{ fontSize: { xs: 22, sm: 28 } }} />
             School & Campus Branch Master
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontSize: { xs: '0.72rem', sm: '0.85rem' },
+              mt: 0.25,
+              lineHeight: 1.35,
+            }}
+          >
             Manage educational institutions, multi-school setups, campus branches, and receipt print credentials
           </Typography>
         </Box>
@@ -461,15 +481,16 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
             {tabValue === 0 ? (
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
                 onClick={handleOpenCreateSchool}
                 sx={{
                   bgcolor: 'primary.main',
-                  px: 2.5,
-                  py: 1,
+                  px: { xs: 1.5, sm: 2.5 },
+                  py: { xs: 0.6, sm: 1 },
                   fontWeight: 700,
                   boxShadow: 2,
                   textTransform: 'none',
+                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
                 }}
               >
                 + Register New School
@@ -477,16 +498,17 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
             ) : (
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
                 onClick={handleOpenCreateBranch}
                 disabled={!canAdd}
                 sx={{
                   bgcolor: 'primary.main',
-                  px: 2.5,
-                  py: 1,
+                  px: { xs: 1.5, sm: 2.5 },
+                  py: { xs: 0.6, sm: 1 },
                   fontWeight: 700,
                   boxShadow: 2,
                   textTransform: 'none',
+                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
                 }}
               >
                 + Add Campus Branch
@@ -497,36 +519,46 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       </Box>
 
       {/* Tabs */}
-      <Paper sx={{ mb: 3, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
+      <Paper sx={{ mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
         <Tabs
           value={tabValue}
           onChange={(_, val) => setTabValue(val)}
           indicatorColor="primary"
           textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            px: 2,
+            px: { xs: 1, sm: 2 },
             borderBottom: 1,
             borderColor: 'divider',
-            '& .MuiTab-root': { fontWeight: 700, textTransform: 'none', fontSize: '0.95rem', py: 1.8 },
+            minHeight: { xs: 38, sm: 46 },
+            '& .MuiTab-root': {
+              fontWeight: 700,
+              textTransform: 'none',
+              fontSize: { xs: '0.78rem', sm: '0.92rem' },
+              py: { xs: 0.8, sm: 1.4 },
+              minHeight: { xs: 38, sm: 46 },
+              minWidth: { xs: 'auto', sm: 140 },
+            },
           }}
         >
           <Tab
-            icon={<SchoolIcon />}
+            icon={<SchoolIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             iconPosition="start"
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <span>Registered Schools</span>
-                <Chip label={schools.length} size="small" color="primary" sx={{ height: 20, fontSize: '0.75rem', fontWeight: 700 }} />
+                <Chip label={schools.length} size="small" color="primary" sx={{ height: 18, fontSize: '0.68rem', fontWeight: 700 }} />
               </Box>
             }
           />
           <Tab
-            icon={<DomainIcon />}
+            icon={<DomainIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             iconPosition="start"
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <span>Campus Branches</span>
-                <Chip label={branches.length} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600 }} />
+                <Chip label={branches.length} size="small" variant="outlined" sx={{ height: 18, fontSize: '0.68rem', fontWeight: 600 }} />
               </Box>
             }
           />
@@ -537,19 +569,20 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       {tabValue === 0 && (
         <Box>
           {/* Action & Filter Bar */}
-          <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-            <Grid container spacing={2} alignItems="center">
+          <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
+            <Grid container spacing={1.5} alignItems="center">
               <Grid item xs={12} sm={6} md={5}>
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="Search by school name, code, affiliation no, or city..."
+                  placeholder="Search by school, code, affiliation, city..."
                   value={schoolSearch}
                   onChange={(e) => setSchoolSearch(e.target.value)}
                   InputProps={{
+                    sx: { fontSize: { xs: '0.78rem', sm: '0.875rem' } },
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon fontSize="small" color="action" />
+                        <SearchIcon sx={{ fontSize: 18 }} color="action" />
                       </InputAdornment>
                     ),
                   }}
@@ -565,16 +598,17 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                       onChange={(e) => setShowInactiveSchools(e.target.checked)}
                     />
                   }
-                  label={<Typography variant="body2" sx={{ fontWeight: 500 }}>Show Inactive Institutions</Typography>}
+                  label={<Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>Show Inactive Institutions</Typography>}
                 />
               </Grid>
 
               <Grid item xs={12} md={3} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 <Button
                   size="small"
-                  startIcon={<RefreshIcon />}
+                  startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
                   onClick={fetchSchools}
                   disabled={loadingSchools}
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
                 >
                   Refresh List
                 </Button>
@@ -603,7 +637,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
               )}
             </Paper>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               {filteredSchools.map((sch) => {
                 const initialLetter = sch.name ? sch.name.charAt(0).toUpperCase() : 'S';
                 return (
@@ -624,19 +658,19 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                         },
                       }}
                     >
-                      <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                      <CardContent sx={{ p: { xs: 1.5, sm: 2.2 }, flexGrow: 1 }}>
                         {/* Top: Avatar, Name, Status */}
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.2, mb: 1 }}>
                           <Avatar
                             src={sch.logoUrl || undefined}
                             alt={sch.name}
                             sx={{
-                              width: 52,
-                              height: 52,
+                              width: { xs: 40, sm: 48 },
+                              height: { xs: 40, sm: 48 },
                               bgcolor: 'primary.main',
                               color: '#fff',
                               fontWeight: 800,
-                              fontSize: '1.4rem',
+                              fontSize: { xs: '1.1rem', sm: '1.3rem' },
                               boxShadow: 1,
                             }}
                           >
@@ -647,8 +681,9 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                               variant="subtitle1"
                               sx={{
                                 fontWeight: 700,
-                                lineHeight: 1.3,
+                                lineHeight: 1.25,
                                 color: 'text.primary',
+                                fontSize: { xs: '0.92rem', sm: '1rem' },
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -657,64 +692,64 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                             >
                               {sch.name}
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mt: 0.4 }}>
                               <Chip
                                 label={sch.code}
                                 size="small"
                                 sx={{
                                   fontWeight: 700,
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.68rem',
                                   bgcolor: '#e3f2fd',
                                   color: '#0d47a1',
-                                  height: 22,
+                                  height: 20,
                                 }}
                               />
                               <Chip
                                 label={sch.isActive ? 'Active' : 'Inactive'}
                                 size="small"
                                 color={sch.isActive ? 'success' : 'default'}
-                                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 600 }}
+                                sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }}
                               />
                             </Box>
                           </Box>
                         </Box>
 
-                        <Divider sx={{ my: 1.5 }} />
+                        <Divider sx={{ my: 1 }} />
 
                         {/* Details Stack */}
-                        <Stack spacing={1} sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                        <Stack spacing={0.6} sx={{ fontSize: { xs: '0.75rem', sm: '0.82rem' }, color: 'text.secondary' }}>
                           {sch.affiliationNumber && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <BadgeIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18 }} />
-                              <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                              <BadgeIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16 }} />
+                              <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 500 }}>
                                 Affiliation: <strong>{sch.affiliationNumber}</strong>
                               </Typography>
                             </Box>
                           )}
 
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <DomainIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18 }} />
-                            <Typography variant="body2" sx={{ fontSize: '0.82rem' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                            <DomainIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16 }} />
+                            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.82rem' } }}>
                               Branches: <strong>{sch.branchCount || sch.branches?.length || 0} Campus(es)</strong>
                             </Typography>
                           </Box>
 
                           {sch.contactNumber && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <PhoneIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18 }} />
-                              <Typography variant="body2" sx={{ fontSize: '0.82rem' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                              <PhoneIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16 }} />
+                              <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.82rem' } }}>
                                 {sch.contactNumber}
                               </Typography>
                             </Box>
                           )}
 
                           {sch.email && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <EmailIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18 }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                              <EmailIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16 }} />
                               <Typography
                                 variant="body2"
                                 sx={{
-                                  fontSize: '0.82rem',
+                                  fontSize: { xs: '0.75rem', sm: '0.82rem' },
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
@@ -726,12 +761,12 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                           )}
 
                           {sch.address && (
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                              <LocationIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18, mt: 0.2 }} />
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.8 }}>
+                              <LocationIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16, mt: 0.2 }} />
                               <Typography
                                 variant="body2"
                                 sx={{
-                                  fontSize: '0.8rem',
+                                  fontSize: { xs: '0.74rem', sm: '0.8rem' },
                                   lineHeight: 1.3,
                                   display: '-webkit-box',
                                   WebkitLineClamp: 2,
@@ -745,8 +780,8 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                           )}
 
                           {sch.website && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <WebsiteIcon fontSize="small" sx={{ color: 'action.active', fontSize: 18 }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                              <WebsiteIcon fontSize="small" sx={{ color: 'action.active', fontSize: 16 }} />
                               <Typography
                                 variant="body2"
                                 component="a"
@@ -754,7 +789,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                                 target="_blank"
                                 rel="noreferrer"
                                 sx={{
-                                  fontSize: '0.8rem',
+                                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
                                   color: 'primary.main',
                                   textDecoration: 'none',
                                   '&:hover': { textDecoration: 'underline' },
@@ -770,13 +805,13 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                       <Divider />
 
                       {/* Card Footer Actions */}
-                      <CardActions sx={{ px: 2, py: 1.2, justifyContent: 'space-between', bgcolor: 'rgba(0,0,0,0.01)' }}>
+                      <CardActions sx={{ px: { xs: 1.5, sm: 2 }, py: 0.8, justifyContent: 'space-between', bgcolor: 'rgba(0,0,0,0.01)' }}>
                         <Button
                           size="small"
                           variant="text"
-                          endIcon={<ArrowForwardIcon fontSize="small" />}
+                          endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
                           onClick={() => handleJumpToBranches(sch.id)}
-                          sx={{ textTransform: 'none', fontWeight: 600 }}
+                          sx={{ textTransform: 'none', fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.82rem' } }}
                         >
                           View Branches
                         </Button>
@@ -816,21 +851,22 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       {tabValue === 1 && (
         <Box>
           {/* School Selector Filter */}
-          <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-            <Grid container spacing={2} alignItems="center">
+          <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
+            <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="center">
               <Grid item xs={12} sm={6} md={4}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Filter by School</InputLabel>
+                  <InputLabel sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>Filter by School</InputLabel>
                   <Select
                     value={selectedSchoolFilter}
                     label="Filter by School"
                     onChange={(e) => setSelectedSchoolFilter(e.target.value)}
+                    sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}
                   >
-                    <MenuItem value="all">
+                    <MenuItem value="all" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>
                       <em>All Registered Schools ({schools.length})</em>
                     </MenuItem>
                     {schools.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>
+                      <MenuItem key={s.id} value={s.id} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>
                         {s.name} ({s.code})
                       </MenuItem>
                     ))}
@@ -839,7 +875,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
               </Grid>
 
               <Grid item xs={12} sm={6} md={5}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
                   Showing <strong>{branches.length}</strong> branch(es){' '}
                   {selectedSchoolFilter !== 'all' && (
                     <span>for {schools.find((s) => s.id === selectedSchoolFilter)?.name}</span>
@@ -851,10 +887,10 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                 <Grid item xs={12} md={3} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                   <Button
                     variant="outlined"
-                    startIcon={<AddIcon />}
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     size="small"
                     onClick={handleOpenCreateBranch}
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                    sx={{ textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
                   >
                     + Add Branch
                   </Button>
@@ -864,12 +900,12 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
           </Paper>
 
           {/* Branches Master Layout */}
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.5, sm: 3 }}>
             {/* Branch Selector List */}
             <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400 }}>
+              <Paper sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, minHeight: { xs: 'auto', md: 400 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>
                     Campus Branches ({branches.length})
                   </Typography>
                   <IconButton size="small" onClick={() => fetchBranches(selectedSchoolFilter)}>
@@ -934,27 +970,27 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
 
             {/* Branch Edit Form */}
             <Grid item xs={12} md={8}>
-              <Paper sx={{ p: 3, borderRadius: 2 }} component="form" onSubmit={handleSaveBranch}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <DomainIcon color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Paper sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: 2 }} component="form" onSubmit={handleSaveBranch}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2, gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <DomainIcon color="primary" sx={{ fontSize: { xs: 20, sm: 24 } }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: '0.92rem', sm: '1.15rem' } }}>
                       {selectedBranch ? `${selectedBranch.name} Configuration` : 'Branch Details'}
                     </Typography>
                     {selectedBranch && (
-                      <Chip label={`Code: ${selectedBranch.code}`} size="small" color="primary" variant="outlined" />
+                      <Chip label={`Code: ${selectedBranch.code}`} size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
                     )}
                   </Box>
                   {selectedBranch?.schoolName && (
                     <Chip
-                      icon={<SchoolIcon />}
+                      icon={<SchoolIcon sx={{ fontSize: 16 }} />}
                       label={selectedBranch.schoolName}
                       size="small"
-                      sx={{ bgcolor: '#ede7f6', color: '#4527a0', fontWeight: 600 }}
+                      sx={{ bgcolor: '#ede7f6', color: '#4527a0', fontWeight: 600, height: 22, fontSize: '0.72rem' }}
                     />
                   )}
                 </Box>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: { xs: 1.5, sm: 3 } }} />
 
                 {!selectedBranch ? (
                   <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>

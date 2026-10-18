@@ -362,24 +362,41 @@ export const FeeDiscountMasterPage = () => {
   return (
     <Box sx={{ p: { xs: 1.5, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: { xs: 1.25, sm: 2 },
+          mb: 2.5,
+        }}
+      >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-            <DiscountIcon color="primary" sx={{ fontSize: 28 }} />
-            <Typography variant="h5" fontWeight={700} color="text.primary">
+            <DiscountIcon color="primary" sx={{ fontSize: { xs: 22, sm: 28 } }} />
+            <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
               Fee Discount Master
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.74rem', sm: '0.85rem' } }}>
             Staff-wise discount eligibility & percentage (%) limit configuration. (Students & Parents excluded).
           </Typography>
         </Box>
         <Button
           variant="outlined"
-          startIcon={<RefreshIcon />}
+          size="small"
+          startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
           onClick={fetchUsers}
           disabled={loading}
-          sx={{ textTransform: 'none', fontWeight: 600 }}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: '0.85rem' },
+            py: 0.5,
+            px: 1.5,
+            whiteSpace: 'nowrap',
+          }}
         >
           Refresh
         </Button>

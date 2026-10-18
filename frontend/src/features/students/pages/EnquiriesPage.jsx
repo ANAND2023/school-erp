@@ -359,16 +359,19 @@ export const EnquiriesPage = () => {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          Student Enquiries
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+          Student Enquiries & Leads
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+          Manage admission leads, follow-up calls, and lead conversions
         </Typography>
       </Box>
 
       {/* Filter Toolbar */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="flex-end">
+      <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
+        <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="flex-end">
           <Grid item xs={12} sm={6} md={4}>
             <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
               <Box sx={{ flex: 1 }}>

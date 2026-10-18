@@ -18,6 +18,7 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -336,31 +337,60 @@ export const UsersPage = () => {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+    <Box sx={{ pb: 4 }}>
+      <Box
+        sx={{
+          mb: { xs: 2, sm: 3 },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: { xs: 1.25, sm: 2 },
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '1.15rem', sm: '1.45rem' },
+              lineHeight: 1.25,
+            }}
+          >
             User Management
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}
+          >
             Manage system users, branch access, account unlock, and password resets
           </Typography>
-        </div>
+        </Box>
         <Button
           variant="outlined"
           color="success"
-          startIcon={<DiscountIcon />}
+          size="small"
+          startIcon={<DiscountIcon sx={{ fontSize: 18 }} />}
           onClick={() => navigate('/masters/fee-discount')}
-          sx={{ textTransform: 'none', fontWeight: 600 }}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: { xs: '0.75rem', sm: '0.85rem' },
+            py: { xs: 0.5, sm: 0.8 },
+            px: { xs: 1.5, sm: 2 },
+            borderRadius: 1.5,
+            whiteSpace: 'nowrap',
+          }}
         >
           Fee Discount Master
         </Button>
       </Box>
 
       {/* Filter Toolbar */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={5}>
+      <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
+        <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="center">
+          <Grid item xs={12} sm={7} md={5}>
             <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1 }}>
               <TextField
                 fullWidth
@@ -368,13 +398,32 @@ export const UsersPage = () => {
                 placeholder="Search username, name, email or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  sx: { fontSize: { xs: '0.78rem', sm: '0.875rem' } },
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 18 }} color="action" />
+                    </InputAdornment>
+                  ),
+                }}
               />
-              <Button variant="contained" type="submit" startIcon={<SearchIcon />}>
+              <Button
+                variant="contained"
+                type="submit"
+                sx={{
+                  whiteSpace: 'nowrap',
+                  px: { xs: 1.5, sm: 2.5 },
+                  fontWeight: 700,
+                  fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                  textTransform: 'none',
+                  bgcolor: 'primary.main',
+                }}
+              >
                 Search
               </Button>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={5} md={4}>
             <TextField
               select
               fullWidth
@@ -382,10 +431,12 @@ export const UsersPage = () => {
               label="Filter by Role"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
+              InputLabelProps={{ sx: { fontSize: { xs: '0.78rem', sm: '0.875rem' } } }}
+              SelectProps={{ sx: { fontSize: { xs: '0.78rem', sm: '0.875rem' } } }}
             >
-              <MenuItem value="">All Roles</MenuItem>
+              <MenuItem value="" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>All Roles</MenuItem>
               {roles.map((r) => (
-                <MenuItem key={r.id} value={r.id}>
+                <MenuItem key={r.id} value={r.id} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>
                   {r.name}
                 </MenuItem>
               ))}
