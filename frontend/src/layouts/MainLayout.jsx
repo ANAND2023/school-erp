@@ -646,32 +646,34 @@ export const MainLayout = () => {
       <footer
         className="fixed bottom-0 left-0 w-full flex align-items-center justify-content-between px-2 select-none"
         style={{
-          height: '22px',
+          height: '26px',
           zIndex: 100,
           backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
           borderTop: isDarkMode ? '1px solid #1e293b' : '1px solid #e2e8f0',
-          boxShadow: '0 -1px 3px rgba(0, 0, 0, 0.05)',
+          boxShadow: '0 -1px 4px rgba(0, 0, 0, 0.06)',
           fontSize: '11px',
-          lineHeight: '22px',
+          lineHeight: '26px',
         }}
       >
-        {/* Left Badge: School / Campus Tag */}
+        {/* Left Badge: School / Campus Tag (Opaque to prevent marquee overlap) */}
         <div
-          className="flex align-items-center gap-1 font-bold flex-shrink-0 pr-2"
+          className="flex align-items-center gap-1.5 font-bold flex-shrink-0 px-2"
           style={{
             color: currentColorHex,
             borderRight: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
             height: '100%',
+            backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+            zIndex: 5,
           }}
         >
           <i className="pi pi-building text-xs" />
-          <span className="hidden sm:inline" style={{ color: isDarkMode ? '#f1f5f9' : '#1e293b', fontSize: '11px' }}>
+          <span className="hidden sm:inline" style={{ color: isDarkMode ? '#f1f5f9' : '#1e293b', fontSize: '11px', fontWeight: 700 }}>
             {schoolInfo.schoolName || user?.schoolName || 'School ERP'}
           </span>
         </div>
 
         {/* Center: Live Continuous Marquee with School Info & Contacts */}
-        <div className="flex-1 overflow-hidden mx-2 flex align-items-center" style={{ height: '100%' }}>
+        <div className="flex-1 overflow-hidden mx-2 flex align-items-center" style={{ height: '100%', position: 'relative' }}>
           <marquee
             scrollamount="4"
             onMouseOver={(e) => e.target.stop()}
@@ -679,33 +681,33 @@ export const MainLayout = () => {
             style={{
               color: isDarkMode ? '#cbd5e1' : '#475569',
               fontSize: '11px',
-              lineHeight: '22px',
+              lineHeight: '26px',
               display: 'block',
               width: '100%',
             }}
           >
             {[
-              schoolInfo.schoolName ? `🏫 ${schoolInfo.schoolName}` : '',
               schoolInfo.branchName ? `🏢 Campus: ${schoolInfo.branchName}` : '',
               schoolInfo.affiliationNumber ? `📜 Affiliation: ${schoolInfo.affiliationNumber}` : '',
               schoolInfo.address ? `📍 Address: ${schoolInfo.address}` : '',
               schoolInfo.phone ? `📞 Contact: ${schoolInfo.phone}` : '',
               schoolInfo.email ? `✉️ Email: ${schoolInfo.email}` : '',
               schoolInfo.website ? `🌐 Website: ${schoolInfo.website}` : '',
-              `✨ Powered by Digital Vidya Sarthi (DVS ERP v2.0)`,
+              `✨ Powered by Digital Vidya Sarthi (DVS ERP)`,
             ]
               .filter(Boolean)
               .join(' \u00A0\u00A0\u00A0|\u00A0\u00A0\u00A0 ')}
           </marquee>
         </div>
 
-        {/* Right Fixed Brand */}
+        {/* Right Fixed Brand (Opaque) */}
         <div
-          className="flex align-items-center gap-1 font-medium flex-shrink-0 pl-2"
+          className="flex align-items-center gap-1.5 font-medium flex-shrink-0 px-2"
           style={{
             borderLeft: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
             height: '100%',
             backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+            zIndex: 5,
             fontSize: '11px',
           }}
         >

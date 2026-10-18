@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Box,
@@ -30,9 +30,11 @@ import {
   Tab,
   CircularProgress,
   Avatar,
-  Autocomplete,
   Checkbox,
   TextField,
+  InputAdornment,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import {
   Print as PrintIcon,
@@ -45,10 +47,18 @@ import {
   AutoAwesome as SparklesIcon,
   CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
   CheckBox as CheckBoxIcon,
+  Search as SearchIcon,
+  NavigateBefore as NavigateBeforeIcon,
+  NavigateNext as NavigateNextIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  AssignmentOutlined as AssignmentIcon,
+  RestartAlt as ResetIcon,
+  FilterAltOff as FilterAltOffIcon,
 } from '@mui/icons-material';
 import { examApi } from '../api';
 import api from '../../../api/client';
 import { printWithTitle } from '../../../utils/printUtils';
+import { useAcademicYear } from '../../../hooks/useAcademicYear';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -56,6 +66,8 @@ import { MultiTermReportCardSlip } from '../components/MultiTermReportCardSlip';
 import { CceProgressReportCardSlip } from '../components/CceProgressReportCardSlip';
 
 export const ReportCardsPage = () => {
+  const { activeAcademicYearId, activeYearLabel } = useAcademicYear();
+
   // Tabs:
   // 0 -> CCE 2-Term Progress Report (Kush Public School Template)
   // 1 -> Multi-Term Annual Report Card (Term 1, 2, 3 & Final)
@@ -71,6 +83,18 @@ export const ReportCardsPage = () => {
   // Student list
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [previewStudentId, setPreviewStudentId] = useState(null);
+  const [studentSearch, setStudentSearch] = useState('');
+
+  // Helper to format student name cleanly
+  const formatName = (str) => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
 
   // CCE 2-Term specific state (Tab 0)
   const [cceData, setCceData] = useState(null);
@@ -141,13 +165,15 @@ export const ReportCardsPage = () => {
   const loadStudents = async () => {
     try {
       const res = await api.get('/students', {
-        params: { classId: selectedClassId, sectionId: selectedSectionId || undefined, pageSize: 50 },
+        params: { classId: selectedClassId, sectionId: selectedSectionId || undefined, pageSize: 100 },
       });
       const list = res.data?.data?.items || res.data?.data || [];
       setStudents(list);
       if (list.length > 0) {
-        setSelectedStudentIds([list[0].id]);
+        setPreviewStudentId(list[0].id);
+        setSelectedStudentIds(list.map((s) => s.id));
       } else {
+        setPreviewStudentId(null);
         setSelectedStudentIds([]);
         setCceData(null);
         setMultiTermData(null);
@@ -172,20 +198,47 @@ export const ReportCardsPage = () => {
     }
   };
 
-  // Load CCE report card for selected student (Tab 0)
+  // Helper hooks for active student index & navigation
+  const filteredStudents = useMemo(() => {
+    if (!studentSearch.trim()) return students;
+    const q = studentSearch.toLowerCase().trim();
+    return students.filter((st) => {
+      const name = (st.fullName || st.studentName || `${st.firstName || ''} ${st.lastName || ''}`).toLowerCase();
+      const roll = String(st.rollNo || '').toLowerCase();
+      const adm = String(st.admissionNo || '').toLowerCase();
+      return name.includes(q) || roll.includes(q) || adm.includes(q);
+    });
+  }, [students, studentSearch]);
+
+  const activeStudentIndex = students.findIndex((s) => String(s.id) === String(previewStudentId));
+  const currentStudent = activeStudentIndex >= 0 ? students[activeStudentIndex] : students[0];
+
+  const handleNextStudent = () => {
+    if (activeStudentIndex >= 0 && activeStudentIndex < students.length - 1) {
+      setPreviewStudentId(students[activeStudentIndex + 1].id);
+    }
+  };
+
+  const handlePrevStudent = () => {
+    if (activeStudentIndex > 0) {
+      setPreviewStudentId(students[activeStudentIndex - 1].id);
+    }
+  };
+
+  // Load CCE report card for active student (Tab 0)
   useEffect(() => {
-    if (selectedStudentIds.length > 0 && activeTab === 0) {
-      loadCceReportCard(selectedStudentIds[0]);
-    } else if (selectedStudentIds.length === 0) {
+    if (previewStudentId && activeTab === 0) {
+      loadCceReportCard(previewStudentId);
+    } else if (!previewStudentId) {
       setCceData(null);
     }
-  }, [selectedStudentIds, activeTab]);
+  }, [previewStudentId, activeTab, activeAcademicYearId]);
 
   const loadCceReportCard = async (studentId) => {
     if (!studentId) return;
     setCceLoading(true);
     try {
-      const res = await examApi.getCceProgressReportCard(studentId);
+      const res = await examApi.getCceProgressReportCard(studentId, activeAcademicYearId || undefined);
       setCceData(res.data?.data || null);
     } catch (err) {
       console.error(err);
@@ -197,8 +250,8 @@ export const ReportCardsPage = () => {
 
   // Load Bulk CCE cards for the entire class and trigger print directly
   const handleOpenCceBulkPrint = async () => {
+    if (!selectedStudentIds.length) return;
     setCceBulkLoading(true);
-    // We bypass the modal to print directly
     try {
       const res = await examApi.getCceClassProgressReportCards(selectedClassId, selectedSectionId || undefined);
       const allCards = res.data?.data || [];
@@ -210,38 +263,41 @@ export const ReportCardsPage = () => {
          const card = allCards.find(c => {
             if (!c) return false;
             const cardStudentId = c.student?.studentId || c.Student?.StudentId;
-            return cardStudentId == sId;
+            return String(cardStudentId) === String(sId);
          });
          if (card) {
             filtered.push(card);
          } else {
             try {
-               const singleRes = await examApi.getCceProgressReportCard(sId, selectedAcademicYearId || undefined);
+               const singleRes = await examApi.getCceProgressReportCard(sId, activeAcademicYearId || undefined);
                if (singleRes.data?.data) {
                   filtered.push(singleRes.data.data);
                } else {
-                  const stObj = students.find(s => s.id == sId);
+                  const stObj = students.find(s => String(s.id) === String(sId));
                   missingStudents.push(stObj ? (stObj.fullName || stObj.firstName || `Student ID ${sId}`) : `Student ID ${sId}`);
                }
             } catch (err) {
-               const stObj = students.find(s => s.id == sId);
+               const stObj = students.find(s => String(s.id) === String(sId));
                missingStudents.push(stObj ? (stObj.fullName || stObj.firstName || `Student ID ${sId}`) : `Student ID ${sId}`);
             }
          }
       }
 
       if (missingStudents.length > 0) {
-         setAlert({ type: 'error', message: `Cannot print. Missing data for: ${missingStudents.join(', ')}` });
+         setAlert({ type: 'warning', message: `Note: Missing exam data for: ${missingStudents.join(', ')}` });
+      }
+
+      if (filtered.length === 0) {
+         setAlert({ type: 'error', message: 'No printable report card records found for selected students.' });
          setCceBulkLoading(false);
-         return; // Abort printing
+         return;
       }
 
       setCceBulkData(filtered);
-      // Wait for React to render the hidden print container, then print
       setTimeout(() => {
         handlePrintCceBulk();
         setCceBulkLoading(false);
-      }, 1000); // slightly increased timeout for safety
+      }, 800);
     } catch (err) {
       console.error(err);
       setAlert({ type: 'error', message: `Failed to load class CCE report cards. Error: ${err.message}` });
@@ -249,20 +305,20 @@ export const ReportCardsPage = () => {
     }
   };
 
-  // Load Multi-Term report card for selected student (Tab 1)
+  // Load Multi-Term report card for active student (Tab 1)
   useEffect(() => {
-    if (selectedStudentIds.length > 0 && activeTab === 1) {
-      loadMultiTermReportCard(selectedStudentIds[0]);
-    } else if (selectedStudentIds.length === 0) {
+    if (previewStudentId && activeTab === 1) {
+      loadMultiTermReportCard(previewStudentId);
+    } else if (!previewStudentId) {
       setMultiTermData(null);
     }
-  }, [selectedStudentIds, activeTab]);
+  }, [previewStudentId, activeTab, activeAcademicYearId]);
 
   const loadMultiTermReportCard = async (studentId) => {
     if (!studentId) return;
     setMultiTermLoading(true);
     try {
-      const res = await examApi.getMultiTermReportCard(studentId);
+      const res = await examApi.getMultiTermReportCard(studentId, activeAcademicYearId || undefined);
       setMultiTermData(res.data?.data || null);
     } catch (err) {
       console.error(err);
@@ -274,8 +330,8 @@ export const ReportCardsPage = () => {
 
   // Load Bulk Multi-Term cards for the entire class and trigger print directly
   const handleOpenBulkPrint = async () => {
+    if (!selectedStudentIds.length) return;
     setBulkLoading(true);
-    // Bypass modal
     try {
       const res = await examApi.getMultiTermClassReportCards(selectedClassId, selectedSectionId || undefined);
       const allCards = res.data?.data || [];
@@ -287,37 +343,41 @@ export const ReportCardsPage = () => {
          const card = allCards.find(c => {
             if (!c) return false;
             const cardStudentId = c.student?.studentId || c.Student?.StudentId;
-            return cardStudentId == sId;
+            return String(cardStudentId) === String(sId);
          });
          if (card) {
             filtered.push(card);
          } else {
             try {
-               const singleRes = await examApi.getMultiTermReportCard(sId, selectedAcademicYearId || undefined);
+               const singleRes = await examApi.getMultiTermReportCard(sId, activeAcademicYearId || undefined);
                if (singleRes.data?.data) {
                   filtered.push(singleRes.data.data);
                } else {
-                  const stObj = students.find(s => s.id == sId);
+                  const stObj = students.find(s => String(s.id) === String(sId));
                   missingStudents.push(stObj ? (stObj.fullName || stObj.firstName || `Student ID ${sId}`) : `Student ID ${sId}`);
                }
             } catch (err) {
-               const stObj = students.find(s => s.id == sId);
+               const stObj = students.find(s => String(s.id) === String(sId));
                missingStudents.push(stObj ? (stObj.fullName || stObj.firstName || `Student ID ${sId}`) : `Student ID ${sId}`);
             }
          }
       }
 
       if (missingStudents.length > 0) {
-         setAlert({ type: 'error', message: `Cannot print. Missing data for: ${missingStudents.join(', ')}` });
+         setAlert({ type: 'warning', message: `Note: Missing data for: ${missingStudents.join(', ')}` });
+      }
+
+      if (filtered.length === 0) {
+         setAlert({ type: 'error', message: 'No printable report card records found for selected students.' });
          setBulkLoading(false);
-         return; // Abort printing
+         return;
       }
 
       setBulkData(filtered);
       setTimeout(() => {
         handlePrintBulk();
         setBulkLoading(false);
-      }, 1000);
+      }, 800);
     } catch (err) {
       console.error(err);
       setAlert({ type: 'error', message: `Failed to load class report cards. Error: ${err.message}` });
@@ -470,35 +530,56 @@ export const ReportCardsPage = () => {
         }
       `}</style>
       {/* Header */}
-      <Stack className="no-print" direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 2.5 }}>
+      <Stack className="no-print" direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 3 }}>
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Typography variant="overline" sx={{ fontWeight: 800, letterSpacing: 1.2, color: 'primary.main' }}>
+              EXAMINATIONS & EVALUATIONS
+            </Typography>
+            {activeYearLabel && (
+              <Chip
+                icon={<SchoolIcon sx={{ fontSize: '14px !important' }} />}
+                label={activeYearLabel}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.72rem', fontWeight: 600, borderColor: '#cbd5e1' }}
+              />
+            )}
+          </Stack>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <Typography variant="h5" fontWeight={800} color="#0f2b48">
               Student Progress Report Cards
             </Typography>
             <Chip
-              icon={<SparklesIcon sx={{ fontSize: 16 }} />}
+              icon={<SparklesIcon sx={{ fontSize: 15 }} />}
               label="CCE 2-Term & CBSE Ready"
               size="small"
               color="primary"
               variant="filled"
-              sx={{ fontWeight: 700 }}
+              sx={{ fontWeight: 700, borderRadius: 1.5 }}
             />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Generate, preview, and print comprehensive 2-Term CCE Progress Reports (Kush Public School format) or standard CBSE Term Cards.
+            Generate, preview, and print comprehensive 2-Term CCE Progress Reports (Kush Public School format) or standard CBSE Multi-Term Cards.
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
           {activeTab === 0 ? (
             <>
               <Button
                 variant="outlined"
-                startIcon={<PrintIcon />}
+                startIcon={cceBulkLoading ? <CircularProgress size={16} /> : <PrintIcon />}
                 onClick={handleOpenCceBulkPrint}
-                disabled={!selectedStudentIds.length}
-                sx={{ borderColor: '#0f2b48', color: '#0f2b48', fontWeight: 700 }}
+                disabled={!selectedStudentIds.length || cceBulkLoading}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  borderColor: '#cbd5e1',
+                  color: '#1e293b',
+                  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                }}
               >
                 Print Selected ({selectedStudentIds.length})
               </Button>
@@ -506,20 +587,33 @@ export const ReportCardsPage = () => {
                 variant="contained"
                 startIcon={<PrintIcon />}
                 onClick={handlePrintCce}
-                disabled={!cceData}
-                sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700 }}
+                disabled={!cceData || cceLoading}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 2,
+                  px: 2.5,
+                }}
               >
-                Print Report Card
+                Print Current Card
               </Button>
             </>
           ) : activeTab === 1 ? (
             <>
               <Button
                 variant="outlined"
-                startIcon={<PrintIcon />}
+                startIcon={bulkLoading ? <CircularProgress size={16} /> : <PrintIcon />}
                 onClick={handleOpenBulkPrint}
-                disabled={!selectedStudentIds.length}
-                sx={{ borderColor: '#0f2b48', color: '#0f2b48', fontWeight: 700 }}
+                disabled={!selectedStudentIds.length || bulkLoading}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  borderColor: '#cbd5e1',
+                  color: '#1e293b',
+                  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                }}
               >
                 Print Selected ({selectedStudentIds.length})
               </Button>
@@ -527,8 +621,14 @@ export const ReportCardsPage = () => {
                 variant="contained"
                 startIcon={<PrintIcon />}
                 onClick={handlePrintMultiTerm}
-                disabled={!multiTermData}
-                sx={{ bgcolor: '#0f2b48', '&:hover': { bgcolor: '#1e3a8a' }, fontWeight: 700 }}
+                disabled={!multiTermData || multiTermLoading}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 2,
+                  px: 2.5,
+                }}
               >
                 Print Multi-Term Card
               </Button>
@@ -540,6 +640,7 @@ export const ReportCardsPage = () => {
               startIcon={<ResultIcon />}
               onClick={loadResults}
               disabled={loading || !selectedExamId}
+              sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 2.5 }}
             >
               {loading ? 'Processing...' : 'Recalculate Results'}
             </Button>
@@ -547,46 +648,91 @@ export const ReportCardsPage = () => {
         </Stack>
       </Stack>
 
-      {/* Tabs */}
-      <Paper className="no-print" sx={{ mb: 3, borderRadius: 2 }}>
+      {/* Modern Segmented Tabs */}
+      <Paper
+        className="no-print"
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 0.75,
+          bgcolor: '#f1f5f9',
+          borderRadius: 3,
+          border: '1px solid #e2e8f0',
+        }}
+      >
         <Tabs
           value={activeTab}
           onChange={(e, val) => setActiveTab(val)}
-          indicatorColor="primary"
-          textColor="primary"
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            minHeight: 44,
+            '& .MuiTabs-indicator': {
+              display: 'none',
+            },
+            '& .MuiTab-root': {
+              minHeight: 40,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              color: '#475569',
+              transition: 'all 0.2s',
+              mr: 1,
+              px: 2.5,
+              '&.Mui-selected': {
+                color: '#0f172a',
+                bgcolor: '#ffffff',
+                fontWeight: 800,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              },
+              '&:hover:not(.Mui-selected)': {
+                bgcolor: 'rgba(255,255,255,0.5)',
+                color: '#1e293b',
+              },
+            },
+          }}
         >
           <Tab
+            icon={<SparklesIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
             label="CCE 2-Term Progress Report (Kush Public School Format)"
-            sx={{ fontWeight: 700, textTransform: 'none', fontSize: '0.92rem' }}
           />
           <Tab
+            icon={<AssignmentIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
             label="Annual Multi-Term Report Card (Term 1, 2, 3 & Final)"
-            sx={{ fontWeight: 700, textTransform: 'none', fontSize: '0.92rem' }}
           />
           <Tab
-            label="Single Exam / Term-wise Results"
-            sx={{ fontWeight: 700, textTransform: 'none', fontSize: '0.92rem' }}
+            icon={<ResultIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label="Single Exam Results & Ranks"
           />
         </Tabs>
       </Paper>
 
       {alert && (
-        <Alert className="no-print" severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
+        <Alert className="no-print" severity={alert.type} sx={{ mb: 3, borderRadius: 2 }} onClose={() => setAlert(null)}>
           {alert.message}
         </Alert>
       )}
 
-      {/* Filters Card */}
-      <Card className="no-print" sx={{ mb: 3, boxShadow: 1, borderRadius: 2 }}>
-        <CardContent sx={{ p: 2 }}>
+      {/* Filter & Student Roster Control Card */}
+      <Card className="no-print" sx={{ mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.05)' }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+          {/* Top Control Bar: Class, Section, and Search / Exam selection */}
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel>Class</InputLabel>
-                <Select value={selectedClassId} label="Class" onChange={(e) => handleClassChange(e.target.value)}>
+                <InputLabel sx={{ fontWeight: 600 }}>Class</InputLabel>
+                <Select
+                  value={selectedClassId}
+                  label="Class"
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  sx={{ borderRadius: 2, bgcolor: '#ffffff' }}
+                >
                   {classes.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
+                    <MenuItem key={c.id} value={c.id} sx={{ fontWeight: 600 }}>
                       {c.name}
                     </MenuItem>
                   ))}
@@ -594,17 +740,18 @@ export const ReportCardsPage = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={6} md={2.5}>
               <FormControl fullWidth size="small">
-                <InputLabel>Section</InputLabel>
+                <InputLabel sx={{ fontWeight: 600 }}>Section</InputLabel>
                 <Select
                   value={selectedSectionId}
                   label="Section"
                   onChange={(e) => setSelectedSectionId(e.target.value)}
+                  sx={{ borderRadius: 2, bgcolor: '#ffffff' }}
                 >
                   <MenuItem value="">All Sections</MenuItem>
                   {sections.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
+                    <MenuItem key={s.id} value={s.id} sx={{ fontWeight: 600 }}>
                       Section {s.name}
                     </MenuItem>
                   ))}
@@ -613,55 +760,65 @@ export const ReportCardsPage = () => {
             </Grid>
 
             {activeTab === 0 || activeTab === 1 ? (
-              <Grid item xs={12} sm={6}>
-                <Autocomplete
-                  multiple
-                  size="small"
-                  disableCloseOnSelect
-                  options={students}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                  value={students.filter(st => selectedStudentIds.includes(st.id))}
-                  onChange={(e, newVal) => setSelectedStudentIds((newVal || []).map(v => v.id))}
-                  getOptionLabel={(st) => {
-                    const name = st.fullName || st.studentName || `${st.firstName || ''} ${st.lastName || ''}`.trim() || st.admissionNo || `Student #${st.id}`;
-                    return `${st.rollNo ? `[Roll ${st.rollNo}] ` : ''}${name} ${st.admissionNo ? `(${st.admissionNo})` : ''}`;
-                  }}
-                  renderOption={(props, option, { selected }) => (
-                    <li {...props} key={option.id}>
-                      <Checkbox
-                        icon={icon}
-                        checkedIcon={checkedIcon}
-                        style={{ marginRight: 8 }}
-                        checked={selected}
-                      />
-                      {(() => {
-                        const name = option.fullName || option.studentName || `${option.firstName || ''} ${option.lastName || ''}`.trim() || option.admissionNo || `Student #${option.id}`;
-                        return `${option.rollNo ? `[Roll ${option.rollNo}] ` : ''}${name} ${option.admissionNo ? `(${option.admissionNo})` : ''}`;
-                      })()}
-                    </li>
-                  )}
-                  renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      label={selectedStudentIds.length > 0 ? `${selectedStudentIds.length} students selected` : "Select Student(s)"} 
-                      placeholder="Search students..." 
+              <>
+                <Grid item xs={12} sm={6} md={3.5}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search by student name, roll, admission..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: studentSearch ? (
+                        <InputAdornment position="end">
+                          <IconButton size="small" onClick={() => setStudentSearch('')}>
+                            <CloseIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    }}
+                    sx={{
+                      bgcolor: '#ffffff',
+                      '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center">
+                    <Chip
+                      label={`${students.length} Students`}
+                      size="small"
+                      sx={{ fontWeight: 700, bgcolor: '#f1f5f9', color: '#475569' }}
                     />
-                  )}
-                  disabled={!students.length}
-                />
-              </Grid>
+                    <Chip
+                      label={`${selectedStudentIds.length} for Print`}
+                      size="small"
+                      color={selectedStudentIds.length > 0 ? 'primary' : 'default'}
+                      variant={selectedStudentIds.length > 0 ? 'filled' : 'outlined'}
+                      sx={{ fontWeight: 700 }}
+                    />
+                  </Stack>
+                </Grid>
+              </>
             ) : (
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} md={6.5}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Exam</InputLabel>
+                  <InputLabel sx={{ fontWeight: 600 }}>Exam</InputLabel>
                   <Select
                     value={selectedExamId}
                     label="Exam"
                     onChange={(e) => setSelectedExamId(e.target.value)}
                     disabled={!exams.length}
+                    sx={{ borderRadius: 2, bgcolor: '#ffffff' }}
                   >
                     {exams.map((ex) => (
-                      <MenuItem key={ex.id} value={ex.id}>
+                      <MenuItem key={ex.id} value={ex.id} sx={{ fontWeight: 600 }}>
                         {ex.name}
                       </MenuItem>
                     ))}
@@ -671,47 +828,151 @@ export const ReportCardsPage = () => {
             )}
           </Grid>
 
-          {/* Quick Student Selection Chips */}
-          {(activeTab === 0 || activeTab === 1) && students.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1 }}>
-                Quick Select Student:
-              </Typography>
-              <Chip
-                label="Select All"
-                size="small"
-                onClick={() => setSelectedStudentIds(students.map(s => s.id))}
-                sx={{ mr: 0.5, bgcolor: '#e2e8f0', fontWeight: 600 }}
-              />
-              <Chip
-                label="Clear All"
-                size="small"
-                onClick={() => setSelectedStudentIds([])}
-                sx={{ mr: 1, bgcolor: '#e2e8f0', fontWeight: 600 }}
-              />
-              {students.map((st) => {
-                const isSelected = selectedStudentIds.includes(st.id);
-                const name = st.fullName || st.studentName || `${st.firstName || ''} ${st.lastName || ''}`.trim() || st.admissionNo || `Student #${st.id}`;
-                const initial = name ? name[0].toUpperCase() : 'S';
-                return (
-                  <Chip
-                    key={st.id}
-                    avatar={<Avatar sx={{ width: 22, height: 22, fontSize: '0.75rem' }}>{initial}</Avatar>}
-                    label={name}
-                    clickable
-                    color={isSelected ? 'primary' : 'default'}
-                    variant={isSelected ? 'filled' : 'outlined'}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedStudentIds(prev => prev.filter(id => id !== st.id));
-                      } else {
-                        setSelectedStudentIds(prev => [...prev, st.id]);
-                      }
-                    }}
-                    sx={{ fontWeight: isSelected ? 800 : 500 }}
-                  />
-                );
-              })}
+          {/* Interactive Student Roster Strip (Tab 0 & Tab 1) */}
+          {(activeTab === 0 || activeTab === 1) && (
+            <Box sx={{ mt: 2.5 }}>
+              <Divider sx={{ mb: 2 }} />
+              
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1} sx={{ mb: 1.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: '#475569', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  Student Roster — Click to preview card:
+                </Typography>
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedStudentIds(students.map((s) => s.id))}
+                    disabled={!students.length}
+                    sx={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'none', py: 0.2, px: 1 }}
+                  >
+                    Select All ({students.length})
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">|</Typography>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedStudentIds([])}
+                    disabled={!selectedStudentIds.length}
+                    color="inherit"
+                    sx={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', py: 0.2, px: 1, color: 'text.secondary' }}
+                  >
+                    Clear All
+                  </Button>
+                </Stack>
+              </Stack>
+
+              {students.length === 0 ? (
+                <Box sx={{ p: 2, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No students found for the selected class and section.
+                  </Typography>
+                </Box>
+              ) : filteredStudents.length === 0 ? (
+                <Box sx={{ p: 2, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No students match search "{studentSearch}".{' '}
+                    <Button size="small" onClick={() => setStudentSearch('')}>Reset Search</Button>
+                  </Typography>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    maxHeight: 180,
+                    overflowY: 'auto',
+                    p: 0.5,
+                    borderRadius: 2,
+                    bgcolor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  {filteredStudents.map((st) => {
+                    const isPreview = String(st.id) === String(previewStudentId);
+                    const isChecked = selectedStudentIds.includes(st.id);
+                    const rawName = st.fullName || st.studentName || `${st.firstName || ''} ${st.lastName || ''}`.trim() || st.admissionNo || `Student #${st.id}`;
+                    const name = formatName(rawName);
+
+                    return (
+                      <Box
+                        key={st.id}
+                        onClick={() => setPreviewStudentId(st.id)}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease-in-out',
+                          bgcolor: isPreview ? '#eff6ff' : '#ffffff',
+                          border: isPreview ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                          boxShadow: isPreview ? '0 2px 4px rgba(37,99,235,0.15)' : 'none',
+                          '&:hover': {
+                            bgcolor: isPreview ? '#eff6ff' : '#f1f5f9',
+                            borderColor: isPreview ? '#2563eb' : '#cbd5e1',
+                          },
+                        }}
+                      >
+                        <Checkbox
+                          size="small"
+                          checked={isChecked}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isChecked) {
+                              setSelectedStudentIds((prev) => prev.filter((id) => id !== st.id));
+                            } else {
+                              setSelectedStudentIds((prev) => [...prev, st.id]);
+                            }
+                          }}
+                          sx={{ p: 0, '& .MuiSvgIcon-root': { fontSize: 18 } }}
+                        />
+
+                        {st.rollNo && (
+                          <Chip
+                            label={`#${st.rollNo}`}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              bgcolor: isPreview ? '#dbeafe' : '#e2e8f0',
+                              color: isPreview ? '#1e40af' : '#475569',
+                            }}
+                          />
+                        )}
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: isPreview ? 800 : 500,
+                            color: isPreview ? '#1d4ed8' : '#1e293b',
+                            fontSize: '0.84rem',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {name}
+                        </Typography>
+
+                        {isPreview && (
+                          <Chip
+                            label="Viewing"
+                            size="small"
+                            color="primary"
+                            sx={{
+                              height: 18,
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              ml: 0.25,
+                            }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Box>
           )}
         </CardContent>
@@ -721,21 +982,141 @@ export const ReportCardsPage = () => {
       {activeTab === 0 && (
         <Box className="no-print">
           {cceLoading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
-              <CircularProgress size={40} />
-              <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CircularProgress size={44} thickness={4} />
+              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b' }}>
                 Loading CCE 2-Term Progress Report...
               </Typography>
-            </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Compiling scholastic, co-scholastic, and attendance evaluations
+              </Typography>
+            </Paper>
           ) : cceData ? (
-            <Box sx={{ bgcolor: '#f1f5f9', p: { xs: 1, sm: 2, md: 3 }, borderRadius: 2 }}>
-              <CceProgressReportCardSlip data={cceData} />
+            <Box>
+              {/* Student Navigation Bar */}
+              {students.length > 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mb: 2.5,
+                    p: 1.5,
+                    px: 2,
+                    borderRadius: 2.5,
+                    border: '1px solid #e2e8f0',
+                    bgcolor: '#ffffff',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<NavigateBeforeIcon />}
+                      onClick={handlePrevStudent}
+                      disabled={activeStudentIndex <= 0}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Previous
+                    </Button>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1 }}>
+                      Student {activeStudentIndex + 1} of {students.length}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      endIcon={<NavigateNextIcon />}
+                      onClick={handleNextStudent}
+                      disabled={activeStudentIndex >= students.length - 1}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Next
+                    </Button>
+                  </Stack>
+
+                  {/* Active Student Pill */}
+                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, fontWeight: 700, fontSize: '0.85rem' }}>
+                      {(currentStudent?.fullName || currentStudent?.studentName || 'S')[0]?.toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                        {formatName(currentStudent?.fullName || currentStudent?.studentName || currentStudent?.firstName || 'Student')}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {currentStudent?.rollNo ? `Roll #${currentStudent.rollNo} • ` : ''}
+                        {currentStudent?.admissionNo ? `Adm: ${currentStudent.admissionNo}` : `ID: ${currentStudent?.id}`}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* Actions */}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Checkbox
+                      size="small"
+                      checked={selectedStudentIds.includes(previewStudentId)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStudentIds((prev) => [...prev, previewStudentId]);
+                        } else {
+                          setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
+                        }
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', mr: 1 }}>
+                      Include in Bulk Print
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<PrintIcon />}
+                      onClick={handlePrintCce}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Print This Card
+                    </Button>
+                  </Stack>
+                </Paper>
+              )}
+
+              {/* Preview Sheet Container */}
+              <Box
+                sx={{
+                  bgcolor: '#f1f5f9',
+                  p: { xs: 1, sm: 2, md: 3 },
+                  borderRadius: 3,
+                  border: '1px solid #e2e8f0',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)',
+                  overflowX: 'auto',
+                }}
+              >
+                <CceProgressReportCardSlip data={cceData} />
+              </Box>
             </Box>
           ) : (
-            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-              <Typography variant="body1" color="text.secondary">
-                No student selected or data unavailable. Please select a student above.
+            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
+              <SchoolIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
+              <Typography variant="h6" fontWeight={700} color="#1e293b">
+                No Student Report Card Loaded
               </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5 }}>
+                {students.length > 0
+                  ? 'Click on any student in the roster above to view their CCE 2-Term Progress Report.'
+                  : 'Please select a Class and Section with enrolled students to preview report cards.'}
+              </Typography>
+              {students.length > 0 && (
+                <Button
+                  variant="contained"
+                  onClick={() => setPreviewStudentId(students[0]?.id)}
+                  sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                >
+                  Preview First Student ({formatName(students[0]?.fullName || students[0]?.studentName)})
+                </Button>
+              )}
             </Paper>
           )}
         </Box>
@@ -745,21 +1126,141 @@ export const ReportCardsPage = () => {
       {activeTab === 1 && (
         <Box className="no-print">
           {multiTermLoading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
-              <CircularProgress size={40} />
-              <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                Loading multi-term performance & remarks...
+            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CircularProgress size={44} thickness={4} />
+              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b' }}>
+                Loading Multi-Term Performance...
               </Typography>
-            </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Fetching multi-term scores, grades, and faculty remarks
+              </Typography>
+            </Paper>
           ) : multiTermData ? (
-            <Box sx={{ bgcolor: '#f1f5f9', p: { xs: 1, sm: 2, md: 3 }, borderRadius: 2 }}>
-              <MultiTermReportCardSlip data={multiTermData} />
+            <Box>
+              {/* Student Navigation Bar */}
+              {students.length > 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mb: 2.5,
+                    p: 1.5,
+                    px: 2,
+                    borderRadius: 2.5,
+                    border: '1px solid #e2e8f0',
+                    bgcolor: '#ffffff',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<NavigateBeforeIcon />}
+                      onClick={handlePrevStudent}
+                      disabled={activeStudentIndex <= 0}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Previous
+                    </Button>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1 }}>
+                      Student {activeStudentIndex + 1} of {students.length}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      endIcon={<NavigateNextIcon />}
+                      onClick={handleNextStudent}
+                      disabled={activeStudentIndex >= students.length - 1}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Next
+                    </Button>
+                  </Stack>
+
+                  {/* Active Student Pill */}
+                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontWeight: 700, fontSize: '0.85rem' }}>
+                      {(currentStudent?.fullName || currentStudent?.studentName || 'S')[0]?.toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                        {formatName(currentStudent?.fullName || currentStudent?.studentName || currentStudent?.firstName || 'Student')}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {currentStudent?.rollNo ? `Roll #${currentStudent.rollNo} • ` : ''}
+                        {currentStudent?.admissionNo ? `Adm: ${currentStudent.admissionNo}` : `ID: ${currentStudent?.id}`}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* Actions */}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Checkbox
+                      size="small"
+                      checked={selectedStudentIds.includes(previewStudentId)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStudentIds((prev) => [...prev, previewStudentId]);
+                        } else {
+                          setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
+                        }
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', mr: 1 }}>
+                      Include in Bulk Print
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<PrintIcon />}
+                      onClick={handlePrintMultiTerm}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                    >
+                      Print This Card
+                    </Button>
+                  </Stack>
+                </Paper>
+              )}
+
+              {/* Preview Sheet Container */}
+              <Box
+                sx={{
+                  bgcolor: '#f1f5f9',
+                  p: { xs: 1, sm: 2, md: 3 },
+                  borderRadius: 3,
+                  border: '1px solid #e2e8f0',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)',
+                  overflowX: 'auto',
+                }}
+              >
+                <MultiTermReportCardSlip data={multiTermData} />
+              </Box>
             </Box>
           ) : (
-            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-              <Typography variant="body1" color="text.secondary">
-                No report card data found. Please select a student with recorded exam marks.
+            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
+              <AssignmentIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
+              <Typography variant="h6" fontWeight={700} color="#1e293b">
+                No Multi-Term Card Available
               </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5 }}>
+                {students.length > 0
+                  ? 'Click on any student in the roster above to view their Annual Multi-Term Report Card.'
+                  : 'Please select a Class and Section with recorded exam marks.'}
+              </Typography>
+              {students.length > 0 && (
+                <Button
+                  variant="contained"
+                  onClick={() => setPreviewStudentId(students[0]?.id)}
+                  sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                >
+                  Preview First Student ({formatName(students[0]?.fullName || students[0]?.studentName)})
+                </Button>
+              )}
             </Paper>
           )}
         </Box>
