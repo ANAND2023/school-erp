@@ -44,6 +44,7 @@ const navItems = [
       { title: 'Classes & Sections', path: '/masters/classes', menuKey: 'Classes' },
       { title: 'Subjects', path: '/masters/subjects', menuKey: 'Subjects' },
       { title: 'Class-Subject Mapping', path: '/masters/class-subjects', menuKey: 'ClassSubjects' },
+      { title: 'Fee Discount Master', path: '/masters/fee-discount', menuKey: 'FeeDiscountMaster' },
       { title: 'Simple Masters', path: '/masters/simple', menuKey: 'SimpleMasters' },
       { title: 'Numbering Series', path: '/masters/numbering', menuKey: 'NumberingSeries' },
         { title: 'Bulk Student Upload', path: '/students/bulk-operations', menuKey: 'BulkStudentUpload' },
@@ -80,6 +81,7 @@ const navItems = [
       { title: 'Fee Structure', path: '/fees/structure', menuKey: 'FeeStructure' },
       { title: 'Fee Assignment', path: '/fees/assignment', menuKey: 'FeeAssignment' },
       { title: 'Fee Collection', path: '/fees/collection', menuKey: 'FeeCollection' },
+      { title: 'Fee Discount Master', path: '/fees/discount-master', menuKey: 'FeeDiscountMaster' },
       { title: 'Demand Bill', path: '/fees/demand-bills', menuKey: 'DemandBill' },
       { title: 'Fee Concessions', path: '/fees/concessions', menuKey: 'FeeConcessions' },
       { title: 'Fee Reports', path: '/fees/reports', menuKey: 'FeeReports' },
@@ -378,18 +380,16 @@ export const MainLayout = () => {
 
           {/* Logo / Title */}
           <div className="flex align-items-center gap-2 ml-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <div
-              className="flex align-items-center justify-content-center border-round text-white font-bold"
+            <img
+              src="/dvs-logo.png"
+              alt="Digital Vidya Saarthi Logo"
               style={{
-                width: '26px',
-                height: '26px',
-                background: 'rgba(255, 255, 255, 0.22)',
-                fontSize: '11px',
-                letterSpacing: '0.5px',
+                width: '28px',
+                height: '28px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
               }}
-            >
-              DVS
-            </div>
+            />
             <span className="font-bold text-sm tracking-wide select-none">DVS ERP</span>
           </div>
 

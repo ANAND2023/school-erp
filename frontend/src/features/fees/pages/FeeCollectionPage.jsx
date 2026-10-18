@@ -27,7 +27,8 @@ import {
   DialogContent,
   DialogActions,
   Avatar,
-  Tooltip
+  Tooltip,
+  InputAdornment
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -49,6 +50,8 @@ import {
   Clear as ClearIcon,
   WhatsApp as WhatsAppIcon,
   ReceiptLong as ReceiptLongIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -113,6 +116,8 @@ export default function FeeCollectionPage() {
   ]);
   const [remarks, setRemarks] = useState('');
   const [overallDiscount, setOverallDiscount] = useState('');
+  const [discountPercent, setDiscountPercent] = useState('');
+  const [lastDiscountEdited, setLastDiscountEdited] = useState('percent');
   const [discountRemarks, setDiscountRemarks] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [paymentModeError, setPaymentModeError] = useState('');
@@ -121,6 +126,8 @@ export default function FeeCollectionPage() {
   const { data: eligibilityRes } = useQuery({
     queryKey: ['fee-discount-eligibility'],
     queryFn: () => feesApi.getDiscountEligibility(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const discountEligibility = eligibilityRes?.data?.data || {
     canGiveDiscount: false,
@@ -159,6 +166,7 @@ export default function FeeCollectionPage() {
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
       setRemarks('');
       setOverallDiscount('');
+      setDiscountPercent('');
       setDiscountRemarks('');
       setErrorMsg('');
       refetchDues();
@@ -174,11 +182,71 @@ export default function FeeCollectionPage() {
     setSelectedMonthIds([]);
     setSelectedDues({});
     setOverallDiscount('');
+    setDiscountPercent('');
     setDiscountRemarks('');
     setErrorMsg('');
     setInfoNotice('');
     setShowPaidMonths(false);
     hasInitializedStudentRef.current = null;
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentId('');
+    setSearchTerm('');
+    setSelectedMonthIds([]);
+    setSelectedDues({});
+    setOverallDiscount('');
+    setDiscountPercent('');
+    setDiscountRemarks('');
+    setErrorMsg('');
+    setInfoNotice('');
+    setShowPaidMonths(false);
+    hasInitializedStudentRef.current = null;
+  };
+
+  // Month horizontal scroll and mouse-drag state/handlers
+  const monthScrollRef = useRef(null);
+  const isMouseDownRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const handleMonthMouseDown = (e) => {
+    isMouseDownRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - (monthScrollRef.current?.offsetLeft || 0);
+    scrollLeftRef.current = monthScrollRef.current?.scrollLeft || 0;
+  };
+
+  const handleMonthMouseMove = (e) => {
+    if (!isMouseDownRef.current || !monthScrollRef.current) return;
+    const x = e.pageX - (monthScrollRef.current?.offsetLeft || 0);
+    const walk = (x - startXRef.current) * 1.5;
+    if (Math.abs(walk) > 4) {
+      hasDraggedRef.current = true;
+      e.preventDefault();
+    }
+    monthScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMonthMouseUp = () => {
+    isMouseDownRef.current = false;
+  };
+
+  const handleMonthWheel = (e) => {
+    if (e.deltaY !== 0 && monthScrollRef.current) {
+      e.preventDefault();
+      monthScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleScrollMonths = (direction) => {
+    if (monthScrollRef.current) {
+      monthScrollRef.current.scrollBy({
+        left: direction === 'left' ? -160 : 160,
+        behavior: 'smooth',
+      });
+    }
   };
 
   // Group dues by Installment / Month (strictly ordered chronologically)
@@ -320,15 +388,26 @@ export default function FeeCollectionPage() {
   const discountError = React.useMemo(() => {
     if (!discountEligibility.canGiveDiscount) return '';
     const disc = Number(overallDiscount) || 0;
-    if (disc <= 0) return '';
-    if (!discountEligibility.isUnlimited && discountEligibility.maxDiscountLimit > 0 && disc > discountEligibility.maxDiscountLimit) {
-      return `Discount exceeds your authorized limit of ₹${discountEligibility.maxDiscountLimit.toLocaleString('en-IN')}`;
+    const pct = Number(discountPercent) || 0;
+    if (disc <= 0 && pct <= 0) return '';
+    const maxPercent = Number(discountEligibility.maxDiscountLimit || 0);
+    if (!discountEligibility.isUnlimited && maxPercent > 0 && maxPercent < 100) {
+      if (pct > maxPercent) {
+        return `Discount (${pct}%) exceeds your authorized limit of ${maxPercent}%`;
+      }
+      const maxAllowedRupees = Math.round((maxTotalPayable * maxPercent) / 100);
+      if (disc > maxAllowedRupees) {
+        return `Discount exceeds your authorized limit of ${maxPercent}% (Max ₹${maxAllowedRupees.toLocaleString('en-IN')} for this receipt)`;
+      }
     }
-    if (disc > maxTotalPayable) {
+    if (pct > 100) {
+      return 'Discount cannot exceed 100%';
+    }
+    if (disc > maxTotalPayable && maxTotalPayable > 0) {
       return `Discount cannot exceed total payable fee of ₹${maxTotalPayable.toLocaleString('en-IN')}`;
     }
     return '';
-  }, [overallDiscount, discountEligibility, maxTotalPayable]);
+  }, [overallDiscount, discountPercent, discountEligibility, maxTotalPayable]);
 
   const totalPaymentEntered = React.useMemo(() => {
     return paymentSplits.reduce(
@@ -628,10 +707,68 @@ export default function FeeCollectionPage() {
     }
   };
 
-  // Discount input change handler
-  const handleDiscountChange = (val) => {
-    const num = val === '' ? '' : Math.max(0, parseFloat(val) || 0);
-    setOverallDiscount(val === '' ? '' : num);
+  // Discount input change handlers (Percentage & Rupees bidirectional sync with strict clamping)
+  const handleDiscountPercentChange = (val) => {
+    setLastDiscountEdited('percent');
+    if (val === '' || val === null || val === undefined) {
+      setDiscountPercent('');
+      setOverallDiscount('');
+      if (paymentSplits.length === 1) {
+        setPaymentSplits([{ ...paymentSplits[0], amount: maxTotalPayable > 0 ? maxTotalPayable : '' }]);
+      }
+      return;
+    }
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 0) {
+      num = 0;
+      val = '0';
+    }
+    // Strictly clamp percent so it can never exceed 100%
+    if (num > 100) {
+      num = 100;
+      val = '100';
+    }
+    setDiscountPercent(val);
+    const calculatedRupees = maxTotalPayable > 0 ? Math.min(maxTotalPayable, Math.round((maxTotalPayable * num) / 100)) : 0;
+    setOverallDiscount(calculatedRupees > 0 ? calculatedRupees : (num === 0 ? 0 : ''));
+
+    if (paymentSplits.length === 1) {
+      const newNet = Math.max(0, maxTotalPayable - calculatedRupees);
+      setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (maxTotalPayable > 0 && newNet === 0 ? 0 : '') }]);
+    }
+  };
+
+  const handleDiscountRupeesChange = (val) => {
+    setLastDiscountEdited('rupees');
+    if (val === '' || val === null || val === undefined) {
+      setOverallDiscount('');
+      setDiscountPercent('');
+      if (paymentSplits.length === 1) {
+        setPaymentSplits([{ ...paymentSplits[0], amount: maxTotalPayable > 0 ? maxTotalPayable : '' }]);
+      }
+      return;
+    }
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 0) {
+      num = 0;
+      val = '0';
+    }
+    // Strictly clamp rupees so it can never exceed max total payable fee
+    if (maxTotalPayable > 0 && num > maxTotalPayable) {
+      num = maxTotalPayable;
+      val = String(maxTotalPayable);
+    } else if (maxTotalPayable === 0 && num > 0) {
+      num = 0;
+      val = '0';
+    }
+    setOverallDiscount(val);
+    if (maxTotalPayable > 0) {
+      const pct = Math.min(100, (num / maxTotalPayable) * 100);
+      const formattedPct = Number.isInteger(pct) ? pct.toString() : parseFloat(pct.toFixed(2)).toString();
+      setDiscountPercent(formattedPct);
+    } else {
+      setDiscountPercent('');
+    }
 
     if (paymentSplits.length === 1) {
       const disc = Number(num) || 0;
@@ -639,6 +776,8 @@ export default function FeeCollectionPage() {
       setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (maxTotalPayable > 0 && newNet === 0 ? 0 : '') }]);
     }
   };
+
+  const handleDiscountChange = handleDiscountRupeesChange;
 
   // Auto-sync payment amount for single mode when month selection changes
   useEffect(() => {
@@ -652,7 +791,23 @@ export default function FeeCollectionPage() {
           }
         });
       });
-      const disc = Number(overallDiscount) || 0;
+      let disc = Number(overallDiscount) || 0;
+      if (lastDiscountEdited === 'percent' && discountPercent !== '' && fullAmount > 0) {
+        let pct = Math.max(0, parseFloat(discountPercent) || 0);
+        if (pct > 100) {
+          pct = 100;
+          setDiscountPercent('100');
+        }
+        disc = Math.min(fullAmount, Math.round((fullAmount * pct) / 100));
+        setOverallDiscount(disc > 0 ? disc : (pct === 0 ? 0 : ''));
+      } else if (lastDiscountEdited === 'rupees' && overallDiscount !== '' && fullAmount > 0) {
+        if (disc > fullAmount) {
+          disc = fullAmount;
+          setOverallDiscount(String(fullAmount));
+        }
+        const pct = Math.min(100, (disc / fullAmount) * 100);
+        setDiscountPercent(Number.isInteger(pct) ? pct.toString() : parseFloat(pct.toFixed(2)).toString());
+      }
       const net = Math.max(0, fullAmount - disc);
       setPaymentSplits([{ mode: 1, amount: net > 0 ? net : (fullAmount > 0 && net === 0 ? 0 : ''), transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
     } else {
@@ -738,91 +893,39 @@ export default function FeeCollectionPage() {
       {/* Header */}
 
 
-      {/* Student Search & Info Card */}
-      <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2, overflow: 'visible', position: 'relative', zIndex: 20 }}>
-        <CardContent sx={{ p: { xs: 2, sm: 2.25 } }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={5}>
+      {/* Student Search Card (Only shown when NO student is selected) */}
+      {!selectedStudentId && (
+        <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2, overflow: 'visible', position: 'relative', zIndex: 20 }}>
+          <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+            <Box sx={{ maxWidth: 640, mx: 'auto' }}>
               <StudentLookupDropdown
                 selectedStudentId={selectedStudentId}
                 duesSummary={duesSummary}
                 isLoadingDues={isLoadingDues}
                 onSelectStudent={handleSelectStudent}
-                onClearSelection={() => {
-                  setSelectedStudentId('');
-                  setSearchTerm('');
-                  setSelectedMonthIds([]);
-                  setSelectedDues({});
-                  setOverallDiscount('');
-                  setDiscountRemarks('');
-                  setErrorMsg('');
-                  setInfoNotice('');
-                  hasInitializedStudentRef.current = null;
-                }}
+                onClearSelection={handleClearSelection}
               />
-            </Grid>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Selected Student Banner */}
-            <Grid item xs={12} md={7}>
-              {isLoadingDues ? (
-                <Paper sx={{ p: 1.5, bgcolor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <CircularProgress size={22} />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-                      Loading Student Fee Profile...
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Fetching outstanding dues, concessions, and installments
-                    </Typography>
-                  </Box>
-                </Paper>
-              ) : duesSummary ? (
-                <Paper sx={{ p: 1.5, px: 2, bgcolor: '#f8fafc', border: '1px solid #bfdbfe', borderRadius: 2 }}>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar sx={{ width: 44, height: 44, bgcolor: 'primary.main', fontSize: 20, fontWeight: 700 }}>
-                        {duesSummary.studentName ? duesSummary.studentName[0] : 'S'}
-                      </Avatar>
-                      <Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: 15 }}>
-                            {duesSummary.studentName}
-                          </Typography>
-                          <Chip label={duesSummary.admissionNo} color="primary" size="small" sx={{ fontWeight: 700, height: 20, fontSize: 10.5 }} />
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Class: <b>{duesSummary.className} - {duesSummary.sectionName}</b> | Roll: <b>{duesSummary.rollNo ? '#' + duesSummary.rollNo : '—'}</b>
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Guardian: <b>{duesSummary.guardianName}</b> ({duesSummary.guardianMobile})
-                        </Typography>
-                      </Box>
-                    </Stack>
-
-                    <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, pl: { xs: 0, sm: 1 } }}>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: 11 }}>
-                        Total Outstanding Dues
-                      </Typography>
-                      <Typography variant="h6" fontWeight={800} color={duesSummary.totalOutstanding > 0 ? 'error.main' : 'success.main'} sx={{ fontSize: '1.25rem', lineHeight: 1.2 }}>
-                        ₹{duesSummary.totalOutstanding.toLocaleString()}
-                      </Typography>
-                      {duesSummary.totalFine > 0 && (
-                        <Typography variant="caption" color="error.main" fontWeight={600} display="block" sx={{ fontSize: 10.5 }}>
-                          + ₹{duesSummary.totalFine} Overdue Fine
-                        </Typography>
-                      )}
-                    </Box>
-                  </Stack>
-                </Paper>
-              ) : (
-                <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                  Please search and select a student above to review pending fee dues and collect payment.
-                </Typography>
-              )}
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      {/* Loading Student Profile Skeleton */}
+      {selectedStudentId && isLoadingDues && (
+        <Card sx={{ mb: 2.5, boxShadow: 1, borderRadius: 2 }}>
+          <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <CircularProgress size={24} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                Loading Student Fee Profile...
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Fetching outstanding dues, concessions, and installments
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dues Grid & Collection Section */}
       {selectedStudentId && duesSummary && (
@@ -831,46 +934,80 @@ export default function FeeCollectionPage() {
           <Grid item xs={12} lg={8}>
             <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
               <CardContent sx={{ p: { xs: 1.75, sm: 2.25 }, pb: 1 }}>
-                <Box sx={{ mb: 2, pb: 1.5, borderBottom: '1px solid #f1f5f9' }}>
+                {/* Replaced 'Student Fee Dues & Monthly Collection' with Student Details and Cross Button */}
+                <Box sx={{ mb: 2, pb: 1.5, borderBottom: '1px solid #e2e8f0' }}>
                   <Stack
-                    direction={{ xs: 'column', lg: 'row' }}
+                    direction={{ xs: 'column', md: 'row' }}
                     justifyContent="space-between"
-                    alignItems={{ xs: 'flex-start', lg: 'center' }}
-                    spacing={1}
+                    alignItems={{ xs: 'flex-start', md: 'center' }}
+                    spacing={1.5}
                   >
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="nowrap">
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight={800}
-                          noWrap
-                          sx={{
-                            color: '#0f172a',
-                            fontSize: 14.5,
-                            letterSpacing: '-0.01em',
-                          }}
-                        >
-                          Student Fee Dues & Monthly Collection
-                        </Typography>
-                        <Chip
-                          label={`${visiblePayMonths.length} Selected`}
-                          color={visiblePayMonths.length > 0 ? 'primary' : 'default'}
-                          size="small"
-                          sx={{ fontWeight: 700, height: 20, fontSize: 10.5, flexShrink: 0 }}
-                        />
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, fontSize: 11 }}>
-                        Strict Sequential Dues (FIFO): Earlier pending months are cleared before subsequent months
-                      </Typography>
-                    </Box>
+                    {/* Student Info */}
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+                      <Avatar
+                        sx={{
+                          width: 42,
+                          height: 42,
+                          bgcolor: 'primary.main',
+                          fontSize: 18,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                        }}
+                      >
+                        {duesSummary?.studentName ? duesSummary.studentName[0] : 'S'}
+                      </Avatar>
 
+                      <Box sx={{ minWidth: 0 }}>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: 15, color: '#0f172a' }} noWrap>
+                            {duesSummary?.studentName}
+                          </Typography>
+                          <Chip
+                            label={duesSummary?.admissionNo}
+                            color="primary"
+                            size="small"
+                            sx={{ fontWeight: 700, height: 20, fontSize: 10.5 }}
+                          />
+                          <Chip
+                            label={`${visiblePayMonths.length} Selected`}
+                            color={visiblePayMonths.length > 0 ? 'primary' : 'default'}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontWeight: 700, height: 20, fontSize: 10.5 }}
+                          />
+                        </Stack>
+
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, fontSize: 11.5 }}>
+                          Class: <b style={{ color: '#0f172a' }}>{duesSummary?.className} - {duesSummary?.sectionName}</b>
+                          {' • '}Roll: <b style={{ color: '#0f172a' }}>{duesSummary?.rollNo ? '#' + duesSummary.rollNo : '—'}</b>
+                          {' • '}Guardian: <b style={{ color: '#0f172a' }}>{duesSummary?.guardianName}</b> ({duesSummary?.guardianMobile})
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    {/* Actions, Outstanding Dues & Cross Button */}
                     <Stack
                       direction="row"
                       spacing={0.75}
                       alignItems="center"
                       flexWrap="nowrap"
-                      sx={{ flexShrink: 0, mt: { xs: 1, lg: 0 } }}
+                      sx={{ flexShrink: 0, mt: { xs: 1, md: 0 } }}
                     >
+                      <Box sx={{ textAlign: 'right', pr: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: 10, fontWeight: 600 }}>
+                          Due Balance
+                        </Typography>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={800}
+                          color={duesSummary?.totalOutstanding > 0 ? 'error.main' : 'success.main'}
+                          sx={{ fontSize: 13, lineHeight: 1.1 }}
+                        >
+                          ₹{duesSummary?.totalOutstanding?.toLocaleString()}
+                        </Typography>
+                      </Box>
+
                       {selectedMonthIds.length > 0 && (
                         <Button
                           size="small"
@@ -886,9 +1023,10 @@ export default function FeeCollectionPage() {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          Clear Selection
+                          Clear
                         </Button>
                       )}
+
                       {paidMonths.length > 0 && (
                         <Button
                           size="small"
@@ -908,6 +1046,7 @@ export default function FeeCollectionPage() {
                           {showPaidMonths ? `Hide Paid (${paidMonths.length})` : `Show Paid (${paidMonths.length})`}
                         </Button>
                       )}
+
                       <Button
                         size="small"
                         variant="outlined"
@@ -927,6 +1066,29 @@ export default function FeeCollectionPage() {
                           ? 'Deselect All'
                           : 'Select All Unpaid'}
                       </Button>
+
+                      {/* Cross Button to Deselect Student & Reopen Search */}
+                      <Tooltip title="Deselect Student (Back to Search)">
+                        <IconButton
+                          size="small"
+                          onClick={handleClearSelection}
+                          sx={{
+                            bgcolor: '#f8fafc',
+                            color: '#64748b',
+                            border: '1px solid #cbd5e1',
+                            width: 28,
+                            height: 28,
+                            ml: 0.5,
+                            '&:hover': {
+                              bgcolor: '#fee2e2',
+                              color: '#dc2626',
+                              borderColor: '#fca5a5',
+                            },
+                          }}
+                        >
+                          <ClearIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   </Stack>
                 </Box>
@@ -938,120 +1100,169 @@ export default function FeeCollectionPage() {
                   </Alert>
                 )}
 
-                {/* 12 Months Interactive Visual Bar */}
+                {/* Compact Interactive Month Scroll Bar */}
                 {monthGroups.length > 0 && (
                   <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
-                      <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ fontSize: 11 }}>
-                        📅 ACADEMIC MONTHS (Click a month to toggle selection; earlier unpaid months automatically included):
-                      </Typography>
-                      {visiblePayMonths.length > 0 && (
-                        <Typography variant="caption" fontWeight={700} color="primary.main" sx={{ fontSize: 11 }}>
-                          ✓ {visiblePayMonths.length} Month(s) Active
-                        </Typography>
-                      )}
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleScrollMonths('left')}
+                        sx={{
+                          p: 0.25,
+                          width: 24,
+                          height: 24,
+                          bgcolor: '#f1f5f9',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 1,
+                          flexShrink: 0,
+                          '&:hover': { bgcolor: '#e2e8f0' },
+                        }}
+                        title="Scroll Left"
+                      >
+                        <ChevronLeftIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+
+                      <Box
+                        ref={monthScrollRef}
+                        onMouseDown={handleMonthMouseDown}
+                        onMouseMove={handleMonthMouseMove}
+                        onMouseUp={handleMonthMouseUp}
+                        onMouseLeave={handleMonthMouseUp}
+                        onWheel={handleMonthWheel}
+                        sx={{
+                          display: 'flex',
+                          gap: 0.75,
+                          overflowX: 'auto',
+                          py: 0.5,
+                          px: 0.25,
+                          flex: 1,
+                          cursor: 'grab',
+                          userSelect: 'none',
+                          scrollBehavior: 'smooth',
+                          '&:active': { cursor: 'grabbing' },
+                          '&::-webkit-scrollbar': { height: 4 },
+                          '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: 2 },
+                        }}
+                      >
+                        {monthGroups.map((m) => {
+                          const isMonthSelected = selectedMonthIds.includes(m.installmentId);
+
+                          return (
+                            <Paper
+                              key={m.installmentId}
+                              variant="outlined"
+                              onClick={() => {
+                                if (!hasDraggedRef.current) {
+                                  handleToggleMonth(m.installmentId);
+                                }
+                              }}
+                              sx={{
+                                py: 0.4,
+                                px: 0.6,
+                                minWidth: 72,
+                                maxWidth: 86,
+                                flexShrink: 0,
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                bgcolor: isMonthSelected
+                                  ? '#1e40af'
+                                  : m.isPaid
+                                  ? '#f8fafc'
+                                  : '#ffffff',
+                                color: isMonthSelected ? '#ffffff' : 'inherit',
+                                borderColor: isMonthSelected
+                                  ? '#1d4ed8'
+                                  : m.isPaid
+                                  ? '#86efac'
+                                  : '#bfdbfe',
+                                borderWidth: isMonthSelected ? 2 : 1,
+                                borderRadius: 1.25,
+                                boxShadow: isMonthSelected ? '0 2px 6px rgba(30, 64, 175, 0.2)' : 0,
+                                transition: 'all 0.15s ease-in-out',
+                                '&:hover': {
+                                  boxShadow: 1,
+                                  borderColor: isMonthSelected ? '#1d4ed8' : 'primary.main',
+                                },
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: isMonthSelected ? 'rgba(255,255,255,0.85)' : 'text.secondary',
+                                  display: 'block',
+                                  fontSize: 8.5,
+                                  fontWeight: 600,
+                                  lineHeight: 1.1,
+                                }}
+                              >
+                                {dayjs(m.dueDate).format('DD MMM')}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                sx={{
+                                  color: isMonthSelected ? '#ffffff' : 'text.primary',
+                                  fontSize: 11,
+                                  mt: 0.1,
+                                  lineHeight: 1.2,
+                                }}
+                                noWrap
+                              >
+                                {m.installmentName}
+                              </Typography>
+
+                              <Box sx={{ mt: 0.3 }}>
+                                {m.isPaid ? (
+                                  <Chip
+                                    icon={<CheckIcon sx={{ fontSize: '10px !important' }} />}
+                                    label="PAID"
+                                    color="success"
+                                    size="small"
+                                    sx={{ height: 16, fontSize: 8.5, fontWeight: 700, px: 0.25 }}
+                                  />
+                                ) : isMonthSelected ? (
+                                  <Chip
+                                    icon={<CheckIcon sx={{ fontSize: '10px !important', color: '#1e40af !important' }} />}
+                                    label={`₹${m.totalPayable.toLocaleString()}`}
+                                    size="small"
+                                    sx={{
+                                      height: 16,
+                                      fontSize: 8.5,
+                                      fontWeight: 700,
+                                      bgcolor: '#ffffff',
+                                      color: '#1e40af',
+                                      px: 0.25,
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography variant="caption" fontWeight={700} color="error.main" sx={{ fontSize: 9.5 }}>
+                                    ₹{m.totalPayable.toLocaleString()}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Paper>
+                          );
+                        })}
+                      </Box>
+
+                      <IconButton
+                        size="small"
+                        onClick={() => handleScrollMonths('right')}
+                        sx={{
+                          p: 0.25,
+                          width: 24,
+                          height: 24,
+                          bgcolor: '#f1f5f9',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 1,
+                          flexShrink: 0,
+                          '&:hover': { bgcolor: '#e2e8f0' },
+                        }}
+                        title="Scroll Right"
+                      >
+                        <ChevronRightIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
                     </Stack>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: 1,
-                        overflowX: 'auto',
-                        pb: 1,
-                        pt: 0.25,
-                        '&::-webkit-scrollbar': { height: 5 },
-                        '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: 3 },
-                      }}
-                    >
-                      {monthGroups.map((m) => {
-                        const isMonthSelected = selectedMonthIds.includes(m.installmentId);
-
-                        return (
-                          <Paper
-                            key={m.installmentId}
-                            variant="outlined"
-                            onClick={() => handleToggleMonth(m.installmentId)}
-                            sx={{
-                              p: 1,
-                              minWidth: 102,
-                              cursor: 'pointer',
-                              textAlign: 'center',
-                              bgcolor: isMonthSelected
-                                ? '#1e40af'
-                                : m.isPaid
-                                ? '#f8fafc'
-                                : '#ffffff',
-                              color: isMonthSelected ? '#ffffff' : 'inherit',
-                              borderColor: isMonthSelected
-                                ? '#1d4ed8'
-                                : m.isPaid
-                                ? '#86efac'
-                                : '#bfdbfe',
-                              borderWidth: isMonthSelected ? 2 : 1,
-                              borderRadius: 1.5,
-                              boxShadow: isMonthSelected ? '0 4px 10px rgba(30, 64, 175, 0.25)' : 0,
-                              transition: 'all 0.15s ease-in-out',
-                              '&:hover': {
-                                boxShadow: 2,
-                                borderColor: isMonthSelected ? '#1d4ed8' : 'primary.main',
-                              },
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: isMonthSelected ? 'rgba(255,255,255,0.85)' : 'text.secondary',
-                                display: 'block',
-                                fontSize: 9.5,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {dayjs(m.dueDate).format('DD MMM')}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              fontWeight={700}
-                              sx={{
-                                color: isMonthSelected ? '#ffffff' : 'text.primary',
-                                fontSize: 12,
-                                mt: 0.1,
-                              }}
-                              noWrap
-                            >
-                              {m.installmentName}
-                            </Typography>
-
-                            <Box sx={{ mt: 0.5 }}>
-                              {m.isPaid ? (
-                                <Chip
-                                  icon={<CheckIcon sx={{ fontSize: '12px !important' }} />}
-                                  label="PAID"
-                                  color="success"
-                                  size="small"
-                                  sx={{ height: 18, fontSize: 9.5, fontWeight: 700 }}
-                                />
-                              ) : isMonthSelected ? (
-                                <Chip
-                                  icon={<CheckIcon sx={{ fontSize: '12px !important', color: '#1e40af !important' }} />}
-                                  label={`₹${m.totalPayable.toLocaleString()}`}
-                                  size="small"
-                                  sx={{
-                                    height: 18,
-                                    fontSize: 9.5,
-                                    fontWeight: 700,
-                                    bgcolor: '#ffffff',
-                                    color: '#1e40af',
-                                  }}
-                                />
-                              ) : (
-                                <Typography variant="caption" fontWeight={700} color="error.main" sx={{ fontSize: 11 }}>
-                                  ₹{m.totalPayable.toLocaleString()}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Paper>
-                        );
-                      })}
-                    </Box>
                   </Box>
                 )}
 
@@ -1560,14 +1771,6 @@ export default function FeeCollectionPage() {
           <Grid item xs={12} lg={4}>
             <Card sx={{ boxShadow: 1, borderRadius: 2, height: '100%', bgcolor: '#fbfcfd' }}>
               <CardContent sx={{ p: { xs: 2, sm: 2.25 } }}>
-                <Typography variant="subtitle1" fontWeight={800} color="#0f172a" sx={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
-                  Payment Breakdown
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                  Review selected dues allocation and choose payment modes
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-
                 {errorMsg && <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: 12 }}>{errorMsg}</Alert>}
 
                 {/* Amount Summary with Dues Breakdown */}
@@ -1699,15 +1902,15 @@ export default function FeeCollectionPage() {
                       borderRadius: 2,
                     }}
                   >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                      <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#166534', fontSize: 12.5 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
+                      <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#166534', fontSize: 13 }}>
                         Authorized Fee Discount
                       </Typography>
                       <Chip
                         label={
                           discountEligibility.isUnlimited
-                            ? 'Authority: Unlimited'
-                            : `Max Limit: ₹${Number(discountEligibility.maxDiscountLimit || 0).toLocaleString('en-IN')}`
+                            ? 'Authority: Unlimited (100%)'
+                            : `Max Limit: ${Number(discountEligibility.maxDiscountLimit || 0)}% (Max ₹${Math.round((maxTotalPayable * Number(discountEligibility.maxDiscountLimit || 0)) / 100).toLocaleString('en-IN')})`
                         }
                         size="small"
                         sx={{
@@ -1715,12 +1918,34 @@ export default function FeeCollectionPage() {
                           color: '#15803d',
                           fontWeight: 700,
                           fontSize: 10.5,
-                          height: 20,
+                          height: 22,
                         }}
                       />
                     </Stack>
                     <Grid container spacing={1.25}>
-                      <Grid item xs={12} sm={5}>
+                      <Grid item xs={12} sm={3.5}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="number"
+                          label="Discount (%)"
+                          placeholder="0"
+                          value={discountPercent}
+                          onChange={(e) => handleDiscountPercentChange(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (['-', '+', 'e', 'E'].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                          }}
+                          error={Boolean(discountError)}
+                          sx={{ bgcolor: '#fff', ...noSpinnerSx }}
+                          inputProps={{ min: 0, max: 100, step: 'any' }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={3.5}>
                         <TextField
                           fullWidth
                           size="small"
@@ -1728,14 +1953,21 @@ export default function FeeCollectionPage() {
                           label="Discount (₹)"
                           placeholder="0"
                           value={overallDiscount}
-                          onChange={(e) => handleDiscountChange(e.target.value)}
+                          onChange={(e) => handleDiscountRupeesChange(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (['-', '+', 'e', 'E'].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                          }}
                           error={Boolean(discountError)}
-                          helperText={discountError}
                           sx={{ bgcolor: '#fff', ...noSpinnerSx }}
-                          inputProps={{ min: 0, step: 'any' }}
+                          inputProps={{ min: 0, max: maxTotalPayable, step: 'any' }}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={7}>
+                      <Grid item xs={12} sm={5}>
                         <TextField
                           fullWidth
                           size="small"
@@ -1747,6 +1979,54 @@ export default function FeeCollectionPage() {
                         />
                       </Grid>
                     </Grid>
+
+                    {discountError && (
+                      <Typography variant="caption" color="error.main" sx={{ mt: 0.75, display: 'block', fontWeight: 600, fontSize: 11.5 }}>
+                        ⚠️ {discountError}
+                      </Typography>
+                    )}
+
+                    {/* Quick % Chips */}
+                    {maxTotalPayable > 0 && (
+                      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: 11 }}>
+                          Quick %:
+                        </Typography>
+                        {[5, 10, 15, 20, 25, 50]
+                          .filter((p) => discountEligibility.isUnlimited || p <= Number(discountEligibility.maxDiscountLimit))
+                          .map((p) => (
+                            <Chip
+                              key={p}
+                              label={`${p}%`}
+                              size="small"
+                              onClick={() => handleDiscountPercentChange(String(p))}
+                              sx={{
+                                cursor: 'pointer',
+                                fontSize: 10,
+                                height: 20,
+                                bgcolor: String(discountPercent) === String(p) ? '#0284c7' : '#e0f2fe',
+                                color: String(discountPercent) === String(p) ? '#fff' : '#0369a1',
+                                fontWeight: 600,
+                              }}
+                            />
+                          ))}
+                        {!discountEligibility.isUnlimited && Number(discountEligibility.maxDiscountLimit) > 0 && (
+                          <Chip
+                            label={`Max ${discountEligibility.maxDiscountLimit}%`}
+                            size="small"
+                            onClick={() => handleDiscountPercentChange(String(discountEligibility.maxDiscountLimit))}
+                            sx={{
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              height: 20,
+                              bgcolor: String(discountPercent) === String(discountEligibility.maxDiscountLimit) ? '#d97706' : '#fef3c7',
+                              color: String(discountPercent) === String(discountEligibility.maxDiscountLimit) ? '#fff' : '#92400e',
+                              fontWeight: 700,
+                            }}
+                          />
+                        )}
+                      </Stack>
+                    )}
                   </Paper>
                 )}
 

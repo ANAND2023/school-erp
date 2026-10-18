@@ -10,6 +10,7 @@ export const userApi = {
   resetPassword: (id, newPassword) => apiClient.post(`/users/${id}/reset-password`, JSON.stringify(newPassword), {
     headers: { 'Content-Type': 'application/json' },
   }),
+  updateDiscountEligibility: (id, data) => apiClient.put(`/users/${id}/discount-eligibility`, data),
 };
 
 export const roleApi = {

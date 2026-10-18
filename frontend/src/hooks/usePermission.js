@@ -29,7 +29,15 @@ export const usePermission = () => {
       perm = permissions.find((p) => p.menu?.toLowerCase() === 'students');
     }
     if (!perm && menu.toLowerCase() === 'students') {
-      perm = permissions.find((p) => p.menu?.toLowerCase() === 'admissions');
+      perm = permissions.find((p) =>
+        ['admissions', 'feecollection', 'feeassignment', 'demandbill', 'studentattendance', 'marksentry'].includes(p.menu?.toLowerCase())
+      );
+    }
+
+    if (!perm && (menu.toLowerCase() === 'feediscountmaster' || menu.toLowerCase() === 'feediscount')) {
+      perm = permissions.find((p) =>
+        ['fees', 'feestructure', 'feecollection', 'users', 'simplemasters', 'masters'].includes(p.menu?.toLowerCase())
+      );
     }
 
     if (!perm && menu.toLowerCase() === 'transport') return true;

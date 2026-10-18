@@ -75,10 +75,22 @@ namespace SchoolERP.API.Controllers
                 ReceiptDate = DateTime.SpecifyKind(r.ReceiptDate, DateTimeKind.Utc),
                 AdmissionNo = r.Student?.AdmissionNo ?? "",
                 StudentName = r.Student?.FullName ?? "",
-                ClassSection = $"{r.Class?.Name ?? ""} - {r.Section?.Name ?? ""}",
+                ClassId = r.ClassId,
+                ClassName = r.Class?.Name ?? "",
+                ClassSection = $"{r.Class?.Name ?? ""} - {r.Section?.Name ?? ""}".Trim(' ', '-'),
+                TotalDue = r.TotalDue,
                 TotalPaid = r.TotalPaid,
+                TotalDiscount = r.TotalDiscount,
+                TotalFine = r.TotalFine,
                 PaymentModes = string.Join(", ", r.Payments.Select(p => p.PaymentMode.ToString())),
+                Payments = r.Payments.Select(p => new FeePaymentModeItemDto
+                {
+                    Mode = p.PaymentMode.ToString(),
+                    Amount = p.Amount,
+                    TransactionRef = p.TransactionRef
+                }).ToList(),
                 Status = r.Status,
+                CreatedBy = r.CreatedBy,
                 CollectedBy = (userDict.TryGetValue(r.CreatedBy, out var cashierName) && !string.IsNullOrEmpty(cashierName))
                     ? cashierName
                     : "Cashier"

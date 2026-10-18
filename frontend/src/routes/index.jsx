@@ -51,6 +51,7 @@ import FeeAssignmentPage from '../features/fees/pages/FeeAssignmentPage';
 import FeeCollectionPage from '../features/fees/pages/FeeCollectionPage';
 import DemandBillPage from '../features/fees/pages/DemandBillPage';
 import FeeReportsPage from '../features/fees/pages/FeeReportsPage';
+import { FeeDiscountMasterPage } from '../features/fees/pages/FeeDiscountMasterPage';
 
 // Module 6: Attendance & Timetable
 import StudentAttendancePage from '../features/attendance/pages/StudentAttendancePage';
@@ -247,6 +248,14 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="masters/fee-discount"
+          element={
+            <ProtectedRoute requiredMenu={['FeeDiscountMaster', 'Masters', 'SimpleMasters', 'FeeStructure', 'Users']}>
+              <FeeDiscountMasterPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Module 3: Students, Enquiries & Admissions */}
         <Route
@@ -434,6 +443,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="FeeCollection">
               <FeeCollectionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="fees/discount-master"
+          element={
+            <ProtectedRoute requiredMenu={['FeeDiscountMaster', 'Fees', 'FeeStructure', 'FeeCollection', 'Users']}>
+              <FeeDiscountMasterPage />
             </ProtectedRoute>
           }
         />

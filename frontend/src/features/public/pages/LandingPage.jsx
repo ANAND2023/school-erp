@@ -466,23 +466,26 @@ export const LandingPage = () => {
           <Toolbar disableGutters sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 0.8, md: 1.2 } }}>
             
             {/* Brand Logo (Left Side) */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, cursor: 'pointer' }} onClick={() => window.scrollTo(0,0)}>
-              <Box sx={{ 
-                width: { xs: 38, sm: 44 }, 
-                height: { xs: 38, sm: 44 }, 
-                borderRadius: 2, 
-                background: `linear-gradient(135deg, ${primaryColor} 0%, #071834 100%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff',
-                boxShadow: `0 8px 18px -4px ${primaryColor}60`
-              }}>
-                <i className="pi pi-graduation-cap" style={{ fontSize: '1.35rem', color: goldColor }}></i>
-              </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => window.scrollTo(0,0)}>
+              <Box 
+                component="img"
+                src="/dvs-logo.png"
+                alt="Digital Vidya Saarthi Logo"
+                sx={{ 
+                  width: { xs: 44, sm: 50 }, 
+                  height: { xs: 44, sm: 50 }, 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 2px 6px rgba(10,56,124,0.18))',
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': { transform: 'scale(1.05)' }
+                }}
+              />
               <Box>
                 <Typography variant="h6" fontWeight="900" sx={{ color: '#0a387c', lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                  DVS <span style={{ color: '#12233f' }}>School ERP</span>
+                  Digital Vidya <span style={{ color: '#12233f' }}>Saarthi</span>
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: { xs: '0.62rem', sm: '0.68rem' }, display: 'block' }}>
-                  Enterprise School Management
+                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: { xs: '0.62rem', sm: '0.68rem' }, display: 'block' }}>
+                  Smart Workflow, Zero Chaos
                 </Typography>
               </Box>
             </Box>
@@ -570,16 +573,15 @@ export const LandingPage = () => {
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ 
-              width: 32, height: 32, borderRadius: 1.5, 
-              background: `linear-gradient(135deg, ${primaryColor} 0%, #071834 100%)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff'
-            }}>
-              <i className="pi pi-graduation-cap" style={{ fontSize: '1.1rem', color: goldColor }}></i>
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+            <Box 
+              component="img"
+              src="/dvs-logo.png"
+              alt="Digital Vidya Saarthi"
+              sx={{ width: 34, height: 34, objectFit: 'contain' }}
+            />
             <Typography variant="subtitle1" fontWeight={800} color="#0a387c">
-              DVS ERP Menu
+              Digital Vidya Saarthi
             </Typography>
           </Box>
           <IconButton onClick={() => setMobileDrawerOpen(false)} size="small" sx={{ bgcolor: '#f1f5f9' }}>
@@ -2093,14 +2095,14 @@ export const LandingPage = () => {
             
             <Grid item xs={12} md={4}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                <Box sx={{ 
-                  width: 38, height: 38, borderRadius: 2, 
-                  bgcolor: '#0a387c', display: 'flex', alignItems: 'center', justifyContent: 'center' 
-                }}>
-                  <i className="pi pi-graduation-cap" style={{ fontSize: '1.3rem', color: goldColor }}></i>
-                </Box>
+                <Box 
+                  component="img"
+                  src="/dvs-logo.png"
+                  alt="Digital Vidya Saarthi"
+                  sx={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}
+                />
                 <Typography variant="h6" fontWeight="900" sx={{ color: '#ffffff' }}>
-                  DVS School ERP
+                  Digital Vidya Saarthi ERP
                 </Typography>
               </Box>
               <Typography variant="body2" sx={{ lineHeight: 1.75, color: '#9aa5b5', mb: 3 }}>

@@ -255,7 +255,7 @@ namespace SchoolERP.API.Controllers
                 return Ok(ApiResponse<object>.Ok(new
                 {
                     canGiveDiscount = true,
-                    maxDiscountLimit = 0m,
+                    maxDiscountLimit = 100m,
                     isUnlimited = true,
                     roleName = "SuperAdmin"
                 }));
@@ -273,11 +273,13 @@ namespace SchoolERP.API.Controllers
                 }));
             }
 
+            var isUnlimited = user.CanGiveDiscount && (user.MaxDiscountLimit <= 0 || user.MaxDiscountLimit >= 100);
+
             return Ok(ApiResponse<object>.Ok(new
             {
                 canGiveDiscount = user.CanGiveDiscount,
                 maxDiscountLimit = user.MaxDiscountLimit,
-                isUnlimited = user.CanGiveDiscount && user.MaxDiscountLimit <= 0,
+                isUnlimited = isUnlimited,
                 roleName = user.UserType.ToString()
             }));
         }
@@ -321,9 +323,15 @@ namespace SchoolERP.API.Controllers
                         return BadRequest(ApiResponse<ReceiptPrintDto>.Fail("You are not authorized to grant fee discounts. Please contact your school administrator."));
                     }
 
-                    if (currentUser.MaxDiscountLimit > 0 && discount > currentUser.MaxDiscountLimit)
+                    // MaxDiscountLimit is stored as Percentage (%) from 0 to 100
+                    // 0 or >= 100 means 100% (unlimited)
+                    if (currentUser.MaxDiscountLimit > 0 && currentUser.MaxDiscountLimit < 100)
                     {
-                        return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Discount amount (₹{discount}) exceeds your maximum authorized discount limit of ₹{currentUser.MaxDiscountLimit}."));
+                        var maxAllowedDiscount = Math.Round((totalPayable * currentUser.MaxDiscountLimit) / 100m, 2);
+                        if (discount > (maxAllowedDiscount + 1m))
+                        {
+                            return BadRequest(ApiResponse<ReceiptPrintDto>.Fail($"Discount amount (₹{discount}) exceeds your maximum authorized discount limit of {currentUser.MaxDiscountLimit}% (Max ₹{maxAllowedDiscount} for this receipt)."));
+                        }
                     }
                 }
 

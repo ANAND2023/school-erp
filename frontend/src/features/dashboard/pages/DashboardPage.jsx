@@ -565,23 +565,42 @@ export const DashboardPage = () => {
           alignItems: { xs: 'flex-start', sm: 'center' },
           flexDirection: { xs: 'column', sm: 'row' },
           gap: 2,
+          p: { xs: 2, sm: 2.2 },
+          borderRadius: 2.5,
+          bgcolor: isDarkMode ? '#1e293b' : '#ffffff',
+          boxShadow: '0 2px 10px rgba(10,56,124,0.06)',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
         }}
       >
-        <Box>
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-            <Typography variant="h4" sx={{ fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: { xs: '1.4rem', sm: '1.75rem' } }}>
-              Welcome back, {user?.fullName || user?.username || 'Administrator'}!
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            component="img"
+            src="/dvs-logo.png"
+            alt="Digital Vidya Saarthi"
+            sx={{
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              objectFit: 'contain',
+              flexShrink: 0,
+              filter: 'drop-shadow(0 2px 6px rgba(10,56,124,0.18))',
+            }}
+          />
+          <Box>
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <Typography variant="h4" sx={{ fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: { xs: '1.35rem', sm: '1.65rem' } }}>
+                Welcome back, {user?.fullName || user?.username || 'Administrator'}!
+              </Typography>
+              <Chip
+                label={user?.roleName || 'Administrator'}
+                color="primary"
+                size="small"
+                sx={{ fontWeight: 700 }}
+              />
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Digital Vidya Saarthi &bull; Real-time operational metrics for <strong>{user?.branchName || 'Main Campus'}</strong> &bull; Session {activeYearLabel}
             </Typography>
-            <Chip
-              label={user?.roleName || 'Administrator'}
-              color="primary"
-              size="small"
-              sx={{ fontWeight: 700 }}
-            />
-          </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Real-time operational metrics for <strong>{user?.branchName || 'Main Campus'}</strong> &bull; Session {activeYearLabel}
-          </Typography>
+          </Box>
         </Box>
 
         <Stack direction="row" spacing={1.5} alignItems="center">

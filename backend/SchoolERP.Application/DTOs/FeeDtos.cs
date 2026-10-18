@@ -271,11 +271,26 @@ namespace SchoolERP.Application.DTOs
         public DateTime ReceiptDate { get; set; }
         public string AdmissionNo { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
+        public long ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
         public string ClassSection { get; set; } = string.Empty;
+        public decimal TotalDue { get; set; }
         public decimal TotalPaid { get; set; }
+        public decimal TotalDiscount { get; set; }
+        public decimal TotalFine { get; set; }
+        public decimal GrossAmount => TotalPaid + TotalDiscount;
         public string PaymentModes { get; set; } = string.Empty;
+        public List<FeePaymentModeItemDto> Payments { get; set; } = new();
         public ReceiptStatus Status { get; set; }
+        public long CreatedBy { get; set; }
         public string CollectedBy { get; set; } = string.Empty;
+    }
+
+    public class FeePaymentModeItemDto
+    {
+        public string Mode { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string? TransactionRef { get; set; }
     }
 
     public class DefaulterReportRowDto

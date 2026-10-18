@@ -299,49 +299,62 @@ export const LoginPage = () => {
                 color: '#ffffff'
               }}
             >
-              {/* Card Header matching reference */}
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant="body2"
+              {/* Card Header with Brand Logo */}
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  component="img"
+                  src="/dvs-logo.png"
+                  alt="Digital Vidya Saarthi"
                   sx={{
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    color: '#94a3b8',
-                    letterSpacing: 0.2
+                    width: { xs: 56, sm: 66 },
+                    height: { xs: 56, sm: 66 },
+                    objectFit: 'contain',
+                    flexShrink: 0,
+                    filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.4))'
                   }}
-                >
-                  Welcome to
-                </Typography>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontSize: { xs: '1.55rem', sm: '1.85rem' },
-                    fontWeight: 900,
-                    color: '#38bdf8', // Glowing cyan blue
-                    textShadow: '0 2px 12px rgba(56, 189, 248, 0.3)',
-                    lineHeight: 1.2,
-                    mt: 0.2,
-                    mb: 0.5,
-                    letterSpacing: -0.5
-                  }}
-                >
-                  Digital Vidya
-                  <Box component="span" sx={{ display: 'block', color: '#ffffff' }}>
-                    Saarthi ERP
-                  </Box>
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#cbd5e1',
-                    fontSize: '0.82rem',
-                    fontWeight: 500,
-                    lineHeight: 1.35
-                  }}
-                >
-                  Manage your institution with one connected platform
-                </Typography>
+                />
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: '#94a3b8',
+                      letterSpacing: 0.2
+                    }}
+                  >
+                    Welcome to
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: { xs: '1.4rem', sm: '1.65rem' },
+                      fontWeight: 900,
+                      color: '#38bdf8', // Glowing cyan blue
+                      textShadow: '0 2px 12px rgba(56, 189, 248, 0.3)',
+                      lineHeight: 1.15,
+                      letterSpacing: -0.5
+                    }}
+                  >
+                    Digital Vidya
+                    <Box component="span" sx={{ display: 'block', color: '#ffffff' }}>
+                      Saarthi ERP
+                    </Box>
+                  </Typography>
+                </Box>
               </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#cbd5e1',
+                  fontSize: '0.82rem',
+                  fontWeight: 500,
+                  lineHeight: 1.35,
+                  mb: 2,
+                }}
+              >
+                Smart Workflow, Zero Chaos &bull; Manage your institution with one connected platform
+              </Typography>
 
               {/* Role Switcher Pill Tabs (Staff / Admin, Student, Parent) */}
               <Box

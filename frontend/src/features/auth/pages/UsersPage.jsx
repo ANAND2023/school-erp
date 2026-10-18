@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -26,6 +27,7 @@ import {
   CheckCircle as ActiveIcon,
   Block as BlockIcon,
   Search as SearchIcon,
+  Savings as DiscountIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '../../../components/DataGrid';
 import { Modal } from '../../../components/Modal';
@@ -35,6 +37,7 @@ import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
 
 export const UsersPage = () => {
+  const navigate = useNavigate();
   const { showSnackbar } = useUiStore();
   const { hasPermission } = usePermission();
 
@@ -242,7 +245,7 @@ export const UsersPage = () => {
         const limit = Number(row.maxDiscountLimit || 0);
         return (
           <Chip
-            label={limit > 0 ? `Max ₹${limit.toLocaleString('en-IN')}` : 'Unlimited'}
+            label={limit > 0 && limit < 100 ? `Max ${limit}%` : 'Unlimited (100%)'}
             size="small"
             color="success"
             variant="filled"
@@ -343,6 +346,15 @@ export const UsersPage = () => {
             Manage system users, branch access, account unlock, and password resets
           </Typography>
         </div>
+        <Button
+          variant="outlined"
+          color="success"
+          startIcon={<DiscountIcon />}
+          onClick={() => navigate('/masters/fee-discount')}
+          sx={{ textTransform: 'none', fontWeight: 600 }}
+        >
+          Fee Discount Master
+        </Button>
       </Box>
 
       {/* Filter Toolbar */}
@@ -514,13 +526,16 @@ export const UsersPage = () => {
                 <TextField
                   fullWidth
                   type="number"
-                  label="Max Discount Limit (₹)"
-                  helperText="Enter 0 for Unlimited discount authority"
+                  label="Max Discount Limit (%)"
+                  helperText="Enter 0 or 100 for Unlimited (100%) discount authority"
                   value={formData.maxDiscountLimit}
                   onChange={(e) =>
-                    setFormData({ ...formData, maxDiscountLimit: Math.max(0, Number(e.target.value)) })
+                    setFormData({ ...formData, maxDiscountLimit: Math.min(100, Math.max(0, Number(e.target.value))) })
                   }
-                  inputProps={{ min: 0, step: 'any' }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, max: 100, step: 'any' }}
                 />
               </Grid>
             )}

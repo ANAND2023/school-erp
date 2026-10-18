@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -45,11 +46,10 @@ namespace SchoolERP.API.Filters
                 return;
             }
 
-            // Check if SuperAdmin
+            // Check if SuperAdmin or SchoolAdmin (Admin has full bypass)
             var userTypeClaim = user.FindFirst("user_type")?.Value;
-            if (userTypeClaim == UserType.SuperAdmin.ToString())
+            if (userTypeClaim == UserType.SuperAdmin.ToString() || userTypeClaim == UserType.SchoolAdmin.ToString())
             {
-                // SuperAdmin has full bypass
                 return;
             }
 
@@ -66,29 +66,54 @@ namespace SchoolERP.API.Filters
 
             var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
 
-            var permission = await dbContext.RolePermissions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.RoleId == roleId && p.Menu.ToLower() == _menu.ToLower());
+            // Support comma-separated menus
+            var allowedMenus = _menu.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(m => m.ToLower())
+                .ToList();
 
-            if (permission == null)
+            // Cross-module fallback for viewing students:
+            // Any staff with FeeCollection, FeeAssignment, DemandBill, Admissions, StudentAttendance, MarksEntry, Transport, Promotion, TC can search/view students
+            if (allowedMenus.Contains("students") && _action.Equals("view", StringComparison.OrdinalIgnoreCase))
             {
-                context.Result = new ObjectResult(ApiResponse.Fail($"Access denied: No permissions for {_menu}."))
+                allowedMenus.AddRange(new[]
                 {
-                    StatusCode = 403
-                };
-                return;
+                    "feecollection",
+                    "feeassignment",
+                    "demandbill",
+                    "feereports",
+                    "admissions",
+                    "studentattendance",
+                    "marksentry",
+                    "transportallocations",
+                    "promotion",
+                    "transfercertificates"
+                });
             }
 
-            bool hasAccess = _action.ToLower() switch
+            // Cross-module fallback for SimpleMasters (e.g. fee payment modes, categories)
+            if (allowedMenus.Contains("simplemasters") && _action.Equals("view", StringComparison.OrdinalIgnoreCase))
             {
-                "view" => permission.CanView,
-                "add" => permission.CanAdd,
-                "edit" => permission.CanEdit,
-                "delete" => permission.CanDelete,
-                "print" => permission.CanPrint,
-                "export" => permission.CanExport,
-                _ => false
-            };
+                allowedMenus.AddRange(new[] { "feestructure", "feecollection", "feeassignment", "masters" });
+            }
+
+            var permissions = await dbContext.RolePermissions
+                .AsNoTracking()
+                .Where(p => p.RoleId == roleId)
+                .ToListAsync();
+
+            bool hasAccess = permissions.Any(p =>
+                allowedMenus.Contains(p.Menu.ToLower()) &&
+                _action.ToLower() switch
+                {
+                    "view" => p.CanView,
+                    "add" => p.CanAdd,
+                    "edit" => p.CanEdit,
+                    "delete" => p.CanDelete,
+                    "print" => p.CanPrint,
+                    "export" => p.CanExport,
+                    _ => false
+                }
+            );
 
             if (!hasAccess)
             {

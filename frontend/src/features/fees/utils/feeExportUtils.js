@@ -928,3 +928,403 @@ export const exportClassMonthStatusToExcel = ({
   XLSX.writeFile(wb, filename);
 };
 
+/**
+ * Export Date-wise Fee Collection & Multi-dimensional Summary to Excel (.xlsx)
+ */
+export const exportDateWiseCollectionToExcel = ({
+  dateWiseGroups = [],
+  dateWiseSummary = {},
+  startDate,
+  endDate,
+  selectedClassNames = 'All Classes',
+  selectedModes = 'All Modes',
+  selectedUser = 'All Users',
+  schoolName = 'Delhi Public School',
+  branchName = 'Main Campus',
+}) => {
+  if (!dateWiseGroups || dateWiseGroups.length === 0) return;
+
+  const totalCollected = dateWiseSummary.totalCollected || 0;
+  const totalGross = dateWiseSummary.totalGross || 0;
+  const totalDiscount = dateWiseSummary.totalDiscount || 0;
+  const totalReceipts = dateWiseSummary.totalReceipts || 0;
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Date-wise Collection Register
+  const dateWiseSheetData = [
+    [schoolName.toUpperCase()],
+    [`${branchName} - Date-wise Fee Collection & Audit Register`],
+    [
+      `Period: ${dayjs(startDate).format('DD MMM YYYY')} to ${dayjs(endDate).format('DD MMM YYYY')} | Classes: ${selectedClassNames} | Modes: ${selectedModes} | Cashier: ${selectedUser}`,
+    ],
+    [
+      `Total Receipts: ${totalReceipts} | Gross Fee: Rs. ${totalGross.toLocaleString()} | Discount: Rs. ${totalDiscount.toLocaleString()} | Net Collection: Rs. ${totalCollected.toLocaleString()}`,
+    ],
+    [], // Blank line
+    [
+      'S.No',
+      'Date',
+      'Receipt No Range (From – To)',
+      'Receipts Count',
+      'Gross Fee (INR)',
+      'Discount (INR)',
+      'Net Collection (INR)',
+      'Mode Breakdown (Mode-wise Collection)',
+    ],
+    ...dateWiseGroups.map((g, idx) => {
+      const modeBreakdownStr = Object.entries(g.modeBreakdown || {})
+        .map(([m, amt]) => `${m}: Rs.${Number(amt).toLocaleString()}`)
+        .join(' | ');
+
+      return [
+        idx + 1,
+        dayjs(g.date).format('DD MMM YYYY'),
+        g.receiptRange || '—',
+        g.receiptCount || 0,
+        Number(g.grossFeeAmount) || 0,
+        Number(g.totalDiscount) || 0,
+        Number(g.totalCollection) || 0,
+        modeBreakdownStr || '—',
+      ];
+    }),
+    [],
+    [
+      '',
+      'TOTAL:',
+      '',
+      totalReceipts,
+      totalGross,
+      totalDiscount,
+      totalCollected,
+      '',
+    ],
+  ];
+
+  const wsDateWise = XLSX.utils.aoa_to_sheet(dateWiseSheetData);
+  wsDateWise['!cols'] = [
+    { wch: 6 },  // S.No
+    { wch: 16 }, // Date
+    { wch: 32 }, // Receipt No Range
+    { wch: 16 }, // Receipts Count
+    { wch: 18 }, // Gross Fee
+    { wch: 16 }, // Discount
+    { wch: 22 }, // Net Collection
+    { wch: 45 }, // Mode Breakdown
+  ];
+  XLSX.utils.book_append_sheet(wb, wsDateWise, 'Date-wise Collection');
+
+  // Sheet 2: Multi-dimensional Summaries (Payment Mode, Class, Cashier)
+  const summarySheetData = [
+    [schoolName.toUpperCase()],
+    [`${branchName} - Collection Summary Reports (By Mode, Class & Cashier)`],
+    [`Period: ${dayjs(startDate).format('DD MMM YYYY')} to ${dayjs(endDate).format('DD MMM YYYY')}`],
+    [],
+    // 1. Payment Mode Summary
+    ['=== 1. PAYMENT MODE SUMMARY ==='],
+    ['Payment Mode', 'Receipts Count', 'Total Collection (INR)', 'Share (%)'],
+    ...(dateWiseSummary.modeSummaryList || []).map((m) => [
+      m.mode,
+      m.count,
+      m.amount,
+      totalCollected > 0 ? `${((m.amount / totalCollected) * 100).toFixed(1)}%` : '0%',
+    ]),
+    ['Total Mode Collection:', totalReceipts, totalCollected, '100%'],
+    [],
+    // 2. Class-wise Summary
+    ['=== 2. CLASS-WISE SUMMARY ==='],
+    ['Class Name', 'Receipts Count', 'Gross Fee (INR)', 'Discount (INR)', 'Net Collection (INR)', 'Share (%)'],
+    ...(dateWiseSummary.classSummaryList || []).map((c) => [
+      c.className,
+      c.count,
+      c.gross,
+      c.discount,
+      c.net,
+      totalCollected > 0 ? `${((c.net / totalCollected) * 100).toFixed(1)}%` : '0%',
+    ]),
+    ['Total Class Collection:', totalReceipts, totalGross, totalDiscount, totalCollected, '100%'],
+    [],
+    // 3. User / Cashier Summary
+    ['=== 3. USER / CASHIER SUMMARY (COLLECTED BY) ==='],
+    ['User / Cashier Name', 'Receipts Count', 'Gross Fee (INR)', 'Discount (INR)', 'Net Collection (INR)', 'Share (%)'],
+    ...(dateWiseSummary.userSummaryList || []).map((u) => [
+      u.userName,
+      u.count,
+      u.gross,
+      u.discount,
+      u.net,
+      totalCollected > 0 ? `${((u.net / totalCollected) * 100).toFixed(1)}%` : '0%',
+    ]),
+    ['Total Cashier Collection:', totalReceipts, totalGross, totalDiscount, totalCollected, '100%'],
+  ];
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summarySheetData);
+  wsSummary['!cols'] = [
+    { wch: 30 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 14 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summaries');
+
+  XLSX.writeFile(wb, `DateWise_Fee_Collection_${startDate}_to_${endDate}.xlsx`);
+};
+
+/**
+ * Export Date-wise Fee Collection & Summary to PDF (.pdf)
+ */
+export const exportDateWiseCollectionToPdf = ({
+  dateWiseGroups = [],
+  dateWiseSummary = {},
+  startDate,
+  endDate,
+  selectedClassNames = 'All Classes',
+  selectedModes = 'All Modes',
+  selectedUser = 'All Users',
+  schoolName = 'Delhi Public School',
+  branchName = 'Main Campus',
+}) => {
+  if (!dateWiseGroups || dateWiseGroups.length === 0) return;
+
+  const totalCollected = dateWiseSummary.totalCollected || 0;
+  const totalGross = dateWiseSummary.totalGross || 0;
+  const totalDiscount = dateWiseSummary.totalDiscount || 0;
+  const totalReceipts = dateWiseSummary.totalReceipts || 0;
+
+  const doc = new jsPDF('landscape', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.width;
+
+  // Header
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(25, 118, 210);
+  doc.text(schoolName.toUpperCase(), pageWidth / 2, 12, { align: 'center' });
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(
+    `${branchName} • DATE-WISE FEE COLLECTION & AUDIT REGISTER • Generated: ${dayjs().format('DD-MMM-YYYY hh:mm A')}`,
+    pageWidth / 2,
+    18,
+    { align: 'center' }
+  );
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text(
+    `Period: ${dayjs(startDate).format('DD MMM YYYY')} to ${dayjs(endDate).format('DD MMM YYYY')}   |   Classes: ${selectedClassNames}   |   Modes: ${selectedModes}   |   Cashier: ${selectedUser}`,
+    pageWidth / 2,
+    24,
+    { align: 'center' }
+  );
+
+  // Top KPI summary strip
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(10, 27, pageWidth - 20, 10, 2, 2, 'FD');
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total Receipts: ${totalReceipts}`, 16, 33.5);
+  doc.text(`Gross Fee: Rs. ${totalGross.toLocaleString()}`, 75, 33.5);
+  doc.text(`Total Discount: Rs. ${totalDiscount.toLocaleString()}`, 145, 33.5);
+  doc.setTextColor(22, 101, 52);
+  doc.text(`Net Collection: Rs. ${totalCollected.toLocaleString()}`, 215, 33.5);
+
+  // Main Date-wise Table
+  const tableData = dateWiseGroups.map((g, idx) => {
+    const modeBreakdownStr = Object.entries(g.modeBreakdown || {})
+      .map(([m, amt]) => `${m}: Rs.${Number(amt).toLocaleString()}`)
+      .join(', ');
+
+    return [
+      idx + 1,
+      dayjs(g.date).format('DD/MM/YYYY'),
+      g.receiptRange || '—',
+      g.receiptCount || 0,
+      `Rs. ${Number(g.grossFeeAmount).toLocaleString()}`,
+      `Rs. ${Number(g.totalDiscount).toLocaleString()}`,
+      `Rs. ${Number(g.totalCollection).toLocaleString()}`,
+      modeBreakdownStr || '—',
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 40,
+    margin: { left: 10, right: 10, bottom: 12 },
+    tableWidth: 277,
+    head: [
+      [
+        '#',
+        'Date',
+        'Receipt No Range (From – To)',
+        'Count',
+        'Gross Fee',
+        'Discount',
+        'Net Collection',
+        'Mode-wise Collection Breakdown',
+      ],
+    ],
+    body: tableData,
+    foot: [
+      [
+        '',
+        'GRAND TOTAL',
+        '',
+        totalReceipts,
+        `Rs. ${totalGross.toLocaleString()}`,
+        `Rs. ${totalDiscount.toLocaleString()}`,
+        `Rs. ${totalCollected.toLocaleString()}`,
+        '',
+      ],
+    ],
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      textColor: [30, 41, 59],
+      cellPadding: 2,
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fillColor: [25, 118, 210],
+      textColor: 255,
+      fontSize: 8.5,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    footStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [15, 23, 42],
+      fontSize: 8.5,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 24 },
+      2: { cellWidth: 46 },
+      3: { cellWidth: 16, halign: 'center' },
+      4: { cellWidth: 28, halign: 'right' },
+      5: { cellWidth: 24, halign: 'right' },
+      6: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },
+      7: { cellWidth: 99 },
+    },
+    didDrawPage: () => {
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount}  •  School ERP Financial Module`,
+        pageWidth - 75,
+        doc.internal.pageSize.height - 6
+      );
+    },
+  });
+
+  // Now append a new page for the 3 Summaries (Mode, Class, User)
+  doc.addPage('landscape');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(25, 118, 210);
+  doc.text('FINANCIAL SUMMARIES BREAKDOWN', pageWidth / 2, 12, { align: 'center' });
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(
+    `${schoolName.toUpperCase()} • Period: ${dayjs(startDate).format('DD MMM YYYY')} to ${dayjs(endDate).format('DD MMM YYYY')}`,
+    pageWidth / 2,
+    18,
+    { align: 'center' }
+  );
+
+  // 1. Payment Mode Table
+  const modeRows = (dateWiseSummary.modeSummaryList || []).map((m, i) => [
+    i + 1,
+    m.mode,
+    m.count,
+    `Rs. ${Number(m.amount).toLocaleString()}`,
+    totalCollected > 0 ? `${((m.amount / totalCollected) * 100).toFixed(1)}%` : '0%',
+  ]);
+
+  autoTable(doc, {
+    startY: 24,
+    margin: { left: 10, right: 150 },
+    tableWidth: 130,
+    head: [['#', 'Payment Mode', 'Txns', 'Total Amount', 'Share %']],
+    body: modeRows,
+    foot: [['', 'Total', totalReceipts, `Rs. ${totalCollected.toLocaleString()}`, '100%']],
+    theme: 'grid',
+    styles: { fontSize: 7.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [46, 125, 50], textColor: 255, fontStyle: 'bold' },
+    footStyles: { fillColor: [241, 245, 249], fontStyle: 'bold' },
+  });
+
+  // 2. User / Cashier Summary Table (on the right)
+  const userRows = (dateWiseSummary.userSummaryList || []).map((u, i) => [
+    i + 1,
+    u.userName,
+    u.count,
+    `Rs. ${Number(u.net).toLocaleString()}`,
+    totalCollected > 0 ? `${((u.net / totalCollected) * 100).toFixed(1)}%` : '0%',
+  ]);
+
+  autoTable(doc, {
+    startY: 24,
+    margin: { left: 147, right: 10 },
+    tableWidth: 140,
+    head: [['#', 'Cashier / User (Collected By)', 'Receipts', 'Net Collected', 'Share %']],
+    body: userRows,
+    foot: [['', 'Total', totalReceipts, `Rs. ${totalCollected.toLocaleString()}`, '100%']],
+    theme: 'grid',
+    styles: { fontSize: 7.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [106, 27, 154], textColor: 255, fontStyle: 'bold' },
+    footStyles: { fillColor: [241, 245, 249], fontStyle: 'bold' },
+  });
+
+  // 3. Class-wise Summary Table (below)
+  const classRows = (dateWiseSummary.classSummaryList || []).map((c, i) => [
+    i + 1,
+    c.className,
+    c.count,
+    `Rs. ${Number(c.gross).toLocaleString()}`,
+    `Rs. ${Number(c.discount).toLocaleString()}`,
+    `Rs. ${Number(c.net).toLocaleString()}`,
+    totalCollected > 0 ? `${((c.net / totalCollected) * 100).toFixed(1)}%` : '0%',
+  ]);
+
+  const afterTablesY = Math.max(doc.lastAutoTable.finalY, 70) + 6;
+
+  autoTable(doc, {
+    startY: afterTablesY,
+    margin: { left: 10, right: 10 },
+    tableWidth: 277,
+    head: [['#', 'Class Name', 'Receipts', 'Gross Fee', 'Discount', 'Net Collection', 'Share %']],
+    body: classRows,
+    foot: [
+      [
+        '',
+        'Total',
+        totalReceipts,
+        `Rs. ${totalGross.toLocaleString()}`,
+        `Rs. ${totalDiscount.toLocaleString()}`,
+        `Rs. ${totalCollected.toLocaleString()}`,
+        '100%',
+      ],
+    ],
+    theme: 'grid',
+    styles: { fontSize: 7.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [2, 136, 209], textColor: 255, fontStyle: 'bold' },
+    footStyles: { fillColor: [241, 245, 249], fontStyle: 'bold' },
+  });
+
+  doc.save(`DateWise_Fee_Collection_${startDate}_to_${endDate}.pdf`);
+};
+
+

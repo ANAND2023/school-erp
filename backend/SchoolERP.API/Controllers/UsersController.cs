@@ -403,5 +403,49 @@ namespace SchoolERP.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse.Ok("Password reset successfully. User will be prompted to change password on next login."));
         }
+
+        public class UpdateDiscountEligibilityRequest
+        {
+            public bool CanGiveDiscount { get; set; }
+            public decimal MaxDiscountLimit { get; set; }
+        }
+
+        [HttpPut("{id}/discount-eligibility")]
+        public async Task<ActionResult<ApiResponse>> UpdateDiscountEligibility(long id, [FromBody] UpdateDiscountEligibilityRequest request)
+        {
+            var isSuperAdmin = _currentUserService.UserType == UserType.SuperAdmin;
+            var branchId = _currentUserService.BranchId;
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null) return NotFound(ApiResponse.Fail("User not found."));
+
+            if (!isSuperAdmin && user.BranchId != branchId)
+            {
+                return StatusCode(403, ApiResponse.Fail("Access denied to user from other school."));
+            }
+
+            var oldCanDiscount = user.CanGiveDiscount;
+            var oldMaxLimit = user.MaxDiscountLimit;
+
+            user.CanGiveDiscount = request.CanGiveDiscount;
+            user.MaxDiscountLimit = request.CanGiveDiscount ? Math.Clamp(request.MaxDiscountLimit, 0m, 100m) : 0m;
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = _currentUserService.UserId,
+                Username = _currentUserService.Username,
+                Action = "UpdateDiscountEligibility",
+                Module = "Users",
+                EntityName = "User",
+                RecordId = user.Id.ToString(),
+                OldValues = $"CanDiscount: {oldCanDiscount}, MaxDiscountLimit: {oldMaxLimit}",
+                NewValues = $"CanDiscount: {user.CanGiveDiscount}, MaxDiscountLimit: {user.MaxDiscountLimit}",
+                IpAddress = _currentUserService.IpAddress,
+                BranchId = user.BranchId
+            });
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Discount eligibility updated successfully."));
+        }
     }
 }
