@@ -559,8 +559,8 @@ export const AppBreadcrumb = () => {
           </span>
 
           <span
+            className="hidden sm:inline-flex"
             style={{
-              display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
               fontSize: '11px',

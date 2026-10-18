@@ -168,10 +168,32 @@ export const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { sidebarOpen, toggleSidebar, snackbar, closeSnackbar } = useUiStore();
+  const { sidebarOpen, toggleSidebar, setSidebarOpen, snackbar, closeSnackbar } = useUiStore();
   const { hasPermission, isSuperAdmin } = usePermission();
   const { activeAcademicYearId, switchAcademicYear } = useAcademicYear();
   const { isDarkMode, currentColorHex } = useThemeStore();
+
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOpen(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setSidebarOpen]);
+
+  // Auto-close sidebar on mobile route change
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile, setSidebarOpen]);
 
   const [openSubMenus, setOpenSubMenus] = useState({});
   const profileMenuRef = useRef(null);
@@ -418,7 +440,7 @@ export const MainLayout = () => {
                 alert("Browser blocked audio. Please allow audio playback or interact with the page first.");
               });
             }}
-            className="p-button p-button-text text-white p-1 flex align-items-center cursor-pointer border-none"
+            className="p-button p-button-text text-white p-1 hidden md:flex align-items-center cursor-pointer border-none"
             style={{ background: 'transparent', fontSize: '13px' }}
             title="Test Bell Sound"
           >
@@ -493,17 +515,26 @@ export const MainLayout = () => {
 
       {/* Main Container with Sidebar + Content */}
       <div className="flex flex-1" style={{ marginTop: contentTop, transition: 'margin-top 0.2s ease' }}>
+        {/* Mobile Backdrop Overlay */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 z-4 bg-black-alpha-50"
+            style={{ top: contentTop, bottom: '26px' }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Collapsible Sidebar */}
         <aside
-          className="fixed left-0 overflow-y-auto z-4 border-right-1 surface-border"
+          className="fixed left-0 overflow-y-auto z-5 border-right-1 surface-border"
           style={{
             top: contentTop,
-            bottom: '22px',
+            bottom: '26px',
             width: sidebarOpen ? '260px' : '0px',
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-260px)',
             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
             backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
-            boxShadow: sidebarOpen ? '2px 0 8px rgba(0,0,0,0.05)' : 'none',
+            boxShadow: sidebarOpen ? '4px 0 16px rgba(0,0,0,0.12)' : 'none',
           }}
         >
           <nav className="p-2 flex flex-column gap-1">
@@ -525,7 +556,10 @@ export const MainLayout = () => {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => navigate(item.path)}
+                    onClick={() => {
+                      navigate(item.path);
+                      if (isMobile) setSidebarOpen(false);
+                    }}
                     className="w-full flex align-items-center gap-3 p-2 border-round text-left cursor-pointer border-none transition-all"
                     style={{
                       backgroundColor: isSelected
@@ -582,7 +616,10 @@ export const MainLayout = () => {
                             <button
                               key={child.path}
                               type="button"
-                              onClick={() => navigate(child.path)}
+                              onClick={() => {
+                                navigate(child.path);
+                                if (isMobile) setSidebarOpen(false);
+                              }}
                               className="w-full text-left py-2 px-3 border-round text-xs font-semibold cursor-pointer border-none transition-all"
                               style={{
                                 backgroundColor: isSelected
@@ -607,7 +644,12 @@ export const MainLayout = () => {
                 <button
                   key={item.menuKey}
                   type="button"
-                  onClick={() => item.path && navigate(item.path)}
+                  onClick={() => {
+                    if (item.path) {
+                      navigate(item.path);
+                      if (isMobile) setSidebarOpen(false);
+                    }
+                  }}
                   className="w-full flex align-items-center gap-3 p-2 border-round text-left cursor-pointer border-none transition-all"
                   style={{
                     backgroundColor: isSelected
@@ -627,12 +669,12 @@ export const MainLayout = () => {
 
         {/* Main Content Area */}
         <main
-          className="flex-1 p-2.5 md:p-3 overflow-y-auto"
+          className="flex-1 p-2 md:p-3 overflow-y-auto"
           style={{
-            marginLeft: sidebarOpen ? '260px' : '0px',
+            marginLeft: (sidebarOpen && !isMobile) ? '260px' : '0px',
             transition: 'margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            minHeight: 'calc(100vh - 42px - 22px)',
-            paddingBottom: '32px',
+            minHeight: 'calc(100vh - 42px - 26px)',
+            paddingBottom: '36px',
           }}
         >
           {/* Universal Styled Breadcrumb & Page Header with Background */}

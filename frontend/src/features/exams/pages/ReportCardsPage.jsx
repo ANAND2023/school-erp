@@ -530,45 +530,58 @@ export const ReportCardsPage = () => {
         }
       `}</style>
       {/* Header */}
-      <Stack className="no-print" direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 3 }}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-            <Typography variant="overline" sx={{ fontWeight: 800, letterSpacing: 1.2, color: 'primary.main' }}>
+      <Stack
+        className="no-print"
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2}
+        sx={{ mb: { xs: 2, sm: 3 } }}
+      >
+        <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5, flexWrap: 'wrap' }}>
+            <Typography variant="overline" sx={{ fontWeight: 800, letterSpacing: 1.2, color: 'primary.main', fontSize: { xs: '0.68rem', sm: '0.75rem' } }}>
               EXAMINATIONS & EVALUATIONS
             </Typography>
             {activeYearLabel && (
               <Chip
-                icon={<SchoolIcon sx={{ fontSize: '14px !important' }} />}
+                icon={<SchoolIcon sx={{ fontSize: '13px !important' }} />}
                 label={activeYearLabel}
                 size="small"
                 variant="outlined"
-                sx={{ height: 20, fontSize: '0.72rem', fontWeight: 600, borderColor: '#cbd5e1' }}
+                sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: '#cbd5e1' }}
               />
             )}
           </Stack>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <Typography variant="h5" fontWeight={800} color="#0f2b48">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography variant="h5" fontWeight={800} color="#0f2b48" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Student Progress Report Cards
             </Typography>
             <Chip
-              icon={<SparklesIcon sx={{ fontSize: 15 }} />}
+              icon={<SparklesIcon sx={{ fontSize: 14 }} />}
               label="CCE 2-Term & CBSE Ready"
               size="small"
               color="primary"
               variant="filled"
-              sx={{ fontWeight: 700, borderRadius: 1.5 }}
+              sx={{ fontWeight: 700, borderRadius: 1.5, height: 22, fontSize: '0.72rem' }}
             />
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Generate, preview, and print comprehensive 2-Term CCE Progress Reports (Kush Public School format) or standard CBSE Multi-Term Cards.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            Generate, preview, and print comprehensive 2-Term CCE Progress Reports or standard CBSE Multi-Term Cards.
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          alignItems="stretch"
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           {activeTab === 0 ? (
             <>
               <Button
                 variant="outlined"
+                fullWidth
                 startIcon={cceBulkLoading ? <CircularProgress size={16} /> : <PrintIcon />}
                 onClick={handleOpenCceBulkPrint}
                 disabled={!selectedStudentIds.length || cceBulkLoading}
@@ -578,6 +591,8 @@ export const ReportCardsPage = () => {
                   textTransform: 'none',
                   borderColor: '#cbd5e1',
                   color: '#1e293b',
+                  minHeight: 38,
+                  fontSize: { xs: '0.82rem', sm: '0.875rem' },
                   '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
                 }}
               >
@@ -585,6 +600,7 @@ export const ReportCardsPage = () => {
               </Button>
               <Button
                 variant="contained"
+                fullWidth
                 startIcon={<PrintIcon />}
                 onClick={handlePrintCce}
                 disabled={!cceData || cceLoading}
@@ -593,6 +609,8 @@ export const ReportCardsPage = () => {
                   borderRadius: 2,
                   textTransform: 'none',
                   boxShadow: 2,
+                  minHeight: 38,
+                  fontSize: { xs: '0.82rem', sm: '0.875rem' },
                   px: 2.5,
                 }}
               >
@@ -603,6 +621,7 @@ export const ReportCardsPage = () => {
             <>
               <Button
                 variant="outlined"
+                fullWidth
                 startIcon={bulkLoading ? <CircularProgress size={16} /> : <PrintIcon />}
                 onClick={handleOpenBulkPrint}
                 disabled={!selectedStudentIds.length || bulkLoading}
@@ -612,6 +631,8 @@ export const ReportCardsPage = () => {
                   textTransform: 'none',
                   borderColor: '#cbd5e1',
                   color: '#1e293b',
+                  minHeight: 38,
+                  fontSize: { xs: '0.82rem', sm: '0.875rem' },
                   '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
                 }}
               >
@@ -619,6 +640,7 @@ export const ReportCardsPage = () => {
               </Button>
               <Button
                 variant="contained"
+                fullWidth
                 startIcon={<PrintIcon />}
                 onClick={handlePrintMultiTerm}
                 disabled={!multiTermData || multiTermLoading}
@@ -627,6 +649,8 @@ export const ReportCardsPage = () => {
                   borderRadius: 2,
                   textTransform: 'none',
                   boxShadow: 2,
+                  minHeight: 38,
+                  fontSize: { xs: '0.82rem', sm: '0.875rem' },
                   px: 2.5,
                 }}
               >
@@ -636,11 +660,12 @@ export const ReportCardsPage = () => {
           ) : (
             <Button
               variant="contained"
+              fullWidth
               color="primary"
               startIcon={<ResultIcon />}
               onClick={loadResults}
               disabled={loading || !selectedExamId}
-              sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 2.5 }}
+              sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', minHeight: 38, px: 2.5 }}
             >
               {loading ? 'Processing...' : 'Recalculate Results'}
             </Button>
@@ -653,10 +678,10 @@ export const ReportCardsPage = () => {
         className="no-print"
         elevation={0}
         sx={{
-          mb: 3,
-          p: 0.75,
+          mb: 2.5,
+          p: 0.5,
           bgcolor: '#f1f5f9',
-          borderRadius: 3,
+          borderRadius: 2.5,
           border: '1px solid #e2e8f0',
         }}
       >
@@ -666,20 +691,21 @@ export const ReportCardsPage = () => {
           variant="scrollable"
           scrollButtons="auto"
           sx={{
-            minHeight: 44,
+            minHeight: { xs: 38, sm: 42 },
             '& .MuiTabs-indicator': {
               display: 'none',
             },
             '& .MuiTab-root': {
-              minHeight: 40,
+              minHeight: { xs: 34, sm: 38 },
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.9rem',
+              fontSize: { xs: '0.8rem', sm: '0.88rem' },
               color: '#475569',
               transition: 'all 0.2s',
-              mr: 1,
-              px: 2.5,
+              mr: 0.5,
+              px: { xs: 1.5, sm: 2.5 },
+              whiteSpace: 'nowrap',
               '&.Mui-selected': {
                 color: '#0f172a',
                 bgcolor: '#ffffff',
@@ -694,34 +720,34 @@ export const ReportCardsPage = () => {
           }}
         >
           <Tab
-            icon={<SparklesIcon sx={{ fontSize: 18 }} />}
+            icon={<SparklesIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
-            label="CCE 2-Term Progress Report (Kush Public School Format)"
+            label="CCE 2-Term Report"
           />
           <Tab
-            icon={<AssignmentIcon sx={{ fontSize: 18 }} />}
+            icon={<AssignmentIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
-            label="Annual Multi-Term Report Card (Term 1, 2, 3 & Final)"
+            label="Multi-Term Annual Card"
           />
           <Tab
-            icon={<ResultIcon sx={{ fontSize: 18 }} />}
+            icon={<ResultIcon sx={{ fontSize: 17 }} />}
             iconPosition="start"
-            label="Single Exam Results & Ranks"
+            label="Exam Results & Ranks"
           />
         </Tabs>
       </Paper>
 
       {alert && (
-        <Alert className="no-print" severity={alert.type} sx={{ mb: 3, borderRadius: 2 }} onClose={() => setAlert(null)}>
+        <Alert className="no-print" severity={alert.type} sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setAlert(null)}>
           {alert.message}
         </Alert>
       )}
 
       {/* Filter & Student Roster Control Card */}
-      <Card className="no-print" sx={{ mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.05)' }}>
-        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+      <Card className="no-print" sx={{ mb: 2.5, borderRadius: 2.5, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.05)' }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
           {/* Top Control Bar: Class, Section, and Search / Exam selection */}
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={1.5} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel sx={{ fontWeight: 600 }}>Class</InputLabel>
@@ -761,23 +787,23 @@ export const ReportCardsPage = () => {
 
             {activeTab === 0 || activeTab === 1 ? (
               <>
-                <Grid item xs={12} sm={6} md={3.5}>
+                <Grid item xs={12} sm={7} md={3.5}>
                   <TextField
                     fullWidth
                     size="small"
-                    placeholder="Search by student name, roll, admission..."
+                    placeholder="Search student, roll, admission..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
                         </InputAdornment>
                       ),
                       endAdornment: studentSearch ? (
                         <InputAdornment position="end">
                           <IconButton size="small" onClick={() => setStudentSearch('')}>
-                            <CloseIcon sx={{ fontSize: 16 }} />
+                            <CloseIcon sx={{ fontSize: 15 }} />
                           </IconButton>
                         </InputAdornment>
                       ) : null,
@@ -789,19 +815,19 @@ export const ReportCardsPage = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                  <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center">
+                <Grid item xs={12} sm={5} md={3}>
+                  <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }} alignItems="center">
                     <Chip
                       label={`${students.length} Students`}
                       size="small"
-                      sx={{ fontWeight: 700, bgcolor: '#f1f5f9', color: '#475569' }}
+                      sx={{ fontWeight: 700, bgcolor: '#f1f5f9', color: '#475569', height: 24, fontSize: '0.72rem' }}
                     />
                     <Chip
-                      label={`${selectedStudentIds.length} for Print`}
+                      label={`${selectedStudentIds.length} Selected`}
                       size="small"
                       color={selectedStudentIds.length > 0 ? 'primary' : 'default'}
                       variant={selectedStudentIds.length > 0 ? 'filled' : 'outlined'}
-                      sx={{ fontWeight: 700 }}
+                      sx={{ fontWeight: 700, height: 24, fontSize: '0.72rem' }}
                     />
                   </Stack>
                 </Grid>
@@ -830,12 +856,12 @@ export const ReportCardsPage = () => {
 
           {/* Interactive Student Roster Strip (Tab 0 & Tab 1) */}
           {(activeTab === 0 || activeTab === 1) && (
-            <Box sx={{ mt: 2.5 }}>
-              <Divider sx={{ mb: 2 }} />
+            <Box sx={{ mt: 2 }}>
+              <Divider sx={{ mb: 1.5 }} />
               
-              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1} sx={{ mb: 1.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: '#475569', letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                  Student Roster — Click to preview card:
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1} sx={{ mb: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: '#475569', letterSpacing: 0.5, textTransform: 'uppercase', fontSize: '0.72rem' }}>
+                  Student Roster — Tap to preview:
                 </Typography>
 
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -843,7 +869,7 @@ export const ReportCardsPage = () => {
                     size="small"
                     onClick={() => setSelectedStudentIds(students.map((s) => s.id))}
                     disabled={!students.length}
-                    sx={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'none', py: 0.2, px: 1 }}
+                    sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'none', py: 0.2, px: 0.75 }}
                   >
                     Select All ({students.length})
                   </Button>
@@ -853,7 +879,7 @@ export const ReportCardsPage = () => {
                     onClick={() => setSelectedStudentIds([])}
                     disabled={!selectedStudentIds.length}
                     color="inherit"
-                    sx={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', py: 0.2, px: 1, color: 'text.secondary' }}
+                    sx={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'none', py: 0.2, px: 0.75, color: 'text.secondary' }}
                   >
                     Clear All
                   </Button>
@@ -870,18 +896,20 @@ export const ReportCardsPage = () => {
                 <Box sx={{ p: 2, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
                   <Typography variant="body2" color="text.secondary">
                     No students match search "{studentSearch}".{' '}
-                    <Button size="small" onClick={() => setStudentSearch('')}>Reset Search</Button>
+                    <Button size="small" onClick={() => setStudentSearch('')}>Reset</Button>
                   </Typography>
                 </Box>
               ) : (
                 <Box
                   sx={{
                     display: 'flex',
-                    flexWrap: 'wrap',
+                    flexWrap: { xs: 'nowrap', sm: 'wrap' },
+                    overflowX: { xs: 'auto', sm: 'visible' },
+                    overflowY: { xs: 'hidden', sm: 'auto' },
+                    WebkitOverflowScrolling: 'touch',
                     gap: 1,
-                    maxHeight: 180,
-                    overflowY: 'auto',
-                    p: 0.5,
+                    maxHeight: { xs: 'none', sm: 180 },
+                    p: 0.75,
                     borderRadius: 2,
                     bgcolor: '#f8fafc',
                     border: '1px solid #e2e8f0',
@@ -900,6 +928,7 @@ export const ReportCardsPage = () => {
                         sx={{
                           display: 'inline-flex',
                           alignItems: 'center',
+                          flexShrink: 0,
                           gap: 0.75,
                           px: 1.25,
                           py: 0.5,
@@ -926,7 +955,7 @@ export const ReportCardsPage = () => {
                               setSelectedStudentIds((prev) => [...prev, st.id]);
                             }
                           }}
-                          sx={{ p: 0, '& .MuiSvgIcon-root': { fontSize: 18 } }}
+                          sx={{ p: 0, '& .MuiSvgIcon-root': { fontSize: 17 } }}
                         />
 
                         {st.rollNo && (
@@ -948,7 +977,7 @@ export const ReportCardsPage = () => {
                           sx={{
                             fontWeight: isPreview ? 800 : 500,
                             color: isPreview ? '#1d4ed8' : '#1e293b',
-                            fontSize: '0.84rem',
+                            fontSize: '0.82rem',
                             whiteSpace: 'nowrap',
                           }}
                         >
@@ -961,8 +990,8 @@ export const ReportCardsPage = () => {
                             size="small"
                             color="primary"
                             sx={{
-                              height: 18,
-                              fontSize: '0.65rem',
+                              height: 17,
+                              fontSize: '0.62rem',
                               fontWeight: 800,
                               ml: 0.25,
                             }}
@@ -982,12 +1011,12 @@ export const ReportCardsPage = () => {
       {activeTab === 0 && (
         <Box className="no-print">
           {cceLoading ? (
-            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
-              <CircularProgress size={44} thickness={4} />
-              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b' }}>
+            <Paper sx={{ p: { xs: 4, sm: 6 }, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CircularProgress size={40} thickness={4} />
+              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 Loading CCE 2-Term Progress Report...
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.8rem' }}>
                 Compiling scholastic, co-scholastic, and attendance evaluations
               </Typography>
             </Paper>
@@ -998,9 +1027,8 @@ export const ReportCardsPage = () => {
                 <Paper
                   elevation={0}
                   sx={{
-                    mb: 2.5,
+                    mb: 2,
                     p: 1.5,
-                    px: 2,
                     borderRadius: 2.5,
                     border: '1px solid #e2e8f0',
                     bgcolor: '#ffffff',
@@ -1012,18 +1040,19 @@ export const ReportCardsPage = () => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  {/* Row 1 on mobile: Previous / Student X of Y / Next */}
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: { xs: '100%', md: 'auto' } }}>
                     <Button
                       size="small"
                       variant="outlined"
                       startIcon={<NavigateBeforeIcon />}
                       onClick={handlePrevStudent}
                       disabled={activeStudentIndex <= 0}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, flex: { xs: 1, sm: 'none' } }}
                     >
-                      Previous
+                      Prev
                     </Button>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1, textAlign: 'center', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
                       Student {activeStudentIndex + 1} of {students.length}
                     </Typography>
                     <Button
@@ -1032,56 +1061,89 @@ export const ReportCardsPage = () => {
                       endIcon={<NavigateNextIcon />}
                       onClick={handleNextStudent}
                       disabled={activeStudentIndex >= students.length - 1}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, flex: { xs: 1, sm: 'none' } }}
                     >
                       Next
                     </Button>
                   </Stack>
 
-                  {/* Active Student Pill */}
-                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                  {/* Row 2 on mobile: Active Student Pill */}
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{
+                      width: { xs: '100%', md: 'auto' },
+                      py: { xs: 1, md: 0 },
+                      borderTop: { xs: '1px solid #f1f5f9', md: 'none' },
+                      borderBottom: { xs: '1px solid #f1f5f9', md: 'none' },
+                    }}
+                  >
                     <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, fontWeight: 700, fontSize: '0.85rem' }}>
                       {(currentStudent?.fullName || currentStudent?.studentName || 'S')[0]?.toUpperCase()}
                     </Avatar>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2, noWrap: true }}>
                         {formatName(currentStudent?.fullName || currentStudent?.studentName || currentStudent?.firstName || 'Student')}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', noWrap: true }}>
                         {currentStudent?.rollNo ? `Roll #${currentStudent.rollNo} • ` : ''}
                         {currentStudent?.admissionNo ? `Adm: ${currentStudent.admissionNo}` : `ID: ${currentStudent?.id}`}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  {/* Actions */}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Checkbox
-                      size="small"
-                      checked={selectedStudentIds.includes(previewStudentId)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedStudentIds((prev) => [...prev, previewStudentId]);
-                        } else {
-                          setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', mr: 1 }}>
-                      Include in Bulk Print
-                    </Typography>
+                  {/* Row 3 on mobile: Bulk print checkbox & Print button */}
+                  <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between" sx={{ width: { xs: '100%', md: 'auto' } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Checkbox
+                        size="small"
+                        checked={selectedStudentIds.includes(previewStudentId)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStudentIds((prev) => [...prev, previewStudentId]);
+                          } else {
+                            setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
+                          }
+                        }}
+                      />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569' }}>
+                        Include in Bulk
+                      </Typography>
+                    </Box>
                     <Button
                       variant="contained"
                       size="small"
                       startIcon={<PrintIcon />}
                       onClick={handlePrintCce}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, px: 2 }}
                     >
                       Print This Card
                     </Button>
                   </Stack>
                 </Paper>
               )}
+
+              {/* Mobile swipe helper badge */}
+              <Box
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  mb: 1.5,
+                  py: 0.75,
+                  px: 1.5,
+                  bgcolor: '#e0f2fe',
+                  color: '#0369a1',
+                  borderRadius: 2,
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}
+              >
+                <span>👆 Swipe horizontally to view full report card table</span>
+              </Box>
 
               {/* Preview Sheet Container */}
               <Box
@@ -1092,18 +1154,21 @@ export const ReportCardsPage = () => {
                   border: '1px solid #e2e8f0',
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)',
                   overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
-                <CceProgressReportCardSlip data={cceData} />
+                <Box sx={{ minWidth: { xs: '760px', md: 'auto' } }}>
+                  <CceProgressReportCardSlip data={cceData} />
+                </Box>
               </Box>
             </Box>
           ) : (
-            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
+            <Paper sx={{ p: { xs: 4, sm: 6 }, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
               <SchoolIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
-              <Typography variant="h6" fontWeight={700} color="#1e293b">
+              <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 No Student Report Card Loaded
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5, fontSize: '0.85rem' }}>
                 {students.length > 0
                   ? 'Click on any student in the roster above to view their CCE 2-Term Progress Report.'
                   : 'Please select a Class and Section with enrolled students to preview report cards.'}
@@ -1126,12 +1191,12 @@ export const ReportCardsPage = () => {
       {activeTab === 1 && (
         <Box className="no-print">
           {multiTermLoading ? (
-            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
-              <CircularProgress size={44} thickness={4} />
-              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b' }}>
+            <Paper sx={{ p: { xs: 4, sm: 6 }, textAlign: 'center', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CircularProgress size={40} thickness={4} />
+              <Typography variant="h6" fontWeight={700} sx={{ mt: 2, color: '#1e293b', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 Loading Multi-Term Performance...
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.8rem' }}>
                 Fetching multi-term scores, grades, and faculty remarks
               </Typography>
             </Paper>
@@ -1142,9 +1207,8 @@ export const ReportCardsPage = () => {
                 <Paper
                   elevation={0}
                   sx={{
-                    mb: 2.5,
+                    mb: 2,
                     p: 1.5,
-                    px: 2,
                     borderRadius: 2.5,
                     border: '1px solid #e2e8f0',
                     bgcolor: '#ffffff',
@@ -1156,18 +1220,19 @@ export const ReportCardsPage = () => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  {/* Row 1 on mobile: Previous / Student X of Y / Next */}
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: { xs: '100%', md: 'auto' } }}>
                     <Button
                       size="small"
                       variant="outlined"
                       startIcon={<NavigateBeforeIcon />}
                       onClick={handlePrevStudent}
                       disabled={activeStudentIndex <= 0}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, flex: { xs: 1, sm: 'none' } }}
                     >
-                      Previous
+                      Prev
                     </Button>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', px: 1, textAlign: 'center', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
                       Student {activeStudentIndex + 1} of {students.length}
                     </Typography>
                     <Button
@@ -1176,56 +1241,89 @@ export const ReportCardsPage = () => {
                       endIcon={<NavigateNextIcon />}
                       onClick={handleNextStudent}
                       disabled={activeStudentIndex >= students.length - 1}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, flex: { xs: 1, sm: 'none' } }}
                     >
                       Next
                     </Button>
                   </Stack>
 
-                  {/* Active Student Pill */}
-                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                  {/* Row 2 on mobile: Active Student Pill */}
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{
+                      width: { xs: '100%', md: 'auto' },
+                      py: { xs: 1, md: 0 },
+                      borderTop: { xs: '1px solid #f1f5f9', md: 'none' },
+                      borderBottom: { xs: '1px solid #f1f5f9', md: 'none' },
+                    }}
+                  >
                     <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontWeight: 700, fontSize: '0.85rem' }}>
                       {(currentStudent?.fullName || currentStudent?.studentName || 'S')[0]?.toUpperCase()}
                     </Avatar>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2, noWrap: true }}>
                         {formatName(currentStudent?.fullName || currentStudent?.studentName || currentStudent?.firstName || 'Student')}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', noWrap: true }}>
                         {currentStudent?.rollNo ? `Roll #${currentStudent.rollNo} • ` : ''}
                         {currentStudent?.admissionNo ? `Adm: ${currentStudent.admissionNo}` : `ID: ${currentStudent?.id}`}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  {/* Actions */}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Checkbox
-                      size="small"
-                      checked={selectedStudentIds.includes(previewStudentId)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedStudentIds((prev) => [...prev, previewStudentId]);
-                        } else {
-                          setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', mr: 1 }}>
-                      Include in Bulk Print
-                    </Typography>
+                  {/* Row 3 on mobile: Bulk print checkbox & Print button */}
+                  <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between" sx={{ width: { xs: '100%', md: 'auto' } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Checkbox
+                        size="small"
+                        checked={selectedStudentIds.includes(previewStudentId)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStudentIds((prev) => [...prev, previewStudentId]);
+                          } else {
+                            setSelectedStudentIds((prev) => prev.filter((id) => id !== previewStudentId));
+                          }
+                        }}
+                      />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569' }}>
+                        Include in Bulk
+                      </Typography>
+                    </Box>
                     <Button
                       variant="contained"
                       size="small"
                       startIcon={<PrintIcon />}
                       onClick={handlePrintMultiTerm}
-                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5 }}
+                      sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 1.5, px: 2 }}
                     >
                       Print This Card
                     </Button>
                   </Stack>
                 </Paper>
               )}
+
+              {/* Mobile swipe helper badge */}
+              <Box
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  mb: 1.5,
+                  py: 0.75,
+                  px: 1.5,
+                  bgcolor: '#e0f2fe',
+                  color: '#0369a1',
+                  borderRadius: 2,
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}
+              >
+                <span>👆 Swipe horizontally to view full report card table</span>
+              </Box>
 
               {/* Preview Sheet Container */}
               <Box
@@ -1236,18 +1334,21 @@ export const ReportCardsPage = () => {
                   border: '1px solid #e2e8f0',
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)',
                   overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
-                <MultiTermReportCardSlip data={multiTermData} />
+                <Box sx={{ minWidth: { xs: '760px', md: 'auto' } }}>
+                  <MultiTermReportCardSlip data={multiTermData} />
+                </Box>
               </Box>
             </Box>
           ) : (
-            <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
+            <Paper sx={{ p: { xs: 4, sm: 6 }, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
               <AssignmentIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
-              <Typography variant="h6" fontWeight={700} color="#1e293b">
+              <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 No Multi-Term Card Available
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 450, mx: 'auto', mt: 0.5, mb: 2.5, fontSize: '0.85rem' }}>
                 {students.length > 0
                   ? 'Click on any student in the roster above to view their Annual Multi-Term Report Card.'
                   : 'Please select a Class and Section with recorded exam marks.'}
