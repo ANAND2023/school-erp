@@ -593,7 +593,7 @@ export const LoginPage = () => {
                 </Box>
 
                 {/* Input 2: Password */}
-                <Box sx={{ mb: 1.2 }}>
+                <Box sx={{ mb: 2.5 }}>
                   <TextField
                     required
                     fullWidth
@@ -648,51 +648,6 @@ export const LoginPage = () => {
                       }
                     }}
                   />
-                </Box>
-
-                {/* Row: Remember me + Forgot password? */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 2
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        size="small"
-                        sx={{
-                          color: '#64748b',
-                          '&.Mui-checked': { color: '#38bdf8' },
-                          p: 0.5
-                        }}
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>
-                        Remember me
-                      </Typography>
-                    }
-                    sx={{ m: 0 }}
-                  />
-
-                  <Typography
-                    variant="body2"
-                    onClick={() => setForgotDialogOpen(true)}
-                    sx={{
-                      fontSize: '0.8rem',
-                      color: '#38bdf8',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      '&:hover': { textDecoration: 'underline', color: '#7dd3fc' }
-                    }}
-                  >
-                    Forgot password?
-                  </Typography>
                 </Box>
 
                 {/* Blue Main Login Button */}

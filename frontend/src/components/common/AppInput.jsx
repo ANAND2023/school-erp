@@ -42,6 +42,7 @@ export const AppInput = forwardRef(({
   id,
   maxLength,
   keyfilter,
+  uppercase,
   ...rest
 }, ref) => {
   const inputId = id || name || `input-${Math.random().toString(36).substring(2, 9)}`;
@@ -52,6 +53,7 @@ export const AppInput = forwardRef(({
   const lowerLabel = (label || '').toLowerCase();
   const lowerName = (name || '').toLowerCase();
 
+  const isNameField = Boolean(uppercase || (lowerLabel.includes('name') && !lowerLabel.includes('username') && !lowerName.includes('username')));
   const isAadhaar = lowerLabel.includes('aadhaar') || lowerLabel.includes('adhaar') || lowerName.includes('aadhaar') || lowerName.includes('adhaar');
   const isMobile = lowerLabel.includes('mobile') || lowerLabel.includes('phone') || lowerLabel.includes('emergency contact') || lowerName.includes('mobile') || lowerName.includes('phone') || lowerName.includes('emergencycontact');
   const isPincode = lowerLabel.includes('pincode') || lowerName.includes('pincode');
@@ -66,8 +68,13 @@ export const AppInput = forwardRef(({
 
   const handleTextChange = (e) => {
     if (!onChange) return;
+    let rawVal = e.target.value || '';
+    if (isNameField) {
+      rawVal = rawVal.toUpperCase();
+    }
+
     if (isNumericOnly) {
-      const sanitized = (e.target.value || '').replace(/\D/g, '').slice(0, effectiveMaxLength);
+      const sanitized = rawVal.replace(/\D/g, '').slice(0, effectiveMaxLength);
       const clonedEvent = {
         ...e,
         target: {
@@ -78,7 +85,7 @@ export const AppInput = forwardRef(({
       };
       onChange(clonedEvent);
     } else if (effectiveMaxLength) {
-      const sliced = (e.target.value || '').slice(0, effectiveMaxLength);
+      const sliced = rawVal.slice(0, effectiveMaxLength);
       const clonedEvent = {
         ...e,
         target: {
@@ -89,7 +96,15 @@ export const AppInput = forwardRef(({
       };
       onChange(clonedEvent);
     } else {
-      onChange(e);
+      const clonedEvent = isNameField ? {
+        ...e,
+        target: {
+          ...e.target,
+          name,
+          value: rawVal,
+        },
+      } : e;
+      onChange(clonedEvent);
     }
   };
 
@@ -182,6 +197,7 @@ export const AppInput = forwardRef(({
         keyfilter={effectiveKeyFilter}
         inputMode={isNumericOnly ? 'numeric' : undefined}
         className={inputClass}
+        style={{ ...(isNameField ? { textTransform: 'uppercase' } : {}), ...style }}
         {...rest}
       />
     );

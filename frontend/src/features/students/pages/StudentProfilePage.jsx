@@ -71,7 +71,7 @@ import { usePermission } from '../../../hooks/usePermission';
 import { AdmissionReportModal } from '../components/AdmissionReportModal';
 import { PhotoCaptureUpload } from '../components/PhotoCaptureUpload';
 import { printWithTitle } from '../../../utils/printUtils';
-import AppDatePicker from '../../../components/common/AppDatePicker';
+import { AppModal, AppInput, AppSelect, AppDatePicker } from '../../../components/common';
 
 // Helper to compress image files client-side before uploading
 const compressImage = (file, maxWidth = 1600, quality = 0.85) => {
@@ -238,8 +238,8 @@ export default function StudentProfilePage() {
 
     setEditFormData({
       // 1. Pupil Identity
-      firstName: student.firstName || '',
-      lastName: student.lastName || '',
+      firstName: (student.firstName || '').toUpperCase(),
+      lastName: (student.lastName || '').toUpperCase(),
       admissionNo: student.admissionNo || '',
       admissionDate: student.admissionDate
         ? dayjs(student.admissionDate).format('YYYY-MM-DD')
@@ -272,7 +272,7 @@ export default function StudentProfilePage() {
 
       // 5. Father's Details
       fatherId: father?.id || 0,
-      fatherName: father?.name || student.fatherName || '',
+      fatherName: (father?.name || student.fatherName || '').toUpperCase(),
       fatherMobile: father?.mobile || student.fatherMobile || '',
       fatherEmail: father?.email || student.fatherEmail || '',
       fatherOccupation: father?.occupation || student.fatherOccupation || '',
@@ -280,7 +280,7 @@ export default function StudentProfilePage() {
 
       // 6. Mother's Details
       motherId: mother?.id || 0,
-      motherName: mother?.name || student.motherName || '',
+      motherName: (mother?.name || student.motherName || '').toUpperCase(),
       motherMobile: mother?.mobile || student.motherMobile || '',
       motherEmail: mother?.email || student.motherEmail || '',
       motherOccupation: mother?.occupation || student.motherOccupation || '',
@@ -288,7 +288,7 @@ export default function StudentProfilePage() {
 
       // 7. Local Guardian's Details
       guardianId: otherGuardian?.id || 0,
-      guardianName: otherGuardian?.name || '',
+      guardianName: (otherGuardian?.name || '').toUpperCase(),
       guardianMobile: otherGuardian?.mobile || '',
       guardianEmail: otherGuardian?.email || '',
       guardianRelation: otherGuardian?.relation || 'Guardian',
@@ -306,15 +306,26 @@ export default function StudentProfilePage() {
   }, [searchParams, student]);
 
   const handleSaveEdit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!editFormData) return;
+
+    if (!editFormData.firstName?.trim()) {
+      setSnackbar({ open: true, message: 'Student First Name is required.', severity: 'warning' });
+      setEditModalTab(1);
+      return;
+    }
+    if (!editFormData.dateOfBirth) {
+      setSnackbar({ open: true, message: 'Date of Birth (DOB) is required.', severity: 'warning' });
+      setEditModalTab(1);
+      return;
+    }
 
     const guardiansPayload = [];
     if (editFormData.fatherName?.trim() || editFormData.fatherMobile?.trim()) {
       guardiansPayload.push({
         id: editFormData.fatherId || 0,
         relation: 'Father',
-        name: editFormData.fatherName?.trim() || '',
+        name: editFormData.fatherName?.trim()?.toUpperCase() || '',
         mobile: editFormData.fatherMobile?.trim() || editFormData.emergencyContact || '—',
         email: editFormData.fatherEmail?.trim() || null,
         occupation: editFormData.fatherOccupation?.trim() || null,
@@ -327,7 +338,7 @@ export default function StudentProfilePage() {
       guardiansPayload.push({
         id: editFormData.motherId || 0,
         relation: 'Mother',
-        name: editFormData.motherName?.trim() || '',
+        name: editFormData.motherName?.trim()?.toUpperCase() || '',
         mobile: editFormData.motherMobile?.trim() || editFormData.fatherMobile || '—',
         email: editFormData.motherEmail?.trim() || null,
         occupation: editFormData.motherOccupation?.trim() || null,
@@ -344,7 +355,7 @@ export default function StudentProfilePage() {
       guardiansPayload.push({
         id: editFormData.guardianId || 0,
         relation: editFormData.guardianRelation?.trim() || 'Guardian',
-        name: editFormData.guardianName?.trim() || '',
+        name: editFormData.guardianName?.trim()?.toUpperCase() || '',
         mobile: editFormData.guardianMobile?.trim() || editFormData.fatherMobile || '—',
         email: editFormData.guardianEmail?.trim() || null,
         occupation: editFormData.guardianOccupation?.trim() || null,
@@ -354,8 +365,8 @@ export default function StudentProfilePage() {
     }
 
     const payload = {
-      firstName: editFormData.firstName?.trim() || '',
-      lastName: editFormData.lastName?.trim() || '',
+      firstName: editFormData.firstName?.trim()?.toUpperCase() || '',
+      lastName: editFormData.lastName?.trim()?.toUpperCase() || '',
       admissionNo: editFormData.admissionNo?.trim() || null,
       admissionDate: editFormData.admissionDate ? new Date(editFormData.admissionDate).toISOString() : null,
       dateOfBirth: editFormData.dateOfBirth,
@@ -1266,611 +1277,690 @@ export default function StudentProfilePage() {
         </Card>
       )}
 
-      {/* Comprehensive Edit Student Profile Modal */}
-      <Dialog
+      {/* Comprehensive Dynamic Edit Student Profile Modal */}
+      <AppModal
         open={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         maxWidth="lg"
         fullWidth
-      >
-        <form onSubmit={handleSaveEdit}>
-          <DialogTitle sx={{ fontWeight: 800, pb: 1, borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="h6" fontWeight={800} color="primary.main">
-                  Edit Student Master & Profile
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Update all records: 4 identification photos, pupil personal details, academic enrollment, and parent/guardian info.
-                </Typography>
-              </Box>
-              <Chip
-                label={editFormData?.admissionNo || student?.admissionNo || 'Student'}
-                color="primary"
-                size="small"
-                sx={{ fontWeight: 700 }}
-              />
-            </Stack>
-
-            <Tabs
-              value={editModalTab}
-              onChange={(e, val) => setEditModalTab(val)}
-              variant="fullWidth"
-              sx={{ mt: 1.5, minHeight: 42 }}
-            >
-              <Tab icon={<PhotoCameraIcon fontSize="small" />} iconPosition="start" label="4 Photographs" sx={{ minHeight: 42, py: 0.5, fontWeight: 700, fontSize: '0.85rem' }} />
-              <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Pupil & Enrollment" sx={{ minHeight: 42, py: 0.5, fontWeight: 700, fontSize: '0.85rem' }} />
-              <Tab icon={<FamilyIcon fontSize="small" />} iconPosition="start" label="Parents & Guardians" sx={{ minHeight: 42, py: 0.5, fontWeight: 700, fontSize: '0.85rem' }} />
-              <Tab icon={<HomeIcon fontSize="small" />} iconPosition="start" label="Address & Contact" sx={{ minHeight: 42, py: 0.5, fontWeight: 700, fontSize: '0.85rem' }} />
-            </Tabs>
-          </DialogTitle>
-
-          <DialogContent dividers sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#ffffff' }}>
-            {editFormData && (
-              <>
-                {/* TAB 0: 4 PHOTOGRAPHS */}
-                {editModalTab === 0 && (
-                  <Box>
-                    <Alert severity="info" sx={{ mb: 3 }}>
-                      Capture or update all 4 official photographs: Student, Father, Mother, and Guardian. Click the <b>red camera icon</b> to capture live via webcam, or the <b>blue upload icon</b> to select a photo from your computer.
-                    </Alert>
-
-                    <Grid container spacing={3} justifyContent="center">
-                      <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <PhotoCaptureUpload
-                          label="Student Photo"
-                          value={editFormData.photoUrl}
-                          onChange={(url) => setEditFormData({ ...editFormData, photoUrl: url })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <PhotoCaptureUpload
-                          label="Father's Photo"
-                          value={editFormData.fatherPhotoUrl}
-                          onChange={(url) => setEditFormData({ ...editFormData, fatherPhotoUrl: url })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <PhotoCaptureUpload
-                          label="Mother's Photo"
-                          value={editFormData.motherPhotoUrl}
-                          onChange={(url) => setEditFormData({ ...editFormData, motherPhotoUrl: url })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <PhotoCaptureUpload
-                          label="Guardian's Photo"
-                          value={editFormData.guardianPhotoUrl}
-                          onChange={(url) => setEditFormData({ ...editFormData, guardianPhotoUrl: url })}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-
-                {/* TAB 1: PUPIL & ENROLLMENT */}
-                {editModalTab === 1 && (
-                  <Stack spacing={2.5}>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={800} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        1. Basic Pupil Identity
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            required
-                            label="First Name"
-                            value={editFormData.firstName}
-                            onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Last Name"
-                            value={editFormData.lastName}
-                            onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Admission Number"
-                            value={editFormData.admissionNo}
-                            onChange={(e) => setEditFormData({ ...editFormData, admissionNo: e.target.value })}
-                            helperText="Official school registration number"
-                          />
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <AppDatePicker
-                            label="Date of Admission"
-                            value={editFormData.admissionDate}
-                            onChange={(e) => setEditFormData({ ...editFormData, admissionDate: e.value })}
-                          />
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <AppDatePicker
-                            required
-                            label="Date of Birth (DOB)"
-                            value={editFormData.dateOfBirth}
-                            onChange={(e) => setEditFormData({ ...editFormData, dateOfBirth: e.value })}
-                          />
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Gender"
-                            value={editFormData.gender}
-                            onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
-                          >
-                            <MenuItem value="Male">Male</MenuItem>
-                            <MenuItem value="Female">Female</MenuItem>
-                            <MenuItem value="Other">Other</MenuItem>
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Blood Group"
-                            value={editFormData.bloodGroup}
-                            onChange={(e) => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
-                          >
-                            <MenuItem value="">None / Unknown</MenuItem>
-                            <MenuItem value="A+">A+</MenuItem>
-                            <MenuItem value="A-">A-</MenuItem>
-                            <MenuItem value="B+">B+</MenuItem>
-                            <MenuItem value="B-">B-</MenuItem>
-                            <MenuItem value="O+">O+</MenuItem>
-                            <MenuItem value="O-">O-</MenuItem>
-                            <MenuItem value="AB+">AB+</MenuItem>
-                            <MenuItem value="AB-">AB-</MenuItem>
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Aadhaar Card No"
-                            placeholder="12-digit UID"
-                            value={editFormData.aadhaarNo}
-                            inputProps={{ maxLength: 12, inputMode: 'numeric', pattern: '[0-9]*' }}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-                              setEditFormData({ ...editFormData, aadhaarNo: val });
-                            }}
-                          />
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Category"
-                            value={editFormData.categoryId}
-                            onChange={(e) => setEditFormData({ ...editFormData, categoryId: e.target.value })}
-                          >
-                            <MenuItem value="">Select Category</MenuItem>
-                            {categories.map((c) => (
-                              <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Religion"
-                            value={editFormData.religionId}
-                            onChange={(e) => setEditFormData({ ...editFormData, religionId: e.target.value })}
-                          >
-                            <MenuItem value="">Select Religion</MenuItem>
-                            {religions.map((r) => (
-                              <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Student Status"
-                            value={editFormData.status}
-                            onChange={(e) => setEditFormData({ ...editFormData, status: Number(e.target.value) })}
-                          >
-                            <MenuItem value={1}>Active</MenuItem>
-                            <MenuItem value={2}>Inactive</MenuItem>
-                            <MenuItem value={3}>Suspended</MenuItem>
-                            <MenuItem value={4}>Expelled</MenuItem>
-                            <MenuItem value={5}>TC Issued</MenuItem>
-                          </TextField>
-                        </Grid>
-                      </Grid>
-                    </Box>
-
-                    <Divider />
-
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={800} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        2. Current Academic Enrollment
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Class"
-                            value={editFormData.classId}
-                            onChange={(e) => {
-                              setEditFormData({
-                                ...editFormData,
-                                classId: e.target.value,
-                                sectionId: '',
-                              });
-                            }}
-                          >
-                            <MenuItem value="">Select Class</MenuItem>
-                            {classes.map((cls) => (
-                              <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            select
-                            fullWidth
-                            size="small"
-                            label="Section"
-                            value={editFormData.sectionId}
-                            disabled={!editFormData.classId}
-                            onChange={(e) => setEditFormData({ ...editFormData, sectionId: e.target.value })}
-                          >
-                            <MenuItem value="">Select Section</MenuItem>
-                            {(classes.find((c) => c.id === Number(editFormData.classId))?.sections || []).map((sec) => (
-                              <MenuItem key={sec.id} value={sec.id}>
-                                {sec.name} (Cap: {sec.capacity})
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            type="number"
-                            label="Roll Number"
-                            placeholder="e.g. 15"
-                            value={editFormData.rollNo}
-                            onChange={(e) => setEditFormData({ ...editFormData, rollNo: e.target.value })}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </Stack>
-                )}
-
-                {/* TAB 2: PARENTS & GUARDIANS */}
-                {editModalTab === 2 && (
-                  <Stack spacing={2.5}>
-                    {/* Father Card */}
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={800} color="primary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center' }}>
-                        FATHER'S DETAILS
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Father Name"
-                            value={editFormData.fatherName}
-                            onChange={(e) => setEditFormData({ ...editFormData, fatherName: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Father Mobile"
-                            value={editFormData.fatherMobile}
-                            inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              setEditFormData({ ...editFormData, fatherMobile: val });
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Father Email"
-                            type="email"
-                            value={editFormData.fatherEmail}
-                            onChange={(e) => setEditFormData({ ...editFormData, fatherEmail: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Father Occupation"
-                            value={editFormData.fatherOccupation}
-                            onChange={(e) => setEditFormData({ ...editFormData, fatherOccupation: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            type="number"
-                            label="Annual Income (₹)"
-                            value={editFormData.fatherAnnualIncome}
-                            onChange={(e) => setEditFormData({ ...editFormData, fatherAnnualIncome: e.target.value })}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Paper>
-
-                    {/* Mother Card */}
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={800} color="secondary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center' }}>
-                        MOTHER'S DETAILS
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Mother Name"
-                            value={editFormData.motherName}
-                            onChange={(e) => setEditFormData({ ...editFormData, motherName: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Mother Mobile"
-                            value={editFormData.motherMobile}
-                            inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              setEditFormData({ ...editFormData, motherMobile: val });
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Mother Email"
-                            type="email"
-                            value={editFormData.motherEmail}
-                            onChange={(e) => setEditFormData({ ...editFormData, motherEmail: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Mother Occupation"
-                            value={editFormData.motherOccupation}
-                            onChange={(e) => setEditFormData({ ...editFormData, motherOccupation: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            type="number"
-                            label="Annual Income (₹)"
-                            value={editFormData.motherAnnualIncome}
-                            onChange={(e) => setEditFormData({ ...editFormData, motherAnnualIncome: e.target.value })}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Paper>
-
-                    {/* Local Guardian Card */}
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center' }}>
-                        LOCAL / OTHER GUARDIAN DETAILS
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Guardian Name"
-                            value={editFormData.guardianName}
-                            onChange={(e) => setEditFormData({ ...editFormData, guardianName: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Guardian Mobile"
-                            value={editFormData.guardianMobile}
-                            inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              setEditFormData({ ...editFormData, guardianMobile: val });
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Relation"
-                            placeholder="e.g. Uncle, Grandfather"
-                            value={editFormData.guardianRelation}
-                            onChange={(e) => setEditFormData({ ...editFormData, guardianRelation: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Guardian Email"
-                            type="email"
-                            value={editFormData.guardianEmail}
-                            onChange={(e) => setEditFormData({ ...editFormData, guardianEmail: e.target.value })}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label="Guardian Occupation"
-                            value={editFormData.guardianOccupation}
-                            onChange={(e) => setEditFormData({ ...editFormData, guardianOccupation: e.target.value })}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Paper>
-                  </Stack>
-                )}
-
-                {/* TAB 3: ADDRESS & CONTACT */}
-                {editModalTab === 3 && (
-                  <Stack spacing={2.5}>
-                    <Typography variant="subtitle2" fontWeight={800} color="primary" sx={{ mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      Residential Address & Emergency Contact
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Street Address / Residence"
-                          multiline
-                          rows={2}
-                          value={editFormData.address}
-                          onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="City"
-                          value={editFormData.city}
-                          onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="State"
-                          value={editFormData.state}
-                          onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Pincode"
-                          value={editFormData.pincode}
-                          inputProps={{ maxLength: 6, inputMode: 'numeric', pattern: '[0-9]*' }}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                            setEditFormData({ ...editFormData, pincode: val });
-                          }}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Emergency Contact Number"
-                          placeholder="10-digit emergency phone number"
-                          value={editFormData.emergencyContact}
-                          inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                            setEditFormData({ ...editFormData, emergencyContact: val });
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Stack>
-                )}
-              </>
-            )}
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2.5, px: 3, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', justifyContent: 'space-between' }}>
-            <Box>
-              <Button onClick={() => setIsEditOpen(false)} color="inherit" sx={{ mr: 1 }}>
+        title="Edit Student Master & Profile"
+        subtitle="Update identification photos, academic enrollment, pupil and guardian records"
+        icon={<EditIcon sx={{ fontSize: 22 }} />}
+        topRightAction={
+          <Chip
+            label={editFormData?.admissionNo || student?.admissionNo || 'Student'}
+            size="small"
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.22)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              letterSpacing: '0.5px',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              mr: 1,
+            }}
+          />
+        }
+        footer={
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              flexWrap: 'wrap',
+              gap: 1.5,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => setIsEditOpen(false)}
+                sx={{
+                  borderRadius: '6px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  borderColor: '#cbd5e1',
+                  color: '#475569',
+                }}
+              >
                 Cancel
               </Button>
               {editModalTab > 0 && (
                 <Button
+                  variant="outlined"
+                  color="inherit"
                   startIcon={<PrevIcon />}
                   onClick={() => setEditModalTab((prev) => prev - 1)}
-                  color="inherit"
+                  sx={{
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    borderColor: '#cbd5e1',
+                    color: '#475569',
+                  }}
                 >
                   Previous Tab
                 </Button>
               )}
             </Box>
 
-            <Stack direction="row" spacing={1.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               {editModalTab < 3 && (
                 <Button
                   variant="outlined"
+                  color="primary"
                   endIcon={<NextIcon />}
                   onClick={() => setEditModalTab((prev) => prev + 1)}
+                  sx={{
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                  }}
                 >
                   Next Tab
                 </Button>
               )}
               <Button
                 type="submit"
+                form="edit-student-profile-form"
+                onClick={handleSaveEdit}
                 variant="contained"
                 color="primary"
-                startIcon={<SaveIcon />}
-                loading={updateMutation.isPending}
-                sx={{ px: 3, fontWeight: 700 }}
+                startIcon={updateMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                disabled={updateMutation.isPending}
+                sx={{
+                  borderRadius: '6px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  px: 3,
+                }}
               >
-                Save All Changes
+                {updateMutation.isPending ? 'Saving All Changes...' : 'Save All Changes'}
               </Button>
-            </Stack>
-          </DialogActions>
-        </form>
-      </Dialog>
+            </Box>
+          </Box>
+        }
+      >
+        {editFormData && (
+          <form id="edit-student-profile-form" onSubmit={handleSaveEdit}>
+            {/* Elegant Sub-Header Tab Ribbon */}
+            <Box
+              sx={{
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                mb: 3,
+                mt: -1,
+                mx: { xs: -2, sm: -3 },
+                px: { xs: 1, sm: 2 },
+                bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#f8fafc'),
+              }}
+            >
+              <Tabs
+                value={editModalTab}
+                onChange={(e, val) => setEditModalTab(val)}
+                variant="scrollable"
+                scrollButtons="auto"
+                textColor="primary"
+                indicatorColor="primary"
+                sx={{
+                  minHeight: 46,
+                  width: '100%',
+                  '& .MuiTab-root': {
+                    minHeight: 46,
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    px: { xs: 1.5, sm: 2.5 },
+                    gap: 1,
+                    transition: 'all 0.2s ease',
+                    '&.Mui-selected': {
+                      color: 'primary.main',
+                      bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : '#ffffff'),
+                      borderBottom: '2px solid',
+                      borderColor: 'primary.main',
+                    },
+                  },
+                }}
+              >
+                <Tab icon={<PhotoCameraIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="1. 4 Photographs" />
+                <Tab icon={<PersonIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="2. Pupil & Enrollment" />
+                <Tab icon={<FamilyIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="3. Parents & Guardians" />
+                <Tab icon={<HomeIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="4. Address & Contact" />
+              </Tabs>
+            </Box>
+
+            {/* TAB 0: 4 PHOTOGRAPHS */}
+            {editModalTab === 0 && (
+              <Box>
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  Capture or update all 4 official photographs: Student, Father, Mother, and Guardian. Click the <b>red camera icon</b> to capture live via webcam, or the <b>blue upload icon</b> to select a photo from your computer.
+                </Alert>
+
+                <Grid container spacing={2.5} justifyContent="center">
+                  {[
+                    { label: 'Student Photo', key: 'photoUrl', desc: 'Official pupil identification' },
+                    { label: "Father's Photo", key: 'fatherPhotoUrl', desc: 'Father / primary guardian' },
+                    { label: "Mother's Photo", key: 'motherPhotoUrl', desc: 'Mother identification' },
+                    { label: "Guardian's Photo", key: 'guardianPhotoUrl', desc: 'Local guardian / emergency' },
+                  ].map((item) => (
+                    <Grid item xs={12} sm={6} md={3} key={item.key} sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          width: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc'),
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                            borderColor: 'primary.main',
+                          },
+                        }}
+                      >
+                        <PhotoCaptureUpload
+                          label={item.label}
+                          value={editFormData[item.key]}
+                          onChange={(url) => setEditFormData({ ...editFormData, [item.key]: url })}
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center', fontSize: '11px' }}>
+                          {item.desc}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )}
+
+            {/* TAB 1: PUPIL & ENROLLMENT */}
+            {editModalTab === 1 && (
+              <Stack spacing={3}>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <PersonIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle2" fontWeight={800} color="primary.main" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      1. Basic Pupil Identity
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        required
+                        uppercase
+                        label="First Name"
+                        placeholder="Student First Name"
+                        value={editFormData.firstName}
+                        onChange={(e) => setEditFormData({ ...editFormData, firstName: (e.target?.value || '').toUpperCase() })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        uppercase
+                        label="Last Name"
+                        placeholder="Surname / Last Name"
+                        value={editFormData.lastName}
+                        onChange={(e) => setEditFormData({ ...editFormData, lastName: (e.target?.value || '').toUpperCase() })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Admission Number"
+                        placeholder="Registration / Adm No"
+                        value={editFormData.admissionNo}
+                        onChange={(e) => setEditFormData({ ...editFormData, admissionNo: e.target?.value || '' })}
+                        helperText="Official school registration number"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppDatePicker
+                        label="Date of Admission"
+                        value={editFormData.admissionDate}
+                        onChange={(e) => {
+                          setEditFormData({
+                            ...editFormData,
+                            admissionDate: e.value ? dayjs(e.value).format('YYYY-MM-DD') : '',
+                          });
+                        }}
+                        dateFormat="dd/M/yy"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppDatePicker
+                        required
+                        label="Date of Birth (DOB)"
+                        value={editFormData.dateOfBirth}
+                        onChange={(e) => {
+                          setEditFormData({
+                            ...editFormData,
+                            dateOfBirth: e.value ? dayjs(e.value).format('YYYY-MM-DD') : '',
+                          });
+                        }}
+                        dateFormat="dd/M/yy"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppSelect
+                        label="Gender"
+                        value={editFormData.gender}
+                        onChange={(e) => setEditFormData({ ...editFormData, gender: e.value })}
+                        options={['Male', 'Female', 'Other']}
+                        placeholder="Select Gender"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppSelect
+                        label="Blood Group"
+                        value={editFormData.bloodGroup}
+                        onChange={(e) => setEditFormData({ ...editFormData, bloodGroup: e.value })}
+                        options={['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']}
+                        placeholder="Select Blood Group"
+                        showClear
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Aadhaar Card No"
+                        placeholder="12-digit UID"
+                        maxLength={12}
+                        value={editFormData.aadhaarNo}
+                        onChange={(e) => {
+                          const val = (e.target?.value || '').replace(/D/g, '').slice(0, 12);
+                          setEditFormData({ ...editFormData, aadhaarNo: val });
+                        }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppSelect
+                        label="Category"
+                        value={editFormData.categoryId}
+                        onChange={(e) => setEditFormData({ ...editFormData, categoryId: e.value })}
+                        options={categories}
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Select Category"
+                        showClear
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <AppSelect
+                        label="Religion"
+                        value={editFormData.religionId}
+                        onChange={(e) => setEditFormData({ ...editFormData, religionId: e.value })}
+                        options={religions}
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Select Religion"
+                        showClear
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <AppSelect
+                        label="Student Status"
+                        value={editFormData.status}
+                        onChange={(e) => setEditFormData({ ...editFormData, status: Number(e.value) })}
+                        options={[
+                          { id: 1, name: 'Active' },
+                          { id: 2, name: 'Inactive' },
+                          { id: 3, name: 'Suspended' },
+                          { id: 4, name: 'Expelled' },
+                          { id: 5, name: 'TC Issued' },
+                        ]}
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Select Status"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <SchoolIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle2" fontWeight={800} color="primary.main" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      2. Current Academic Enrollment
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <AppSelect
+                        label="Class / Grade"
+                        value={editFormData.classId}
+                        onChange={(e) => {
+                          setEditFormData({
+                            ...editFormData,
+                            classId: e.value,
+                            sectionId: '',
+                          });
+                        }}
+                        options={classes}
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Select Class"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppSelect
+                        label="Section"
+                        value={editFormData.sectionId}
+                        disabled={!editFormData.classId}
+                        onChange={(e) => setEditFormData({ ...editFormData, sectionId: e.value })}
+                        options={(classes.find((c) => c.id === Number(editFormData.classId))?.sections || []).map((sec) => ({
+                          id: sec.id,
+                          name: `${sec.name} (Cap: ${sec.capacity})`,
+                        }))}
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Select Section"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        type="number"
+                        label="Roll Number"
+                        placeholder="e.g. 15"
+                        value={editFormData.rollNo}
+                        onChange={(e) => setEditFormData({ ...editFormData, rollNo: e.target?.value || '' })}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Stack>
+            )}
+
+            {/* TAB 2: PARENTS & GUARDIANS */}
+            {editModalTab === 2 && (
+              <Stack spacing={2.5}>
+                {/* Father Card */}
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#fafafa'),
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={800} color="primary.main" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon fontSize="small" /> FATHER'S DETAILS
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        uppercase
+                        label="Father Name"
+                        placeholder="Father full name"
+                        value={editFormData.fatherName}
+                        onChange={(e) => setEditFormData({ ...editFormData, fatherName: (e.target?.value || '').toUpperCase() })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Father Mobile"
+                        placeholder="10-digit phone"
+                        maxLength={10}
+                        value={editFormData.fatherMobile}
+                        onChange={(e) => {
+                          const val = (e.target?.value || '').replace(/D/g, '').slice(0, 10);
+                          setEditFormData({ ...editFormData, fatherMobile: val });
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        type="email"
+                        label="Father Email"
+                        placeholder="name@example.com"
+                        value={editFormData.fatherEmail}
+                        onChange={(e) => setEditFormData({ ...editFormData, fatherEmail: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        label="Father Occupation"
+                        placeholder="e.g. Business / Service"
+                        value={editFormData.fatherOccupation}
+                        onChange={(e) => setEditFormData({ ...editFormData, fatherOccupation: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        type="number"
+                        label="Annual Income (₹)"
+                        placeholder="Annual income"
+                        value={editFormData.fatherAnnualIncome}
+                        onChange={(e) => setEditFormData({ ...editFormData, fatherAnnualIncome: e.target?.value || '' })}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Mother Card */}
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#fafafa'),
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={800} color="secondary.main" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon fontSize="small" /> MOTHER'S DETAILS
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        uppercase
+                        label="Mother Name"
+                        placeholder="Mother full name"
+                        value={editFormData.motherName}
+                        onChange={(e) => setEditFormData({ ...editFormData, motherName: (e.target?.value || '').toUpperCase() })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Mother Mobile"
+                        placeholder="10-digit phone"
+                        maxLength={10}
+                        value={editFormData.motherMobile}
+                        onChange={(e) => {
+                          const val = (e.target?.value || '').replace(/D/g, '').slice(0, 10);
+                          setEditFormData({ ...editFormData, motherMobile: val });
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        type="email"
+                        label="Mother Email"
+                        placeholder="name@example.com"
+                        value={editFormData.motherEmail}
+                        onChange={(e) => setEditFormData({ ...editFormData, motherEmail: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        label="Mother Occupation"
+                        placeholder="e.g. Homemaker / Teacher"
+                        value={editFormData.motherOccupation}
+                        onChange={(e) => setEditFormData({ ...editFormData, motherOccupation: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        type="number"
+                        label="Annual Income (₹)"
+                        placeholder="Annual income"
+                        value={editFormData.motherAnnualIncome}
+                        onChange={(e) => setEditFormData({ ...editFormData, motherAnnualIncome: e.target?.value || '' })}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Local Guardian Card */}
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#fafafa'),
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FamilyIcon fontSize="small" /> LOCAL / OTHER GUARDIAN DETAILS
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        uppercase
+                        label="Guardian Name"
+                        placeholder="Guardian full name"
+                        value={editFormData.guardianName}
+                        onChange={(e) => setEditFormData({ ...editFormData, guardianName: (e.target?.value || '').toUpperCase() })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Guardian Mobile"
+                        placeholder="10-digit phone"
+                        maxLength={10}
+                        value={editFormData.guardianMobile}
+                        onChange={(e) => {
+                          const val = (e.target?.value || '').replace(/D/g, '').slice(0, 10);
+                          setEditFormData({ ...editFormData, guardianMobile: val });
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <AppInput
+                        label="Relation"
+                        placeholder="e.g. Uncle, Grandfather"
+                        value={editFormData.guardianRelation}
+                        onChange={(e) => setEditFormData({ ...editFormData, guardianRelation: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        type="email"
+                        label="Guardian Email"
+                        placeholder="name@example.com"
+                        value={editFormData.guardianEmail}
+                        onChange={(e) => setEditFormData({ ...editFormData, guardianEmail: e.target?.value || '' })}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <AppInput
+                        label="Guardian Occupation"
+                        placeholder="Occupation"
+                        value={editFormData.guardianOccupation}
+                        onChange={(e) => setEditFormData({ ...editFormData, guardianOccupation: e.target?.value || '' })}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Stack>
+            )}
+
+            {/* TAB 3: ADDRESS & CONTACT */}
+            {editModalTab === 3 && (
+              <Stack spacing={2.5}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <HomeIcon color="primary" fontSize="small" />
+                  <Typography variant="subtitle2" fontWeight={800} color="primary.main" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Residential Address & Emergency Contact
+                  </Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <AppInput
+                      type="textarea"
+                      rows={2}
+                      label="Street Address / Residence"
+                      placeholder="Flat / House no, street, locality..."
+                      value={editFormData.address}
+                      onChange={(e) => setEditFormData({ ...editFormData, address: e.target?.value || '' })}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <AppInput
+                      label="City"
+                      placeholder="City"
+                      value={editFormData.city}
+                      onChange={(e) => setEditFormData({ ...editFormData, city: e.target?.value || '' })}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <AppInput
+                      label="State"
+                      placeholder="State"
+                      value={editFormData.state}
+                      onChange={(e) => setEditFormData({ ...editFormData, state: e.target?.value || '' })}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <AppInput
+                      label="Pincode"
+                      placeholder="6-digit pincode"
+                      maxLength={6}
+                      value={editFormData.pincode}
+                      onChange={(e) => {
+                        const val = (e.target?.value || '').replace(/D/g, '').slice(0, 6);
+                        setEditFormData({ ...editFormData, pincode: val });
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <AppInput
+                      label="Emergency Contact Number"
+                      placeholder="10-digit emergency phone number"
+                      maxLength={10}
+                      value={editFormData.emergencyContact}
+                      onChange={(e) => {
+                        const val = (e.target?.value || '').replace(/D/g, '').slice(0, 10);
+                        setEditFormData({ ...editFormData, emergencyContact: val });
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+            )}
+          </form>
+        )}
+      </AppModal>
 
       {/* Upload Document Modal */}
       <Dialog

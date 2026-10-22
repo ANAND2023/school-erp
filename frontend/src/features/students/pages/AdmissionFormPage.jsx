@@ -58,7 +58,7 @@ import { AdmissionReportModal } from '../components/AdmissionReportModal';
 import { PhotoCaptureUpload } from '../components/PhotoCaptureUpload';
 import { AppInput, AppSelect, AppDatePicker } from '../../../components/common';
 
-const steps = ['Student Profile', 'Parents & Guardians', 'Class Allotment', 'Review & Submit'];
+const steps = ['Essential Details *', 'Personal & Address', 'Parents & Family', 'Review & Confirm'];
 
 export const AdmissionFormPage = () => {
   const location = useLocation();
@@ -364,37 +364,44 @@ export const AdmissionFormPage = () => {
     showSnackbar('Sibling link removed.', 'info');
   };
 
+  const validateEssential = () => {
+    if (!formData.firstName.trim()) {
+      showSnackbar('Student First Name is required', 'warning');
+      return false;
+    }
+    if (!formData.dateOfBirth) {
+      showSnackbar('Date of Birth is required', 'warning');
+      return false;
+    }
+    if (!formData.classId || !formData.sectionId) {
+      showSnackbar('Class and Section are required', 'warning');
+      return false;
+    }
+    if (!formData.fatherName.trim() || !formData.fatherMobile.trim()) {
+      showSnackbar('Father / Primary Guardian Name and Mobile are required', 'warning');
+      return false;
+    }
+    if (formData.fatherMobile.trim().length < 10) {
+      showSnackbar('Primary Mobile Number must be at least 10 digits', 'warning');
+      return false;
+    }
+    return true;
+  };
+
   const handleNext = () => {
     if (activeStep === 0) {
-      if (!formData.firstName.trim()) {
-        showSnackbar('Student First Name is required (BR-3.4)', 'warning');
-        return;
-      }
-      if (!formData.dateOfBirth) {
-        showSnackbar('Date of Birth is required (BR-3.4)', 'warning');
-        return;
-      }
+      if (!validateEssential()) return;
     }
-
-    if (activeStep === 1) {
-      if (!formData.fatherName.trim() || !formData.fatherMobile.trim()) {
-        showSnackbar('At least one primary guardian name and mobile is required (BR-3.4)', 'warning');
-        return;
-      }
-    }
-
-    if (activeStep === 2) {
-      if (!formData.classId || !formData.sectionId) {
-        showSnackbar('Class and Section are required', 'warning');
-        return;
-      }
-    }
-
     setActiveStep((prev) => prev + 1);
   };
 
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
+  };
+
+  const handleDirectSave = async () => {
+    if (!validateEssential()) return;
+    await handleSubmitAdmission();
   };
 
   const handleSubmitAdmission = async () => {
@@ -405,7 +412,7 @@ export const AdmissionFormPage = () => {
       if (formData.fatherName.trim()) {
         guardians.push({
           relation: 'Father',
-          name: formData.fatherName.trim(),
+          name: formData.fatherName.trim().toUpperCase(),
           mobile: formData.fatherMobile.trim(),
           email: formData.fatherEmail?.trim() || null,
           occupation: formData.fatherOccupation || null,
@@ -415,7 +422,7 @@ export const AdmissionFormPage = () => {
       if (formData.motherName.trim()) {
         guardians.push({
           relation: 'Mother',
-          name: formData.motherName.trim(),
+          name: formData.motherName.trim().toUpperCase(),
           mobile: formData.motherMobile?.trim() || formData.fatherMobile.trim(),
           occupation: formData.motherOccupation || null,
           isPrimary: false,
@@ -423,8 +430,8 @@ export const AdmissionFormPage = () => {
       }
 
       const payload = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        firstName: formData.firstName.trim().toUpperCase(),
+        lastName: formData.lastName.trim().toUpperCase(),
         dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
         gender: formData.gender,
         categoryId: formData.categoryId ? Number(formData.categoryId) : null,
@@ -718,7 +725,7 @@ export const AdmissionFormPage = () => {
           </Box>
         </Box>
 
-        {/* Step 0: Student Profile */}
+        {/* Step 0: Essential Details (Required) */}
         {activeStep === 0 && (
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'flex-start' }}>
             {/* Left Column: Student Photo + Family Photos Button */}
@@ -749,7 +756,7 @@ export const AdmissionFormPage = () => {
               </Button>
             </Box>
 
-            {/* Right Column: 4 compact rows of fields */}
+            {/* Right Column: Required Fields Grouped */}
             <Box sx={{ flex: 1, width: '100%' }}>
               {ageWarning && (
                 <Alert severity="warning" sx={{ mb: 1, py: 0.2, px: 1, fontSize: '11px', '& .MuiAlert-icon': { fontSize: '16px', mr: 0.5, my: 0 } }}>
@@ -757,24 +764,29 @@ export const AdmissionFormPage = () => {
                 </Alert>
               )}
 
-              <Grid container spacing={1}>
-                {/* Row 1: First Name, Last Name, DOB */}
+              {/* 1. Student Identity */}
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <StudentIcon sx={{ fontSize: 14 }} /> 1. STUDENT IDENTITY (MANDATORY)
+              </Typography>
+              <Grid container spacing={1} sx={{ mb: 1.5 }}>
                 <Grid item xs={12} sm={4}>
                   <AppInput
                     required
                     label="First Name"
+                    placeholder="Student first name"
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value.toUpperCase() })}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={3}>
                   <AppInput
                     label="Last Name"
+                    placeholder="Surname"
                     value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value.toUpperCase() })}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={3}>
                   <AppDatePicker
                     required
                     label="Date of Birth"
@@ -787,9 +799,7 @@ export const AdmissionFormPage = () => {
                     dateFormat="dd/M/yy"
                   />
                 </Grid>
-
-                {/* Row 2: Gender, Blood Group, Category, Religion */}
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={2}>
                   <AppSelect
                     required
                     label="Gender"
@@ -798,92 +808,85 @@ export const AdmissionFormPage = () => {
                     options={['Male', 'Female', 'Other']}
                   />
                 </Grid>
-                <Grid item xs={12} sm={3}>
-                  <AppSelect
-                    label="Blood Group"
-                    value={formData.bloodGroup}
-                    onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                    options={['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']}
-                    placeholder="Select Blood Group"
-                    showClear
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <AppSelect
-                    label="Category"
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    options={categories}
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Select Category"
-                    showClear
-                    addon="H"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <AppSelect
-                    label="Religion"
-                    value={formData.religionId}
-                    onChange={(e) => setFormData({ ...formData, religionId: e.target.value })}
-                    options={religions}
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Select Religion"
-                    showClear
-                    addon="H"
-                  />
-                </Grid>
+              </Grid>
 
-                {/* Row 3: Aadhaar, Emergency Contact, Pincode */}
+              {/* 2. Class & Allotment */}
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <ClassIcon sx={{ fontSize: 14 }} /> 2. CLASS ALLOTMENT (MANDATORY)
+              </Typography>
+              <Grid container spacing={1} sx={{ mb: 1.5 }}>
+                <Grid item xs={12} sm={5}>
+                  <AppSelect
+                    required
+                    label="Class / Grade"
+                    value={formData.classId}
+                    onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                    options={classes}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select Class"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={5}>
+                  <AppSelect
+                    required
+                    label="Section"
+                    value={formData.sectionId}
+                    onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                    options={(selectedClassObj?.sections || []).map((s) => ({
+                      id: s.id,
+                      label: `Section ${s.name} (Capacity: ${s.capacity})`,
+                    }))}
+                    optionLabel="label"
+                    optionValue="id"
+                    placeholder="Select Section"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={2}>
+                  <AppInput
+                    type="number"
+                    label="Roll No"
+                    placeholder="Optional"
+                    value={formData.rollNo}
+                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* 3. Primary Parent / Guardian Contact */}
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <ParentIcon sx={{ fontSize: 14 }} /> 3. PARENT / GUARDIAN CONTACT (MANDATORY)
+              </Typography>
+              <Grid container spacing={1}>
                 <Grid item xs={12} sm={4}>
                   <AppInput
-                    label="Aadhaar Card No"
-                    placeholder="12-digit UID"
-                    maxLength={12}
-                    value={formData.aadhaarNo}
-                    onChange={(e) => setFormData({ ...formData, aadhaarNo: e.target.value })}
+                    required
+                    label="Father / Guardian Full Name"
+                    placeholder="Primary contact name"
+                    value={formData.fatherName}
+                    onChange={(e) => setFormData({ ...formData, fatherName: e.target.value.toUpperCase() })}
+                    disabled={isLockParentInfo && Boolean(attachedSibling)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <AppInput
-                    label="Emergency Contact"
+                    required
+                    label="Primary Mobile No"
                     placeholder="10-digit mobile"
                     maxLength={10}
-                    value={formData.emergencyContact}
-                    onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
+                    value={formData.fatherMobile}
+                    onChange={(e) => setFormData({ ...formData, fatherMobile: e.target.value })}
+                    onBlur={handleMobileBlur}
+                    disabled={isLockParentInfo && Boolean(attachedSibling)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <AppInput
-                    label="Pincode"
-                    placeholder="6-digit PIN"
-                    maxLength={6}
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                  />
-                </Grid>
-
-                {/* Row 4: Address, City, State */}
-                <Grid item xs={12} sm={6}>
-                  <AppInput
-                    label="Residential Address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <AppInput
-                    label="City"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <AppInput
-                    label="State"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    label="Mother Full Name"
+                    placeholder="Mother's name (optional)"
+                    value={formData.motherName}
+                    onChange={(e) => setFormData({ ...formData, motherName: e.target.value.toUpperCase() })}
+                    disabled={isLockParentInfo && Boolean(attachedSibling)}
                   />
                 </Grid>
               </Grid>
@@ -891,8 +894,112 @@ export const AdmissionFormPage = () => {
           </Box>
         )}
 
-        {/* Step 1: Parents & Sibling Auto-Detection */}
+        {/* Step 1: Personal & Address Information (Optional) */}
         {activeStep === 1 && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.8, display: 'block' }}>
+              PERSONAL IDENTIFICATION & DEMOGRAPHICS (OPTIONAL)
+            </Typography>
+            <Grid container spacing={1} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={3}>
+                <AppInput
+                  label="Aadhaar Card No"
+                  placeholder="12-digit UID"
+                  maxLength={12}
+                  value={formData.aadhaarNo}
+                  onChange={(e) => setFormData({ ...formData, aadhaarNo: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <AppSelect
+                  label="Blood Group"
+                  value={formData.bloodGroup}
+                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                  options={['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']}
+                  placeholder="Select Blood Group"
+                  showClear
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <AppSelect
+                  label="Category"
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  options={categories}
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select Category"
+                  showClear
+                  addon="H"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <AppSelect
+                  label="Religion"
+                  value={formData.religionId}
+                  onChange={(e) => setFormData({ ...formData, religionId: e.target.value })}
+                  options={religions}
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select Religion"
+                  showClear
+                  addon="H"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 1.5 }} />
+
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.8, display: 'block' }}>
+              RESIDENTIAL ADDRESS & EMERGENCY CONTACT
+            </Typography>
+            <Grid container spacing={1}>
+              <Grid item xs={12} sm={6}>
+                <AppInput
+                  label="Residential Address"
+                  placeholder="Street / House / Landmark"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <AppInput
+                  label="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <AppInput
+                  label="State"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <AppInput
+                  label="Pincode"
+                  placeholder="6-digit PIN"
+                  maxLength={6}
+                  value={formData.pincode}
+                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <AppInput
+                  label="Emergency Contact Number"
+                  placeholder="10-digit mobile"
+                  maxLength={10}
+                  value={formData.emergencyContact}
+                  onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+
+        {/* Step 2: Parents & Family Profile (Optional) */}
+        {activeStep === 2 && (
           <Box>
             {/* Sibling Attached Parent Info Banner */}
             {attachedSibling ? (
@@ -949,31 +1056,28 @@ export const AdmissionFormPage = () => {
               </Box>
               <Box sx={{ flex: 1, width: '100%' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.5, display: 'block' }}>
-                  PRIMARY GUARDIAN / FATHER DETAILS
+                  FATHER ADDITIONAL DETAILS
                 </Typography>
                 <Grid container spacing={1}>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={4}>
                     <AppInput
-                      required
                       label="Father Full Name"
                       value={formData.fatherName}
-                      onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, fatherName: e.target.value.toUpperCase() })}
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={4}>
                     <AppInput
-                      required
                       label="Primary Mobile No"
                       placeholder="10-digit mobile"
                       maxLength={10}
                       value={formData.fatherMobile}
                       onChange={(e) => setFormData({ ...formData, fatherMobile: e.target.value })}
-                      onBlur={handleMobileBlur}
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={4}>
                     <AppInput
                       label="Email Address"
                       value={formData.fatherEmail}
@@ -981,7 +1085,7 @@ export const AdmissionFormPage = () => {
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={6}>
                     <AppInput
                       label="Occupation"
                       value={formData.fatherOccupation}
@@ -993,7 +1097,7 @@ export const AdmissionFormPage = () => {
               </Box>
             </Box>
 
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 1.5 }} />
 
             {/* Mother Section */}
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'flex-start' }}>
@@ -1006,14 +1110,14 @@ export const AdmissionFormPage = () => {
               </Box>
               <Box sx={{ flex: 1, width: '100%' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--primary-color, #1976d2)', mb: 0.5, display: 'block' }}>
-                  MOTHER DETAILS
+                  MOTHER ADDITIONAL DETAILS
                 </Typography>
                 <Grid container spacing={1}>
                   <Grid item xs={12} sm={4}>
                     <AppInput
                       label="Mother Full Name"
                       value={formData.motherName}
-                      onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, motherName: e.target.value.toUpperCase() })}
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>
@@ -1038,74 +1142,6 @@ export const AdmissionFormPage = () => {
                 </Grid>
               </Box>
             </Box>
-          </Box>
-        )}
-
-        {/* Step 2: Class Allotment */}
-        {activeStep === 2 && (
-          <Box>
-            <Grid container spacing={1.5} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={4}>
-                <AppSelect
-                  required
-                  label="Class / Grade"
-                  value={formData.classId}
-                  onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                  options={classes}
-                  optionLabel="name"
-                  optionValue="id"
-                  placeholder="Select Class"
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <AppSelect
-                  required
-                  label="Section"
-                  value={formData.sectionId}
-                  onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-                  options={(selectedClassObj?.sections || []).map((s) => ({
-                    id: s.id,
-                    label: `Section ${s.name} (Max Capacity: ${s.capacity})`,
-                  }))}
-                  optionLabel="label"
-                  optionValue="id"
-                  placeholder="Select Section"
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <AppInput
-                  type="number"
-                  label="Initial Roll No (Optional)"
-                  placeholder="e.g. 1"
-                  value={formData.rollNo}
-                  onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                />
-              </Grid>
-            </Grid>
-
-            {selectedSectionObj && (
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: 1,
-                  bgcolor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <ClassIcon color="primary" sx={{ fontSize: 24 }} />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                    Section Capacity & Enrollment Rule (BR-3.2)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Allotted to <strong>{selectedClassObj?.name} - Section {selectedSectionObj?.name}</strong> with a maximum capacity limit of <strong>{selectedSectionObj?.capacity} students</strong>.
-                  </Typography>
-                </Box>
-              </Box>
-            )}
           </Box>
         )}
 
@@ -1689,7 +1725,7 @@ export const AdmissionFormPage = () => {
                         Class Allotment & Academic Enrollment
                       </Typography>
                     </Box>
-                    <IconButton size="small" onClick={() => setActiveStep(2)} color="primary">
+                    <IconButton size="small" onClick={() => setActiveStep(0)} color="primary">
                       <EditIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Box>
@@ -1761,12 +1797,39 @@ export const AdmissionFormPage = () => {
           >
             Back
           </Button>
-          <Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Quick / Direct Save Button on earlier steps */}
+            {activeStep < steps.length - 1 && (
+              <Button
+                variant="outlined"
+                color="success"
+                size="small"
+                onClick={handleDirectSave}
+                disabled={submitting}
+                startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <SuccessIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '12px',
+                  py: 0.3,
+                  px: 1.8,
+                  minHeight: '26px',
+                  fontWeight: 700,
+                  bgcolor: '#f0fdf4',
+                  borderColor: '#86efac',
+                  '&:hover': { bgcolor: '#dcfce7', borderColor: '#22c55e' }
+                }}
+              >
+                {activeStep === 0 ? 'Quick Save & Admit' : 'Save & Admit Now'}
+              </Button>
+            )}
+
             {activeStep < steps.length - 1 ? (
               <Button
                 variant="contained"
                 size="small"
                 onClick={handleNext}
+                disabled={submitting}
                 sx={{ textTransform: 'none', fontSize: '12px', py: 0.3, px: 2, minHeight: '26px', fontWeight: 600 }}
               >
                 Continue &rarr;
