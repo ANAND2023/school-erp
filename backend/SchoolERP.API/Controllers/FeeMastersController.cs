@@ -239,8 +239,139 @@ namespace SchoolERP.API.Controllers
         }
 
         // --- 4. Fee Structure Matrix ---
+        [HttpGet("class-summary")]
+        [HasPermission("FeeStructure,Enquiries,Students,Admissions,Fees", "View")]
+        public async Task<ActionResult<ApiResponse<ClassFeeStructureSummaryDto>>> GetClassFeeStructureSummary(
+            [FromQuery] long? classId,
+            [FromQuery] long? feeGroupId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+
+            ClassMaster? targetClass = null;
+            if (classId.HasValue && classId.Value > 0)
+            {
+                targetClass = await _context.Classes.FirstOrDefaultAsync(c => c.Id == classId.Value && c.BranchId == branchId);
+            }
+            if (targetClass == null)
+            {
+                targetClass = await _context.Classes.Where(c => c.BranchId == branchId).OrderBy(c => c.DisplayOrder).ThenBy(c => c.Name).FirstOrDefaultAsync();
+            }
+
+            if (targetClass == null)
+            {
+                return NotFound(ApiResponse<ClassFeeStructureSummaryDto>.Fail("No classes found."));
+            }
+
+            FeeGroup? targetGroup = null;
+            if (feeGroupId.HasValue && feeGroupId.Value > 0)
+            {
+                targetGroup = await _context.FeeGroups.FirstOrDefaultAsync(g => g.Id == feeGroupId.Value && g.BranchId == branchId);
+            }
+            if (targetGroup == null)
+            {
+                targetGroup = await _context.FeeGroups.Where(g => g.BranchId == branchId).OrderBy(g => g.Name).FirstOrDefaultAsync();
+            }
+
+            var actualGroupId = targetGroup?.Id ?? 0;
+
+            var heads = await _context.FeeHeads
+                .Where(h => h.BranchId == branchId)
+                .OrderBy(h => h.Name)
+                .ToListAsync();
+
+            var installments = await _context.FeeInstallments
+                .Where(i => i.BranchId == branchId && i.AcademicYearId == yearId)
+                .OrderBy(i => i.DisplayOrder)
+                .ThenBy(i => i.DueDate)
+                .ToListAsync();
+
+            var structures = await _context.FeeStructures
+                .Where(s => s.BranchId == branchId &&
+                            s.AcademicYearId == yearId &&
+                            s.ClassId == targetClass.Id &&
+                            (actualGroupId == 0 || s.FeeGroupId == actualGroupId))
+                .ToListAsync();
+
+            var headDtos = new List<ClassFeeStructureHeadItemDto>();
+            decimal totalAnnual = 0;
+            decimal totalMandatory = 0;
+            decimal totalOptional = 0;
+            decimal totalOneTime = 0;
+            decimal totalRecurring = 0;
+
+            foreach (var h in heads)
+            {
+                var dict = new Dictionary<long, decimal>();
+                decimal headTotal = 0;
+                foreach (var inst in installments)
+                {
+                    var item = structures.FirstOrDefault(s => s.FeeHeadId == h.Id && s.InstallmentId == inst.Id);
+                    var amt = item?.Amount ?? 0;
+                    dict[inst.Id] = amt;
+                    headTotal += amt;
+                }
+
+                if (headTotal > 0 || structures.Any(s => s.FeeHeadId == h.Id))
+                {
+                    headDtos.Add(new ClassFeeStructureHeadItemDto
+                    {
+                        FeeHeadId = h.Id,
+                        FeeHeadName = h.Name,
+                        FeeHeadCode = h.Code,
+                        FeeHeadType = h.Type == FeeHeadType.OneTime ? "OneTime" : "Recurring",
+                        IsOptional = h.IsOptional,
+                        TotalAnnualAmount = headTotal,
+                        InstallmentAmounts = dict
+                    });
+
+                    totalAnnual += headTotal;
+                    if (h.IsOptional) totalOptional += headTotal;
+                    else totalMandatory += headTotal;
+
+                    if (h.Type == FeeHeadType.OneTime) totalOneTime += headTotal;
+                    else totalRecurring += headTotal;
+                }
+            }
+
+            var installmentDtos = installments.Select(inst =>
+            {
+                decimal instTotal = 0;
+                foreach (var h in heads)
+                {
+                    var item = structures.FirstOrDefault(s => s.FeeHeadId == h.Id && s.InstallmentId == inst.Id);
+                    instTotal += item?.Amount ?? 0;
+                }
+                return new ClassFeeStructureInstallmentItemDto
+                {
+                    InstallmentId = inst.Id,
+                    InstallmentName = inst.Name,
+                    DueDate = inst.DueDate,
+                    DisplayOrder = inst.DisplayOrder,
+                    TotalAmount = instTotal
+                };
+            }).ToList();
+
+            var summary = new ClassFeeStructureSummaryDto
+            {
+                ClassId = targetClass.Id,
+                ClassName = targetClass.Name,
+                FeeGroupId = actualGroupId,
+                FeeGroupName = targetGroup?.Name ?? "General",
+                TotalAnnualFee = totalAnnual,
+                TotalMandatoryFee = totalMandatory,
+                TotalOptionalFee = totalOptional,
+                TotalOneTimeFee = totalOneTime,
+                TotalRecurringFee = totalRecurring,
+                Heads = headDtos,
+                Installments = installmentDtos
+            };
+
+            return Ok(ApiResponse<ClassFeeStructureSummaryDto>.Ok(summary));
+        }
+
         [HttpGet("structures")]
-        [HasPermission("FeeStructure", "View")]
+        [HasPermission("FeeStructure,Enquiries,Students,Admissions,Fees", "View")]
         public async Task<ActionResult<ApiResponse<List<FeeStructureGridRowDto>>>> GetFeeStructures(
             [FromQuery] long classId,
             [FromQuery] long feeGroupId)

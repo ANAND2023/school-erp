@@ -549,6 +549,41 @@ namespace SchoolERP.Application.DTOs
         public int TotalDefaulters { get; set; }
         public List<DemandBillStudentDto> Students { get; set; } = new List<DemandBillStudentDto>();
     }
+
+    public class ClassFeeStructureHeadItemDto
+    {
+        public long FeeHeadId { get; set; }
+        public string FeeHeadName { get; set; } = string.Empty;
+        public string FeeHeadCode { get; set; } = string.Empty;
+        public string FeeHeadType { get; set; } = "Recurring";
+        public bool IsOptional { get; set; }
+        public decimal TotalAnnualAmount { get; set; }
+        public Dictionary<long, decimal> InstallmentAmounts { get; set; } = new Dictionary<long, decimal>();
+    }
+
+    public class ClassFeeStructureInstallmentItemDto
+    {
+        public long InstallmentId { get; set; }
+        public string InstallmentName { get; set; } = string.Empty;
+        public DateTime DueDate { get; set; }
+        public int DisplayOrder { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+
+    public class ClassFeeStructureSummaryDto
+    {
+        public long ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public long FeeGroupId { get; set; }
+        public string FeeGroupName { get; set; } = string.Empty;
+        public decimal TotalAnnualFee { get; set; }
+        public decimal TotalMandatoryFee { get; set; }
+        public decimal TotalOptionalFee { get; set; }
+        public decimal TotalOneTimeFee { get; set; }
+        public decimal TotalRecurringFee { get; set; }
+        public List<ClassFeeStructureHeadItemDto> Heads { get; set; } = new List<ClassFeeStructureHeadItemDto>();
+        public List<ClassFeeStructureInstallmentItemDto> Installments { get; set; } = new List<ClassFeeStructureInstallmentItemDto>();
+    }
 }
 
 

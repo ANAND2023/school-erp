@@ -15,6 +15,8 @@ export const feesApi = {
 
   getStructures: (classId, feeGroupId) =>
     apiClient.get('/fees/structures', { params: { classId, feeGroupId } }),
+  getClassFeeSummary: (classId, feeGroupId) =>
+    apiClient.get('/fees/class-summary', { params: { classId, feeGroupId } }),
   saveStructures: (data) => apiClient.post('/fees/structures', data),
 
   getFineRules: () => apiClient.get('/fees/fine-rules'),

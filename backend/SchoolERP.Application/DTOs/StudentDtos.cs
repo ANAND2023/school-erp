@@ -258,4 +258,75 @@ namespace SchoolERP.Application.DTOs
         public string Title { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
     }
+
+    public class StudentGatePassDto
+    {
+        public long Id { get; set; }
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public string? AcademicYearName { get; set; }
+        public long StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string AdmissionNo { get; set; } = string.Empty;
+        public string? PhotoUrl { get; set; }
+        public string? Gender { get; set; }
+        public long? ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public long? SectionId { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+        public int? RollNo { get; set; }
+        public string? FatherName { get; set; }
+        public string? FatherMobile { get; set; }
+        public string? EmergencyContact { get; set; }
+
+        public string GatePassNo { get; set; } = string.Empty;
+        public DateTime PassDate { get; set; }
+        public string OutTime { get; set; } = string.Empty;
+        public string? ExpectedReturnTime { get; set; }
+        public string? ActualReturnTime { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public string? ReasonDetail { get; set; }
+        public string ReceiverName { get; set; } = string.Empty;
+        public string ReceiverRelation { get; set; } = "Parent";
+        public string? ReceiverContact { get; set; }
+        public string? ReceiverPhotoUrl { get; set; }
+        public string? ApprovedBy { get; set; }
+        public string Status { get; set; } = "Issued";
+        public string? Remarks { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class CreateStudentGatePassDto
+    {
+        public long StudentId { get; set; }
+        public string? GatePassNo { get; set; }
+        public DateTime? PassDate { get; set; }
+        public string OutTime { get; set; } = string.Empty;
+        public string? ExpectedReturnTime { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public string? ReasonDetail { get; set; }
+        public string ReceiverName { get; set; } = string.Empty;
+        public string ReceiverRelation { get; set; } = "Parent";
+        public string? ReceiverContact { get; set; }
+        public string? ReceiverPhotoUrl { get; set; }
+        public string? ApprovedBy { get; set; }
+        public string? Remarks { get; set; }
+        public string Status { get; set; } = "Issued";
+    }
+
+    public class UpdateGatePassStatusDto
+    {
+        public string Status { get; set; } = string.Empty;
+        public string? ActualReturnTime { get; set; }
+        public string? Remarks { get; set; }
+    }
+
+    public class GatePassStatsDto
+    {
+        public int TotalToday { get; set; }
+        public int CurrentlyOut { get; set; }
+        public int ReturnedToday { get; set; }
+        public int CancelledToday { get; set; }
+        public int TotalAll { get; set; }
+    }
 }

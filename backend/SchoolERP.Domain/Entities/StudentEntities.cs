@@ -129,4 +129,28 @@ namespace SchoolERP.Domain.Entities
         public virtual Section? FromSection { get; set; }
         public virtual Section? ToSection { get; set; }
     }
+
+    public class StudentGatePass : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long StudentId { get; set; }
+        public string GatePassNo { get; set; } = string.Empty;
+        public DateTime PassDate { get; set; } = DateTime.UtcNow;
+        public string OutTime { get; set; } = string.Empty;
+        public string? ExpectedReturnTime { get; set; }
+        public string? ActualReturnTime { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public string? ReasonDetail { get; set; }
+        public string ReceiverName { get; set; } = string.Empty;
+        public string ReceiverRelation { get; set; } = "Parent";
+        public string? ReceiverContact { get; set; }
+        public string? ReceiverPhotoUrl { get; set; }
+        public string? ApprovedBy { get; set; }
+        public string Status { get; set; } = "Issued"; // Issued, Departed, Returned, Cancelled
+        public string? Remarks { get; set; }
+
+        public virtual Student? Student { get; set; }
+        public virtual AcademicYear? AcademicYear { get; set; }
+    }
 }

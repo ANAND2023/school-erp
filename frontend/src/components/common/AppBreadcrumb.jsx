@@ -140,6 +140,22 @@ export const routeBreadcrumbMap = {
     subtitle: 'Process student section reassignment and review historical transfer logs',
     code: 'Module 3',
   },
+  '/students/gate-pass': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/students',
+    title: 'Student Gate Pass',
+    subtitle: 'Issue, track student campus departures, and verify security gate clearances',
+    code: 'Module 3',
+  },
+  '/students/fee-structure': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/students',
+    title: 'Class Fee Structure (Enquiry)',
+    subtitle: 'Class-wise annual fee breakdown, installment schedule, and prospectus for student enquiries',
+    code: 'Module 3',
+  },
 
   // Module 4: Staff & HR
   '/staff': {
@@ -166,6 +182,14 @@ export const routeBreadcrumbMap = {
     modulePath: '/fees/structure',
     title: 'Fee Setup & Structure Configuration',
     subtitle: 'Configure fee heads, fee groups, monthly installments, class structures, and late fine rules',
+    code: 'Module 5',
+  },
+  '/fees/class-structure': {
+    module: 'Fees Management',
+    moduleIcon: 'pi pi-wallet',
+    modulePath: '/fees/structure',
+    title: 'Class Fee Structure & Prospectus',
+    subtitle: 'Class-wise annual fee breakdown, installment schedule, and prospectus for parent enquiries',
     code: 'Module 5',
   },
   '/fees/assignment': {

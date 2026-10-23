@@ -95,6 +95,7 @@ export default function FeeCollectionPage() {
       setSelectedStudentId(sid);
       setSelectedMonthIds([]);
       setSelectedDues({});
+      setDeselectedOptionalDueIds({});
       setErrorMsg('');
       setInfoNotice('');
       setShowPaidMonths(false);
@@ -109,6 +110,8 @@ export default function FeeCollectionPage() {
 
   // Selected dues to pay state: dueId -> { amountToPay, fineToPay }
   const [selectedDues, setSelectedDues] = useState({});
+  // Track optional dues explicitly deselected by cashier (by default, optional dues are checked)
+  const [deselectedOptionalDueIds, setDeselectedOptionalDueIds] = useState({});
 
   // Payment splits state
   const [paymentSplits, setPaymentSplits] = useState([
@@ -163,6 +166,7 @@ export default function FeeCollectionPage() {
       setPrintReceiptData(res?.data?.data);
       setIsReceiptModalOpen(true);
       setSelectedDues({});
+      setDeselectedOptionalDueIds({});
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
       setRemarks('');
       setOverallDiscount('');
@@ -181,6 +185,7 @@ export default function FeeCollectionPage() {
     setSearchTerm('');
     setSelectedMonthIds([]);
     setSelectedDues({});
+    setDeselectedOptionalDueIds({});
     setOverallDiscount('');
     setDiscountPercent('');
     setDiscountRemarks('');
@@ -195,6 +200,7 @@ export default function FeeCollectionPage() {
     setSearchTerm('');
     setSelectedMonthIds([]);
     setSelectedDues({});
+    setDeselectedOptionalDueIds({});
     setOverallDiscount('');
     setDiscountPercent('');
     setDiscountRemarks('');
@@ -461,6 +467,7 @@ export default function FeeCollectionPage() {
 
   // Synchronize selectedDues ONLY for visiblePayMonths (unpaid months selected for payment):
   // Paid months are NEVER added to selectedDues
+  // NOTE: Optional dues are CHECKED BY DEFAULT unless explicitly unchecked by cashier
   useEffect(() => {
     setSelectedDues((prev) => {
       const next = {};
@@ -476,8 +483,9 @@ export default function FeeCollectionPage() {
                 fineToPay: item.fineAmount || 0,
               };
             } else {
-              // Optional: retain if cashier previously checked it
-              if (prev[item.dueId]) {
+              // Optional: by default checked! (unless cashier explicitly unchecked it)
+              const isExplicitlyDeselected = Boolean(deselectedOptionalDueIds[item.dueId]);
+              if (!isExplicitlyDeselected) {
                 next[item.dueId] = {
                   amountToPay: prev[item.dueId]?.amountToPay !== undefined
                     ? Math.min(Number(prev[item.dueId].amountToPay), Number(item.balanceAmount))
@@ -491,7 +499,7 @@ export default function FeeCollectionPage() {
       });
       return next;
     });
-  }, [visiblePayMonths]);
+  }, [visiblePayMonths, deselectedOptionalDueIds]);
 
   // Strict Sequential Dues (FIFO) Toggle Month Handler:
   // - Clicking an unpaid month selects it AND all prior unpaid months.
@@ -531,6 +539,20 @@ export default function FeeCollectionPage() {
 
   // Toggle optional due item (checked or unchecked by cashier)
   const handleToggleOptionalDue = (item) => {
+    const isCurrentlySelected = Boolean(selectedDues[item.dueId]);
+
+    if (isCurrentlySelected) {
+      // User is explicitly unchecking it
+      setDeselectedOptionalDueIds((prev) => ({ ...prev, [item.dueId]: true }));
+    } else {
+      // User is checking it back
+      setDeselectedOptionalDueIds((prev) => {
+        const next = { ...prev };
+        delete next[item.dueId];
+        return next;
+      });
+    }
+
     setSelectedDues((prev) => {
       const next = { ...prev };
       if (next[item.dueId]) {
@@ -540,6 +562,15 @@ export default function FeeCollectionPage() {
           amountToPay: item.balanceAmount,
           fineToPay: item.fineAmount || 0,
         };
+      }
+      if (paymentSplits.length === 1) {
+        const newTotal = Object.values(next).reduce(
+          (sum, d) => sum + (Number(d.amountToPay) || 0) + (Number(d.fineToPay) || 0),
+          0
+        );
+        const disc = Number(overallDiscount) || 0;
+        const newNet = Math.max(0, newTotal - disc);
+        setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (newTotal > 0 && newNet === 0 ? 0 : '') }]);
       }
       return next;
     });
@@ -813,7 +844,7 @@ export default function FeeCollectionPage() {
     } else {
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
     }
-  }, [selectedMonthIds, duesList]);
+  }, [selectedMonthIds, duesList, selectedDues]);
 
   const handleConfirmCollection = () => {
     setErrorMsg('');

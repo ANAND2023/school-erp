@@ -126,6 +126,10 @@ export function printElement(elementOrId, options = {}) {
   iframe.style.border = 'none';
   document.body.appendChild(iframe);
 
+  const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map((node) => node.outerHTML)
+    .join('\n');
+
   const doc = iframe.contentWindow.document;
   doc.open();
   doc.write(`
@@ -136,6 +140,7 @@ export function printElement(elementOrId, options = {}) {
         <title>${sanitizeFileName(title)}</title>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Montserrat:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&display=swap" />
         <link rel="stylesheet" href="https://unpkg.com/primeicons@6.0.1/primeicons.css" />
+        ${headStyles}
         <style>
           @page {
             size: ${pageSize} ${orientation};
@@ -147,15 +152,22 @@ export function printElement(elementOrId, options = {}) {
             print-color-adjust: exact !important;
           }
           html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: auto;
-            background: #ffffff;
-            color: #000000;
-            overflow: visible;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: visible !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           }
-          #printable-enquiry-slip {
+          #printable-enquiry-slip,
+          #class-fee-prospectus-slip,
+          .printable-slip,
+          #gate-pass-print-area {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 auto !important;

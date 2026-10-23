@@ -27,6 +27,7 @@ import {
   Search as SearchIcon,
   ReceiptLong as ReceiptLongIcon,
   WhatsApp as WhatsAppIcon,
+  AccountBalanceWallet as FeeStructureIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { DataGrid } from '../../../components/DataGrid';
@@ -38,6 +39,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { EnquirySlipModal } from '../components/EnquirySlipModal';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
+import { ClassFeeProspectusModal } from '../../fees/components/ClassFeeProspectusModal';
 import { AppDatePicker, AppInput, AppSelect } from '../../../components/common';
 
 const ENQUIRY_STATUSES = [
@@ -101,6 +103,10 @@ export const EnquiriesPage = () => {
     moduleTitle: '',
     templateData: {},
   });
+
+  // Class Fee Prospectus Modal
+  const [feeProspectusOpen, setFeeProspectusOpen] = useState(false);
+  const [feeProspectusClassId, setFeeProspectusClassId] = useState('');
 
   const loadClasses = async () => {
     try {
@@ -312,7 +318,7 @@ export const EnquiriesPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 240,
+      width: 275,
       sortable: false,
       renderCell: (params) => {
         const enq = params.row;
@@ -322,6 +328,22 @@ export const EnquiriesPage = () => {
 
         return (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title={`Class Fee Structure (${enq.className || 'Class'})`}>
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#0284c7',
+                  bgcolor: '#f0f9ff',
+                  '&:hover': { bgcolor: '#e0f2fe' },
+                }}
+                onClick={() => {
+                  setFeeProspectusClassId(enq.classId || '');
+                  setFeeProspectusOpen(true);
+                }}
+              >
+                <FeeStructureIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Send WhatsApp Message">
               <IconButton
                 size="small"
@@ -360,13 +382,34 @@ export const EnquiriesPage = () => {
 
   return (
     <Box sx={{ pb: 4 }}>
-      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
-          Student Enquiries & Leads
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
-          Manage admission leads, follow-up calls, and lead conversions
-        </Typography>
+      <Box sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1.5 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+            Student Enquiries & Leads
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+            Manage admission leads, follow-up calls, and lead conversions
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<FeeStructureIcon />}
+          onClick={() => {
+            setFeeProspectusClassId(selectedClass || '');
+            setFeeProspectusOpen(true);
+          }}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            borderRadius: 2,
+            px: 2,
+            py: 0.8,
+            alignSelf: { xs: 'flex-start', sm: 'center' }
+          }}
+        >
+          Class Fee Structure
+        </Button>
       </Box>
 
       {/* Filter Toolbar */}
@@ -469,14 +512,43 @@ export const EnquiriesPage = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <AppSelect
-                required
-                label="Class Sought"
-                placeholder="Select Class"
-                value={newEnquiry.classId}
-                options={classes.map((c) => ({ label: c.name, value: c.id }))}
-                onChange={(e) => setNewEnquiry({ ...newEnquiry, classId: e.target.value })}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                <Box sx={{ flex: 1 }}>
+                  <AppSelect
+                    required
+                    label="Class Sought"
+                    placeholder="Select Class"
+                    value={newEnquiry.classId}
+                    options={classes.map((c) => ({ label: c.name, value: c.id }))}
+                    onChange={(e) => setNewEnquiry({ ...newEnquiry, classId: e.target.value })}
+                  />
+                </Box>
+                {newEnquiry.classId && (
+                  <Tooltip title="View fee details for this class">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        setFeeProspectusClassId(newEnquiry.classId);
+                        setFeeProspectusOpen(true);
+                      }}
+                      sx={{
+                        height: 30,
+                        minWidth: 70,
+                        px: 1,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        flexShrink: 0,
+                        mb: '2px',
+                        borderRadius: 1,
+                      }}
+                    >
+                      Fee Info
+                    </Button>
+                  </Tooltip>
+                )}
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6}>
               <AppInput
@@ -660,6 +732,13 @@ export const EnquiriesPage = () => {
         moduleKey={whatsAppModal.moduleKey}
         moduleTitle={whatsAppModal.moduleTitle}
         templateData={whatsAppModal.templateData}
+      />
+
+      {/* Class Fee Structure / Prospectus Modal */}
+      <ClassFeeProspectusModal
+        open={feeProspectusOpen}
+        onClose={() => setFeeProspectusOpen(false)}
+        initialClassId={feeProspectusClassId}
       />
     </Box>
   );

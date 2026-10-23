@@ -56,12 +56,14 @@ const navItems = [
     icon: 'pi pi-user-plus',
     children: [
       { title: 'Enquiries', path: '/enquiries', menuKey: 'Enquiries' },
+      { title: 'Class Fee Structure', path: '/students/fee-structure', menuKey: ['Enquiries', 'Students', 'Fees', 'FeeStructure'] },
       { title: 'New Admission', path: '/admissions/new', menuKey: 'Admissions' },
       { title: 'Student Directory', path: '/students', menuKey: 'Students' },
       { title: 'Roll Numbers', path: '/students/roll-numbers', menuKey: 'RollNumbers' },
       { title: 'Section Change', path: '/students/section-change', menuKey: 'SectionChange' },
       { title: 'ID Card Settings', path: '/students/id-card-design', menuKey: 'IDCardSettings' },
       { title: 'Print ID Cards', path: '/students/id-card-print', menuKey: 'PrintIDCards' },
+      { title: 'Student Gate Pass', path: '/students/gate-pass', menuKey: 'Students' },
     ],
   },
   {
@@ -79,6 +81,7 @@ const navItems = [
     icon: 'pi pi-wallet',
     children: [
       { title: 'Fee Structure', path: '/fees/structure', menuKey: 'FeeStructure' },
+      { title: 'Class Fee Structure', path: '/fees/class-structure', menuKey: ['Fees', 'FeeStructure', 'Enquiries'] },
       { title: 'Fee Assignment', path: '/fees/assignment', menuKey: 'FeeAssignment' },
       { title: 'Fee Collection', path: '/fees/collection', menuKey: 'FeeCollection' },
       { title: 'Fee Discount Master', path: '/fees/discount-master', menuKey: 'FeeDiscountMaster' },
@@ -380,7 +383,7 @@ export const MainLayout = () => {
 
       {/* Top Navbar */}
       <header
-        className="fixed left-0 w-full flex align-items-center justify-content-between px-3 text-white shadow-1"
+        className="no-print fixed left-0 w-full flex align-items-center justify-content-between px-3 text-white shadow-1"
         style={{
           top: headerTop,
           height: '42px',
@@ -527,7 +530,7 @@ export const MainLayout = () => {
 
         {/* Collapsible Sidebar */}
         <aside
-          className="fixed left-0 overflow-y-auto border-right-1 surface-border app-sidebar-drawer"
+          className="no-print fixed left-0 overflow-y-auto border-right-1 surface-border app-sidebar-drawer"
           style={{
             top: contentTop,
             bottom: '26px',
@@ -690,7 +693,7 @@ export const MainLayout = () => {
 
       {/* Fixed Ultra-Compact Bottom Bar with Continuous School Marquee */}
       <footer
-        className="fixed bottom-0 left-0 w-full flex align-items-center justify-content-between px-2 select-none"
+        className="no-print fixed bottom-0 left-0 w-full flex align-items-center justify-content-between px-2 select-none"
         style={{
           height: '26px',
           zIndex: 100,

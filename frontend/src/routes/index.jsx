@@ -38,6 +38,7 @@ import SectionChangePage from '../features/students/pages/SectionChangePage';
 import BulkOperationsPage from '../features/students/pages/BulkOperationsPage';
 import IdCardDesignPage from '../features/students/pages/IdCardDesignPage';
 import IdCardPrintPage from '../features/students/pages/IdCardPrintPage';
+import StudentGatePassPage from '../features/students/pages/StudentGatePassPage';
 
 // Module 4: Staff & HR
 import StaffDirectoryPage from '../features/staff/pages/StaffDirectoryPage';
@@ -52,6 +53,7 @@ import FeeCollectionPage from '../features/fees/pages/FeeCollectionPage';
 import DemandBillPage from '../features/fees/pages/DemandBillPage';
 import FeeReportsPage from '../features/fees/pages/FeeReportsPage';
 import { FeeDiscountMasterPage } from '../features/fees/pages/FeeDiscountMasterPage';
+import ClassFeeStructurePage from '../features/fees/pages/ClassFeeStructurePage';
 
 // Module 6: Attendance & Timetable
 import StudentAttendancePage from '../features/attendance/pages/StudentAttendancePage';
@@ -370,6 +372,22 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="students/gate-pass"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'GatePass']}>
+              <StudentGatePassPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="students/fee-structure"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'Enquiries', 'FeeStructure', 'Fees']}>
+              <ClassFeeStructurePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Module 4: Staff & HR */}
         <Route
@@ -419,6 +437,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="FeeStructure">
               <FeeStructurePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="fees/class-structure"
+          element={
+            <ProtectedRoute requiredMenu={['FeeStructure', 'Fees', 'Students', 'Enquiries']}>
+              <ClassFeeStructurePage />
             </ProtectedRoute>
           }
         />

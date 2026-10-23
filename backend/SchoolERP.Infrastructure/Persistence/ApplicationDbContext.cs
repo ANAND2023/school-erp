@@ -48,6 +48,7 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<StudentDocument> StudentDocuments => Set<StudentDocument>();
         public DbSet<StudentSectionHistory> StudentSectionHistories => Set<StudentSectionHistory>();
         public DbSet<StudentSibling> StudentSiblings => Set<StudentSibling>();
+        public DbSet<StudentGatePass> StudentGatePasses => Set<StudentGatePass>();
 
         // Expenses
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();

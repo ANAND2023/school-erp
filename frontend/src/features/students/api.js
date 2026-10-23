@@ -19,3 +19,15 @@ export const studentApi = {
   deleteDocument: (id, docId) => apiClient.delete(`/students/${id}/documents/${docId}`),
   getSectionHistory: (id) => apiClient.get(`/students/${id}/section-history`),
 };
+
+export const gatePassApi = {
+  getGatePasses: (params) => apiClient.get('/student-gate-pass', { params }),
+  getGatePass: (id) => apiClient.get(`/student-gate-pass/${id}`),
+  createGatePass: (data) => apiClient.post('/student-gate-pass', data),
+  updateGatePass: (id, data) => apiClient.put(`/student-gate-pass/${id}`, data),
+  updateStatus: (id, data) => apiClient.put(`/student-gate-pass/${id}/status`, data),
+  deleteGatePass: (id) => apiClient.delete(`/student-gate-pass/${id}`),
+  getStats: () => apiClient.get('/student-gate-pass/stats'),
+  searchStudents: (params) => apiClient.get('/student-gate-pass/search-students', { params }),
+};
+

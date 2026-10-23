@@ -972,8 +972,20 @@ input[type="number"] {
 }
 @media print {
   /* Hide UI elements that shouldn't be printed */
-  header, aside, footer, .AppBreadcrumb, .no-print {
+  header, aside, footer, nav, marquee,
+  .no-print,
+  .no-print *,
+  header.no-print,
+  aside.no-print,
+  footer.no-print,
+  .app-sidebar-drawer,
+  .app-mobile-backdrop,
+  .AppBreadcrumb,
+  button, .p-button, .MuiButton-root, .MuiIconButton-root,
+  .p-toast, .MuiSnackbar-root,
+  .p-dialog-header, .p-dialog-footer, .p-dialog-mask {
     display: none !important;
+    visibility: hidden !important;
   }
 
   /* Reset layout constraints for print */
@@ -1021,6 +1033,44 @@ input[type="number"] {
   }
   thead {
     display: table-header-group;
+  }
+
+  /* Material UI Dialog and Modal print resets */
+  .MuiDialogTitle-root,
+  .MuiDialogActions-root,
+  .MuiBackdrop-root {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .MuiDialog-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .MuiDialog-paper,
+  .MuiPaper-root.MuiDialog-paper {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+
+  .MuiDialogContent-root {
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
   }
 }
 
