@@ -140,6 +140,15 @@ export default function ModulesHubScreen({ navigation }) {
         { label: 'Circulars & Notices', route: 'Notices', sub: 'School notices, news & announcements' },
       ],
     },
+    {
+      title: 'Student & Parent AI Portal',
+      icon: 'sparkles',
+      color: '#ec4899',
+      items: [
+        { label: 'Student Portal Dashboard', route: 'StudentPortal', sub: 'Timetable, attendance, homework & fee receipts' },
+        { label: 'AI Study Assistant & NCERT', route: 'StudentPortal', sub: 'AI doubt resolution & digital textbooks' },
+      ],
+    },
   ];
 
   const filteredModules = modules

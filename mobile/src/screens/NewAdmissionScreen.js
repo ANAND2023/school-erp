@@ -15,11 +15,28 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { studentApi, classApi } from '../api/client';
+import { studentApi, classApi, masterApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { generateAdmissionSlipHtml, executePrint, executeSharePdf } from '../utils/printTemplates';
 import WhatsAppModal from '../components/WhatsAppModal';
+
+const DEFAULT_CATEGORIES = [
+  { id: 1, name: 'General' },
+  { id: 2, name: 'OBC' },
+  { id: 3, name: 'SC' },
+  { id: 4, name: 'ST' },
+  { id: 5, name: 'EWS' },
+];
+
+const DEFAULT_RELIGIONS = [
+  { id: 1, name: 'Hindu' },
+  { id: 2, name: 'Muslim' },
+  { id: 3, name: 'Sikh' },
+  { id: 4, name: 'Christian' },
+  { id: 5, name: 'Jain' },
+  { id: 6, name: 'Other' },
+];
 
 export default function NewAdmissionScreen({ route, navigation }) {
   const { user, activeAcademicYearName } = useContext(AuthContext);
@@ -29,6 +46,8 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [classes, setClasses] = useState([]);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [religions, setReligions] = useState(DEFAULT_RELIGIONS);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [branchInfo, setBranchInfo] = useState(null);
@@ -38,7 +57,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
   const [admittedStudentData, setAdmittedStudentData] = useState(null);
   const [printing, setPrinting] = useState(false);
 
-  // WhatsApp Dialog State (Matching webapp WhatsAppDialog)
+  // WhatsApp Dialog State
   const [whatsAppModal, setWhatsAppModal] = useState({
     visible: false,
     recipientName: '',
@@ -49,54 +68,48 @@ export default function NewAdmissionScreen({ route, navigation }) {
     templateData: {},
   });
 
-  const handleOpenWhatsAppAdmission = (student) => {
-    if (!student) return;
-    const p = student.guardianMobile || student.emergencyContactNumber || student.mobile || '';
-    setWhatsAppModal({
-      visible: true,
-      recipientName: student.guardianName || student.fullName || 'Parent',
-      recipientPhone: p,
-      recipientRole: `Parent of ${student.fullName || 'Student'}`,
-      moduleKey: 'admission',
-      moduleTitle: 'Admission Confirmation (WhatsApp)',
-      templateData: {
-        ParentName: student.guardianName || 'Parent',
-        StudentName: student.fullName || student.firstName || 'Student',
-        ClassName: student.className || 'Class',
-        Section: student.sectionName || 'A',
-        AdmissionNo: student.admissionNo || student.admissionNumber || `ADM-${student.id}`,
-        SchoolName: user?.schoolName || branchInfo?.schoolName || 'School',
-      },
-    });
-  };
-
-  // Form Fields - Step 1: Student Details
+  // STEP 1: ESSENTIAL DETAILS (MANDATORY & QUICK SAVE)
+  const [studentPhoto, setStudentPhoto] = useState(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [dob, setDob] = useState('2015-05-10');
+  const [dob, setDob] = useState('2019-05-15');
   const [gender, setGender] = useState('Male');
-  const [bloodGroup, setBloodGroup] = useState('B+');
-  const [aadhaarNo, setAadhaarNo] = useState('');
-  const [studentPhoto, setStudentPhoto] = useState(null);
-
-  // Step 2: Academic Allocation
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
   const [rollNo, setRollNo] = useState('');
-
-  // Step 3: Parent & Address
-  const [guardianName, setGuardianName] = useState('');
-  const [relation, setRelation] = useState('Father');
+  const [fatherName, setFatherName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
+  const [motherName, setMotherName] = useState('');
 
-  const handleTakePhoto = async () => {
+  // STEP 2: PERSONAL & ADDRESS (OPTIONAL)
+  const [aadhaarNo, setAadhaarNo] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('B+');
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [selectedReligionId, setSelectedReligionId] = useState(null);
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('New Delhi');
+  const [state, setState] = useState('Delhi');
+  const [pincode, setPincode] = useState('110001');
+  const [emergencyContact, setEmergencyContact] = useState('');
+
+  // STEP 3: PARENTS & FAMILY (OPTIONAL)
+  const [fatherPhoto, setFatherPhoto] = useState(null);
+  const [fatherEmail, setFatherEmail] = useState('');
+  const [fatherOccupation, setFatherOccupation] = useState('');
+  const [motherPhoto, setMotherPhoto] = useState(null);
+  const [motherMobile, setMotherMobile] = useState('');
+  const [motherOccupation, setMotherOccupation] = useState('');
+  const [guardianPhoto, setGuardianPhoto] = useState(null);
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianMobile, setGuardianMobile] = useState('');
+  const [guardianRelation, setGuardianRelation] = useState('Guardian');
+
+  // Photo Helpers
+  const handleCaptureImage = async (setter) => {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Camera permission is required to capture student photos.');
+        Alert.alert('Permission Denied', 'Camera permission is required.');
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -109,19 +122,19 @@ export default function NewAdmissionScreen({ route, navigation }) {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-        setStudentPhoto(data);
+        setter(data);
       }
     } catch (e) {
-      console.warn('Camera capture error:', e);
+      console.warn('Camera error:', e);
       Alert.alert('Error', 'Unable to capture photo.');
     }
   };
 
-  const handlePickPhoto = async () => {
+  const handlePickImage = async (setter) => {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Gallery permission is required to select photos.');
+        Alert.alert('Permission Denied', 'Gallery permission is required.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -134,69 +147,61 @@ export default function NewAdmissionScreen({ route, navigation }) {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-        setStudentPhoto(data);
+        setter(data);
       }
     } catch (e) {
-      console.warn('Gallery pick error:', e);
+      console.warn('Gallery error:', e);
       Alert.alert('Error', 'Unable to select image.');
     }
   };
 
-  const handleRemovePhoto = () => {
-    setStudentPhoto(null);
-  };
-
-  const handleQuickAdmit = () => {
-    if (!firstName.trim()) {
-      Alert.alert('Quick Admit Required', 'Please enter Student First Name.');
-      return;
-    }
-    if (!selectedClassId) {
-      Alert.alert('Quick Admit Required', 'Please select a Class.');
-      return;
-    }
-    const finalGName = guardianName.trim() || 'Parent of ' + firstName.trim();
-    const finalMobile = mobile.trim() || '9999999999';
-    if (!guardianName.trim()) setGuardianName(finalGName);
-    if (!mobile.trim()) setMobile(finalMobile);
-    handleSubmitAdmission(finalGName, finalMobile);
-  };
-
   useEffect(() => {
-    // Apply prefill from enquiry if passed
     if (prefill) {
       if (prefill.studentName) {
         const parts = prefill.studentName.trim().split(' ');
         setFirstName(parts[0] || '');
         setLastName(parts.slice(1).join(' ') || '');
       }
-      if (prefill.guardianName) setGuardianName(prefill.guardianName);
+      if (prefill.guardianName) setFatherName(prefill.guardianName);
       if (prefill.mobile) setMobile(prefill.mobile);
-      if (prefill.email) setEmail(prefill.email);
+      if (prefill.email) setFatherEmail(prefill.email);
       if (prefill.classId) setSelectedClassId(prefill.classId);
     }
   }, [prefill]);
 
   useEffect(() => {
-    async function fetchClasses() {
+    async function loadData() {
       try {
         setLoadingClasses(true);
-        const res = await classApi.getClasses();
-        const data = res.data?.data || res.data || [];
-        setClasses(Array.isArray(data) ? data : []);
-        if (data.length > 0 && !selectedClassId) {
-          setSelectedClassId(data[0].id);
-          if (data[0].sections && data[0].sections.length > 0) {
-            setSelectedSectionId(data[0].sections[0].id);
+        const [cRes, catRes, relRes] = await Promise.allSettled([
+          classApi.getClasses(),
+          masterApi.getCategories(),
+          masterApi.getReligions(),
+        ]);
+
+        if (cRes.status === 'fulfilled') {
+          const data = cRes.value.data?.data || cRes.value.data || [];
+          setClasses(Array.isArray(data) ? data : []);
+          if (data.length > 0 && !selectedClassId) {
+            setSelectedClassId(data[0].id);
+            if (data[0].sections && data[0].sections.length > 0) {
+              setSelectedSectionId(data[0].sections[0].id);
+            }
           }
         }
+        if (catRes.status === 'fulfilled' && catRes.value.data?.data?.length > 0) {
+          setCategories(catRes.value.data.data);
+        }
+        if (relRes.status === 'fulfilled' && relRes.value.data?.data?.length > 0) {
+          setReligions(relRes.value.data.data);
+        }
       } catch (err) {
-        console.warn('Error fetching classes:', err);
+        console.warn('Error loading masters:', err);
       } finally {
         setLoadingClasses(false);
       }
     }
-    fetchClasses();
+    loadData();
     classApi.getBranch().then((res) => {
       if (res.data?.success && res.data?.data) {
         setBranchInfo(res.data.data);
@@ -216,42 +221,90 @@ export default function NewAdmissionScreen({ route, navigation }) {
     }
   };
 
+  const validateEssential = () => {
+    if (!firstName.trim()) {
+      Alert.alert('Required Field', 'Please enter Student First Name.');
+      return false;
+    }
+    if (!dob.trim()) {
+      Alert.alert('Required Field', 'Please enter Date of Birth (YYYY-MM-DD).');
+      return false;
+    }
+    if (!selectedClassId) {
+      Alert.alert('Required Field', 'Please select a Class.');
+      return false;
+    }
+    if (!selectedSectionId && sectionsList.length > 0) {
+      setSelectedSectionId(sectionsList[0].id);
+    }
+    if (!fatherName.trim()) {
+      Alert.alert('Required Field', 'Please enter Father / Guardian Name.');
+      return false;
+    }
+    if (!mobile.trim() || mobile.trim().length < 10) {
+      Alert.alert('Required Field', 'Please enter a valid 10-digit Primary Mobile Number.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleQuickAdmit = () => {
+    if (!validateEssential()) return;
+    handleSubmitAdmission();
+  };
+
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!firstName.trim()) {
-        Alert.alert('Validation Error', 'Please enter student First Name.');
-        return;
-      }
+      if (!validateEssential()) return;
       setCurrentStep(2);
     } else if (currentStep === 2) {
-      if (!selectedClassId) {
-        Alert.alert('Validation Error', 'Please select a Class.');
-        return;
-      }
-      if (!selectedSectionId && sectionsList.length > 0) {
-        setSelectedSectionId(sectionsList[0].id);
-      }
       setCurrentStep(3);
     }
   };
 
-  const handleSubmitAdmission = async (overrideGName = null, overrideMobile = null) => {
-    const finalGName = overrideGName || guardianName.trim();
-    const finalMobile = overrideMobile || mobile.trim();
-
-    if (!finalGName || !finalMobile) {
-      Alert.alert('Validation Error', 'Please enter Guardian Name and Mobile Number.');
-      return;
-    }
+  const handleSubmitAdmission = async () => {
+    if (!validateEssential()) return;
 
     try {
       setSubmitting(true);
+      const guardians = [
+        {
+          relation: 'Father',
+          name: fatherName.trim().toUpperCase(),
+          mobile: mobile.trim(),
+          email: fatherEmail.trim() || null,
+          occupation: fatherOccupation.trim() || null,
+          isPrimary: true,
+        },
+      ];
+
+      if (motherName.trim()) {
+        guardians.push({
+          relation: 'Mother',
+          name: motherName.trim().toUpperCase(),
+          mobile: motherMobile.trim() || mobile.trim(),
+          occupation: motherOccupation.trim() || null,
+          isPrimary: false,
+        });
+      }
+
+      if (guardianName.trim() && guardianName.trim().toUpperCase() !== fatherName.trim().toUpperCase()) {
+        guardians.push({
+          relation: guardianRelation || 'Guardian',
+          name: guardianName.trim().toUpperCase(),
+          mobile: guardianMobile.trim() || mobile.trim(),
+          isPrimary: false,
+        });
+      }
+
       const payload = {
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || '.',
-        dateOfBirth: dob ? new Date(dob).toISOString() : new Date('2015-01-01').toISOString(),
+        firstName: firstName.trim().toUpperCase(),
+        lastName: lastName.trim() ? lastName.trim().toUpperCase() : '.',
+        dateOfBirth: dob ? new Date(dob).toISOString() : new Date('2019-05-15').toISOString(),
         gender: gender,
-        bloodGroup: bloodGroup,
+        categoryId: selectedCategoryId ? Number(selectedCategoryId) : null,
+        religionId: selectedReligionId ? Number(selectedReligionId) : null,
+        bloodGroup: bloodGroup || null,
         aadhaarNo: aadhaarNo.trim() || null,
         classId: Number(selectedClassId),
         sectionId: Number(selectedSectionId || sectionsList[0]?.id || 1),
@@ -259,15 +312,10 @@ export default function NewAdmissionScreen({ route, navigation }) {
         photoUrl: studentPhoto || null,
         address: address.trim() || null,
         city: city.trim() || null,
-        guardians: [
-          {
-            name: finalGName,
-            relation: relation,
-            mobile: finalMobile,
-            email: email.trim() || null,
-            isPrimary: true,
-          },
-        ],
+        state: state.trim() || null,
+        pincode: pincode.trim() || null,
+        emergencyContact: emergencyContact.trim() || mobile.trim() || null,
+        guardians,
         enquiryId: prefill?.id || null,
       };
 
@@ -275,36 +323,40 @@ export default function NewAdmissionScreen({ route, navigation }) {
       const admData = res.data?.data || res.data;
       const admNo = admData?.admissionNo || `ADM-${Date.now().toString().slice(-4)}`;
 
+      // Post family photos as documents if available
+      if (admData?.id) {
+        if (fatherPhoto) studentApi.addDocument?.(admData.id, { title: 'Father Photo', filePath: fatherPhoto }).catch(() => {});
+        if (motherPhoto) studentApi.addDocument?.(admData.id, { title: 'Mother Photo', filePath: motherPhoto }).catch(() => {});
+        if (guardianPhoto) studentApi.addDocument?.(admData.id, { title: 'Guardian Photo', filePath: guardianPhoto }).catch(() => {});
+      }
+
+      const secName = sectionsList.find((s) => s.id === selectedSectionId)?.name || 'A';
       const admittedStudent = {
+        id: admData?.id,
         admissionNo: admNo,
-        fullName: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        fullName: `${firstName.trim().toUpperCase()} ${lastName.trim().toUpperCase()}`.trim(),
+        firstName: firstName.trim().toUpperCase(),
+        lastName: lastName.trim().toUpperCase(),
         dob: dob,
         gender: gender,
         bloodGroup: bloodGroup,
         aadhaarNo: aadhaarNo,
         photoUrl: studentPhoto || null,
         className: currentClassObj?.name || 'Assigned Class',
-        sectionName: sectionsList.find((s) => s.id === selectedSectionId)?.name || 'A',
+        sectionName: secName,
         rollNo: rollNo || '—',
         admissionDate: new Date().toISOString(),
         academicYearName: activeAcademicYearName || '2026-27',
-        guardians: [
-          {
-            name: finalGName,
-            relation: relation,
-            mobile: finalMobile,
-            email: email.trim() || null,
-          },
-        ],
+        guardianName: fatherName.trim().toUpperCase(),
+        guardianMobile: mobile.trim(),
+        guardians,
         address: address ? `${address}, ${city}`.trim() : city || '—',
       };
 
       setAdmittedStudentData(admittedStudent);
       setAdmissionModalVisible(true);
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.title || 'Failed to complete admission.';
+      const msg = err.response?.data?.message || err.response?.data?.title || 'Failed to complete admission. Please check required fields.';
       Alert.alert('Admission Failed', msg);
     } finally {
       setSubmitting(false);
@@ -346,13 +398,40 @@ export default function NewAdmissionScreen({ route, navigation }) {
     setAdmissionModalVisible(false);
     setFirstName('');
     setLastName('');
+    setDob('2019-05-15');
+    setGender('Male');
     setRollNo('');
-    setGuardianName('');
+    setFatherName('');
     setMobile('');
-    setEmail('');
+    setMotherName('');
+    setAadhaarNo('');
     setAddress('');
-    setCity('');
+    setStudentPhoto(null);
+    setFatherPhoto(null);
+    setMotherPhoto(null);
+    setGuardianPhoto(null);
     setCurrentStep(1);
+  };
+
+  const handleOpenWhatsAppAdmission = (student) => {
+    if (!student) return;
+    const p = student.guardianMobile || student.mobile || '';
+    setWhatsAppModal({
+      visible: true,
+      recipientName: student.guardianName || student.fullName || 'Parent',
+      recipientPhone: p,
+      recipientRole: `Parent of ${student.fullName || 'Student'}`,
+      moduleKey: 'admission',
+      moduleTitle: 'Admission Confirmation (WhatsApp)',
+      templateData: {
+        ParentName: student.guardianName || 'Parent',
+        StudentName: student.fullName || student.firstName || 'Student',
+        ClassName: student.className || 'Class',
+        Section: student.sectionName || 'A',
+        AdmissionNo: student.admissionNo || `ADM-${student.id || ''}`,
+        SchoolName: user?.schoolName || branchInfo?.schoolName || 'School',
+      },
+    });
   };
 
   return (
@@ -360,11 +439,17 @@ export default function NewAdmissionScreen({ route, navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      {/* Quick Save Bar & Stepper Header */}
+      {/* Top Header & Quick Save Bar */}
       <View style={styles.quickSaveBar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.quickSaveTitle}>New Student Enrollment</Text>
-          <Text style={styles.quickSaveSub}>Step {currentStep} of 3</Text>
+          <Text style={styles.quickSaveTitle}>Student Admission</Text>
+          <Text style={styles.quickSaveSub}>
+            {currentStep === 1
+              ? 'Step 1: Essential Details (Mandatory) *'
+              : currentStep === 2
+              ? 'Step 2: Personal & Address (Optional)'
+              : 'Step 3: Parents & Family (Optional)'}
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.quickSaveBtn}
@@ -372,168 +457,189 @@ export default function NewAdmissionScreen({ route, navigation }) {
           disabled={submitting}
           activeOpacity={0.8}
         >
-          <Ionicons name="flash" size={15} color="#ffffff" />
-          <Text style={styles.quickSaveBtnText}>Quick Save</Text>
+          {submitting ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <>
+              <Ionicons name="flash" size={15} color="#ffffff" />
+              <Text style={styles.quickSaveBtnText}>Quick Save</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
+      {/* Stepper Tabs */}
       <View style={styles.stepperContainer}>
-        <View style={styles.stepItem}>
-          <View style={[styles.stepCircle, currentStep >= 1 && styles.stepCircleActive]}>
-            <Text style={[styles.stepNum, currentStep >= 1 && styles.stepNumActive]}>1</Text>
-          </View>
-          <Text style={[styles.stepLabel, currentStep >= 1 && styles.stepLabelActive]}>Student</Text>
-        </View>
-        <View style={[styles.stepLine, currentStep >= 2 && styles.stepLineActive]} />
-
-        <View style={styles.stepItem}>
-          <View style={[styles.stepCircle, currentStep >= 2 && styles.stepCircleActive]}>
-            <Text style={[styles.stepNum, currentStep >= 2 && styles.stepNumActive]}>2</Text>
-          </View>
-          <Text style={[styles.stepLabel, currentStep >= 2 && styles.stepLabelActive]}>Class</Text>
-        </View>
-        <View style={[styles.stepLine, currentStep >= 3 && styles.stepLineActive]} />
-
-        <View style={styles.stepItem}>
-          <View style={[styles.stepCircle, currentStep >= 3 && styles.stepCircleActive]}>
-            <Text style={[styles.stepNum, currentStep >= 3 && styles.stepNumActive]}>3</Text>
-          </View>
-          <Text style={[styles.stepLabel, currentStep >= 3 && styles.stepLabelActive]}>Guardian</Text>
-        </View>
+        {[
+          { step: 1, label: '1. Essential *' },
+          { step: 2, label: '2. Personal' },
+          { step: 3, label: '3. Parents' },
+        ].map((item, idx) => {
+          const isActive = currentStep === item.step;
+          const isDone = currentStep > item.step;
+          return (
+            <React.Fragment key={item.step}>
+              {idx > 0 && (
+                <View style={[styles.stepLine, currentStep >= item.step && styles.stepLineActive]} />
+              )}
+              <TouchableOpacity
+                style={styles.stepItem}
+                onPress={() => {
+                  if (item.step < currentStep) setCurrentStep(item.step);
+                }}
+              >
+                <View
+                  style={[
+                    styles.stepCircle,
+                    isActive && styles.stepCircleActive,
+                    isDone && styles.stepCircleDone,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.stepNum,
+                      (isActive || isDone) && styles.stepNumActive,
+                    ]}
+                  >
+                    {isDone ? '✓' : item.step}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.stepLabel,
+                    isActive && styles.stepLabelActive,
+                    isDone && styles.stepLabelDone,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            </React.Fragment>
+          );
+        })}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* STEP 1: STUDENT DETAILS */}
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* ========================================================================= */}
+        {/* STEP 1: ESSENTIAL DETAILS (WEB APP 1ST PAGE - REQUIRED & QUICK SAVE)     */}
+        {/* ========================================================================= */}
         {currentStep === 1 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Student Personal Details</Text>
+            <View style={styles.cardHeaderBox}>
+              <View style={styles.cardHeaderLeft}>
+                <MaterialIcons name="star" size={18} color="#e11d48" />
+                <Text style={styles.cardTitle}>Essential Details (Required for Admission)</Text>
+              </View>
+              <View style={styles.badgeMandatory}>
+                <Text style={styles.badgeMandatoryText}>Page 1 of 3</Text>
+              </View>
+            </View>
 
-            {/* Student Photo Upload Section */}
-            <Text style={styles.label}>Student Photograph</Text>
+            <Text style={styles.sectionNotice}>
+              ⚡ Fill these required fields and tap <Text style={{ fontWeight: '800', color: '#059669' }}>Quick Save</Text> to admit student instantly, or continue to add optional details.
+            </Text>
+
+            {/* 1. Student Photo */}
+            <Text style={styles.subSectionTitle}>1. STUDENT PHOTOGRAPH</Text>
             <View style={styles.photoContainer}>
               {studentPhoto ? (
                 <View style={styles.photoPreviewBox}>
                   <Image source={{ uri: studentPhoto }} style={styles.photoPreview} />
                   <View style={styles.photoActionCol}>
-                    <TouchableOpacity style={styles.photoRetakeBtn} onPress={handleTakePhoto}>
+                    <TouchableOpacity style={styles.photoRetakeBtn} onPress={() => handleCaptureImage(setStudentPhoto)}>
                       <MaterialIcons name="photo-camera" size={16} color="#0284c7" />
-                      <Text style={styles.photoRetakeBtnText}>Retake Camera</Text>
+                      <Text style={styles.photoRetakeBtnText}>Live Camera</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoGalleryBtn} onPress={handlePickPhoto}>
+                    <TouchableOpacity style={styles.photoGalleryBtn} onPress={() => handlePickImage(setStudentPhoto)}>
                       <MaterialIcons name="photo-library" size={16} color="#0284c7" />
                       <Text style={styles.photoRetakeBtnText}>Choose Gallery</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoRemoveBtn} onPress={handleRemovePhoto}>
+                    <TouchableOpacity style={styles.photoRemoveBtn} onPress={() => setStudentPhoto(null)}>
                       <MaterialIcons name="delete-outline" size={16} color="#dc2626" />
-                      <Text style={styles.photoRemoveBtnText}>Remove Photo</Text>
+                      <Text style={styles.photoRemoveBtnText}>Remove</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               ) : (
                 <View style={styles.photoUploadBox}>
                   <View style={styles.photoButtonsRow}>
-                    <TouchableOpacity style={styles.cameraBtn} onPress={handleTakePhoto}>
-                      <MaterialIcons name="photo-camera" size={20} color="#ffffff" />
-                      <Text style={styles.cameraBtnText}>Take Live Photo</Text>
+                    <TouchableOpacity style={styles.cameraBtn} onPress={() => handleCaptureImage(setStudentPhoto)}>
+                      <MaterialIcons name="photo-camera" size={18} color="#ffffff" />
+                      <Text style={styles.cameraBtnText}>Camera</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.galleryBtn} onPress={handlePickPhoto}>
+                    <TouchableOpacity style={styles.galleryBtn} onPress={() => handlePickImage(setStudentPhoto)}>
                       <MaterialIcons name="photo-library" size={18} color="#0284c7" />
-                      <Text style={styles.galleryBtnText}>Choose Gallery</Text>
+                      <Text style={styles.galleryBtnText}>Gallery</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.photoHint}>
-                    Passport photo for ID card, student profile, and official admission slip
-                  </Text>
+                  <Text style={styles.photoHint}>Passport size photo for identity & admission slip</Text>
                 </View>
               )}
             </View>
 
-            <Text style={styles.label}>First Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Aarav"
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholderTextColor="#94a3b8"
-            />
-
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Verma"
-              value={lastName}
-              onChangeText={setLastName}
-              placeholderTextColor="#94a3b8"
-            />
-
-            <Text style={styles.label}>Date of Birth (YYYY-MM-DD) *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="2015-05-10"
-              value={dob}
-              onChangeText={setDob}
-              placeholderTextColor="#94a3b8"
-            />
-
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderRow}>
-              {['Male', 'Female', 'Other'].map((g) => (
-                <TouchableOpacity
-                  key={g}
-                  style={[styles.genderBtn, gender === g && styles.genderBtnActive]}
-                  onPress={() => setGender(g)}
-                >
-                  <Ionicons
-                    name={g === 'Male' ? 'male' : g === 'Female' ? 'female' : 'transgender'}
-                    size={16}
-                    color={gender === g ? '#ffffff' : '#64748b'}
-                  />
-                  <Text style={[styles.genderBtnText, gender === g && styles.genderBtnTextActive]}>
-                    {g}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* 2. Student Identity */}
+            <Text style={styles.subSectionTitle}>2. STUDENT IDENTITY</Text>
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>First Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. AARAV"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="characters"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. SHARMA"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="characters"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
             </View>
 
-            <Text style={styles.label}>Blood Group</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
-              {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
-                <TouchableOpacity
-                  key={bg}
-                  style={[styles.smallChip, bloodGroup === bg && styles.smallChipActive]}
-                  onPress={() => setBloodGroup(bg)}
-                >
-                  <Text style={[styles.smallChipText, bloodGroup === bg && styles.smallChipTextActive]}>
-                    {bg}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Date of Birth (YYYY-MM-DD) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="2019-05-15"
+                  value={dob}
+                  onChangeText={setDob}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Gender *</Text>
+                <View style={styles.genderRowCompact}>
+                  {['Male', 'Female', 'Other'].map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      style={[styles.genderChip, gender === g && styles.genderChipActive]}
+                      onPress={() => setGender(g)}
+                    >
+                      <Text style={[styles.genderChipText, gender === g && styles.genderChipTextActive]}>
+                        {g}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
 
-            <Text style={styles.label}>Aadhaar Card No (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="12 digit Aadhaar number"
-              keyboardType="numeric"
-              maxLength={12}
-              value={aadhaarNo}
-              onChangeText={setAadhaarNo}
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
-        )}
-
-        {/* STEP 2: CLASS ALLOTMENT */}
-        {currentStep === 2 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Class & Section Allotment</Text>
-
+            {/* 3. Class Allotment */}
+            <Text style={styles.subSectionTitle}>3. CLASS ALLOTMENT</Text>
             {loadingClasses ? (
-              <ActivityIndicator color="#0284c7" style={{ marginVertical: 20 }} />
+              <ActivityIndicator color="#0284c7" style={{ marginVertical: 12 }} />
             ) : (
               <>
-                <Text style={styles.label}>Select Class *</Text>
+                <Text style={styles.label}>Select Class / Grade *</Text>
                 <View style={styles.chipsWrap}>
                   {classes.map((c) => (
                     <TouchableOpacity
@@ -550,7 +656,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
                 {sectionsList.length > 0 && (
                   <>
-                    <Text style={[styles.label, { marginTop: 14 }]}>Select Section *</Text>
+                    <Text style={[styles.label, { marginTop: 10 }]}>Select Section *</Text>
                     <View style={styles.chipsWrap}>
                       {sectionsList.map((sec) => (
                         <TouchableOpacity
@@ -559,7 +665,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
                           onPress={() => setSelectedSectionId(sec.id)}
                         >
                           <Text style={[styles.classChipText, selectedSectionId === sec.id && styles.classChipTextActive]}>
-                            Section {sec.name}
+                            Section {sec.name} {sec.capacity ? `(${sec.capacity})` : ''}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -567,10 +673,10 @@ export default function NewAdmissionScreen({ route, navigation }) {
                   </>
                 )}
 
-                <Text style={[styles.label, { marginTop: 14 }]}>Roll Number (Optional)</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>Roll Number (Optional)</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. 15"
+                  placeholder="e.g. 1"
                   keyboardType="numeric"
                   value={rollNo}
                   onChangeText={setRollNo}
@@ -578,279 +684,577 @@ export default function NewAdmissionScreen({ route, navigation }) {
                 />
               </>
             )}
-          </View>
-        )}
 
-        {/* STEP 3: GUARDIAN & CONTACT */}
-        {currentStep === 3 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Parent / Guardian Details</Text>
-
-            <Text style={styles.label}>Guardian Name *</Text>
+            {/* 4. Parent / Guardian Contact */}
+            <Text style={styles.subSectionTitle}>4. PRIMARY PARENT CONTACT</Text>
+            <Text style={styles.label}>Father / Guardian Full Name *</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Suresh Verma"
-              value={guardianName}
-              onChangeText={setGuardianName}
+              placeholder="e.g. RAJESH SHARMA"
+              value={fatherName}
+              onChangeText={setFatherName}
+              autoCapitalize="characters"
               placeholderTextColor="#94a3b8"
             />
 
-            <Text style={styles.label}>Relationship</Text>
-            <View style={styles.genderRow}>
-              {['Father', 'Mother', 'Guardian'].map((rel) => (
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Primary Mobile No (10-Digit) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="10 digit mobile"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Mother Full Name (Optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. SUNITA SHARMA"
+                  value={motherName}
+                  onChangeText={setMotherName}
+                  autoCapitalize="characters"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+
+            {/* Action Bar on Step 1 */}
+            <View style={styles.step1ActionsRow}>
+              <TouchableOpacity
+                style={styles.directSaveBtn}
+                onPress={handleQuickAdmit}
+                disabled={submitting}
+                activeOpacity={0.8}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="flash" size={16} color="#ffffff" />
+                    <Text style={styles.directSaveBtnText}>Quick Save & Admit</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.nextStepBtn}
+                onPress={handleNext}
+                disabled={submitting}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.nextStepBtnText}>Next: Personal &rarr;</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ========================================================================= */}
+        {/* STEP 2: PERSONAL & ADDRESS (WEB APP 2ND PAGE - NON-REQUIRED / DETAILED)  */}
+        {/* ========================================================================= */}
+        {currentStep === 2 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeaderBox}>
+              <View style={styles.cardHeaderLeft}>
+                <MaterialIcons name="person-outline" size={18} color="#0284c7" />
+                <Text style={styles.cardTitle}>Personal & Address (Optional)</Text>
+              </View>
+              <View style={[styles.badgeMandatory, { backgroundColor: '#e0f2fe' }]}>
+                <Text style={[styles.badgeMandatoryText, { color: '#0369a1' }]}>Page 2 of 3</Text>
+              </View>
+            </View>
+
+            {/* Demographics */}
+            <Text style={styles.subSectionTitle}>DEMOGRAPHICS & IDENTIFICATION</Text>
+
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Aadhaar Card No</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="12 digit UID"
+                  keyboardType="numeric"
+                  maxLength={12}
+                  value={aadhaarNo}
+                  onChangeText={setAadhaarNo}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Blood Group</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                  {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
+                    <TouchableOpacity
+                      key={bg}
+                      style={[styles.smallChip, bloodGroup === bg && styles.smallChipActive]}
+                      onPress={() => setBloodGroup(bg)}
+                    >
+                      <Text style={[styles.smallChipText, bloodGroup === bg && styles.smallChipTextActive]}>
+                        {bg}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            {/* Categories */}
+            <Text style={styles.label}>Category</Text>
+            <View style={styles.chipsWrap}>
+              {categories.map((cat) => (
                 <TouchableOpacity
-                  key={rel}
-                  style={[styles.genderBtn, relation === rel && styles.genderBtnActive]}
-                  onPress={() => setRelation(rel)}
+                  key={cat.id}
+                  style={[styles.smallChip, selectedCategoryId === cat.id && styles.smallChipActive]}
+                  onPress={() => setSelectedCategoryId(selectedCategoryId === cat.id ? null : cat.id)}
                 >
-                  <Text style={[styles.genderBtnText, relation === rel && styles.genderBtnTextActive]}>
-                    {rel}
+                  <Text style={[styles.smallChipText, selectedCategoryId === cat.id && styles.smallChipTextActive]}>
+                    {cat.name}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.label}>Primary Mobile Number *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="10 digit mobile number"
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={mobile}
-              onChangeText={setMobile}
-              placeholderTextColor="#94a3b8"
-            />
+            {/* Religions */}
+            <Text style={[styles.label, { marginTop: 10 }]}>Religion</Text>
+            <View style={styles.chipsWrap}>
+              {religions.map((rel) => (
+                <TouchableOpacity
+                  key={rel.id}
+                  style={[styles.smallChip, selectedReligionId === rel.id && styles.smallChipActive]}
+                  onPress={() => setSelectedReligionId(selectedReligionId === rel.id ? null : rel.id)}
+                >
+                  <Text style={[styles.smallChipText, selectedReligionId === rel.id && styles.smallChipTextActive]}>
+                    {rel.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-            <Text style={styles.label}>Email Address (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="parent@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              placeholderTextColor="#94a3b8"
-            />
-
-            <Text style={styles.label}>Residential Address</Text>
+            {/* Address */}
+            <Text style={[styles.subSectionTitle, { marginTop: 16 }]}>RESIDENTIAL ADDRESS</Text>
+            <Text style={styles.label}>House / Street / Area</Text>
             <TextInput
               style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
-              placeholder="House/Street/Area"
+              placeholder="Full street address..."
               multiline
               value={address}
               onChangeText={setAddress}
               placeholderTextColor="#94a3b8"
             />
 
-            <Text style={styles.label}>City / Town</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Lucknow"
-              value={city}
-              onChangeText={setCity}
-              placeholderTextColor="#94a3b8"
-            />
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>City / Town</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="New Delhi"
+                  value={city}
+                  onChangeText={setCity}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>State</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Delhi"
+                  value={state}
+                  onChangeText={setState}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Pincode</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="110001"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  value={pincode}
+                  onChangeText={setPincode}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Emergency Contact</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="10 digit number"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={emergencyContact}
+                  onChangeText={setEmergencyContact}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+
+            {/* Step 2 Action Buttons */}
+            <View style={styles.stepActionsRow}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentStep(1)}>
+                <Ionicons name="arrow-back" size={16} color="#64748b" />
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.directSaveBtn}
+                onPress={handleQuickAdmit}
+                disabled={submitting}
+              >
+                <Ionicons name="flash" size={15} color="#ffffff" />
+                <Text style={styles.directSaveBtnText}>Quick Save</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.nextStepBtn} onPress={handleNext}>
+                <Text style={styles.nextStepBtnText}>Next: Parents &rarr;</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
-        {/* Bottom Navigation Buttons */}
-        <View style={styles.bottomButtonsRow}>
-          {currentStep > 1 && (
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => setCurrentStep(currentStep - 1)}
-            >
-              <Ionicons name="arrow-back" size={18} color="#64748b" />
-              <Text style={styles.backBtnText}>Back</Text>
-            </TouchableOpacity>
-          )}
+        {/* ========================================================================= */}
+        {/* STEP 3: PARENTS & FAMILY (WEB APP 3RD PAGE - FAMILY PHOTOS & OCCUPATION)  */}
+        {/* ========================================================================= */}
+        {currentStep === 3 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeaderBox}>
+              <View style={styles.cardHeaderLeft}>
+                <MaterialIcons name="family-restroom" size={18} color="#7c3aed" />
+                <Text style={styles.cardTitle}>Parents & Family Profile (Optional)</Text>
+              </View>
+              <View style={[styles.badgeMandatory, { backgroundColor: '#f3e8ff' }]}>
+                <Text style={[styles.badgeMandatoryText, { color: '#7c3aed' }]}>Page 3 of 3</Text>
+              </View>
+            </View>
 
-          {currentStep < 3 ? (
-            <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-              <Text style={styles.nextBtnText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={18} color="#ffffff" />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
-              onPress={handleSubmitAdmission}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#ffffff" />
+            {/* Father Details */}
+            <Text style={styles.subSectionTitle}>FATHER PROFILE & PHOTO</Text>
+            <View style={styles.familyPhotoRow}>
+              {fatherPhoto ? (
+                <View style={styles.familyPhotoPreviewBox}>
+                  <Image source={{ uri: fatherPhoto }} style={styles.familyPhotoPreview} />
+                  <TouchableOpacity onPress={() => setFatherPhoto(null)} style={styles.removeCircleBtn}>
+                    <MaterialIcons name="close" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <>
-                  <Ionicons name="checkmark-done-circle" size={20} color="#ffffff" />
-                  <Text style={styles.submitBtnText}>Confirm Admission</Text>
-                </>
+                <View style={styles.familyPhotoButtonsBox}>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handleCaptureImage(setFatherPhoto)}>
+                    <MaterialIcons name="photo-camera" size={16} color="#0284c7" />
+                    <Text style={styles.photoMiniBtnText}>Father Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handlePickImage(setFatherPhoto)}>
+                    <MaterialIcons name="photo-library" size={16} color="#64748b" />
+                    <Text style={styles.photoMiniBtnText}>Gallery</Text>
+                  </TouchableOpacity>
+                </View>
               )}
-            </TouchableOpacity>
-          )}
-        </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Father Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="father@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={fatherEmail}
+                  onChangeText={setFatherEmail}
+                  placeholderTextColor="#94a3b8"
+                />
+                <Text style={[styles.label, { marginTop: 6 }]}>Occupation / Business</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Government Service"
+                  value={fatherOccupation}
+                  onChangeText={setFatherOccupation}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+
+            {/* Mother Details */}
+            <Text style={[styles.subSectionTitle, { marginTop: 16 }]}>MOTHER PROFILE & PHOTO</Text>
+            <View style={styles.familyPhotoRow}>
+              {motherPhoto ? (
+                <View style={styles.familyPhotoPreviewBox}>
+                  <Image source={{ uri: motherPhoto }} style={styles.familyPhotoPreview} />
+                  <TouchableOpacity onPress={() => setMotherPhoto(null)} style={styles.removeCircleBtn}>
+                    <MaterialIcons name="close" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.familyPhotoButtonsBox}>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handleCaptureImage(setMotherPhoto)}>
+                    <MaterialIcons name="photo-camera" size={16} color="#0284c7" />
+                    <Text style={styles.photoMiniBtnText}>Mother Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handlePickImage(setMotherPhoto)}>
+                    <MaterialIcons name="photo-library" size={16} color="#64748b" />
+                    <Text style={styles.photoMiniBtnText}>Gallery</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Mother Mobile No</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="10 digit mobile"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={motherMobile}
+                  onChangeText={setMotherMobile}
+                  placeholderTextColor="#94a3b8"
+                />
+                <Text style={[styles.label, { marginTop: 6 }]}>Occupation</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Homemaker / Teacher"
+                  value={motherOccupation}
+                  onChangeText={setMotherOccupation}
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+
+            {/* Local Guardian Details */}
+            <Text style={[styles.subSectionTitle, { marginTop: 16 }]}>LOCAL GUARDIAN (IF APPLICABLE)</Text>
+            <View style={styles.familyPhotoRow}>
+              {guardianPhoto ? (
+                <View style={styles.familyPhotoPreviewBox}>
+                  <Image source={{ uri: guardianPhoto }} style={styles.familyPhotoPreview} />
+                  <TouchableOpacity onPress={() => setGuardianPhoto(null)} style={styles.removeCircleBtn}>
+                    <MaterialIcons name="close" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.familyPhotoButtonsBox}>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handleCaptureImage(setGuardianPhoto)}>
+                    <MaterialIcons name="photo-camera" size={16} color="#0284c7" />
+                    <Text style={styles.photoMiniBtnText}>Guardian Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.photoMiniBtn} onPress={() => handlePickImage(setGuardianPhoto)}>
+                    <MaterialIcons name="photo-library" size={16} color="#64748b" />
+                    <Text style={styles.photoMiniBtnText}>Gallery</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Local Guardian Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Optional guardian name"
+                  value={guardianName}
+                  onChangeText={setGuardianName}
+                  placeholderTextColor="#94a3b8"
+                />
+                <View style={styles.fieldRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.label, { marginTop: 6 }]}>Relation</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. Uncle"
+                      value={guardianRelation}
+                      onChangeText={setGuardianRelation}
+                      placeholderTextColor="#94a3b8"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.label, { marginTop: 6 }]}>Mobile</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="10 digit mobile"
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                      value={guardianMobile}
+                      onChangeText={setGuardianMobile}
+                      placeholderTextColor="#94a3b8"
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Step 3 Action Buttons */}
+            <View style={styles.stepActionsRow}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentStep(2)}>
+                <Ionicons name="arrow-back" size={16} color="#64748b" />
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmSubmitBtn}
+                onPress={handleSubmitAdmission}
+                disabled={submitting}
+                activeOpacity={0.8}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
+                    <Text style={styles.confirmSubmitBtnText}>Confirm & Admit Student</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
-      {/* OFFICIAL ADMISSION ACKNOWLEDGEMENT MODAL */}
+      {/* ========================================================================= */}
+      {/* ADMISSION SLIP POPUP MODAL (IDENTICAL TO WEB APP ADMISSION REPORT MODAL) */}
+      {/* ========================================================================= */}
       <Modal
         visible={admissionModalVisible}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setAdmissionModalVisible(false)}
       >
-        <View style={styles.admModalOverlay}>
-          <View style={styles.admModalContent}>
-            {/* Header */}
-            <View style={styles.admModalHeader}>
-              <View style={styles.admModalTitleRow}>
-                <Ionicons name="school" size={22} color="#065f46" />
-                <View>
-                  <Text style={styles.admModalTitle}>Admission Slip & Acknowledgment</Text>
-                  <Text style={styles.admModalSub}>Official Enrollment Form (AdmissionSlipDesigner)</Text>
-                </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialIcons name="verified" size={22} color="#059669" />
+                <Text style={styles.modalTitle}>Official Admission Slip</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => setAdmissionModalVisible(false)}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="close" size={22} color="#475569" />
+              <TouchableOpacity onPress={() => setAdmissionModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
 
-            {/* Scrollable Preview */}
-            <ScrollView contentContainerStyle={styles.admScrollContent}>
-              <View style={styles.admSuccessBanner}>
-                <Ionicons name="checkmark-circle" size={22} color="#065f46" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.admSuccessTitle}>Student Admitted Successfully! 🎉</Text>
-                  <Text style={styles.admSuccessSub}>
-                    Permanent Admission No: <Text style={{ fontWeight: '800' }}>{admittedStudentData?.admissionNo}</Text>
-                  </Text>
-                </View>
-              </View>
-
+            <ScrollView contentContainerStyle={styles.slipScrollContent}>
               {admittedStudentData && (
-                <View style={styles.admPaperPreview}>
-                  <View style={styles.admPaperTop}>
-                    <Text style={styles.admSchoolTitle}>
-                      {branchInfo?.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL'}
+                <View style={styles.slipWrapper}>
+                  {/* School Header */}
+                  <View style={styles.slipSchoolHeader}>
+                    <Text style={styles.slipSchoolName}>
+                      {user?.schoolName || branchInfo?.schoolName || 'SCHOOL ERP'}
                     </Text>
-                    <Text style={styles.admSchoolSub}>
-                      Affiliated to CBSE, New Delhi • Affiliation No: {branchInfo?.affiliationNo || '2130892'}
+                    <Text style={styles.slipSchoolSub}>
+                      {branchInfo?.address || 'Affiliated Institution'} • Phone: {branchInfo?.phone || user?.mobile || 'N/A'}
                     </Text>
-                    <View style={styles.admPaperBadge}>
-                      <Text style={styles.admPaperBadgeText}>ADMISSION & REGISTRATION ACKNOWLEDGEMENT</Text>
+                    <View style={styles.slipBadgeWrap}>
+                      <Text style={styles.slipBadgeText}>OFFICIAL STUDENT ADMISSION SLIP</Text>
                     </View>
                   </View>
 
-                  <View style={styles.admDetailsBox}>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Scholar / Adm No:</Text>
-                      <Text style={[styles.admDetailVal, { color: '#065f46', fontWeight: '800' }]}>
-                        {admittedStudentData.admissionNo}
+                  {/* Student Photo & Admission No Hero */}
+                  <View style={styles.slipHeroRow}>
+                    {admittedStudentData.photoUrl ? (
+                      <Image source={{ uri: admittedStudentData.photoUrl }} style={styles.slipPhoto} />
+                    ) : (
+                      <View style={styles.slipPhotoPlaceholder}>
+                        <MaterialIcons name="person" size={44} color="#0284c7" />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.slipAdmNoLabel}>ADMISSION NUMBER</Text>
+                      <Text style={styles.slipAdmNoValue}>{admittedStudentData.admissionNo}</Text>
+                      <Text style={styles.slipStudentName}>{admittedStudentData.fullName}</Text>
+                      <Text style={styles.slipStudentClass}>
+                        {admittedStudentData.className} • Section {admittedStudentData.sectionName}
+                        {admittedStudentData.rollNo ? ` • Roll No: ${admittedStudentData.rollNo}` : ''}
                       </Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Student Full Name:</Text>
-                      <Text style={[styles.admDetailVal, { fontWeight: '800' }]}>
-                        {admittedStudentData.fullName}
+                  </View>
+
+                  {/* Details Grid */}
+                  <View style={styles.slipTable}>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Date of Admission:</Text>
+                      <Text style={styles.slipColVal}>
+                        {new Date(admittedStudentData.admissionDate).toLocaleDateString()}
                       </Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Class & Section:</Text>
-                      <Text style={styles.admDetailVal}>
-                        {admittedStudentData.className} - Section {admittedStudentData.sectionName}
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Academic Session:</Text>
+                      <Text style={styles.slipColVal}>{admittedStudentData.academicYearName}</Text>
+                    </View>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Date of Birth:</Text>
+                      <Text style={styles.slipColVal}>{admittedStudentData.dob || '—'}</Text>
+                    </View>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Gender / Blood Group:</Text>
+                      <Text style={styles.slipColVal}>
+                        {admittedStudentData.gender} • {admittedStudentData.bloodGroup || 'N/A'}
                       </Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Assigned Roll No:</Text>
-                      <Text style={styles.admDetailVal}>{admittedStudentData.rollNo || 'Pending'}</Text>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Father / Guardian:</Text>
+                      <Text style={styles.slipColVal}>{admittedStudentData.guardianName || '—'}</Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Academic Session:</Text>
-                      <Text style={[styles.admDetailVal, { color: '#065f46' }]}>
-                        {admittedStudentData.academicYearName}
-                      </Text>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Primary Mobile:</Text>
+                      <Text style={styles.slipColVal}>{admittedStudentData.guardianMobile || '—'}</Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Guardian Name:</Text>
-                      <Text style={styles.admDetailVal}>{guardianName || '—'}</Text>
+                    <View style={styles.slipRow}>
+                      <Text style={styles.slipColLabel}>Address:</Text>
+                      <Text style={styles.slipColVal}>{admittedStudentData.address || '—'}</Text>
                     </View>
-                    <View style={styles.admDetailRow}>
-                      <Text style={styles.admDetailLabel}>Contact Phone:</Text>
-                      <Text style={styles.admDetailVal}>{mobile || '—'}</Text>
+                  </View>
+
+                  {/* Signatures */}
+                  <View style={styles.slipSignRow}>
+                    <View style={styles.slipSignBox}>
+                      <View style={styles.slipSignLine} />
+                      <Text style={styles.slipSignLabel}>Parent / Guardian</Text>
+                    </View>
+                    <View style={styles.slipSignBox}>
+                      <View style={styles.slipSignLine} />
+                      <Text style={styles.slipSignLabel}>Principal / Admission Officer</Text>
                     </View>
                   </View>
                 </View>
               )}
             </ScrollView>
 
-            {/* Bottom Actions - Fixed 2-tier layout that never squashes */}
-            <View style={styles.admModalActions}>
+            {/* Action Bar */}
+            <View style={styles.modalActionBar}>
               <TouchableOpacity
-                style={[styles.admPrintBtnPrimary, printing && { opacity: 0.7 }]}
+                style={styles.modalPrintBtn}
                 onPress={handlePrintAdmissionSlip}
                 disabled={printing}
-                activeOpacity={0.8}
               >
-                {printing ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="print" size={20} color="#ffffff" />
-                    <Text style={styles.admPrintBtnPrimaryText}>Print Official Admission Slip</Text>
-                  </>
-                )}
+                <MaterialIcons name="print" size={18} color="#ffffff" />
+                <Text style={styles.modalActionText}>Print Slip</Text>
               </TouchableOpacity>
 
-              <View style={styles.admSecondaryRow}>
-                <TouchableOpacity
-                  style={[styles.admShareBtn, printing && { opacity: 0.7 }]}
-                  onPress={handleShareAdmissionPdf}
-                  disabled={printing}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="share-social-outline" size={18} color="#065f46" />
-                  <Text style={styles.admShareBtnText}>Share PDF</Text>
-                </TouchableOpacity>
-
-                {mobile ? (
-                  <TouchableOpacity
-                    style={[styles.admWaBtn, printing && { opacity: 0.7 }]}
-                    onPress={() => handleOpenWhatsAppAdmission(admittedStudentData)}
-                    disabled={printing}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
-                    <Text style={styles.admWaBtnText}>WhatsApp Slip</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            </View>
-
-            <View style={styles.admModalNavRow}>
               <TouchableOpacity
-                style={styles.admNavSecondary}
+                style={styles.modalShareBtn}
+                onPress={handleShareAdmissionPdf}
+                disabled={printing}
+              >
+                <MaterialIcons name="share" size={18} color="#0284c7" />
+                <Text style={[styles.modalActionText, { color: '#0284c7' }]}>PDF</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalWhatsAppBtn}
+                onPress={() => handleOpenWhatsAppAdmission(admittedStudentData)}
+              >
+                <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+                <Text style={styles.modalActionText}>WhatsApp</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalDoneBtn}
                 onPress={handleResetForNewAdmission}
               >
-                <Ionicons name="person-add-outline" size={16} color="#0284c7" />
-                <Text style={styles.admNavSecondaryText}>Admit Another</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.admNavPrimary}
-                onPress={() => {
-                  setAdmissionModalVisible(false);
-                  navigation.navigate('Students');
-                }}
-              >
-                <Text style={styles.admNavPrimaryText}>Go to Students List</Text>
-                <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+                <Text style={styles.modalDoneBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* WhatsApp Dialog Modal */}
+      {/* WhatsApp Modal */}
       <WhatsAppModal
         visible={whatsAppModal.visible}
         onClose={() => setWhatsAppModal((prev) => ({ ...prev, visible: false }))}
@@ -865,594 +1269,747 @@ export default function NewAdmissionScreen({ route, navigation }) {
   );
 }
 
-const getStyles = (colors, isDark) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  stepperContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    backgroundColor: colors.cardBg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  stepItem: {
-    alignItems: 'center',
-  },
-  stepCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: isDark ? '#334155' : '#e2e8f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepCircleActive: {
-    backgroundColor: colors.primary,
-  },
-  stepNum: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  stepNumActive: {
-    color: '#ffffff',
-  },
-  stepLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 3,
-    fontWeight: '500',
-  },
-  stepLabelActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  stepLine: {
-    width: 45,
-    height: 2,
-    backgroundColor: isDark ? '#334155' : '#e2e8f0',
-    marginHorizontal: 8,
-    marginBottom: 14,
-  },
-  stepLineActive: {
-    backgroundColor: colors.primary,
-  },
-  scrollContent: {
-    padding: 14,
-    paddingBottom: 40,
-  },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: colors.inputBg,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  genderRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  genderBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    gap: 6,
-  },
-  genderBtnActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  genderBtnText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  genderBtnTextActive: {
-    color: '#ffffff',
-  },
-  smallChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-    marginRight: 6,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  smallChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  smallChipText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  smallChipTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  classChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-  },
-  classChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  classChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  classChipTextActive: {
-    color: '#ffffff',
-  },
-  bottomButtonsRow: {
-    flexDirection: 'row',
-    marginTop: 18,
-    gap: 10,
-  },
-  backBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    gap: 6,
-  },
-  backBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  nextBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    gap: 6,
-  },
-  nextBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  submitBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: colors.success,
-    gap: 6,
-  },
-  submitBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
+function getStyles(colors, isDark) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    quickSaveBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    quickSaveTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    quickSaveSub: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    quickSaveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: '#059669',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      shadowColor: '#059669',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    quickSaveBtnText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#ffffff',
+    },
 
-  // Admission Modal Styles
-  admModalOverlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 14,
-  },
-  admModalContent: {
-    width: '100%',
-    maxHeight: '92%',
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  admModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-    backgroundColor: isDark ? '#064e3b' : '#ecfdf5',
-  },
-  admModalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  admModalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: isDark ? '#6ee7b7' : '#065f46',
-  },
-  admModalSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-  admScrollContent: {
-    padding: 16,
-  },
-  admSuccessBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: isDark ? '#064e3b' : '#dcfce7',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: isDark ? '#059669' : '#86efac',
-    marginBottom: 14,
-  },
-  admSuccessTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: isDark ? '#6ee7b7' : '#15803d',
-  },
-  admSuccessSub: {
-    fontSize: 12,
-    color: isDark ? '#a7f3d0' : '#166534',
-    marginTop: 2,
-  },
-  admPaperPreview: {
-    borderWidth: 1.5,
-    borderColor: isDark ? '#059669' : '#065f46',
-    borderRadius: 10,
-    padding: 14,
-    backgroundColor: colors.cardBg,
-  },
-  admPaperTop: {
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: isDark ? '#059669' : '#065f46',
-    paddingBottom: 8,
-    marginBottom: 10,
-  },
-  admSchoolTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: isDark ? '#6ee7b7' : '#065f46',
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  admSchoolSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  admPaperBadge: {
-    backgroundColor: isDark ? '#065f46' : '#065f46',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginTop: 6,
-  },
-  admPaperBadgeText: {
-    color: '#ffffff',
-    fontSize: 9.5,
-    fontWeight: '800',
-  },
-  admDetailsBox: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-    gap: 6,
-  },
-  admDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  admDetailLabel: {
-    fontSize: 11.5,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  admDetailVal: {
-    fontSize: 12,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  admModalActions: {
-    flexDirection: 'row',
-    padding: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardBorder,
-    gap: 10,
-    backgroundColor: colors.cardBg,
-  },
-  admPrintBtnPrimary: {
-    backgroundColor: isDark ? '#059669' : '#065f46',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
-  admPrintBtnPrimaryText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  admSecondaryRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  admShareBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: isDark ? '#059669' : '#065f46',
-    backgroundColor: isDark ? '#064e3b' : '#ecfdf5',
-  },
-  admShareBtnText: {
-    color: isDark ? '#6ee7b7' : '#065f46',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  admWaBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#16a34a',
-  },
-  admWaBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+    // Stepper
+    stepperContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      backgroundColor: colors.cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    stepItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    stepCircle: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepCircleActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    stepCircleDone: {
+      backgroundColor: '#059669',
+      borderColor: '#059669',
+    },
+    stepNum: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    stepNumActive: {
+      color: '#ffffff',
+    },
+    stepLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    stepLabelActive: {
+      fontWeight: '800',
+      color: colors.primary,
+    },
+    stepLabelDone: {
+      fontWeight: '700',
+      color: '#059669',
+    },
+    stepLine: {
+      flex: 1,
+      height: 2,
+      backgroundColor: colors.cardBorder,
+      marginHorizontal: 8,
+    },
+    stepLineActive: {
+      backgroundColor: '#059669',
+    },
 
-  // Quick Save Bar
-  quickSaveBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.cardBg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-  },
-  quickSaveTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  quickSaveSub: {
-    fontSize: 11,
-    color: colors.primary,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  quickSaveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#0284c7',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-  },
-  quickSaveBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
+    scrollContent: {
+      padding: 14,
+      paddingBottom: 40,
+    },
+    card: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardHeaderBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    cardHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flex: 1,
+    },
+    cardTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    badgeMandatory: {
+      backgroundColor: '#fee2e2',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    badgeMandatoryText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#dc2626',
+    },
+    sectionNotice: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 14,
+      lineHeight: 17,
+      backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+      padding: 8,
+      borderRadius: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: '#059669',
+    },
+    subSectionTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.primary,
+      marginTop: 10,
+      marginBottom: 8,
+      letterSpacing: 0.5,
+    },
 
-  // Photo Upload Styles
-  photoContainer: {
-    marginBottom: 16,
-  },
-  photoPreviewBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: colors.inputBg,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  photoPreview: {
-    width: 80,
-    height: 96,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  photoActionCol: {
-    flex: 1,
-    gap: 8,
-  },
-  photoRetakeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
-  },
-  photoRetakeBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0284c7',
-  },
-  photoGalleryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
-  },
-  photoRemoveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: isDark ? '#450a0a' : '#fee2e2',
-  },
-  photoRemoveBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#dc2626',
-  },
-  photoUploadBox: {
-    backgroundColor: colors.inputBg,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.cardBorder,
-    padding: 14,
-    alignItems: 'center',
-  },
-  photoButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
-  },
-  cameraBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  cameraBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  galleryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  galleryBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  photoHint: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  admModalNavRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 10,
-    backgroundColor: colors.cardBg,
-  },
-  admNavSecondary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: isDark ? '#1e293b' : '#f0f9ff',
-    borderWidth: 1,
-    borderColor: isDark ? '#0369a1' : '#bae6fd',
-  },
-  admNavSecondaryText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  admNavPrimary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  admNavPrimaryText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-});
+    // Form inputs
+    label: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    input: {
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      fontSize: 13,
+      color: colors.text,
+      marginBottom: 10,
+    },
+    fieldRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+
+    // Gender
+    genderRowCompact: {
+      flexDirection: 'row',
+      gap: 4,
+      marginBottom: 10,
+    },
+    genderChip: {
+      flex: 1,
+      paddingVertical: 9,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.inputBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    genderChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    genderChipText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    genderChipTextActive: {
+      color: '#ffffff',
+    },
+
+    // Chips
+    chipsWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: 10,
+    },
+    classChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.inputBg,
+    },
+    classChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    classChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    classChipTextActive: {
+      color: '#ffffff',
+      fontWeight: '800',
+    },
+    smallChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.inputBg,
+      marginRight: 6,
+    },
+    smallChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    smallChipText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    smallChipTextActive: {
+      color: '#ffffff',
+      fontWeight: '700',
+    },
+
+    // Photos
+    photoContainer: {
+      marginBottom: 12,
+    },
+    photoPreviewBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.inputBg,
+      padding: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    photoPreview: {
+      width: 74,
+      height: 90,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+    },
+    photoActionCol: {
+      flex: 1,
+      gap: 6,
+    },
+    photoRetakeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 6,
+      backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
+    },
+    photoRetakeBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#0284c7',
+    },
+    photoGalleryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 6,
+      backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
+    },
+    photoRemoveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 6,
+      backgroundColor: isDark ? '#450a0a' : '#fee2e2',
+    },
+    photoRemoveBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#dc2626',
+    },
+    photoUploadBox: {
+      backgroundColor: colors.inputBg,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.cardBorder,
+      padding: 12,
+      alignItems: 'center',
+    },
+    photoButtonsRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 6,
+    },
+    cameraBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    cameraBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
+    galleryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: isDark ? '#1e3a8a' : '#e0f2fe',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    galleryBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    photoHint: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+
+    // Family Photo Row
+    familyPhotoRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      marginBottom: 10,
+    },
+    familyPhotoPreviewBox: {
+      position: 'relative',
+    },
+    familyPhotoPreview: {
+      width: 70,
+      height: 85,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: '#7c3aed',
+    },
+    removeCircleBtn: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      backgroundColor: '#dc2626',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    familyPhotoButtonsBox: {
+      gap: 6,
+      width: 90,
+    },
+    photoMiniBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 7,
+      paddingHorizontal: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.inputBg,
+    },
+    photoMiniBtnText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.text,
+    },
+
+    // Action Rows
+    step1ActionsRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 14,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+    },
+    directSaveBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: '#059669',
+      paddingVertical: 12,
+      borderRadius: 10,
+    },
+    directSaveBtnText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#ffffff',
+    },
+    nextStepBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      borderRadius: 10,
+    },
+    nextStepBtnText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#ffffff',
+    },
+    stepActionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+    },
+    backBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.inputBg,
+    },
+    backBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    confirmSubmitBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: '#059669',
+      paddingVertical: 12,
+      borderRadius: 10,
+    },
+    confirmSubmitBtnText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#ffffff',
+    },
+
+    // Modal
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'center',
+      padding: 14,
+    },
+    modalContent: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      maxHeight: '90%',
+      overflow: 'hidden',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    modalTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    slipScrollContent: {
+      padding: 14,
+    },
+    slipWrapper: {
+      backgroundColor: '#ffffff',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#cbd5e1',
+      padding: 14,
+    },
+    slipSchoolHeader: {
+      alignItems: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: '#0284c7',
+      paddingBottom: 8,
+      marginBottom: 10,
+    },
+    slipSchoolName: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: '#0f172a',
+      textAlign: 'center',
+    },
+    slipSchoolSub: {
+      fontSize: 10,
+      color: '#64748b',
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    slipBadgeWrap: {
+      backgroundColor: '#0284c7',
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+      borderRadius: 12,
+      marginTop: 6,
+    },
+    slipBadgeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: '#ffffff',
+      letterSpacing: 0.5,
+    },
+    slipHeroRow: {
+      flexDirection: 'row',
+      gap: 12,
+      backgroundColor: '#f8fafc',
+      padding: 10,
+      borderRadius: 8,
+      marginBottom: 10,
+      alignItems: 'center',
+    },
+    slipPhoto: {
+      width: 60,
+      height: 72,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#0284c7',
+    },
+    slipPhotoPlaceholder: {
+      width: 60,
+      height: 72,
+      borderRadius: 6,
+      backgroundColor: '#e0f2fe',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    slipAdmNoLabel: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: '#0369a1',
+    },
+    slipAdmNoValue: {
+      fontSize: 15,
+      fontWeight: '900',
+      color: '#0f172a',
+    },
+    slipStudentName: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#1e293b',
+      marginTop: 2,
+    },
+    slipStudentClass: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#475569',
+    },
+    slipTable: {
+      borderWidth: 1,
+      borderColor: '#e2e8f0',
+      borderRadius: 6,
+      overflow: 'hidden',
+      marginBottom: 12,
+    },
+    slipRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: '#f1f5f9',
+    },
+    slipColLabel: {
+      width: 130,
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#475569',
+    },
+    slipColVal: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#0f172a',
+    },
+    slipSignRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 20,
+      paddingHorizontal: 10,
+    },
+    slipSignBox: {
+      alignItems: 'center',
+      width: 120,
+    },
+    slipSignLine: {
+      width: '100%',
+      height: 1,
+      backgroundColor: '#94a3b8',
+      marginBottom: 4,
+    },
+    slipSignLabel: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: '#64748b',
+    },
+    modalActionBar: {
+      flexDirection: 'row',
+      gap: 6,
+      padding: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+      backgroundColor: colors.cardBg,
+    },
+    modalPrintBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      backgroundColor: '#0284c7',
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    modalShareBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#0284c7',
+    },
+    modalWhatsAppBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      backgroundColor: '#16a34a',
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    modalDoneBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 8,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalDoneBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    modalActionText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
+  });
+}

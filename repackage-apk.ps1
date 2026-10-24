@@ -9,6 +9,7 @@ $unsignedApk = "D:\erp\SchoolERP-Unsigned.apk"
 $alignedApk = "D:\erp\SchoolERP-Aligned.apk"
 $finalApk = "D:\erp\SchoolERP-Release.apk"
 $hbcFile = "D:\erp\mobile\index.android.hbc"
+$realWebpDir = "D:\erp\real_webp"
 
 Write-Host "1. Checking Hermes bytecode file..."
 if (-not (Test-Path $hbcFile)) {
@@ -20,17 +21,50 @@ Write-Host "Bytecode file size: $($hbcItem.Length) bytes, Last modified: $($hbcI
 Write-Host "2. Copying backup APK to Unsigned APK..."
 Copy-Item $backupApk $unsignedApk -Force
 
-Write-Host "3. Updating assets/index.android.bundle and stripping META-INF signatures..."
+Write-Host "3. Injecting new Hermes bundle and replacing all icon files with genuine WebP..."
 $zip = [System.IO.Compression.ZipFile]::Open($unsignedApk, [System.IO.Compression.ZipArchiveMode]::Update)
+
+# Replace index.android.bundle
 $bundleEntry = $zip.GetEntry("assets/index.android.bundle")
 if ($bundleEntry -ne $null) {
-    Write-Host "Removing existing assets/index.android.bundle (size: $($bundleEntry.Length))..."
     $bundleEntry.Delete()
 }
-
-Write-Host "Adding new Hermes compiled assets/index.android.bundle..."
 [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $hbcFile, "assets/index.android.bundle")
 
+# Replace all icon files with valid WebP images
+$iconMappings = @{
+    "res/d2.webp" = "$realWebpDir\d2.webp"
+    "res/MO.webp" = "$realWebpDir\MO.webp"
+    "res/qs.webp" = "$realWebpDir\qs.webp"
+    "res/Sn.webp" = "$realWebpDir\Sn.webp"
+    "res/sK.webp" = "$realWebpDir\sK.webp"
+    "res/Nt.webp" = "$realWebpDir\Nt.webp"
+    "res/13.webp" = "$realWebpDir\13.webp"
+    "res/9Q.webp" = "$realWebpDir\9Q.webp"
+    "res/iE.webp" = "$realWebpDir\iE.webp"
+    "res/5c.webp" = "$realWebpDir\5c.webp"
+    "res/yw.webp" = "$realWebpDir\yw.webp"
+    "res/fq.webp" = "$realWebpDir\fq.webp"
+    "res/u5.webp" = "$realWebpDir\u5.webp"
+    "res/j_.webp" = "$realWebpDir\j_.webp"
+    "res/-6.webp" = "$realWebpDir\-6.webp"
+}
+
+foreach ($entryName in $iconMappings.Keys) {
+    $sourcePath = $iconMappings[$entryName]
+    if (Test-Path $sourcePath) {
+        $oldEntry = $zip.GetEntry($entryName)
+        if ($oldEntry -ne $null) {
+            $oldEntry.Delete()
+        }
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $sourcePath, $entryName)
+        Write-Host "Updated icon: $entryName from $sourcePath"
+    } else {
+        Write-Host "Warning: $sourcePath does not exist"
+    }
+}
+
+# Strip META-INF signatures
 $entriesToRemove = @($zip.Entries | Where-Object { $_.FullName -like "META-INF/*" })
 Write-Host "Removing $($entriesToRemove.Count) old signature entries from META-INF/..."
 foreach ($entry in $entriesToRemove) {

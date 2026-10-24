@@ -282,6 +282,12 @@ export const staffApi = {
   getDesignations: () => apiClient.get('/simplemasters', { params: { type: 5 } }),
 };
 
+// Masters (Categories, Religions)
+export const masterApi = {
+  getCategories: () => apiClient.get('/simplemasters', { params: { type: 1 } }),
+  getReligions: () => apiClient.get('/simplemasters', { params: { type: 2 } }),
+};
+
 // Exams
 export const examsApi = {
   getExams: (params) => apiClient.get('/exams', { params }),
