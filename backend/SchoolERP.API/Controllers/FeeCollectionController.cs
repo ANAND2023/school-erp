@@ -250,14 +250,14 @@ namespace SchoolERP.API.Controllers
             var userId = _currentUserService.UserId;
             var userType = _currentUserService.UserType;
 
-            if (userType == UserType.SuperAdmin)
+            if (userType == UserType.SuperAdmin || userType == UserType.SchoolAdmin || userType == UserType.Principal)
             {
                 return Ok(ApiResponse<object>.Ok(new
                 {
                     canGiveDiscount = true,
                     maxDiscountLimit = 100m,
                     isUnlimited = true,
-                    roleName = "SuperAdmin"
+                    roleName = userType.ToString()
                 }));
             }
 
@@ -266,19 +266,20 @@ namespace SchoolERP.API.Controllers
             {
                 return Ok(ApiResponse<object>.Ok(new
                 {
-                    canGiveDiscount = false,
-                    maxDiscountLimit = 0m,
-                    isUnlimited = false,
-                    roleName = "Unknown"
+                    canGiveDiscount = true,
+                    maxDiscountLimit = 100m,
+                    isUnlimited = true,
+                    roleName = "SchoolAdmin"
                 }));
             }
 
-            var isUnlimited = user.CanGiveDiscount && (user.MaxDiscountLimit <= 0 || user.MaxDiscountLimit >= 100);
+            var canGive = user.CanGiveDiscount || user.UserType == UserType.SchoolAdmin || user.UserType == UserType.Principal;
+            var isUnlimited = canGive && (user.MaxDiscountLimit <= 0 || user.MaxDiscountLimit >= 100);
 
             return Ok(ApiResponse<object>.Ok(new
             {
-                canGiveDiscount = user.CanGiveDiscount,
-                maxDiscountLimit = user.MaxDiscountLimit,
+                canGiveDiscount = canGive,
+                maxDiscountLimit = user.MaxDiscountLimit > 0 ? user.MaxDiscountLimit : 100m,
                 isUnlimited = isUnlimited,
                 roleName = user.UserType.ToString()
             }));
@@ -290,7 +291,9 @@ namespace SchoolERP.API.Controllers
         {
             var branchId = _currentUserService.BranchId;
             var yearId = _currentUserService.AcademicYearId;
-            var isSuperAdmin = _currentUserService.UserType == UserType.SuperAdmin;
+            var isSuperAdmin = _currentUserService.UserType == UserType.SuperAdmin
+                            || _currentUserService.UserType == UserType.SchoolAdmin
+                            || _currentUserService.UserType == UserType.Principal;
             var currentUserId = _currentUserService.UserId;
 
             if (request.DuesToPay == null || !request.DuesToPay.Any())
@@ -318,7 +321,7 @@ namespace SchoolERP.API.Controllers
                 if (!isSuperAdmin)
                 {
                     var currentUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == currentUserId);
-                    if (currentUser == null || !currentUser.CanGiveDiscount)
+                    if (currentUser == null || (!currentUser.CanGiveDiscount && currentUser.UserType != UserType.SchoolAdmin && currentUser.UserType != UserType.Principal))
                     {
                         return BadRequest(ApiResponse<ReceiptPrintDto>.Fail("You are not authorized to grant fee discounts. Please contact your school administrator."));
                     }

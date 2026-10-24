@@ -63,6 +63,38 @@ namespace SchoolERP.API.Controllers
 
             return Ok(ApiResponse<SystemNotification>.Ok(notification, "Notification sent successfully"));
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateNotification(long id, [FromBody] SendNotificationRequest req)
+        {
+            var branchId = _currentUserService.BranchId;
+            var notification = await _context.SystemNotifications
+                .FirstOrDefaultAsync(n => n.Id == id && n.BranchId == branchId);
+
+            if (notification == null) return NotFound(ApiResponse.Fail("Notice not found."));
+
+            notification.Title = req.Title.Trim();
+            notification.Message = req.Message.Trim();
+            notification.TargetUserId = req.TargetUserId;
+            notification.TargetUserType = req.TargetUserType;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<SystemNotification>.Ok(notification, "Notice updated successfully."));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNotification(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var notification = await _context.SystemNotifications
+                .FirstOrDefaultAsync(n => n.Id == id && n.BranchId == branchId);
+
+            if (notification == null) return NotFound(ApiResponse.Fail("Notice not found."));
+
+            _context.SystemNotifications.Remove(notification);
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Notice deleted successfully."));
+        }
     }
 
     public class SendNotificationRequest

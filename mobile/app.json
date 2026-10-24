@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "DVS ERP - Digital Vidya Sarthi",
+    "slug": "dvs-erp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.schoolerp.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "School ERP requires access to the camera to take live photos of escorts for student gate pass verification.",
+        "NSPhotoLibraryUsageDescription": "School ERP requires access to your photos to upload escort photos for gate passes."
+      }
+    },
+    "android": {
+      "package": "com.schoolerp.mobile",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0284c7",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with gate pass escorts.",
+          "cameraPermission": "The app accesses your camera to verify gate pass escorts with a live photo."
+        }
+      ],
+      "expo-font",
+      "expo-sharing"
+    ]
+  }
+}
