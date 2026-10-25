@@ -27,6 +27,8 @@ scratch/
 *.apk
 *.idsig
 *.webp
+*.bundle
+*.hbc
 /assets/
 /extracted_icons/
 /real_webp/

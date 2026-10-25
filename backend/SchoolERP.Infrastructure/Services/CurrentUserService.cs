@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Domain.Enums;
+using SchoolERP.Infrastructure.Persistence;
 
 namespace SchoolERP.Infrastructure.Services
 {
@@ -41,14 +43,20 @@ namespace SchoolERP.Infrastructure.Services
         {
             get
             {
-                var httpContext = _httpContextAccessor.HttpContext;
-                if (httpContext != null && httpContext.Request.Headers.TryGetValue("X-Branch-Id", out var headerVal))
+                var claimVal = User?.FindFirst("branch_id")?.Value;
+                var userBranchId = long.TryParse(claimVal, out var id) ? id : 1;
+
+                // Only SuperAdmin is allowed to override branch via X-Branch-Id header
+                if (UserType == Domain.Enums.UserType.SuperAdmin)
                 {
-                    if (long.TryParse(headerVal, out var branchId)) return branchId;
+                    var httpContext = _httpContextAccessor.HttpContext;
+                    if (httpContext != null && httpContext.Request.Headers.TryGetValue("X-Branch-Id", out var headerVal))
+                    {
+                        if (long.TryParse(headerVal, out var branchId) && branchId > 0) return branchId;
+                    }
                 }
 
-                var claimVal = User?.FindFirst("branch_id")?.Value;
-                return long.TryParse(claimVal, out var id) ? id : 1;
+                return userBranchId;
             }
         }
 
@@ -57,22 +65,69 @@ namespace SchoolERP.Infrastructure.Services
             get
             {
                 var httpContext = _httpContextAccessor.HttpContext;
+                long requestedYearId = 0;
+
                 if (httpContext != null)
                 {
                     if (httpContext.Request.Headers.TryGetValue("X-Academic-Year", out var headerVal) ||
                         httpContext.Request.Headers.TryGetValue("X-Academic-Year-Id", out headerVal))
                     {
-                        if (long.TryParse(headerVal, out var yearId) && yearId > 0) return yearId;
+                        long.TryParse(headerVal, out requestedYearId);
                     }
 
-                    if (httpContext.Request.Query.TryGetValue("academicYearId", out var queryVal))
+                    if (requestedYearId <= 0 && httpContext.Request.Query.TryGetValue("academicYearId", out var queryVal))
                     {
-                        if (long.TryParse(queryVal, out var yearId) && yearId > 0) return yearId;
+                        long.TryParse(queryVal, out requestedYearId);
                     }
                 }
 
-                var claimVal = User?.FindFirst("academic_year_id")?.Value;
-                return long.TryParse(claimVal, out var id) && id > 0 ? id : 1;
+                if (requestedYearId <= 0)
+                {
+                    var claimVal = User?.FindFirst("academic_year_id")?.Value;
+                    if (long.TryParse(claimVal, out var cId)) requestedYearId = cId;
+                }
+
+                var curBranchId = BranchId;
+                if (httpContext != null)
+                {
+                    const string cacheKey = "__ValidatedAcademicYearId";
+                    if (httpContext.Items.TryGetValue(cacheKey, out var cached) && cached is long cachedId)
+                    {
+                        return cachedId;
+                    }
+
+                    try
+                    {
+                        var db = httpContext.RequestServices.GetService(typeof(ApplicationDbContext)) as ApplicationDbContext;
+                        if (db != null)
+                        {
+                            if (requestedYearId > 0 && db.AcademicYears.Any(ay => ay.Id == requestedYearId && ay.BranchId == curBranchId))
+                            {
+                                httpContext.Items[cacheKey] = requestedYearId;
+                                return requestedYearId;
+                            }
+
+                            var activeYear = db.AcademicYears
+                                .Where(ay => ay.BranchId == curBranchId && ay.IsActive)
+                                .OrderByDescending(ay => ay.IsCurrent)
+                                .ThenByDescending(ay => ay.Id)
+                                .Select(ay => ay.Id)
+                                .FirstOrDefault();
+
+                            if (activeYear > 0)
+                            {
+                                httpContext.Items[cacheKey] = activeYear;
+                                return activeYear;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback safely if db context not available during DI container startup/unit tests
+                    }
+                }
+
+                return requestedYearId > 0 ? requestedYearId : 1;
             }
         }
 

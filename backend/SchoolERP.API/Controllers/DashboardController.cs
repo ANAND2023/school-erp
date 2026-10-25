@@ -36,22 +36,35 @@ namespace SchoolERP.API.Controllers
                 ? academicYearId.Value
                 : _currentUserService.AcademicYearId;
 
-            var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId);
+            var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId && ay.BranchId == branchId);
+            if (academicYear == null)
+            {
+                academicYear = await _context.AcademicYears
+                    .Where(ay => ay.BranchId == branchId && ay.IsActive)
+                    .OrderByDescending(ay => ay.IsCurrent)
+                    .ThenByDescending(ay => ay.Id)
+                    .FirstOrDefaultAsync();
+
+                if (academicYear != null)
+                {
+                    yearId = academicYear.Id;
+                }
+            }
             var academicYearName = academicYear?.Name ?? "2026-27";
 
-            // 1. Students Count for this Academic Year
+            // 1. Students Count for this Academic Year (strictly scoped to this branch)
             var enrolledStudentIds = await _context.StudentEnrollments
-                .Where(e => e.AcademicYearId == yearId)
+                .Where(e => e.AcademicYearId == yearId && e.Student!.BranchId == branchId)
                 .Select(e => e.StudentId)
                 .ToListAsync();
 
             var totalStudents = enrolledStudentIds.Count > 0
                 ? enrolledStudentIds.Distinct().Count()
-                : await _context.Students.CountAsync(s => s.BranchId == branchId);
+                : await _context.Students.CountAsync(s => s.BranchId == branchId && s.IsActive);
 
             var activeStudents = enrolledStudentIds.Count > 0
-                ? await _context.Students.CountAsync(s => s.BranchId == branchId && enrolledStudentIds.Contains(s.Id) && s.Status == StudentStatus.Active)
-                : await _context.Students.CountAsync(s => s.BranchId == branchId && s.Status == StudentStatus.Active);
+                ? await _context.Students.CountAsync(s => s.BranchId == branchId && enrolledStudentIds.Contains(s.Id) && s.Status == StudentStatus.Active && s.IsActive)
+                : await _context.Students.CountAsync(s => s.BranchId == branchId && s.Status == StudentStatus.Active && s.IsActive);
 
             // 2. Staff Count
             var totalStaff = await _context.Employees
@@ -166,7 +179,7 @@ namespace SchoolERP.API.Controllers
                 .ToListAsync();
 
             var enrollmentCounts = await _context.StudentEnrollments
-                .Where(e => e.AcademicYearId == yearId && e.Status == StudentStatus.Active)
+                .Where(e => e.AcademicYearId == yearId && e.Student!.BranchId == branchId && e.Status == StudentStatus.Active)
                 .GroupBy(e => e.ClassId)
                 .Select(g => new { ClassId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(g => g.ClassId, g => g.Count);

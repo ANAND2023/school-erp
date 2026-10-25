@@ -138,6 +138,11 @@ export const CommunicationPage = () => {
       const res = await apiClient.get('/chat/users');
       if (res.data?.success && Array.isArray(res.data.data)) {
         setUsers(res.data.data);
+        setSelectedUser((current) => {
+          if (!current) return null;
+          const updated = res.data.data.find((u) => u.id === current.id);
+          return updated ? { ...current, ...updated } : current;
+        });
       }
     } catch (err) {
       console.error('Error fetching chat users:', err);
@@ -226,6 +231,9 @@ export const CommunicationPage = () => {
       if (!matchesSearch) return false;
 
       // Tab filter
+      if (activeFilter === 'online') {
+        return !!u.isOnline;
+      }
       if (activeFilter === 'admins') {
         return u.userType === 1 || u.userType === 2 || u.userType === 3;
       }
@@ -241,6 +249,10 @@ export const CommunicationPage = () => {
 
   const totalUnreadCount = useMemo(() => {
     return users.reduce((sum, u) => sum + (u.unreadCount || 0), 0);
+  }, [users]);
+
+  const totalOnlineCount = useMemo(() => {
+    return users.filter((u) => u.isOnline).length;
   }, [users]);
 
   // Group messages by date
@@ -432,6 +444,7 @@ export const CommunicationPage = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 1.5, overflowX: 'auto', pb: 0.5 }}>
               {[
                 { id: 'all', label: 'All' },
+                { id: 'online', label: totalOnlineCount > 0 ? `Online (${totalOnlineCount})` : 'Online' },
                 { id: 'admins', label: 'Admins' },
                 { id: 'staff', label: 'Teachers' },
                 { id: 'unread', label: totalUnreadCount > 0 ? `Unread (${totalUnreadCount})` : 'Unread' },
@@ -543,16 +556,18 @@ export const CommunicationPage = () => {
                         {u.fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </Avatar>
 
-                      {/* Online Green Indicator Dot */}
+                      {/* Online/Offline Status Indicator Dot */}
                       <DotIcon
+                        title={u.isOnline ? 'Online now' : 'Offline'}
                         sx={{
                           position: 'absolute',
                           bottom: -2,
                           right: -2,
                           fontSize: 14,
-                          color: '#22c55e',
+                          color: u.isOnline ? '#22c55e' : (isDarkMode ? '#64748b' : '#94a3b8'),
                           bgcolor: isDarkMode ? '#0f172a' : '#f8fafc',
                           borderRadius: '50%',
+                          filter: u.isOnline ? 'drop-shadow(0 0 3px rgba(34, 197, 94, 0.7))' : 'none',
                         }}
                       />
                     </Box>
@@ -670,9 +685,9 @@ export const CommunicationPage = () => {
                       />
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2 }}>
-                      <DotIcon sx={{ fontSize: 10, color: '#22c55e' }} />
+                      <DotIcon sx={{ fontSize: 10, color: selectedUser.isOnline ? '#22c55e' : (isDarkMode ? '#64748b' : '#94a3b8') }} />
                       <Typography variant="caption" sx={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '11px', fontWeight: 600 }}>
-                        Active in this school campus
+                        {selectedUser.isOnline ? 'Active Now' : 'Offline'}
                       </Typography>
                     </Box>
                   </Box>

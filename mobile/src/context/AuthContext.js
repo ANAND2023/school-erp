@@ -90,8 +90,9 @@ export const AuthProvider = ({ children }) => {
         const list = res.data.data;
         setAcademicYears(list);
 
-        // If no active session is set yet, pick current or first
-        if (!activeAcademicYearId && list.length > 0) {
+        // If no active session is set or current active session doesn't belong to this branch, pick current or first
+        const match = list.find((y) => y.id === activeAcademicYearId);
+        if (!match && list.length > 0) {
           const current = list.find((y) => y.isCurrent) || list[0];
           await switchAcademicYear(current.id, current.name);
         }

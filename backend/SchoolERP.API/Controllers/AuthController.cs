@@ -425,6 +425,15 @@ namespace SchoolERP.API.Controllers
                 ? string.Join(", ", new[] { branch.Address ?? branch.School?.Address, branch.City ?? branch.School?.City, branch.State ?? branch.School?.State, branch.Pincode ?? branch.School?.Pincode }.Where(s => !string.IsNullOrWhiteSpace(s)))
                 : string.Empty;
 
+            var branchActiveYear = await _context.AcademicYears
+                .Where(ay => ay.BranchId == user.BranchId && ay.IsActive)
+                .OrderByDescending(ay => ay.IsCurrent)
+                .ThenByDescending(ay => ay.Id)
+                .FirstOrDefaultAsync();
+
+            var userYearId = branchActiveYear?.Id ?? 1;
+            var userYearName = branchActiveYear?.Name ?? "2026-27";
+
             var response = new LoginResponseDto
             {
                 AccessToken = accessToken,
@@ -447,7 +456,8 @@ namespace SchoolERP.API.Controllers
                     SchoolEmail = branch?.Email ?? branch?.School?.Email,
                     BranchId = user.BranchId,
                     BranchName = branch?.Name,
-                    AcademicYearId = 1,
+                    AcademicYearId = userYearId,
+                    AcademicYearName = userYearName,
                     LinkedEntityId = user.LinkedEntityId,
                     MustChangePassword = user.MustChangePassword,
                     CanGiveDiscount = user.CanGiveDiscount,
@@ -456,6 +466,7 @@ namespace SchoolERP.API.Controllers
                 Permissions = permissions
             };
 
+            SchoolERP.API.Helpers.UserActivityTracker.RecordActivity(user.Id);
             return Ok(ApiResponse<LoginResponseDto>.Ok(response, "Login successful."));
         }
 
@@ -549,6 +560,18 @@ namespace SchoolERP.API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(ApiResponse.Ok("Password changed successfully."));
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+        public IActionResult Logout()
+        {
+            var userId = _currentUserService.UserId;
+            if (userId.HasValue)
+            {
+                SchoolERP.API.Helpers.UserActivityTracker.MarkOffline(userId.Value);
+            }
+            return Ok(ApiResponse.Ok("Logged out successfully."));
         }
     }
 }

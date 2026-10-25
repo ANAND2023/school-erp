@@ -559,6 +559,7 @@ namespace SchoolERP.API.Controllers
                         Name = string.IsNullOrWhiteSpace(request.AcademicYearName) ? "2026-27" : request.AcademicYearName.Trim(),
                         StartDate = request.AcademicYearStartDate != default ? request.AcademicYearStartDate : new DateTime(2026, 4, 1),
                         EndDate = request.AcademicYearEndDate != default ? request.AcademicYearEndDate : new DateTime(2027, 3, 31),
+                        IsCurrent = true,
                         CreatedBy = actorId,
                         CreatedOn = DateTime.UtcNow,
                         IsActive = true

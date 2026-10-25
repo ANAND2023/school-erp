@@ -11,6 +11,8 @@ import {
   Modal,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';

@@ -5,6 +5,7 @@ using SchoolERP.Application.Common.Models;
 using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Infrastructure.Persistence;
 using SchoolERP.Domain.Entities;
+using SchoolERP.API.Helpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +32,11 @@ namespace SchoolERP.API.Controllers
             var branchId = _currentUserService.BranchId;
             var currentUserId = _currentUserService.UserId;
 
+            if (currentUserId.HasValue)
+            {
+                UserActivityTracker.RecordActivity(currentUserId.Value);
+            }
+
             // Fetch staff and admins for chatting
             var users = await _context.Users
                 .Where(u => u.BranchId == branchId && u.IsActive && u.Id != currentUserId)
@@ -43,7 +49,27 @@ namespace SchoolERP.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(ApiResponse<object>.Ok(users));
+            var result = users.Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.UserType,
+                u.UnreadCount,
+                IsOnline = UserActivityTracker.IsOnline(u.Id),
+                LastSeen = UserActivityTracker.GetLastSeen(u.Id)
+            });
+
+            return Ok(ApiResponse<object>.Ok(result));
+        }
+
+        [HttpPost("heartbeat")]
+        public IActionResult Heartbeat()
+        {
+            if (_currentUserService.UserId.HasValue)
+            {
+                UserActivityTracker.RecordActivity(_currentUserService.UserId.Value);
+            }
+            return Ok(ApiResponse<bool>.Ok(true));
         }
 
         [HttpGet("{userId}")]

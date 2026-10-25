@@ -26,6 +26,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { usePermission } from '../hooks/usePermission';
 import { dashboardApi, academicYearApi } from '../api/client';
+import DiwaliGreetingModal from '../components/DiwaliGreetingModal';
 
 const CATEGORY_FILTERS = [
   { id: 'all', label: 'All Modules', icon: 'apps' },
@@ -653,6 +654,7 @@ export default function HomeScreen({ navigation }) {
   // Launcher Filter & Search State
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [launcherSearch, setLauncherSearch] = useState('');
+  const [showDiwaliModal, setShowDiwaliModal] = useState(false);
 
   const permittedModules = useMemo(() => {
     return QUICK_MODULES.filter((mod) => {
@@ -952,6 +954,19 @@ export default function HomeScreen({ navigation }) {
             />
           </TouchableOpacity>
 
+          {/* Diwali Celebration Button */}
+          <TouchableOpacity
+            style={[
+              styles.headerIconBtn,
+              { backgroundColor: '#b45309', borderColor: '#fde047', borderWidth: 1 },
+            ]}
+            onPress={() => setShowDiwaliModal(true)}
+            activeOpacity={0.8}
+            title="Happy Diwali Wishes"
+          >
+            <Text style={{ fontSize: 15 }}>🪔</Text>
+          </TouchableOpacity>
+
           {/* Quick Settings & Control Center Button */}
           <TouchableOpacity
             style={[styles.headerIconBtn, isDark && { backgroundColor: '#334155' }]}
@@ -975,6 +990,37 @@ export default function HomeScreen({ navigation }) {
           />
         }
       >
+        {/* Festive Diwali Celebration Banner */}
+        <TouchableOpacity
+          style={[
+            styles.diwaliBanner,
+            isDark && { backgroundColor: '#1a0b2e', borderColor: '#d97706' },
+          ]}
+          onPress={() => setShowDiwaliModal(true)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.diwaliBannerGlow} />
+          <View style={styles.diwaliBannerLeft}>
+            <View style={[styles.diwaliDiyaIconWrap, isDark && { backgroundColor: '#2e1065' }]}>
+              <Text style={{ fontSize: 22 }}>🪔</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.diwaliBannerTitle, isDark && { color: '#fbbf24' }]}>
+                शुभ दीपावली • Happy Diwali! ✨
+              </Text>
+              <Text
+                style={[styles.diwaliBannerSub, isDark && { color: '#cbd5e1' }]}
+                numberOfLines={1}
+              >
+                Warm festive wishes from {user?.schoolName || 'School Campus'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.diwaliBannerPill}>
+            <Text style={styles.diwaliBannerPillText}>Wishes 🌟</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Modules Grid Header */}
         <View style={styles.sectionHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1502,6 +1548,11 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      {/* Diwali Celebration Greeting Modal */}
+      <DiwaliGreetingModal
+        visible={showDiwaliModal}
+        onClose={() => setShowDiwaliModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1509,6 +1560,78 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+
+  // Festive Diwali Banner
+  diwaliBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fef3c7',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#f59e0b',
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  diwaliBannerGlow: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+  },
+  diwaliBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  diwaliDiyaIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#fde68a',
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  diwaliBannerTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#92400e',
+    letterSpacing: 0.3,
+  },
+  diwaliBannerSub: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#b45309',
+    marginTop: 1,
+  },
+  diwaliBannerPill: {
+    backgroundColor: '#f59e0b',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fef08a',
+    marginLeft: 8,
+  },
+  diwaliBannerPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#451a03',
   },
 
   // Header

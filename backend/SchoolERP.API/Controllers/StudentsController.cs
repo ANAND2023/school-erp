@@ -50,6 +50,17 @@ namespace SchoolERP.API.Controllers
             var branchId = _currentUserService.BranchId;
             var yearId = _currentUserService.AcademicYearId;
 
+            // Validate that yearId belongs to current branch; if not, fallback to branch's active year
+            if (yearId > 0 && !await _context.AcademicYears.AnyAsync(ay => ay.Id == yearId && ay.BranchId == branchId))
+            {
+                var fallbackYear = await _context.AcademicYears
+                    .Where(ay => ay.BranchId == branchId && ay.IsActive)
+                    .OrderByDescending(ay => ay.IsCurrent)
+                    .ThenByDescending(ay => ay.Id)
+                    .FirstOrDefaultAsync();
+                yearId = fallbackYear?.Id ?? 0;
+            }
+
             var query = _context.StudentEnrollments
                 .Include(e => e.Student)
                 .ThenInclude(s => s!.Guardians)
@@ -63,7 +74,15 @@ namespace SchoolERP.API.Controllers
             {
                 if (academicYearId.Value > 0)
                 {
-                    query = query.Where(e => e.AcademicYearId == academicYearId.Value);
+                    var targetYear = academicYearId.Value;
+                    if (!await _context.AcademicYears.AnyAsync(ay => ay.Id == targetYear && ay.BranchId == branchId))
+                    {
+                        targetYear = yearId;
+                    }
+                    if (targetYear > 0)
+                    {
+                        query = query.Where(e => e.AcademicYearId == targetYear);
+                    }
                 }
                 // academicYearId == 0 searches across all academic years
             }

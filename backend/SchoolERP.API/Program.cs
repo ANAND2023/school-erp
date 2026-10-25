@@ -163,6 +163,17 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Automatically track active logged-in users across all authenticated API requests
+app.Use(async (context, next) =>
+{
+    var userIdClaim = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (long.TryParse(userIdClaim, out var uid))
+    {
+        SchoolERP.API.Helpers.UserActivityTracker.RecordActivity(uid);
+    }
+    await next();
+});
+
 app.MapControllers();
 
 app.Run();
