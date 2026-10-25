@@ -1694,7 +1694,7 @@ namespace SchoolERP.API.Controllers
                 Student = new
                 {
                     StudentId = student.Id,
-                    AdmissionNo = student.AdmissionNo ?? "MAIN/202627/0012",
+                    AdmissionNo = student.AdmissionNo ?? "ADM/202627/0001",
                     RollNo = rollNoStr,
                     StudentName = student.FullName.ToUpper(),
                     ClassName = classNameStr,

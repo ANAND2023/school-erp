@@ -545,11 +545,15 @@ namespace SchoolERP.Infrastructure.Persistence
                     {
                         s.IncludeBranchCode = false; // Remove MAIN from existing series
                     }
+                    if (s.ModuleType == "Admission" && string.IsNullOrWhiteSpace(s.Prefix))
+                    {
+                        s.Prefix = "ADM";
+                    }
                 }
 
                 var defaultSeriesConfigs = new (string ModuleType, string Prefix, bool IncludeBranch, bool IncludeAY, string YearFormat, string Separator, int Digits, long StartNum)[]
                 {
-                    ("Admission", "", false, true, "YYYYYY", "/", 4, 1),
+                    ("Admission", "ADM", false, true, "YYYYYY", "/", 4, 1),
                     ("FeeReceipt", "RCP", false, true, "YYYYYY", "/", 6, 1),
                     ("Enquiry", "ENQ", false, true, "YYYYYY", "/", 4, 1),
                     ("TransferCertificate", "TC", false, true, "YYYY-YY", "/", 4, 1),

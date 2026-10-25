@@ -375,7 +375,7 @@ namespace SchoolERP.API.Helpers
 
             var defaultConfigs = new (string ModuleType, string Prefix, bool IncludeBranch, bool IncludeAY, string YearFormat, string Separator, int Digits, long StartNum)[]
             {
-                ("Admission", "", false, true, "YYYYYY", "/", 4, 1),
+                ("Admission", "ADM", false, true, "YYYYYY", "/", 4, 1),
                 ("FeeReceipt", "RCP", false, true, "YYYYYY", "/", 6, 1),
                 ("Enquiry", "ENQ", false, true, "YYYYYY", "/", 4, 1),
                 ("TransferCertificate", "TC", false, true, "YYYY-YY", "/", 4, 1),
@@ -403,10 +403,17 @@ namespace SchoolERP.API.Helpers
                         IsActive = true
                     });
                 }
-                else if (ex.IncludeBranchCode)
+                else
                 {
-                    // Remove MAIN branch code from existing series
-                    ex.IncludeBranchCode = false;
+                    if (ex.IncludeBranchCode)
+                    {
+                        // Remove MAIN branch code from existing series
+                        ex.IncludeBranchCode = false;
+                    }
+                    if (ex.ModuleType == "Admission" && string.IsNullOrWhiteSpace(ex.Prefix))
+                    {
+                        ex.Prefix = "ADM";
+                    }
                 }
             }
 

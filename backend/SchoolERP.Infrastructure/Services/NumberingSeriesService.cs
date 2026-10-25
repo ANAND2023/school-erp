@@ -21,7 +21,7 @@ namespace SchoolERP.Infrastructure.Services
 
         private static readonly List<(string ModuleType, string Title, string DefaultPrefix, bool IncludeBranch, bool IncludeAY, string YearFormat, string Separator, int Digits, long StartNum)> DefaultConfigs = new()
         {
-            ("Admission", "Student Admission No", "", false, true, "YYYYYY", "/", 4, 1),
+            ("Admission", "Student Admission No", "ADM", false, true, "YYYYYY", "/", 4, 1),
             ("FeeReceipt", "Fee Payment Receipt No", "RCP", false, true, "YYYYYY", "/", 6, 1),
             ("Enquiry", "Student Enquiry No", "ENQ", false, true, "YYYYYY", "/", 4, 1),
             ("TransferCertificate", "Transfer Certificate (TC) No", "TC", false, true, "YYYY-YY", "/", 4, 1),
@@ -43,12 +43,24 @@ namespace SchoolERP.Infrastructure.Services
                 .ToListAsync();
 
             var result = new List<NumberingSeriesDto>();
+            var needsDbSave = false;
 
             foreach (var def in DefaultConfigs)
             {
                 var existing = dbSeries.FirstOrDefault(s => s.ModuleType == def.ModuleType);
                 if (existing != null)
                 {
+                    if (existing.IncludeBranchCode)
+                    {
+                        existing.IncludeBranchCode = false;
+                        needsDbSave = true;
+                    }
+                    if (existing.ModuleType == "Admission" && string.IsNullOrWhiteSpace(existing.Prefix))
+                    {
+                        existing.Prefix = "ADM";
+                        needsDbSave = true;
+                    }
+
                     var dto = new NumberingSeriesDto
                     {
                         Id = existing.Id,
@@ -89,6 +101,11 @@ namespace SchoolERP.Infrastructure.Services
                     dto.SamplePreview = FormatNumber(dto, branchCode, ayName, dto.StartNumber);
                     result.Add(dto);
                 }
+            }
+
+            if (needsDbSave)
+            {
+                await _context.SaveChangesAsync();
             }
 
             return result;
@@ -177,6 +194,17 @@ namespace SchoolERP.Infrastructure.Services
                     IsActive = true
                 };
                 _context.NumberingSeries.Add(series);
+            }
+            else
+            {
+                if (series.IncludeBranchCode)
+                {
+                    series.IncludeBranchCode = false;
+                }
+                if (series.ModuleType == "Admission" && string.IsNullOrWhiteSpace(series.Prefix))
+                {
+                    series.Prefix = "ADM";
+                }
             }
 
             var nextSeq = Math.Max(series.StartNumber, series.CurrentSequence + 1);

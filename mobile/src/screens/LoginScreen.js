@@ -303,7 +303,7 @@ export default function LoginScreen({ navigation }) {
                   style={styles.input}
                   placeholder={
                     portalType === 'student'
-                      ? 'e.g. DPS/2024/0604 or Admission No'
+                      ? 'e.g. ADM/202627/0001 or Admission No'
                       : portalType === 'parent'
                       ? '10-digit registered mobile'
                       : 'Enter username or email'
