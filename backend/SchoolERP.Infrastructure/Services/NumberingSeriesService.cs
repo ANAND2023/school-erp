@@ -21,17 +21,17 @@ namespace SchoolERP.Infrastructure.Services
 
         private static readonly List<(string ModuleType, string Title, string DefaultPrefix, bool IncludeBranch, bool IncludeAY, string YearFormat, string Separator, int Digits, long StartNum)> DefaultConfigs = new()
         {
-            ("Admission", "Student Admission No", "", true, true, "YYYYYY", "/", 4, 1),
-            ("FeeReceipt", "Fee Payment Receipt No", "RCP", true, true, "YYYYYY", "/", 6, 1),
-            ("Enquiry", "Student Enquiry No", "ENQ", true, true, "YYYYYY", "/", 4, 1),
-            ("TransferCertificate", "Transfer Certificate (TC) No", "TC", true, true, "YYYY-YY", "/", 4, 1),
+            ("Admission", "Student Admission No", "", false, true, "YYYYYY", "/", 4, 1),
+            ("FeeReceipt", "Fee Payment Receipt No", "RCP", false, true, "YYYYYY", "/", 6, 1),
+            ("Enquiry", "Student Enquiry No", "ENQ", false, true, "YYYYYY", "/", 4, 1),
+            ("TransferCertificate", "Transfer Certificate (TC) No", "TC", false, true, "YYYY-YY", "/", 4, 1),
             ("Staff", "Staff / Employee Code", "EMP", false, false, "None", "/", 4, 1)
         };
 
         public async Task<List<NumberingSeriesDto>> GetSeriesListAsync(long branchId)
         {
             var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
-            var branchCode = branch?.Code ?? "MAIN";
+            var branchCode = branch?.Code ?? string.Empty;
 
             var currentAY = await _context.AcademicYears
                 .Where(ay => ay.BranchId == branchId && ay.IsCurrent)
@@ -144,7 +144,7 @@ namespace SchoolERP.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(branchCode))
             {
                 var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
-                branchCode = branch?.Code ?? "MAIN";
+                branchCode = branch?.Code ?? string.Empty;
             }
 
             if (string.IsNullOrWhiteSpace(academicYearName))

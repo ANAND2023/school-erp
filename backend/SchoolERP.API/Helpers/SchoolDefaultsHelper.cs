@@ -51,6 +51,12 @@ namespace SchoolERP.API.Helpers
         {
             if (branchId <= 0) return;
 
+            // Seed Simple Masters (Categories, Religions, Houses, Document Types, Designations, Departments, Payment Modes, Banks)
+            await SeedBranchSimpleMastersAsync(context, branchId);
+
+            // Seed Numbering Series (without branch code MAIN)
+            await SeedNumberingSeriesAsync(context, branchId);
+
             // Resolve AcademicYearId if not provided
             if (!academicYearId.HasValue || academicYearId.Value <= 0)
             {
@@ -188,6 +194,227 @@ namespace SchoolERP.API.Helpers
                 }
                 await context.SaveChangesAsync();
             }
+        }
+
+        // 4. Comprehensive Default Simple Masters for every School / Branch
+        public static readonly (MasterType Type, string Name, string Code, int Order)[] DefaultSimpleMasters = new[]
+        {
+            // Student Categories
+            (MasterType.Category, "General", "GEN", 1),
+            (MasterType.Category, "OBC", "OBC", 2),
+            (MasterType.Category, "SC", "SC", 3),
+            (MasterType.Category, "ST", "ST", 4),
+            (MasterType.Category, "EWS", "EWS", 5),
+            (MasterType.Category, "Minority", "MIN", 6),
+            (MasterType.Category, "Specially Abled (PWD)", "PWD", 7),
+            (MasterType.Category, "BPL", "BPL", 8),
+            (MasterType.Category, "Single Girl Child", "SGC", 9),
+            (MasterType.Category, "Staff Ward", "SW", 10),
+
+            // Religions
+            (MasterType.Religion, "Hindu", "HIN", 1),
+            (MasterType.Religion, "Muslim", "MUS", 2),
+            (MasterType.Religion, "Sikh", "SIK", 3),
+            (MasterType.Religion, "Christian", "CHR", 4),
+            (MasterType.Religion, "Jain", "JAI", 5),
+            (MasterType.Religion, "Buddhist", "BUD", 6),
+            (MasterType.Religion, "Parsi / Zoroastrian", "PAR", 7),
+            (MasterType.Religion, "Jewish", "JEW", 8),
+            (MasterType.Religion, "Other", "OTH", 9),
+
+            // School Houses
+            (MasterType.House, "Red House (Mars)", "RED", 1),
+            (MasterType.House, "Blue House (Neptune)", "BLUE", 2),
+            (MasterType.House, "Green House (Earth)", "GREEN", 3),
+            (MasterType.House, "Yellow House (Sun)", "YELLOW", 4),
+
+            // Document Types (Comprehensive Student & School Required Documents)
+            (MasterType.DocumentType, "Birth Certificate", "BC", 1),
+            (MasterType.DocumentType, "Student Aadhaar Card", "AADHAAR", 2),
+            (MasterType.DocumentType, "Transfer Certificate (TC)", "TC", 3),
+            (MasterType.DocumentType, "Previous Report Card / Marksheet", "RC", 4),
+            (MasterType.DocumentType, "Migration Certificate", "MC", 5),
+            (MasterType.DocumentType, "Character Certificate", "CC", 6),
+            (MasterType.DocumentType, "Caste Certificate", "CAST", 7),
+            (MasterType.DocumentType, "Income Certificate", "INC", 8),
+            (MasterType.DocumentType, "Domicile / Address Proof", "DOM", 9),
+            (MasterType.DocumentType, "Medical Fitness Certificate", "MED", 10),
+            (MasterType.DocumentType, "Father Aadhaar Card", "F-AADHAAR", 11),
+            (MasterType.DocumentType, "Mother Aadhaar Card", "M-AADHAAR", 12),
+            (MasterType.DocumentType, "Student Passport Photo", "S-PHOTO", 13),
+            (MasterType.DocumentType, "Parent / Guardian Photo", "P-PHOTO", 14),
+            (MasterType.DocumentType, "Ration Card / BPL Card", "RAT", 15),
+            (MasterType.DocumentType, "Disability Certificate", "PWD-CERT", 16),
+
+            // Designations (Staff & Teachers)
+            (MasterType.Designation, "Principal", "PRIN", 1),
+            (MasterType.Designation, "Vice Principal", "VPRIN", 2),
+            (MasterType.Designation, "Headmistress / Headmaster", "HM", 3),
+            (MasterType.Designation, "Academic Coordinator", "COORD", 4),
+            (MasterType.Designation, "PGT Teacher", "PGT", 5),
+            (MasterType.Designation, "TGT Teacher", "TGT", 6),
+            (MasterType.Designation, "PRT Teacher", "PRT", 7),
+            (MasterType.Designation, "NTT / Pre-Primary Teacher", "NTT", 8),
+            (MasterType.Designation, "Special Educator", "SPED", 9),
+            (MasterType.Designation, "School Counselor", "CNSL", 10),
+            (MasterType.Designation, "Librarian", "LIB", 11),
+            (MasterType.Designation, "Accountant / Cashier", "ACCT", 12),
+            (MasterType.Designation, "Admission Officer / Front Desk", "ADM-OFF", 13),
+            (MasterType.Designation, "Office Administrator / Clerk", "ADMIN", 14),
+            (MasterType.Designation, "IT Incharge / Computer Lab", "IT", 15),
+            (MasterType.Designation, "Science Lab Assistant", "LAB-AST", 16),
+            (MasterType.Designation, "Physical Education Teacher (PET)", "PET", 17),
+            (MasterType.Designation, "Music / Dance Teacher", "MUD", 18),
+            (MasterType.Designation, "Art & Craft Teacher", "ART", 19),
+            (MasterType.Designation, "School Nurse", "NURSE", 20),
+            (MasterType.Designation, "Transport Supervisor", "TRANS", 21),
+            (MasterType.Designation, "Security Guard", "SEC", 22),
+            (MasterType.Designation, "Peon / Office Attendant", "PEON", 23),
+            (MasterType.Designation, "Driver", "DRV", 24),
+            (MasterType.Designation, "Conductor", "COND", 25),
+            (MasterType.Designation, "Housekeeping / Cleaner", "CLEAN", 26),
+
+            // Departments
+            (MasterType.Department, "Academic & Curriculum", "ACAD", 1),
+            (MasterType.Department, "Administration & Operations", "ADMIN", 2),
+            (MasterType.Department, "Accounts & Finance", "FIN", 3),
+            (MasterType.Department, "Admissions & Front Desk", "ADMIS", 4),
+            (MasterType.Department, "Pre-Primary / Kindergarten", "PRE-PRI", 5),
+            (MasterType.Department, "Primary School", "PRIMARY", 6),
+            (MasterType.Department, "Middle School", "MIDDLE", 7),
+            (MasterType.Department, "Secondary & Senior Secondary", "SEC-SR", 8),
+            (MasterType.Department, "Science & Laboratories", "SCI", 9),
+            (MasterType.Department, "Mathematics", "MATH", 10),
+            (MasterType.Department, "Languages & Literature", "LANG", 11),
+            (MasterType.Department, "Social Sciences & Humanities", "SOC", 12),
+            (MasterType.Department, "Computer Science & IT", "CS-IT", 13),
+            (MasterType.Department, "Sports & Physical Education", "SPORTS", 14),
+            (MasterType.Department, "Performing Arts & Culture", "ARTS", 15),
+            (MasterType.Department, "Library & Documentation", "LIB", 16),
+            (MasterType.Department, "Examination & Evaluation", "EXAM", 17),
+            (MasterType.Department, "Transport & Logistics", "TRANS", 18),
+            (MasterType.Department, "Security & Maintenance", "MAINT", 19),
+
+            // Payment Modes
+            (MasterType.PaymentMode, "Cash", "CASH", 1),
+            (MasterType.PaymentMode, "UPI / QR Code", "UPI", 2),
+            (MasterType.PaymentMode, "Bank Cheque", "CHQ", 3),
+            (MasterType.PaymentMode, "Demand Draft (DD)", "DD", 4),
+            (MasterType.PaymentMode, "Net Banking (NEFT/RTGS/IMPS)", "NET", 5),
+            (MasterType.PaymentMode, "Debit Card", "DCARD", 6),
+            (MasterType.PaymentMode, "Credit Card", "CCARD", 7),
+            (MasterType.PaymentMode, "POS Machine", "POS", 8),
+            (MasterType.PaymentMode, "Online Payment Gateway", "PG", 9),
+
+            // Banks (Common Indian Banks)
+            (MasterType.Bank, "State Bank of India", "SBI", 1),
+            (MasterType.Bank, "Punjab National Bank", "PNB", 2),
+            (MasterType.Bank, "Bank of Baroda", "BOB", 3),
+            (MasterType.Bank, "Canara Bank", "CANARA", 4),
+            (MasterType.Bank, "Union Bank of India", "UBI", 5),
+            (MasterType.Bank, "HDFC Bank", "HDFC", 6),
+            (MasterType.Bank, "ICICI Bank", "ICICI", 7),
+            (MasterType.Bank, "Axis Bank", "AXIS", 8),
+            (MasterType.Bank, "Kotak Mahindra Bank", "KOTAK", 9),
+            (MasterType.Bank, "IndusInd Bank", "INDUS", 10),
+            (MasterType.Bank, "Bank of India", "BOI", 11),
+            (MasterType.Bank, "Central Bank of India", "CBI", 12),
+            (MasterType.Bank, "Indian Bank", "INDBANK", 13),
+            (MasterType.Bank, "IDBI Bank", "IDBI", 14),
+            (MasterType.Bank, "Yes Bank", "YES", 15),
+            (MasterType.Bank, "Federal Bank", "FED", 16),
+            (MasterType.Bank, "UCO Bank", "UCO", 17),
+            (MasterType.Bank, "Indian Overseas Bank", "IOB", 18)
+        };
+
+        public static async Task SeedBranchSimpleMastersAsync(ApplicationDbContext context, long branchId)
+        {
+            if (branchId <= 0) return;
+
+            var existing = await context.SimpleMasters
+                .Where(m => m.BranchId == branchId)
+                .Select(m => new { m.Type, m.Name, m.Code })
+                .ToListAsync();
+
+            var toAdd = new List<SimpleMaster>();
+            foreach (var item in DefaultSimpleMasters)
+            {
+                var exists = existing.Any(e =>
+                    e.Type == item.Type &&
+                    (string.Equals(e.Name.Trim(), item.Name.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                     (!string.IsNullOrWhiteSpace(item.Code) && string.Equals(e.Code?.Trim(), item.Code.Trim(), StringComparison.OrdinalIgnoreCase))));
+
+                if (!exists)
+                {
+                    toAdd.Add(new SimpleMaster
+                    {
+                        BranchId = branchId,
+                        Type = item.Type,
+                        Name = item.Name,
+                        Code = item.Code,
+                        DisplayOrder = item.Order,
+                        IsActive = true
+                    });
+                }
+            }
+
+            if (toAdd.Count > 0)
+            {
+                context.SimpleMasters.AddRange(toAdd);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public static async Task SeedNumberingSeriesAsync(ApplicationDbContext context, long branchId)
+        {
+            if (branchId <= 0) return;
+
+            var existingSeries = await context.NumberingSeries
+                .Where(ns => ns.BranchId == branchId)
+                .ToListAsync();
+
+            var defaultConfigs = new (string ModuleType, string Prefix, bool IncludeBranch, bool IncludeAY, string YearFormat, string Separator, int Digits, long StartNum)[]
+            {
+                ("Admission", "", false, true, "YYYYYY", "/", 4, 1),
+                ("FeeReceipt", "RCP", false, true, "YYYYYY", "/", 6, 1),
+                ("Enquiry", "ENQ", false, true, "YYYYYY", "/", 4, 1),
+                ("TransferCertificate", "TC", false, true, "YYYY-YY", "/", 4, 1),
+                ("Staff", "EMP", false, false, "None", "/", 4, 1)
+            };
+
+            var toAdd = new List<NumberingSeries>();
+            foreach (var def in defaultConfigs)
+            {
+                var ex = existingSeries.FirstOrDefault(s => s.ModuleType == def.ModuleType);
+                if (ex == null)
+                {
+                    toAdd.Add(new NumberingSeries
+                    {
+                        BranchId = branchId,
+                        ModuleType = def.ModuleType,
+                        Prefix = def.Prefix,
+                        IncludeBranchCode = def.IncludeBranch, // false
+                        IncludeAcademicYear = def.IncludeAY,
+                        YearFormat = def.YearFormat,
+                        Separator = def.Separator,
+                        Digits = def.Digits,
+                        StartNumber = def.StartNum,
+                        CurrentSequence = 0,
+                        IsActive = true
+                    });
+                }
+                else if (ex.IncludeBranchCode)
+                {
+                    // Remove MAIN branch code from existing series
+                    ex.IncludeBranchCode = false;
+                }
+            }
+
+            if (toAdd.Count > 0)
+            {
+                context.NumberingSeries.AddRange(toAdd);
+            }
+            await context.SaveChangesAsync();
         }
     }
 }

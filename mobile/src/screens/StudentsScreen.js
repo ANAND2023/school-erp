@@ -33,6 +33,11 @@ const DEFAULT_CATEGORIES = [
   { id: 3, name: 'SC' },
   { id: 4, name: 'ST' },
   { id: 5, name: 'EWS' },
+  { id: 6, name: 'Minority' },
+  { id: 7, name: 'Specially Abled (PWD)' },
+  { id: 8, name: 'BPL' },
+  { id: 9, name: 'Single Girl Child' },
+  { id: 10, name: 'Staff Ward' },
 ];
 
 const DEFAULT_RELIGIONS = [
@@ -41,7 +46,10 @@ const DEFAULT_RELIGIONS = [
   { id: 3, name: 'Sikh' },
   { id: 4, name: 'Christian' },
   { id: 5, name: 'Jain' },
-  { id: 6, name: 'Other' },
+  { id: 6, name: 'Buddhist' },
+  { id: 7, name: 'Parsi / Zoroastrian' },
+  { id: 8, name: 'Jewish' },
+  { id: 9, name: 'Other' },
 ];
 
 export default function StudentsScreen({ navigation }) {
@@ -864,6 +872,59 @@ export default function StudentsScreen({ navigation }) {
                     </View>
                   </View>
                 ) : null}
+
+                {/* Siblings in School */}
+                {selectedStudentDetail.siblings && selectedStudentDetail.siblings.length > 0 && (
+                  <View style={styles.sectionCard}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+                      <MaterialIcons name="people" size={18} color={colors.primary} />
+                      <Text style={[styles.sectionHeading, { marginBottom: 0 }]}>
+                        Siblings in School ({selectedStudentDetail.siblings.length})
+                      </Text>
+                    </View>
+                    {selectedStudentDetail.siblings.map((sib, sIdx) => (
+                      <TouchableOpacity
+                        key={sIdx}
+                        style={styles.siblingDetailCard}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          if (sib.studentId) {
+                            openStudentDetail(sib.studentId);
+                          }
+                        }}
+                      >
+                        {sib.photoUrl ? (
+                          <Image source={{ uri: sib.photoUrl }} style={styles.siblingDetailAvatar} />
+                        ) : (
+                          <View style={styles.siblingDetailAvatarPlaceholder}>
+                            <Text style={styles.siblingDetailAvatarInitial}>
+                              {sib.fullName ? sib.fullName.charAt(0).toUpperCase() : 'S'}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.siblingDetailName}>{sib.fullName}</Text>
+                          <View style={{ flexDirection: 'row', gap: 6, marginVertical: 3 }}>
+                            <View style={styles.siblingDetailBadge}>
+                              <Text style={styles.siblingDetailBadgeText}>Adm: {sib.admissionNo}</Text>
+                            </View>
+                            <View style={[styles.siblingDetailBadge, { backgroundColor: isDark ? '#082f49' : '#e0f2fe' }]}>
+                              <Text style={[styles.siblingDetailBadgeText, { color: '#0284c7' }]}>
+                                Class {sib.className || '—'} - {sib.sectionName || '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          {sib.guardianMobile ? (
+                            <Text style={styles.siblingDetailGuardian}>
+                              Guardian: {sib.guardianName || 'Parent'} ({sib.guardianMobile})
+                            </Text>
+                          ) : null}
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
                 {/* Print Official Admission Slip Action Bar */}
                 {canPrint && (
@@ -2197,5 +2258,55 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#ffffff',
+  },
+
+  // Sibling in Detail Modal
+  siblingDetailCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.cardBg,
+    marginBottom: 8,
+  },
+  siblingDetailAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  siblingDetailAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: isDark ? '#1e3a8a' : '#e0e7ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  siblingDetailAvatarInitial: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#4338ca',
+  },
+  siblingDetailName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  siblingDetailBadge: {
+    backgroundColor: colors.inputBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  siblingDetailBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  siblingDetailGuardian: {
+    fontSize: 11,
+    color: colors.textSecondary,
   },
 });

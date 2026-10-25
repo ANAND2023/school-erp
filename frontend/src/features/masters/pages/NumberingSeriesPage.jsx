@@ -33,7 +33,7 @@ import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
 
 // Helper to compute sample preview on frontend in real-time
-const calculatePreview = (item, branchCode = 'MAIN', ayName = '2026-27') => {
+const calculatePreview = (item, branchCode = '', ayName = '2026-27') => {
   const parts = [];
 
   // 1. Branch Code
@@ -371,7 +371,7 @@ export const NumberingSeriesPage = () => {
                                 onChange={(e) => handleChange(index, 'includeBranchCode', e.target.checked)}
                               />
                             }
-                            label={<Typography variant="body2">Include Branch Code (e.g. MAIN)</Typography>}
+                            label={<Typography variant="body2">Include Branch Code</Typography>}
                           />
                         </Grid>
 

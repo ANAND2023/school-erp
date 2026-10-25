@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchoolERP.API.Filters;
+using SchoolERP.API.Helpers;
 using SchoolERP.Application.Common.Interfaces;
 using SchoolERP.Application.Common.Models;
 using SchoolERP.Application.DTOs;
@@ -33,7 +34,20 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<List<SimpleMasterDto>>>> GetMasters([FromQuery] MasterType? type)
         {
             var branchId = _currentUserService.BranchId;
-            var query = _context.SimpleMasters.Where(m => m.BranchId == branchId);
+
+            if (branchId > 0)
+            {
+                var needSeed = type.HasValue
+                    ? !await _context.SimpleMasters.AnyAsync(m => m.BranchId == branchId && m.Type == type.Value && m.IsActive)
+                    : !await _context.SimpleMasters.AnyAsync(m => m.BranchId == branchId && m.IsActive);
+
+                if (needSeed)
+                {
+                    await SchoolDefaultsHelper.SeedBranchSimpleMastersAsync(_context, branchId);
+                }
+            }
+
+            var query = _context.SimpleMasters.Where(m => m.BranchId == branchId && m.IsActive);
 
             if (type.HasValue)
             {

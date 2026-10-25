@@ -28,6 +28,11 @@ const DEFAULT_CATEGORIES = [
   { id: 3, name: 'SC' },
   { id: 4, name: 'ST' },
   { id: 5, name: 'EWS' },
+  { id: 6, name: 'Minority' },
+  { id: 7, name: 'Specially Abled (PWD)' },
+  { id: 8, name: 'BPL' },
+  { id: 9, name: 'Single Girl Child' },
+  { id: 10, name: 'Staff Ward' },
 ];
 
 const DEFAULT_RELIGIONS = [
@@ -36,7 +41,10 @@ const DEFAULT_RELIGIONS = [
   { id: 3, name: 'Sikh' },
   { id: 4, name: 'Christian' },
   { id: 5, name: 'Jain' },
-  { id: 6, name: 'Other' },
+  { id: 6, name: 'Buddhist' },
+  { id: 7, name: 'Parsi / Zoroastrian' },
+  { id: 8, name: 'Jewish' },
+  { id: 9, name: 'Other' },
 ];
 
 export default function NewAdmissionScreen({ route, navigation }) {
@@ -68,6 +76,17 @@ export default function NewAdmissionScreen({ route, navigation }) {
     moduleTitle: 'Admission Confirmation (WhatsApp)',
     templateData: {},
   });
+
+  // SIBLING STATE (FR-3.4)
+  const [attachedSibling, setAttachedSibling] = useState(null);
+  const [siblingModalVisible, setSiblingModalVisible] = useState(false);
+  const [siblingSearchTerm, setSiblingSearchTerm] = useState('');
+  const [siblingSearchResults, setSiblingSearchResults] = useState([]);
+  const [searchingSibling, setSearchingSibling] = useState(false);
+  const [checkingMobileSibling, setCheckingMobileSibling] = useState(false);
+
+  // Age warning (BR-3.5)
+  const [ageWarning, setAgeWarning] = useState('');
 
   // STEP 1: ESSENTIAL DETAILS (MANDATORY & QUICK SAVE)
   const [studentPhoto, setStudentPhoto] = useState(null);
@@ -153,6 +172,195 @@ export default function NewAdmissionScreen({ route, navigation }) {
     } catch (e) {
       console.warn('Gallery error:', e);
       Alert.alert('Error', 'Unable to select image.');
+    }
+  };
+
+  // BR-3.5: Age check warning against 31st March cutoff
+  useEffect(() => {
+    if (dob) {
+      try {
+        const birthDate = new Date(dob);
+        const cutOff = new Date('2026-03-31');
+        const diffMs = cutOff.getTime() - birthDate.getTime();
+        const ageYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+        if (ageYears > 0 && ageYears < 3) {
+          setAgeWarning(`Notice: Student will be ${ageYears.toFixed(1)} years old as of 31-March-2026. Typical minimum age for Nursery is 3 years.`);
+        } else {
+          setAgeWarning('');
+        }
+      } catch (e) {
+        setAgeWarning('');
+      }
+    }
+  }, [dob]);
+
+  // Search siblings by name, admission no, or guardian mobile
+  const handleSearchSibling = async (term) => {
+    setSiblingSearchTerm(term);
+    if (!term || term.trim().length < 2) {
+      setSiblingSearchResults([]);
+      return;
+    }
+    try {
+      setSearchingSibling(true);
+      const res = await studentApi.checkSiblings('', term.trim());
+      if (res.data?.success && res.data.data?.length > 0) {
+        setSiblingSearchResults(res.data.data);
+      } else {
+        const fallbackRes = await studentApi.getStudents({ search: term.trim(), pageSize: 15 });
+        const items = fallbackRes.data?.data?.items || fallbackRes.data?.items || [];
+        setSiblingSearchResults(
+          items.map((s) => ({
+            studentId: s.id,
+            admissionNo: s.admissionNo,
+            fullName: s.fullName,
+            className: s.className,
+            sectionName: s.sectionName,
+            guardianName: s.guardianName,
+            guardianMobile: s.guardianMobile,
+            photoUrl: s.photoUrl,
+          }))
+        );
+      }
+    } catch (err) {
+      console.warn('Error searching siblings:', err);
+      try {
+        const fallbackRes = await studentApi.getStudents({ search: term.trim(), pageSize: 15 });
+        const items = fallbackRes.data?.data?.items || fallbackRes.data?.items || [];
+        setSiblingSearchResults(
+          items.map((s) => ({
+            studentId: s.id,
+            admissionNo: s.admissionNo,
+            fullName: s.fullName,
+            className: s.className,
+            sectionName: s.sectionName,
+            guardianName: s.guardianName,
+            guardianMobile: s.guardianMobile,
+            photoUrl: s.photoUrl,
+          }))
+        );
+      } catch (e) {}
+    } finally {
+      setSearchingSibling(false);
+    }
+  };
+
+  // Attach sibling and auto-populate all parent & family information
+  const handleAttachSibling = async (siblingItem) => {
+    try {
+      setSearchingSibling(true);
+      const targetId = siblingItem.studentId || siblingItem.id;
+      const res = await studentApi.getStudentDetail(targetId);
+      if (res.data?.success && res.data?.data) {
+        const detail = res.data.data;
+        const father = detail.guardians?.find((g) => g.relation?.toLowerCase() === 'father');
+        const mother = detail.guardians?.find((g) => g.relation?.toLowerCase() === 'mother');
+        const primary = detail.guardians?.find((g) => g.isPrimary) || detail.guardians?.[0];
+
+        const fatherDoc = detail.documents?.find((d) => d.title?.toLowerCase().includes('father'));
+        const motherDoc = detail.documents?.find((d) => d.title?.toLowerCase().includes('mother'));
+        const guardianDoc = detail.documents?.find((d) => d.title?.toLowerCase().includes('guardian'));
+
+        const fName = father?.name || (primary?.relation?.toLowerCase() === 'father' ? primary.name : '') || primary?.name || '';
+        const fMobile = father?.mobile || primary?.mobile || '';
+        const fEmail = father?.email || primary?.email || '';
+        const fOcc = father?.occupation || primary?.occupation || '';
+
+        const mName = mother?.name || '';
+        const mMobile = mother?.mobile || fMobile;
+        const mOcc = mother?.occupation || '';
+
+        setAttachedSibling({
+          id: detail.id,
+          admissionNo: detail.admissionNo,
+          fullName: detail.fullName,
+          className: detail.currentEnrollment?.className || siblingItem.className || '',
+          sectionName: detail.currentEnrollment?.sectionName || siblingItem.sectionName || '',
+          fatherName: fName,
+          motherName: mName,
+          guardianMobile: fMobile,
+          photoUrl: detail.photoUrl,
+        });
+
+        // Auto-fill Parent & Family information
+        if (fName) setFatherName(fName.toUpperCase());
+        if (fMobile) setMobile(fMobile);
+        if (fEmail) setFatherEmail(fEmail);
+        if (fOcc) setFatherOccupation(fOcc);
+
+        if (mName) setMotherName(mName.toUpperCase());
+        if (mMobile) setMotherMobile(mMobile);
+        if (mOcc) setMotherOccupation(mOcc);
+
+        if (fatherDoc?.filePath) setFatherPhoto(fatherDoc.filePath);
+        if (motherDoc?.filePath) setMotherPhoto(motherDoc.filePath);
+        if (guardianDoc?.filePath) setGuardianPhoto(guardianDoc.filePath);
+
+        // Address & Family Details
+        if (detail.address) setAddress(detail.address);
+        if (detail.city) setCity(detail.city);
+        if (detail.state) setState(detail.state);
+        if (detail.pincode) setPincode(detail.pincode);
+        if (detail.emergencyContact || fMobile) setEmergencyContact(detail.emergencyContact || fMobile);
+        if (detail.categoryId) setSelectedCategoryId(detail.categoryId);
+        if (detail.religionId) setSelectedReligionId(detail.religionId);
+
+        setSiblingModalVisible(false);
+        Alert.alert(
+          'Sibling Linked!',
+          `Sibling (${detail.fullName} - ${detail.admissionNo}) linked successfully. Parent, contact and address details have been auto-filled.`
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to attach sibling:', err);
+      Alert.alert('Error', 'Failed to fetch sibling details.');
+    } finally {
+      setSearchingSibling(false);
+    }
+  };
+
+  // Detach sibling link
+  const handleDetachSibling = () => {
+    Alert.alert('Remove Sibling Link', 'Are you sure you want to remove the linked sibling?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          setAttachedSibling(null);
+        },
+      },
+    ]);
+  };
+
+  // Primary mobile auto-detect sibling
+  const handleMobileChange = async (text) => {
+    const clean = text.replace(/[^0-9]/g, '');
+    setMobile(clean);
+    if (clean.length === 10 && !attachedSibling) {
+      try {
+        setCheckingMobileSibling(true);
+        const res = await studentApi.checkSiblings(clean);
+        if (res.data?.success && res.data.data?.length > 0) {
+          const sibs = res.data.data;
+          const first = sibs[0];
+          Alert.alert(
+            'Sibling Detected in School',
+            `Student "${first.fullName}" (Adm: ${first.admissionNo}, Class: ${first.className || ''}-${first.sectionName || ''}) is already enrolled with this mobile number.\n\nWould you like to link them as sibling and auto-fill parent details?`,
+            [
+              { text: 'No, Keep Separate', style: 'cancel' },
+              {
+                text: 'Yes, Link Sibling',
+                onPress: () => handleAttachSibling(first),
+              },
+            ]
+          );
+        }
+      } catch (err) {
+        console.warn('Check siblings error:', err);
+      } finally {
+        setCheckingMobileSibling(false);
+      }
     }
   };
 
@@ -317,7 +525,8 @@ export default function NewAdmissionScreen({ route, navigation }) {
         pincode: pincode.trim() || null,
         emergencyContact: emergencyContact.trim() || mobile.trim() || null,
         guardians,
-        enquiryId: prefill?.id || null,
+        enquiryId: prefill?.id || prefill?.enquiryId || null,
+        siblingStudentId: attachedSibling ? attachedSibling.id : null,
       };
 
       const res = await studentApi.admitStudent(payload);
@@ -368,6 +577,8 @@ export default function NewAdmissionScreen({ route, navigation }) {
         city,
         state,
         pincode,
+        siblingName: attachedSibling ? attachedSibling.fullName : null,
+        siblingAdmissionNo: attachedSibling ? attachedSibling.admissionNo : null,
       };
 
       setAdmittedStudentData(admittedStudent);
@@ -414,6 +625,9 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
   const handleResetForNewAdmission = () => {
     setAdmissionModalVisible(false);
+    setAttachedSibling(null);
+    setSiblingSearchResults([]);
+    setSiblingSearchTerm('');
     setFirstName('');
     setLastName('');
     setDob('2019-05-15');
@@ -553,6 +767,72 @@ export default function NewAdmissionScreen({ route, navigation }) {
               </View>
             </View>
 
+            {/* Sibling Link Notice Bar (FR-3.4) */}
+            <View style={[styles.siblingBanner, attachedSibling ? styles.siblingBannerAttached : styles.siblingBannerDefault]}>
+              <View style={styles.siblingBannerHeader}>
+                <View style={[styles.siblingBannerIconBox, attachedSibling && { backgroundColor: '#dcfce7' }]}>
+                  <MaterialIcons
+                    name="people-alt"
+                    size={20}
+                    color={attachedSibling ? '#15803d' : '#0284c7'}
+                  />
+                </View>
+                <View style={styles.siblingBannerContent}>
+                  {attachedSibling ? (
+                    <>
+                      <Text style={styles.siblingBannerTitleAttached}>
+                        Sibling Linked: {attachedSibling.fullName}
+                      </Text>
+                      <Text style={styles.siblingBannerSubAttached}>
+                        Adm: {attachedSibling.admissionNo} • Class {attachedSibling.className}-{attachedSibling.sectionName} • Parent info auto-filled
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.siblingBannerTitle}>Has a sibling in this school?</Text>
+                      <Text style={styles.siblingBannerSub}>
+                        Attach them to auto-fill parent details, address & family records.
+                      </Text>
+                    </>
+                  )}
+                </View>
+              </View>
+              <View style={styles.siblingBannerActions}>
+                {attachedSibling ? (
+                  <>
+                    <TouchableOpacity
+                      style={styles.siblingChangeBtn}
+                      onPress={() => {
+                        setSiblingSearchTerm('');
+                        setSiblingSearchResults([]);
+                        setSiblingModalVisible(true);
+                      }}
+                    >
+                      <Text style={styles.siblingChangeBtnText}>Change</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.siblingRemoveBtn}
+                      onPress={handleDetachSibling}
+                    >
+                      <Text style={styles.siblingRemoveBtnText}>Remove</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.siblingAttachBtn}
+                    onPress={() => {
+                      setSiblingSearchTerm('');
+                      setSiblingSearchResults([]);
+                      setSiblingModalVisible(true);
+                    }}
+                  >
+                    <MaterialIcons name="search" size={16} color="#ffffff" />
+                    <Text style={styles.siblingAttachBtnText}>Search & Attach Sibling</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
             <Text style={styles.sectionNotice}>
               ⚡ Fill these required fields and tap <Text style={{ fontWeight: '800', color: '#059669' }}>Quick Save</Text> to admit student instantly, or continue to add optional details.
             </Text>
@@ -653,6 +933,14 @@ export default function NewAdmissionScreen({ route, navigation }) {
               </View>
             </View>
 
+            {/* Age Warning Notice (BR-3.5) */}
+            {ageWarning ? (
+              <View style={styles.ageWarningBox}>
+                <Ionicons name="information-circle-outline" size={16} color="#b45309" />
+                <Text style={styles.ageWarningText}>{ageWarning}</Text>
+              </View>
+            ) : null}
+
             {/* 3. Class Allotment */}
             <Text style={styles.subSectionTitle}>3. CLASS ALLOTMENT</Text>
             {loadingClasses ? (
@@ -719,14 +1007,17 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
             <View style={styles.fieldRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Primary Mobile No (10-Digit) *</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={styles.label}>Primary Mobile No (10-Digit) *</Text>
+                  {checkingMobileSibling ? <ActivityIndicator size="small" color="#0284c7" /> : null}
+                </View>
                 <TextInput
                   style={styles.input}
                   placeholder="10 digit mobile"
                   keyboardType="phone-pad"
                   maxLength={10}
                   value={mobile}
-                  onChangeText={setMobile}
+                  onChangeText={handleMobileChange}
                   placeholderTextColor="#94a3b8"
                 />
               </View>
@@ -1286,6 +1577,137 @@ export default function NewAdmissionScreen({ route, navigation }) {
         moduleTitle={whatsAppModal.moduleTitle}
         templateData={whatsAppModal.templateData}
       />
+
+      {/* Sibling Search & Attach Modal (FR-3.4) */}
+      <Modal
+        visible={siblingModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSiblingModalVisible(false)}
+      >
+        <SafeAreaView style={styles.siblingModalBackdrop}>
+          <View style={styles.siblingModalContainer}>
+            <View style={styles.siblingModalHeader}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <MaterialIcons name="link" size={20} color="#0284c7" />
+                  <Text style={styles.siblingModalTitle}>Search & Attach Sibling</Text>
+                </View>
+                <Text style={styles.siblingModalSubtitle}>
+                  Search by student name, admission number, or mobile
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setSiblingModalVisible(false)}
+                style={styles.siblingModalCloseBtn}
+              >
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Input Box */}
+            <View style={styles.siblingSearchBox}>
+              <MaterialIcons name="search" size={20} color="#94a3b8" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.siblingSearchInput}
+                placeholder="Type name, admission no, or mobile (e.g. Rahul, 9876543210)..."
+                placeholderTextColor="#94a3b8"
+                value={siblingSearchTerm}
+                onChangeText={handleSearchSibling}
+                autoFocus={true}
+              />
+              {searchingSibling ? (
+                <ActivityIndicator size="small" color="#0284c7" />
+              ) : siblingSearchTerm ? (
+                <TouchableOpacity onPress={() => handleSearchSibling('')}>
+                  <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Sibling Search Results List */}
+            <ScrollView style={styles.siblingResultsScroll} keyboardShouldPersistTaps="handled">
+              {searchingSibling ? (
+                <View style={styles.siblingEmptyBox}>
+                  <ActivityIndicator size="large" color="#0284c7" />
+                  <Text style={styles.siblingEmptySub}>Searching students database...</Text>
+                </View>
+              ) : siblingSearchResults.length > 0 ? (
+                siblingSearchResults.map((sib) => {
+                  const sId = sib.studentId || sib.id;
+                  return (
+                    <View key={sId} style={styles.siblingResultCard}>
+                      <View style={styles.siblingResultRow}>
+                        {sib.photoUrl ? (
+                          <Image source={{ uri: sib.photoUrl }} style={styles.siblingResultAvatar} />
+                        ) : (
+                          <View style={styles.siblingResultAvatarPlaceholder}>
+                            <Text style={styles.siblingResultAvatarText}>
+                              {sib.fullName ? sib.fullName.charAt(0).toUpperCase() : 'S'}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.siblingResultName}>{sib.fullName}</Text>
+                          <View style={styles.siblingResultBadges}>
+                            <View style={styles.siblingResultBadge}>
+                              <Text style={styles.siblingResultBadgeText}>Adm: {sib.admissionNo}</Text>
+                            </View>
+                            <View style={[styles.siblingResultBadge, styles.siblingResultBadgeClass]}>
+                              <Text style={[styles.siblingResultBadgeText, { color: '#0369a1' }]}>
+                                Class: {sib.className || '—'} - {sib.sectionName || '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.siblingResultGuardian}>
+                            Parent: {sib.guardianName || '—'} • {sib.guardianMobile || '—'}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.siblingResultAttachBtn}
+                        onPress={() => handleAttachSibling(sib)}
+                      >
+                        <MaterialIcons name="link" size={16} color="#ffffff" />
+                        <Text style={styles.siblingResultAttachBtnText}>Attach Parent Info</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })
+              ) : siblingSearchTerm.trim().length >= 2 ? (
+                <View style={styles.siblingEmptyBox}>
+                  <MaterialIcons name="person-off" size={40} color="#cbd5e1" />
+                  <Text style={styles.siblingEmptyTitle}>
+                    No students found matching "{siblingSearchTerm}"
+                  </Text>
+                  <Text style={styles.siblingEmptySub}>
+                    Please check admission number, student name, or mobile number and try again.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.siblingEmptyBox}>
+                  <MaterialIcons name="group-add" size={44} color="#94a3b8" />
+                  <Text style={styles.siblingEmptyTitle}>
+                    Search for an existing student
+                  </Text>
+                  <Text style={styles.siblingEmptySub}>
+                    Enter student name, admission number, or parent mobile above to link their sibling.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.siblingModalFooter}>
+              <TouchableOpacity
+                style={styles.siblingModalCancelBtn}
+                onPress={() => setSiblingModalVisible(false)}
+              >
+                <Text style={styles.siblingModalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -2031,6 +2453,294 @@ function getStyles(colors, isDark) {
       fontSize: 12,
       fontWeight: '700',
       color: '#ffffff',
+    },
+
+    // Sibling Banner
+    siblingBanner: {
+      borderRadius: 10,
+      borderWidth: 1,
+      padding: 12,
+      marginBottom: 12,
+    },
+    siblingBannerDefault: {
+      backgroundColor: isDark ? '#082f49' : '#f0f9ff',
+      borderColor: isDark ? '#0369a1' : '#bae6fd',
+    },
+    siblingBannerAttached: {
+      backgroundColor: isDark ? '#052e16' : '#f0fdf4',
+      borderColor: isDark ? '#15803d' : '#86efac',
+    },
+    siblingBannerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    siblingBannerIconBox: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: isDark ? '#0c4a6e' : '#e0f2fe',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    siblingBannerContent: {
+      flex: 1,
+    },
+    siblingBannerTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: isDark ? '#38bdf8' : '#0369a1',
+    },
+    siblingBannerSub: {
+      fontSize: 11,
+      color: isDark ? '#bae6fd' : '#0284c7',
+      marginTop: 2,
+    },
+    siblingBannerTitleAttached: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: isDark ? '#4ade80' : '#15803d',
+    },
+    siblingBannerSubAttached: {
+      fontSize: 11,
+      color: isDark ? '#bbf7d0' : '#166534',
+      marginTop: 2,
+    },
+    siblingBannerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: 8,
+      marginTop: 10,
+      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+    },
+    siblingAttachBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: '#0284c7',
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 6,
+    },
+    siblingAttachBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
+    siblingChangeBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#0284c7',
+      backgroundColor: isDark ? '#082f49' : '#f0f9ff',
+    },
+    siblingChangeBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#0284c7',
+    },
+    siblingRemoveBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#ef4444',
+      backgroundColor: isDark ? '#450a0a' : '#fef2f2',
+    },
+    siblingRemoveBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#ef4444',
+    },
+
+    // Age Warning Notice
+    ageWarningBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: isDark ? '#451a03' : '#fef3c7',
+      borderWidth: 1,
+      borderColor: isDark ? '#78350f' : '#fde68a',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 10,
+    },
+    ageWarningText: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '600',
+      color: isDark ? '#fde68a' : '#b45309',
+    },
+
+    // Sibling Search Modal
+    siblingModalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-end',
+    },
+    siblingModalContainer: {
+      backgroundColor: colors.cardBg,
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      maxHeight: '85%',
+      paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    },
+    siblingModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    siblingModalTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    siblingModalSubtitle: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    siblingModalCloseBtn: {
+      padding: 6,
+    },
+    siblingSearchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 10,
+      marginHorizontal: 16,
+      marginVertical: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    siblingSearchInput: {
+      flex: 1,
+      fontSize: 13,
+      color: colors.text,
+      padding: 0,
+    },
+    siblingResultsScroll: {
+      maxHeight: 360,
+      paddingHorizontal: 16,
+    },
+    siblingResultCard: {
+      backgroundColor: colors.cardBg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 10,
+    },
+    siblingResultRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    siblingResultAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    siblingResultAvatarPlaceholder: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: isDark ? '#1e3a8a' : '#e0e7ff',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    siblingResultAvatarText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: '#4338ca',
+    },
+    siblingResultName: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    siblingResultBadges: {
+      flexDirection: 'row',
+      gap: 6,
+      marginVertical: 4,
+    },
+    siblingResultBadge: {
+      backgroundColor: colors.inputBg,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    siblingResultBadgeClass: {
+      backgroundColor: isDark ? '#082f49' : '#e0f2fe',
+    },
+    siblingResultBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    siblingResultGuardian: {
+      fontSize: 11,
+      color: colors.textSecondary,
+    },
+    siblingResultAttachBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      borderRadius: 6,
+      paddingVertical: 8,
+      marginTop: 10,
+    },
+    siblingResultAttachBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
+    siblingEmptyBox: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 36,
+      gap: 8,
+    },
+    siblingEmptyTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    siblingEmptySub: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+    },
+    siblingModalFooter: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+    },
+    siblingModalCancelBtn: {
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 8,
+      backgroundColor: colors.inputBg,
+    },
+    siblingModalCancelBtnText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
     },
   });
 }

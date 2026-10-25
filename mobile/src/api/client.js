@@ -305,6 +305,8 @@ export const studentApi = {
   getAdmissionSlipConfig: () => apiClient.get('/students/admission-slip-config'),
   assignRollNumbers: (data) => apiClient.post('/students/assign-roll-numbers', data),
   changeSection: (data) => apiClient.post('/students/change-section', data),
+  checkSiblings: (mobile, search) => apiClient.get('/students/siblings', { params: { mobile, search } }),
+  addDocument: (id, data) => apiClient.post(`/students/${id}/documents`, data),
 };
 
 // Fees
@@ -363,10 +365,17 @@ export const teacherAllocationApi = {
   getMyAllocations: (params) => apiClient.get('/teacher-allocations/my-allocations', { params }),
 };
 
-// Masters (Categories, Religions)
+// Masters (Categories, Religions, Houses, Documents, Designations, Departments, PaymentModes, Banks)
 export const masterApi = {
   getCategories: () => apiClient.get('/simplemasters', { params: { type: 1 } }),
   getReligions: () => apiClient.get('/simplemasters', { params: { type: 2 } }),
+  getHouses: () => apiClient.get('/simplemasters', { params: { type: 3 } }),
+  getDocumentTypes: () => apiClient.get('/simplemasters', { params: { type: 4 } }),
+  getDesignations: () => apiClient.get('/simplemasters', { params: { type: 5 } }),
+  getDepartments: () => apiClient.get('/simplemasters', { params: { type: 6 } }),
+  getPaymentModes: () => apiClient.get('/simplemasters', { params: { type: 7 } }),
+  getBanks: () => apiClient.get('/simplemasters', { params: { type: 8 } }),
+  getAllMasters: (type) => apiClient.get('/simplemasters', { params: type ? { type } : {} }),
 };
 
 // Exams
