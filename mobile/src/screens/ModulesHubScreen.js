@@ -34,6 +34,14 @@ export default function ModulesHubScreen({ navigation }) {
 
   const modules = [
     {
+      title: 'Dashboard & Overview',
+      icon: 'speedometer',
+      color: '#0284c7',
+      items: [
+        { label: 'Executive Dashboard', route: 'Dashboard', sub: 'Real-time KPIs, fee collection charts, attendance & analytics' },
+      ],
+    },
+    {
       title: 'Auth & Access',
       icon: 'shield-checkmark',
       color: '#6366f1',

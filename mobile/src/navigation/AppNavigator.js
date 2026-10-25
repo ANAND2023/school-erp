@@ -33,6 +33,7 @@ import ReportsScreen from '../screens/ReportsScreen';
 import StudentOperationsScreen from '../screens/StudentOperationsScreen';
 import FeeOperationsScreen from '../screens/FeeOperationsScreen';
 import SuperAdminScreen from '../screens/SuperAdminScreen';
+import DashboardScreen from '../screens/DashboardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -248,6 +249,11 @@ export default function AppNavigator() {
           name="SuperAdmin"
           component={SuperAdminScreen}
           options={{ title: 'Super Admin Portal' }}
+        />
+        <Stack.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>
