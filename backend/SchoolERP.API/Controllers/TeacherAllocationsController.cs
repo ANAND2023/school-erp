@@ -29,19 +29,49 @@ namespace SchoolERP.API.Controllers
             _currentUserService = currentUserService;
         }
 
+        private async Task<long> ResolveAcademicYearIdAsync(long? requestedYearId)
+        {
+            if (requestedYearId.HasValue && requestedYearId.Value > 0)
+            {
+                return requestedYearId.Value;
+            }
+
+            var currentYearId = _currentUserService.AcademicYearId;
+            if (currentYearId > 0)
+            {
+                return currentYearId;
+            }
+
+            var activeYearId = await _context.AcademicYears
+                .Where(y => y.IsCurrent)
+                .Select(y => y.Id)
+                .FirstOrDefaultAsync();
+
+            if (activeYearId > 0)
+            {
+                return activeYearId;
+            }
+
+            return await _context.AcademicYears
+                .Select(y => y.Id)
+                .FirstOrDefaultAsync();
+        }
+
         [HttpGet("class-teachers")]
         [HasPermission("TeacherAllocation", "View")]
-        public async Task<ActionResult<ApiResponse<List<ClassTeacherGridRowDto>>>> GetClassTeachers([FromQuery] long? classId)
+        public async Task<ActionResult<ApiResponse<List<ClassTeacherGridRowDto>>>> GetClassTeachers(
+            [FromQuery] long? classId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             // Get sections
             var sectionsQuery = _context.Sections
                 .Include(s => s.Class)
                 .Where(s => s.Class!.BranchId == branchId);
 
-            if (classId.HasValue)
+            if (classId.HasValue && classId.Value > 0)
             {
                 sectionsQuery = sectionsQuery.Where(s => s.ClassId == classId.Value);
             }
@@ -54,7 +84,7 @@ namespace SchoolERP.API.Controllers
             // Get existing class teacher allocations
             var allocations = await _context.TeacherAllocations
                 .Include(a => a.Employee)
-                .Where(a => a.BranchId == branchId && a.AcademicYearId == yearId && a.IsClassTeacher)
+                .Where(a => a.BranchId == branchId && a.AcademicYearId == targetYearId && a.IsClassTeacher)
                 .ToListAsync();
 
             var rows = sections.Select(s =>
@@ -70,7 +100,9 @@ namespace SchoolERP.API.Controllers
                     AllocationId = alloc?.Id,
                     EmployeeId = alloc?.EmployeeId,
                     TeacherName = alloc?.Employee != null ? alloc.Employee.FullName : null,
-                    TeacherCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null
+                    TeacherCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null,
+                    EmployeeName = alloc?.Employee != null ? alloc.Employee.FullName : null,
+                    EmployeeCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null
                 };
             }).ToList();
 
@@ -83,11 +115,11 @@ namespace SchoolERP.API.Controllers
         {
             // BR-4.2: One section has only one class teacher per academic year.
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(request.AcademicYearId);
 
             var existing = await _context.TeacherAllocations.FirstOrDefaultAsync(a =>
                 a.BranchId == branchId &&
-                a.AcademicYearId == yearId &&
+                a.AcademicYearId == targetYearId &&
                 a.ClassId == request.ClassId &&
                 a.SectionId == request.SectionId &&
                 a.IsClassTeacher);
@@ -115,7 +147,7 @@ namespace SchoolERP.API.Controllers
                 _context.TeacherAllocations.Add(new TeacherAllocation
                 {
                     BranchId = branchId,
-                    AcademicYearId = yearId,
+                    AcademicYearId = targetYearId,
                     ClassId = request.ClassId,
                     SectionId = request.SectionId,
                     EmployeeId = request.EmployeeId.Value,
@@ -133,19 +165,20 @@ namespace SchoolERP.API.Controllers
         [HasPermission("TeacherAllocation", "View")]
         public async Task<ActionResult<ApiResponse<List<SubjectTeacherGridRowDto>>>> GetSubjectTeachers(
             [FromQuery] long? classId,
-            [FromQuery] long? sectionId)
+            [FromQuery] long? sectionId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             // Get Class-Subject mappings for current session
             var classSubjectsQuery = _context.ClassSubjects
                 .Include(cs => cs.Class)
                     .ThenInclude(c => c!.Sections)
                 .Include(cs => cs.Subject)
-                .Where(cs => cs.Class!.BranchId == branchId && cs.AcademicYearId == yearId);
+                .Where(cs => cs.Class!.BranchId == branchId && cs.AcademicYearId == targetYearId);
 
-            if (classId.HasValue)
+            if (classId.HasValue && classId.Value > 0)
             {
                 classSubjectsQuery = classSubjectsQuery.Where(cs => cs.ClassId == classId.Value);
             }
@@ -155,10 +188,30 @@ namespace SchoolERP.API.Controllers
                 .ThenBy(cs => cs.Subject!.Name)
                 .ToListAsync();
 
+            if (!classSubjects.Any())
+            {
+                // Fallback to any class-subjects defined for this branch if year-specific ones don't exist yet
+                var fallbackQuery = _context.ClassSubjects
+                    .Include(cs => cs.Class)
+                        .ThenInclude(c => c!.Sections)
+                    .Include(cs => cs.Subject)
+                    .Where(cs => cs.Class!.BranchId == branchId);
+
+                if (classId.HasValue && classId.Value > 0)
+                {
+                    fallbackQuery = fallbackQuery.Where(cs => cs.ClassId == classId.Value);
+                }
+
+                classSubjects = await fallbackQuery
+                    .OrderBy(cs => cs.Class!.DisplayOrder)
+                    .ThenBy(cs => cs.Subject!.Name)
+                    .ToListAsync();
+            }
+
             // Get existing subject teacher allocations
             var allocations = await _context.TeacherAllocations
                 .Include(a => a.Employee)
-                .Where(a => a.BranchId == branchId && a.AcademicYearId == yearId && !a.IsClassTeacher)
+                .Where(a => a.BranchId == branchId && a.AcademicYearId == targetYearId && !a.IsClassTeacher)
                 .ToListAsync();
 
             var result = new List<SubjectTeacherGridRowDto>();
@@ -166,7 +219,7 @@ namespace SchoolERP.API.Controllers
             foreach (var cs in classSubjects)
             {
                 var sections = cs.Class?.Sections?.OrderBy(s => s.Name).ToList() ?? new List<Section>();
-                if (sectionId.HasValue)
+                if (sectionId.HasValue && sectionId.Value > 0)
                 {
                     sections = sections.Where(s => s.Id == sectionId.Value).ToList();
                 }
@@ -187,7 +240,9 @@ namespace SchoolERP.API.Controllers
                         AllocationId = alloc?.Id,
                         EmployeeId = alloc?.EmployeeId,
                         TeacherName = alloc?.Employee != null ? alloc.Employee.FullName : null,
-                        TeacherCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null
+                        TeacherCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null,
+                        EmployeeName = alloc?.Employee != null ? alloc.Employee.FullName : null,
+                        EmployeeCode = alloc?.Employee != null ? alloc.Employee.EmployeeCode : null
                     });
                 }
             }
@@ -200,11 +255,11 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse>> SaveSubjectTeacher([FromBody] SaveSubjectTeacherDto request)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(request.AcademicYearId);
 
             var existing = await _context.TeacherAllocations.FirstOrDefaultAsync(a =>
                 a.BranchId == branchId &&
-                a.AcademicYearId == yearId &&
+                a.AcademicYearId == targetYearId &&
                 a.ClassId == request.ClassId &&
                 a.SectionId == request.SectionId &&
                 a.SubjectId == request.SubjectId &&
@@ -232,7 +287,7 @@ namespace SchoolERP.API.Controllers
                 _context.TeacherAllocations.Add(new TeacherAllocation
                 {
                     BranchId = branchId,
-                    AcademicYearId = yearId,
+                    AcademicYearId = targetYearId,
                     ClassId = request.ClassId,
                     SectionId = request.SectionId,
                     SubjectId = request.SubjectId,
@@ -247,11 +302,11 @@ namespace SchoolERP.API.Controllers
         }
 
         [HttpGet("my-allocations")]
-        public async Task<ActionResult<ApiResponse<List<TeacherAllocationSummaryDto>>>> GetMyAllocations()
+        public async Task<ActionResult<ApiResponse<List<TeacherAllocationSummaryDto>>>> GetMyAllocations([FromQuery] long? academicYearId)
         {
             // FR-4.4: Teacher login shows only allotted classes/subjects in attendance and marks entry
             var userId = _currentUserService.UserId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             var employee = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
             if (employee == null)
@@ -263,7 +318,7 @@ namespace SchoolERP.API.Controllers
                 .Include(a => a.Class)
                 .Include(a => a.Section)
                 .Include(a => a.Subject)
-                .Where(a => a.EmployeeId == employee.Id && a.AcademicYearId == yearId)
+                .Where(a => a.EmployeeId == employee.Id && a.AcademicYearId == targetYearId)
                 .Select(a => new TeacherAllocationSummaryDto
                 {
                     Id = a.Id,

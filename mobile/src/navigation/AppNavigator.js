@@ -29,6 +29,10 @@ import MastersScreen from '../screens/MastersScreen';
 import UsersScreen from '../screens/UsersScreen';
 import ModulesHubScreen from '../screens/ModulesHubScreen';
 import StudentPortalScreen from '../screens/StudentPortalScreen';
+import ReportsScreen from '../screens/ReportsScreen';
+import StudentOperationsScreen from '../screens/StudentOperationsScreen';
+import FeeOperationsScreen from '../screens/FeeOperationsScreen';
+import SuperAdminScreen from '../screens/SuperAdminScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -224,6 +228,26 @@ export default function AppNavigator() {
           name="Users"
           component={UsersScreen}
           options={{ title: 'User Accounts' }}
+        />
+        <Stack.Screen
+          name="Reports"
+          component={ReportsScreen}
+          options={{ title: 'Reports & Analytics Hub' }}
+        />
+        <Stack.Screen
+          name="StudentOperations"
+          component={StudentOperationsScreen}
+          options={{ title: 'Student Administrative Suite' }}
+        />
+        <Stack.Screen
+          name="FeeOperations"
+          component={FeeOperationsScreen}
+          options={{ title: 'Fee Structures & Billing' }}
+        />
+        <Stack.Screen
+          name="SuperAdmin"
+          component={SuperAdminScreen}
+          options={{ title: 'Super Admin Portal' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

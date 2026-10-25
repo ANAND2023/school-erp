@@ -162,7 +162,20 @@ export const authApi = {
   getUsers: (params) => apiClient.get('/users', { params }),
   getUser: (id) => apiClient.get(`/users/${id}`),
   getRoles: () => apiClient.get('/roles'),
+  getRole: (id) => apiClient.get(`/roles/${id}`),
+  createRole: (data) => apiClient.post('/roles', data),
+  updateRole: (id, data) => apiClient.put(`/roles/${id}`, data),
+  deleteRole: (id) => apiClient.delete(`/roles/${id}`),
   toggleUserStatus: (id) => apiClient.put(`/users/${id}/status`),
+};
+
+// Roles & Permissions Matrix
+export const roleApi = {
+  getRoles: () => apiClient.get('/roles'),
+  getRole: (id) => apiClient.get(`/roles/${id}`),
+  createRole: (data) => apiClient.post('/roles', data),
+  updateRole: (id, data) => apiClient.put(`/roles/${id}`, data),
+  deleteRole: (id) => apiClient.delete(`/roles/${id}`),
 };
 
 // Dashboard Stats
@@ -216,8 +229,37 @@ export const classApi = {
   updateSection: (sectionId, data) => apiClient.put(`/classes/sections/${sectionId}`, data),
   deleteSection: (sectionId) => apiClient.delete(`/classes/sections/${sectionId}`),
   getSubjects: () => apiClient.get('/subjects'),
+  createSubject: (data) => apiClient.post('/subjects', data),
+  updateSubject: (id, data) => apiClient.put(`/subjects/${id}`, data),
+  deleteSubject: (id) => apiClient.delete(`/subjects/${id}`),
   getAcademicYears: () => apiClient.get('/academicyears'),
   getBranch: () => apiClient.get('/branches/current'),
+};
+
+export const subjectApi = {
+  getSubjects: () => apiClient.get('/subjects'),
+  createSubject: (data) => apiClient.post('/subjects', data),
+  updateSubject: (id, data) => apiClient.put(`/subjects/${id}`, data),
+  deleteSubject: (id) => apiClient.delete(`/subjects/${id}`),
+};
+
+export const schoolApi = {
+  getSchools: (params) => apiClient.get('/schools', { params }),
+  getSchool: (id) => apiClient.get(`/schools/${id}`),
+  createSchool: (data) => apiClient.post('/schools', data),
+  updateSchool: (id, data) => apiClient.put(`/schools/${id}`, data),
+  deleteSchool: (id) => apiClient.delete(`/schools/${id}`),
+};
+
+export const branchApi = {
+  getBranches: (params) => apiClient.get('/branches', { params }),
+  getBranch: (id) => apiClient.get(`/branches/${id}`),
+  createBranch: (data) => apiClient.post('/branches', data),
+  updateBranch: (id, data) => apiClient.put(`/branches/${id}`, data),
+  deleteBranch: (id) => apiClient.delete(`/branches/${id}`),
+  getCurrentBranch: () => apiClient.get('/branches/current'),
+  getIdCardTemplate: () => apiClient.get('/branches/current/id-card-template'),
+  saveIdCardTemplate: (data) => apiClient.post('/branches/current/id-card-template', data),
 };
 
 export const academicYearApi = {
@@ -239,6 +281,9 @@ export const attendanceApi = {
   saveStaffAttendanceBulk: (data) =>
     apiClient.post('/attendance/staff/bulk', data),
   getHolidays: () => apiClient.get('/attendance/holidays'),
+  createHoliday: (data) => apiClient.post('/attendance/holidays', data),
+  updateHoliday: (id, data) => apiClient.put(`/attendance/holidays/${id}`, data),
+  deleteHoliday: (id) => apiClient.delete(`/attendance/holidays/${id}`),
   getLeaveRequests: (params) => apiClient.get('/leave-requests', { params }),
   applyLeave: (data) => apiClient.post('/leave-requests', data),
   actionLeave: (id, data) => apiClient.post(`/leave-requests/${id}/action`, data),
@@ -253,9 +298,13 @@ export const studentApi = {
   getEnquiries: (params) => apiClient.get('/enquiries', { params }),
   getEnquiry: (id) => apiClient.get(`/enquiries/${id}`),
   createEnquiry: (data) => apiClient.post('/enquiries', data),
+  updateEnquiry: (id, data) => apiClient.put(`/enquiries/${id}`, data),
+  deleteEnquiry: (id) => apiClient.delete(`/enquiries/${id}`),
   addFollowup: (id, data) => apiClient.post(`/enquiries/${id}/followup`, data),
   getEnquirySlipConfig: () => apiClient.get('/enquiries/slip-config'),
   getAdmissionSlipConfig: () => apiClient.get('/students/admission-slip-config'),
+  assignRollNumbers: (data) => apiClient.post('/students/assign-roll-numbers', data),
+  changeSection: (data) => apiClient.post('/students/change-section', data),
 };
 
 // Fees
@@ -270,16 +319,48 @@ export const feesApi = {
   getReceiptConfig: () => apiClient.get('/fees/receipt-config'),
   getDefaulters: (params) => apiClient.get('/fees/reports/defaulters', { params }),
   getFeeStructures: () => apiClient.get('/fees/structures'),
+  getFeeHeads: () => apiClient.get('/fees/heads'),
+  getConcessions: (params) => apiClient.get('/fees/concessions', { params }),
+  createConcession: (data) => apiClient.post('/fees/concessions', data),
+  updateConcession: (id, data) => apiClient.put(`/fees/concessions/${id}`, data),
+  deleteConcession: (id) => apiClient.delete(`/fees/concessions/${id}`),
+  getDiscountSchemes: () => apiClient.get('/fees/discount-schemes'),
+  createDiscountScheme: (data) => apiClient.post('/fees/discount-schemes', data),
+  updateDiscountScheme: (id, data) => apiClient.put(`/fees/discount-schemes/${id}`, data),
+  deleteDiscountScheme: (id) => apiClient.delete(`/fees/discount-schemes/${id}`),
 };
 
 // Staff & Faculty
 export const staffApi = {
   getEmployees: (params) => apiClient.get('/employees', { params }),
   getEmployee: (id) => apiClient.get(`/employees/${id}`),
+  getEmployeeDetail: (id) => apiClient.get(`/employees/${id}`),
   createEmployee: (data) => apiClient.post('/employees', data),
   updateEmployee: (id, data) => apiClient.put(`/employees/${id}`, data),
   getDepartments: () => apiClient.get('/simplemasters', { params: { type: 6 } }),
   getDesignations: () => apiClient.get('/simplemasters', { params: { type: 5 } }),
+  getClassTeachers: (params) => {
+    const classId = typeof params === 'object' ? params?.classId : params;
+    const academicYearId = typeof params === 'object' ? params?.academicYearId : undefined;
+    return apiClient.get('/teacher-allocations/class-teachers', { params: { classId, academicYearId } });
+  },
+  saveClassTeacher: (data) => apiClient.post('/teacher-allocations/class-teachers', data),
+  getSubjectTeachers: (params) => apiClient.get('/teacher-allocations/subject-teachers', { params }),
+  saveSubjectTeacher: (data) => apiClient.post('/teacher-allocations/subject-teachers', data),
+  getMyAllocations: (params) => apiClient.get('/teacher-allocations/my-allocations', { params }),
+};
+
+// Teacher Allocations
+export const teacherAllocationApi = {
+  getClassTeachers: (params) => {
+    const classId = typeof params === 'object' ? params?.classId : params;
+    const academicYearId = typeof params === 'object' ? params?.academicYearId : undefined;
+    return apiClient.get('/teacher-allocations/class-teachers', { params: { classId, academicYearId } });
+  },
+  saveClassTeacher: (data) => apiClient.post('/teacher-allocations/class-teachers', data),
+  getSubjectTeachers: (params) => apiClient.get('/teacher-allocations/subject-teachers', { params }),
+  saveSubjectTeacher: (data) => apiClient.post('/teacher-allocations/subject-teachers', data),
+  getMyAllocations: (params) => apiClient.get('/teacher-allocations/my-allocations', { params }),
 };
 
 // Masters (Categories, Religions)
@@ -332,6 +413,13 @@ export const expenseApi = {
 export const timetableApi = {
   getPeriods: () => apiClient.get('/timetable/periods'),
   getSectionTimetable: (sectionId) => apiClient.get(`/timetable/section/${sectionId}`),
+  saveSlot: (data) => apiClient.post('/timetable/slot', data),
+  deleteSlot: (id) => apiClient.delete(`/timetable/slot/${id}`),
+  getTeacherTimetable: (employeeId) => apiClient.get(`/timetable/teacher/${employeeId}`),
+  getFreeTeachers: (params) => apiClient.get('/timetable/free-teachers', { params }),
+  getSubstitutions: (params) => apiClient.get('/timetable/substitutions', { params }),
+  createSubstitution: (data) => apiClient.post('/timetable/substitutions', data),
+  deleteSubstitution: (id) => apiClient.delete(`/timetable/substitutions/${id}`),
 };
 
 // Promotion & TC
@@ -366,6 +454,21 @@ export const portalApi = {
 // WhatsApp Configuration & Communication
 export const whatsappApi = {
   getConfig: () => apiClient.get('/whatsapp/config'),
+};
+
+// Super Admin SaaS & Multi-Tenant Management
+export const superAdminApi = {
+  getDashboardKpis: () => apiClient.get('/superadmin/dashboard/kpis'),
+  getTenants: (params) => apiClient.get('/superadmin/tenants', { params }),
+  getTenantById: (id) => apiClient.get(`/superadmin/tenants/${id}`),
+  createTenant: (payload) => apiClient.post('/superadmin/tenants', payload),
+  updateTenant: (id, payload) => apiClient.put(`/superadmin/tenants/${id}`, payload),
+  resetAdminPassword: (id, newPassword) => apiClient.post(`/superadmin/tenants/${id}/reset-admin-password`, { newPassword }),
+  updateTenantPortalAccess: (id, payload) => apiClient.put(`/superadmin/tenants/${id}/portal-access`, payload),
+  getPlans: () => apiClient.get('/superadmin/plans'),
+  getModuleCatalog: () => apiClient.get('/superadmin/modules/catalog'),
+  getAuditLogs: (params) => apiClient.get('/superadmin/audit-logs', { params }),
+  impersonateTenant: (schoolId) => apiClient.post(`/superadmin/tenants/${schoolId}/impersonate`),
 };
 
 export default apiClient;

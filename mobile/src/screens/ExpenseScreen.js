@@ -16,10 +16,15 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { expenseApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
+import AppDatePicker from '../components/AppDatePicker';
 
 export default function ExpenseScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAdd = isSuperAdmin || hasPermission('Expenses', 'Add');
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +36,7 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [spenderName, setSpenderName] = useState('');
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -86,7 +92,7 @@ export default function ExpenseScreen() {
         categoryId: selectedCategoryId || (categories[0]?.id || 1),
         spenderName: spenderName.trim() || 'School Admin',
         description: description.trim() || null,
-        expenseDate: new Date().toISOString(),
+        expenseDate: expenseDate ? new Date(expenseDate).toISOString() : new Date().toISOString(),
       };
 
       const res = await expenseApi.saveExpense(payload);
@@ -97,6 +103,7 @@ export default function ExpenseScreen() {
         setAmount('');
         setDescription('');
         setSpenderName('');
+        setExpenseDate(new Date().toISOString().split('T')[0]);
         loadData();
       } else {
         Alert.alert('Failed', res.data?.message || 'Could not save expense.');
@@ -162,13 +169,15 @@ export default function ExpenseScreen() {
       )}
 
       {/* Floating Add Expense Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.85}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </TouchableOpacity>
+      {canAdd && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.85}
+        >
+          <MaterialIcons name="add" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Add Expense Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
@@ -216,6 +225,13 @@ export default function ExpenseScreen() {
                   );
                 })}
               </ScrollView>
+
+              <AppDatePicker
+                label="Expense Date"
+                value={expenseDate}
+                onChange={setExpenseDate}
+                required
+              />
 
               <Text style={styles.inputLabel}>Spender / Paid To</Text>
               <TextInput

@@ -149,6 +149,8 @@ namespace SchoolERP.Application.DTOs
         public long? EmployeeId { get; set; }
         public string? TeacherName { get; set; }
         public string? TeacherCode { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? EmployeeCode { get; set; }
     }
 
     public class SubjectTeacherGridRowDto
@@ -165,6 +167,8 @@ namespace SchoolERP.Application.DTOs
         public long? EmployeeId { get; set; }
         public string? TeacherName { get; set; }
         public string? TeacherCode { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? EmployeeCode { get; set; }
     }
 
     public class SaveClassTeacherDto
@@ -172,6 +176,7 @@ namespace SchoolERP.Application.DTOs
         public long ClassId { get; set; }
         public long SectionId { get; set; }
         public long? EmployeeId { get; set; } // Nullable to remove allocation
+        public long? AcademicYearId { get; set; }
     }
 
     public class SaveSubjectTeacherDto
@@ -180,6 +185,7 @@ namespace SchoolERP.Application.DTOs
         public long SectionId { get; set; }
         public long SubjectId { get; set; }
         public long? EmployeeId { get; set; } // Nullable to remove allocation
+        public long? AcademicYearId { get; set; }
     }
 }
 

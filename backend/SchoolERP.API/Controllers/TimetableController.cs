@@ -29,21 +29,58 @@ namespace SchoolERP.API.Controllers
             _currentUserService = currentUserService;
         }
 
+        private async Task<long> ResolveAcademicYearIdAsync(long? requestedYearId = null)
+        {
+            if (requestedYearId.HasValue && requestedYearId.Value > 0)
+            {
+                return requestedYearId.Value;
+            }
+
+            var currentYearId = _currentUserService.AcademicYearId;
+            if (currentYearId > 0)
+            {
+                return currentYearId;
+            }
+
+            var activeYearId = await _context.AcademicYears
+                .Where(y => y.IsCurrent)
+                .Select(y => y.Id)
+                .FirstOrDefaultAsync();
+
+            if (activeYearId > 0)
+            {
+                return activeYearId;
+            }
+
+            return await _context.AcademicYears
+                .Select(y => y.Id)
+                .FirstOrDefaultAsync();
+        }
+
         // =========================================================================
         // 1. PERIOD MASTER (FR-6.6)
         // =========================================================================
         [HttpGet("periods")]
         [HasPermission("Timetable", "View")]
-        public async Task<ActionResult<ApiResponse<List<PeriodDto>>>> GetPeriods()
+        public async Task<ActionResult<ApiResponse<List<PeriodDto>>>> GetPeriods([FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             var rawPeriods = await _context.Periods
-                .Where(p => p.BranchId == branchId && p.AcademicYearId == yearId)
+                .Where(p => p.BranchId == branchId && p.AcademicYearId == targetYearId)
                 .OrderBy(p => p.DisplayOrder)
                 .ThenBy(p => p.PeriodNumber)
                 .ToListAsync();
+
+            if (!rawPeriods.Any())
+            {
+                rawPeriods = await _context.Periods
+                    .Where(p => p.BranchId == branchId)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ThenBy(p => p.PeriodNumber)
+                    .ToListAsync();
+            }
 
             var periods = rawPeriods.Select(p => new PeriodDto
             {
@@ -66,7 +103,7 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<PeriodDto>>> CreatePeriod([FromBody] CreatePeriodDto request)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync();
 
             TimeSpan.TryParse(request.StartTime, out var startTime);
             TimeSpan.TryParse(request.EndTime, out var endTime);
@@ -75,7 +112,7 @@ namespace SchoolERP.API.Controllers
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(p =>
                     p.BranchId == branchId &&
-                    p.AcademicYearId == yearId &&
+                    p.AcademicYearId == targetYearId &&
                     p.PeriodNumber == request.PeriodNumber);
 
             PeriodMaster period;
@@ -104,7 +141,7 @@ namespace SchoolERP.API.Controllers
                 period = new PeriodMaster
                 {
                     BranchId = branchId,
-                    AcademicYearId = yearId,
+                    AcademicYearId = targetYearId,
                     PeriodNumber = request.PeriodNumber,
                     Name = request.Name.Trim(),
                     StartTime = startTime,
@@ -132,12 +169,13 @@ namespace SchoolERP.API.Controllers
                 DisplayOrder = period.DisplayOrder
             }, "Period created successfully."));
         }
+
         [HttpPut("periods/{id}")]
         [HasPermission("Timetable", "Edit")]
         public async Task<ActionResult<ApiResponse<PeriodDto>>> UpdatePeriod(long id, [FromBody] CreatePeriodDto request)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync();
 
             TimeSpan.TryParse(request.StartTime, out var startTime);
             TimeSpan.TryParse(request.EndTime, out var endTime);
@@ -149,7 +187,7 @@ namespace SchoolERP.API.Controllers
                 .FirstOrDefaultAsync(p =>
                     p.Id != id &&
                     p.BranchId == branchId &&
-                    p.AcademicYearId == yearId &&
+                    p.AcademicYearId == targetYearId &&
                     p.PeriodNumber == request.PeriodNumber);
 
             if (existingPeriod != null)
@@ -181,6 +219,7 @@ namespace SchoolERP.API.Controllers
                 DisplayOrder = period.DisplayOrder
             }, "Period updated successfully."));
         }
+
         [HttpDelete("periods/{id}")]
         [HasPermission("Timetable", "Delete")]
         public async Task<ActionResult<ApiResponse>> DeletePeriod(long id)
@@ -204,19 +243,21 @@ namespace SchoolERP.API.Controllers
         // =========================================================================
         [HttpGet("section/{sectionId}")]
         [HasPermission("Timetable", "View")]
-        public async Task<ActionResult<ApiResponse<SectionTimetableDto>>> GetSectionTimetable(long sectionId)
+        public async Task<ActionResult<ApiResponse<SectionTimetableDto>>> GetSectionTimetable(
+            long sectionId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             var section = await _context.Sections
                 .Include(s => s.Class)
-                .FirstOrDefaultAsync(s => s.Id == sectionId && s.BranchId == branchId);
+                .FirstOrDefaultAsync(s => s.Id == sectionId && (s.BranchId == branchId || (s.Class != null && s.Class.BranchId == branchId)));
 
             if (section == null) return NotFound(ApiResponse<SectionTimetableDto>.Fail("Section not found."));
 
             var periods = await _context.Periods
-                .Where(p => p.BranchId == branchId && p.AcademicYearId == yearId)
+                .Where(p => p.BranchId == branchId && p.AcademicYearId == targetYearId)
                 .OrderBy(p => p.DisplayOrder)
                 .ThenBy(p => p.PeriodNumber)
                 .Select(p => new PeriodDto
@@ -227,16 +268,39 @@ namespace SchoolERP.API.Controllers
                     StartTime = p.StartTime.ToString(@"hh\:mm"),
                     EndTime = p.EndTime.ToString(@"hh\:mm"),
                     IsBreak = p.IsBreak,
+                    IsBellEnabled = p.IsBellEnabled,
+                    IsDismissalBell = p.IsDismissalBell,
                     DisplayOrder = p.DisplayOrder
                 })
                 .ToListAsync();
+
+            if (!periods.Any())
+            {
+                periods = await _context.Periods
+                    .Where(p => p.BranchId == branchId)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ThenBy(p => p.PeriodNumber)
+                    .Select(p => new PeriodDto
+                    {
+                        Id = p.Id,
+                        PeriodNumber = p.PeriodNumber,
+                        Name = p.Name,
+                        StartTime = p.StartTime.ToString(@"hh\:mm"),
+                        EndTime = p.EndTime.ToString(@"hh\:mm"),
+                        IsBreak = p.IsBreak,
+                        IsBellEnabled = p.IsBellEnabled,
+                        IsDismissalBell = p.IsDismissalBell,
+                        DisplayOrder = p.DisplayOrder
+                    })
+                    .ToListAsync();
+            }
 
             var entries = await _context.Timetables
                 .Include(t => t.Period)
                 .Include(t => t.Subject)
                 .Include(t => t.Employee)
-                .Where(t => t.BranchId == branchId &&
-                            t.AcademicYearId == yearId &&
+                .Where(t => (t.BranchId == branchId || (section.Class != null && section.Class.BranchId == branchId)) &&
+                            t.AcademicYearId == targetYearId &&
                             t.SectionId == sectionId)
                 .ToListAsync();
 
@@ -255,7 +319,7 @@ namespace SchoolERP.API.Controllers
                 RoomNo = e.RoomNo
             }).ToList();
 
-            var response = new SectionTimetableDto
+            var result = new SectionTimetableDto
             {
                 SectionId = section.Id,
                 ClassName = section.Class?.Name ?? "",
@@ -264,7 +328,7 @@ namespace SchoolERP.API.Controllers
                 Slots = slots
             };
 
-            return Ok(ApiResponse<SectionTimetableDto>.Ok(response));
+            return Ok(ApiResponse<SectionTimetableDto>.Ok(result));
         }
 
         [HttpPost("slot")]
@@ -272,26 +336,26 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse>> SaveTimetableSlot([FromBody] SaveTimetableSlotDto request)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync();
 
             var section = await _context.Sections
                 .Include(s => s.Class)
-                .FirstOrDefaultAsync(s => s.Id == request.SectionId && s.BranchId == branchId);
+                .FirstOrDefaultAsync(s => s.Id == request.SectionId && (s.BranchId == branchId || (s.Class != null && s.Class.BranchId == branchId)));
             if (section == null) return NotFound(ApiResponse.Fail("Section not found."));
 
             var period = await _context.Periods
-                .FirstOrDefaultAsync(p => p.Id == request.PeriodId && p.BranchId == branchId && p.AcademicYearId == yearId);
+                .FirstOrDefaultAsync(p => p.Id == request.PeriodId && p.BranchId == branchId);
             if (period == null) return NotFound(ApiResponse.Fail("Period not found."));
 
             // FR-6.7: Prevent same teacher in two sections at the same period
-            if (request.EmployeeId.HasValue)
+            if (request.EmployeeId.HasValue && request.EmployeeId.Value > 0)
             {
                 var clash = await _context.Timetables
                     .Include(t => t.Class)
                     .Include(t => t.Section)
                     .Include(t => t.Employee)
                     .FirstOrDefaultAsync(t => t.BranchId == branchId &&
-                                              t.AcademicYearId == yearId &&
+                                              t.AcademicYearId == targetYearId &&
                                               t.DayOfWeek == request.DayOfWeek &&
                                               t.PeriodId == request.PeriodId &&
                                               t.EmployeeId == request.EmployeeId.Value &&
@@ -309,37 +373,39 @@ namespace SchoolERP.API.Controllers
             // Find existing slot for this section, day, period
             var existing = await _context.Timetables
                 .FirstOrDefaultAsync(t => t.BranchId == branchId &&
-                                          t.AcademicYearId == yearId &&
+                                          t.AcademicYearId == targetYearId &&
                                           t.SectionId == request.SectionId &&
                                           t.DayOfWeek == request.DayOfWeek &&
                                           t.PeriodId == request.PeriodId);
 
             if (existing != null)
             {
-                if (!request.SubjectId.HasValue && !request.EmployeeId.HasValue)
+                if ((!request.SubjectId.HasValue || request.SubjectId.Value == 0) &&
+                    (!request.EmployeeId.HasValue || request.EmployeeId.Value == 0))
                 {
                     // If both empty, remove slot
                     _context.Timetables.Remove(existing);
                 }
                 else
                 {
-                    existing.SubjectId = request.SubjectId;
-                    existing.EmployeeId = request.EmployeeId;
+                    existing.SubjectId = request.SubjectId > 0 ? request.SubjectId : null;
+                    existing.EmployeeId = request.EmployeeId > 0 ? request.EmployeeId : null;
                     existing.RoomNo = request.RoomNo?.Trim();
                 }
             }
-            else if (request.SubjectId.HasValue || request.EmployeeId.HasValue)
+            else if ((request.SubjectId.HasValue && request.SubjectId.Value > 0) ||
+                     (request.EmployeeId.HasValue && request.EmployeeId.Value > 0))
             {
                 _context.Timetables.Add(new TimetableEntry
                 {
                     BranchId = branchId,
-                    AcademicYearId = yearId,
+                    AcademicYearId = targetYearId,
                     ClassId = section.ClassId,
                     SectionId = section.Id,
                     DayOfWeek = request.DayOfWeek,
                     PeriodId = request.PeriodId,
-                    SubjectId = request.SubjectId,
-                    EmployeeId = request.EmployeeId,
+                    SubjectId = request.SubjectId > 0 ? request.SubjectId : null,
+                    EmployeeId = request.EmployeeId > 0 ? request.EmployeeId : null,
                     RoomNo = request.RoomNo?.Trim(),
                     IsActive = true
                 });
@@ -368,16 +434,18 @@ namespace SchoolERP.API.Controllers
         // =========================================================================
         [HttpGet("teacher/{employeeId}")]
         [HasPermission("Timetable", "View")]
-        public async Task<ActionResult<ApiResponse<TeacherTimetableDto>>> GetTeacherTimetable(long employeeId)
+        public async Task<ActionResult<ApiResponse<TeacherTimetableDto>>> GetTeacherTimetable(
+            long employeeId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
 
             var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId && e.BranchId == branchId);
             if (employee == null) return NotFound(ApiResponse<TeacherTimetableDto>.Fail("Teacher not found."));
 
             var periods = await _context.Periods
-                .Where(p => p.BranchId == branchId && p.AcademicYearId == yearId)
+                .Where(p => p.BranchId == branchId && p.AcademicYearId == targetYearId)
                 .OrderBy(p => p.DisplayOrder)
                 .ThenBy(p => p.PeriodNumber)
                 .Select(p => new PeriodDto
@@ -392,13 +460,32 @@ namespace SchoolERP.API.Controllers
                 })
                 .ToListAsync();
 
+            if (!periods.Any())
+            {
+                periods = await _context.Periods
+                    .Where(p => p.BranchId == branchId)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ThenBy(p => p.PeriodNumber)
+                    .Select(p => new PeriodDto
+                    {
+                        Id = p.Id,
+                        PeriodNumber = p.PeriodNumber,
+                        Name = p.Name,
+                        StartTime = p.StartTime.ToString(@"hh\:mm"),
+                        EndTime = p.EndTime.ToString(@"hh\:mm"),
+                        IsBreak = p.IsBreak,
+                        DisplayOrder = p.DisplayOrder
+                    })
+                    .ToListAsync();
+            }
+
             var entries = await _context.Timetables
                 .Include(t => t.Period)
                 .Include(t => t.Class)
                 .Include(t => t.Section)
                 .Include(t => t.Subject)
                 .Where(t => t.BranchId == branchId &&
-                            t.AcademicYearId == yearId &&
+                            t.AcademicYearId == targetYearId &&
                             t.EmployeeId == employeeId)
                 .ToListAsync();
 
@@ -436,10 +523,11 @@ namespace SchoolERP.API.Controllers
         [HasPermission("Timetable", "View")]
         public async Task<ActionResult<ApiResponse<List<FreeTeacherOptionDto>>>> GetFreeTeachers(
             [FromQuery] DateTime date,
-            [FromQuery] long periodId)
+            [FromQuery] long periodId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
             var targetDate = date.Date;
 
             // Day of week
@@ -453,7 +541,7 @@ namespace SchoolERP.API.Controllers
             // 1. Teachers busy in timetable for this day & period
             var busyTeacherIds = await _context.Timetables
                 .Where(t => t.BranchId == branchId &&
-                            t.AcademicYearId == yearId &&
+                            t.AcademicYearId == targetYearId &&
                             t.DayOfWeek == dayEnum &&
                             t.PeriodId == periodId &&
                             t.EmployeeId.HasValue)
@@ -463,7 +551,7 @@ namespace SchoolERP.API.Controllers
             // 2. Teachers already assigned as substitute for this date & period
             var substituteTeacherIds = await _context.Substitutions
                 .Where(s => s.BranchId == branchId &&
-                            s.AcademicYearId == yearId &&
+                            s.AcademicYearId == targetYearId &&
                             s.SubstitutionDate.Date == targetDate &&
                             s.PeriodId == periodId)
                 .Select(s => s.SubstituteEmployeeId)
@@ -472,7 +560,7 @@ namespace SchoolERP.API.Controllers
             // 3. Teachers on approved leave on this date
             var onLeaveTeacherIds = await _context.LeaveRequests
                 .Where(l => l.BranchId == branchId &&
-                            l.AcademicYearId == yearId &&
+                            l.AcademicYearId == targetYearId &&
                             l.ApplicantType == "Employee" &&
                             l.EmployeeId.HasValue &&
                             l.Status == LeaveStatus.Approved &&
@@ -508,10 +596,12 @@ namespace SchoolERP.API.Controllers
 
         [HttpGet("substitutions")]
         [HasPermission("Timetable", "View")]
-        public async Task<ActionResult<ApiResponse<List<SubstitutionDto>>>> GetSubstitutions([FromQuery] DateTime date)
+        public async Task<ActionResult<ApiResponse<List<SubstitutionDto>>>> GetSubstitutions(
+            [FromQuery] DateTime date,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync(academicYearId);
             var targetDate = date.Date;
 
             var rawList = await _context.Substitutions
@@ -522,7 +612,7 @@ namespace SchoolERP.API.Controllers
                 .Include(s => s.OriginalEmployee)
                 .Include(s => s.SubstituteEmployee)
                 .Where(s => s.BranchId == branchId &&
-                            s.AcademicYearId == yearId &&
+                            s.AcademicYearId == targetYearId &&
                             s.SubstitutionDate.Date == targetDate)
                 .OrderBy(s => s.Period!.DisplayOrder)
                 .ToListAsync();
@@ -555,19 +645,19 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<SubstitutionDto>>> CreateSubstitution([FromBody] CreateSubstitutionDto request)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var targetYearId = await ResolveAcademicYearIdAsync();
             var targetDate = request.SubstitutionDate.Date;
 
-            var section = await _context.Sections.Include(s => s.Class).FirstOrDefaultAsync(s => s.Id == request.SectionId && s.BranchId == branchId);
+            var section = await _context.Sections.Include(s => s.Class).FirstOrDefaultAsync(s => s.Id == request.SectionId && (s.BranchId == branchId || (s.Class != null && s.Class.BranchId == branchId)));
             if (section == null) return NotFound(ApiResponse<SubstitutionDto>.Fail("Section not found."));
 
-            var period = await _context.Periods.FirstOrDefaultAsync(p => p.Id == request.PeriodId && p.BranchId == branchId && p.AcademicYearId == yearId);
+            var period = await _context.Periods.FirstOrDefaultAsync(p => p.Id == request.PeriodId && p.BranchId == branchId);
             if (period == null) return NotFound(ApiResponse<SubstitutionDto>.Fail("Period not found."));
 
             var substitution = new Substitution
             {
                 BranchId = branchId,
-                AcademicYearId = yearId,
+                AcademicYearId = targetYearId,
                 SubstitutionDate = targetDate,
                 PeriodId = request.PeriodId,
                 ClassId = section.ClassId,

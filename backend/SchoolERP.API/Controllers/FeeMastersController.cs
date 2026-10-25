@@ -972,6 +972,170 @@ namespace SchoolERP.API.Controllers
 
             return Ok(ApiResponse<MonthlySetupStatusDto>.Ok(response));
         }
+
+        // --- 5. Fee Discount Schemes ---
+        [HttpGet("discount-schemes")]
+        [HasPermission("FeeStructure", "View")]
+        public async Task<ActionResult<ApiResponse<List<FeeDiscountSchemeDto>>>> GetDiscountSchemes()
+        {
+            var branchId = _currentUserService.BranchId;
+
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(@"CREATE TABLE IF NOT EXISTS `fee_discount_schemes` (
+                    `id` bigint NOT NULL AUTO_INCREMENT,
+                    `branch_id` bigint NOT NULL,
+                    `name` varchar(150) NOT NULL,
+                    `code` varchar(50) NOT NULL,
+                    `type` varchar(50) NOT NULL,
+                    `value` decimal(18,2) NOT NULL,
+                    `description` longtext NULL,
+                    `created_by` bigint NULL,
+                    `created_on` datetime(6) NOT NULL,
+                    `modified_by` bigint NULL,
+                    `modified_on` datetime(6) NULL,
+                    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;");
+            }
+            catch {}
+
+            var schemes = await _context.FeeDiscountSchemes
+                .Where(s => s.BranchId == branchId && s.IsActive)
+                .OrderBy(s => s.Name)
+                .Select(s => new FeeDiscountSchemeDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Code = s.Code,
+                    Type = s.Type,
+                    Value = s.Value,
+                    Description = s.Description
+                })
+                .ToListAsync();
+
+            if (!schemes.Any())
+            {
+                var defaults = new List<FeeDiscountScheme>
+                {
+                    new FeeDiscountScheme { BranchId = branchId, Name = "Sibling Concession (2nd Child)", Code = "SIB25", Type = "Percentage", Value = 25, Description = "Concession for 2nd enrolled sibling", IsActive = true, CreatedOn = DateTime.UtcNow },
+                    new FeeDiscountScheme { BranchId = branchId, Name = "Staff Ward Concession", Code = "STAFF50", Type = "Percentage", Value = 50, Description = "Discount for wards of school teaching & non-teaching staff", IsActive = true, CreatedOn = DateTime.UtcNow },
+                    new FeeDiscountScheme { BranchId = branchId, Name = "Merit Scholarship (Top 3 Rank)", Code = "MERIT30", Type = "Percentage", Value = 30, Description = "Scholarship awarded to academic toppers", IsActive = true, CreatedOn = DateTime.UtcNow },
+                    new FeeDiscountScheme { BranchId = branchId, Name = "EWS Government Quota", Code = "EWS100", Type = "Full Waiver", Value = 100, Description = "100% full waiver for Economically Weaker Section quota", IsActive = true, CreatedOn = DateTime.UtcNow },
+                    new FeeDiscountScheme { BranchId = branchId, Name = "Single Parent Concession", Code = "SP20", Type = "Percentage", Value = 20, Description = "Financial support scheme for single parent families", IsActive = true, CreatedOn = DateTime.UtcNow },
+                };
+                _context.FeeDiscountSchemes.AddRange(defaults);
+                await _context.SaveChangesAsync();
+
+                schemes = defaults.Select(s => new FeeDiscountSchemeDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Code = s.Code,
+                    Type = s.Type,
+                    Value = s.Value,
+                    Description = s.Description
+                }).ToList();
+            }
+
+            return Ok(ApiResponse<List<FeeDiscountSchemeDto>>.Ok(schemes));
+        }
+
+        [HttpPost("discount-schemes")]
+        [HasPermission("FeeStructure", "Add")]
+        public async Task<ActionResult<ApiResponse<FeeDiscountSchemeDto>>> CreateDiscountScheme([FromBody] CreateFeeDiscountSchemeDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var name = request.Name?.Trim() ?? "";
+            var code = (request.Code?.Trim() ?? "").ToUpper();
+
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest(ApiResponse<FeeDiscountSchemeDto>.Fail("Scheme name is required."));
+
+            if (string.IsNullOrWhiteSpace(code))
+                code = "DSC" + new Random().Next(100, 999);
+
+            var exists = await _context.FeeDiscountSchemes
+                .AnyAsync(s => s.BranchId == branchId && s.IsActive && (s.Code == code || s.Name.ToLower() == name.ToLower()));
+            if (exists)
+                return BadRequest(ApiResponse<FeeDiscountSchemeDto>.Fail($"A discount scheme with name '{name}' or code '{code}' already exists."));
+
+            var scheme = new FeeDiscountScheme
+            {
+                BranchId = branchId,
+                Name = name,
+                Code = code,
+                Type = string.IsNullOrWhiteSpace(request.Type) ? "Percentage" : request.Type.Trim(),
+                Value = request.Value,
+                Description = request.Description?.Trim(),
+                IsActive = true,
+                CreatedBy = _currentUserService.UserId ?? 0,
+                CreatedOn = DateTime.UtcNow
+            };
+
+            _context.FeeDiscountSchemes.Add(scheme);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<FeeDiscountSchemeDto>.Ok(new FeeDiscountSchemeDto
+            {
+                Id = scheme.Id,
+                Name = scheme.Name,
+                Code = scheme.Code,
+                Type = scheme.Type,
+                Value = scheme.Value,
+                Description = scheme.Description
+            }, "Discount scheme created successfully."));
+        }
+
+        [HttpPut("discount-schemes/{id}")]
+        [HasPermission("FeeStructure", "Edit")]
+        public async Task<ActionResult<ApiResponse<FeeDiscountSchemeDto>>> UpdateDiscountScheme(long id, [FromBody] UpdateFeeDiscountSchemeDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var scheme = await _context.FeeDiscountSchemes.FirstOrDefaultAsync(s => s.Id == id && s.BranchId == branchId && s.IsActive);
+            if (scheme == null)
+                return NotFound(ApiResponse<FeeDiscountSchemeDto>.Fail("Discount scheme not found."));
+
+            var name = request.Name?.Trim() ?? "";
+            var code = (request.Code?.Trim() ?? "").ToUpper();
+
+            if (!string.IsNullOrWhiteSpace(name)) scheme.Name = name;
+            if (!string.IsNullOrWhiteSpace(code)) scheme.Code = code;
+            if (!string.IsNullOrWhiteSpace(request.Type)) scheme.Type = request.Type.Trim();
+            scheme.Value = request.Value;
+            scheme.Description = request.Description?.Trim();
+            scheme.ModifiedBy = _currentUserService.UserId;
+            scheme.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<FeeDiscountSchemeDto>.Ok(new FeeDiscountSchemeDto
+            {
+                Id = scheme.Id,
+                Name = scheme.Name,
+                Code = scheme.Code,
+                Type = scheme.Type,
+                Value = scheme.Value,
+                Description = scheme.Description
+            }, "Discount scheme updated successfully."));
+        }
+
+        [HttpDelete("discount-schemes/{id}")]
+        [HasPermission("FeeStructure", "Delete")]
+        public async Task<ActionResult<ApiResponse>> DeleteDiscountScheme(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var scheme = await _context.FeeDiscountSchemes.FirstOrDefaultAsync(s => s.Id == id && s.BranchId == branchId && s.IsActive);
+            if (scheme == null)
+                return NotFound(ApiResponse.Fail("Discount scheme not found."));
+
+            scheme.IsActive = false;
+            scheme.ModifiedBy = _currentUserService.UserId;
+            scheme.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Discount scheme removed successfully."));
+        }
     }
 }
 

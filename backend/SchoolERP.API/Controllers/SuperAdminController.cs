@@ -39,7 +39,9 @@ namespace SchoolERP.API.Controllers
         private bool IsSuperAdmin()
         {
             return _currentUserService.UserType == UserType.SuperAdmin ||
-                   User.Claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Super Admin") ||
+                   User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "Super Admin" || c.Value == "SuperAdmin")) ||
+                   User.Claims.Any(c => c.Type == "user_type" && (c.Value == "SuperAdmin" || c.Value == "1")) ||
+                   string.Equals(_currentUserService.Username, "superadmin", StringComparison.OrdinalIgnoreCase) ||
                    _currentUserService.UserId == 1;
         }
 

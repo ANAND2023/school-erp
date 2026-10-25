@@ -17,6 +17,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { gatePassApi } from '../api/client';
+import {
+  AppTimePickerField,
+  getCurrentTime12,
+  addMinutesToTime12,
+} from '../components/AppTimePicker';
 
 const REASON_OPTIONS = [
   'Illness / Medical Issue',
@@ -76,18 +81,7 @@ export default function IssueGatePassScreen({ navigation, route }) {
   }, [route?.params]);
 
   // Form State
-  const getCurrentTimeFormatted = () => {
-    const d = new Date();
-    let hours = d.getHours();
-    const minutes = d.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const strMinutes = minutes < 10 ? '0' + minutes : minutes;
-    return `${hours}:${strMinutes} ${ampm}`;
-  };
-
-  const [outTime, setOutTime] = useState(getCurrentTimeFormatted());
+  const [outTime, setOutTime] = useState(getCurrentTime12());
   const [expectedReturnTime, setExpectedReturnTime] = useState('');
   const [reason, setReason] = useState(REASON_OPTIONS[0]);
   const [reasonDetail, setReasonDetail] = useState('');
@@ -333,12 +327,15 @@ export default function IssueGatePassScreen({ navigation, route }) {
                 <MaterialIcons name="school" size={24} color="#0284c7" />
               </View>
               <View style={styles.studentInfoCol}>
-                <Text style={styles.selectedName}>{selectedStudent.fullName}</Text>
-                <Text style={styles.selectedMeta}>
-                  Class: {selectedStudent.className || 'N/A'} {selectedStudent.sectionName ? `(${selectedStudent.sectionName})` : ''} • Adm: {selectedStudent.admissionNo}
+                <Text style={styles.selectedName}>{selectedStudent.fullName || selectedStudent.studentName}</Text>
+                <Text style={styles.selectedMetaClass}>
+                  Class: <Text style={{ fontWeight: '700', color: colors.textPrimary }}>{selectedStudent.className || 'N/A'}{selectedStudent.sectionName ? ` (${selectedStudent.sectionName})` : ''}</Text>
                 </Text>
-                {selectedStudent.fatherName ? (
-                  <Text style={styles.selectedFather}>Father: {selectedStudent.fatherName}</Text>
+                <Text style={styles.selectedMetaAdm}>
+                  Adm No: <Text style={{ fontWeight: '700', color: '#0284c7' }}>#{selectedStudent.admissionNo || selectedStudent.admissionNumber || '—'}</Text>
+                </Text>
+                {selectedStudent.fatherName || selectedStudent.guardianName ? (
+                  <Text style={styles.selectedFather}>Father: {selectedStudent.fatherName || selectedStudent.guardianName}</Text>
                 ) : null}
               </View>
               <TouchableOpacity
@@ -367,7 +364,7 @@ export default function IssueGatePassScreen({ navigation, route }) {
                 <View style={styles.resultsContainer}>
                   {searchResults.map((item) => (
                     <TouchableOpacity
-                      key={item.studentId}
+                      key={item.studentId || item.id}
                       style={styles.resultItem}
                       onPress={() => handleSelectStudent(item)}
                     >
@@ -375,9 +372,12 @@ export default function IssueGatePassScreen({ navigation, route }) {
                         <MaterialIcons name="person" size={20} color="#0284c7" />
                       </View>
                       <View style={styles.resultInfo}>
-                        <Text style={styles.resultName}>{item.fullName}</Text>
-                        <Text style={styles.resultMeta}>
-                          Class: {item.className || 'N/A'} {item.sectionName ? `(${item.sectionName})` : ''} • Adm: {item.admissionNo}
+                        <Text style={styles.resultName}>{item.fullName || item.studentName}</Text>
+                        <Text style={styles.resultMetaClass}>
+                          Class: <Text style={{ fontWeight: '700', color: colors.textPrimary }}>{item.className || 'N/A'}{item.sectionName ? ` (${item.sectionName})` : ''}</Text>
+                        </Text>
+                        <Text style={styles.resultMetaAdm}>
+                          Adm No: <Text style={{ fontWeight: '700', color: '#0284c7' }}>#{item.admissionNo || '—'}</Text>
                         </Text>
                         {item.fatherName ? (
                           <Text style={styles.resultFather}>Father: {item.fatherName}</Text>
@@ -495,28 +495,56 @@ export default function IssueGatePassScreen({ navigation, route }) {
             <Text style={styles.cardTitle}>Timing & Reason</Text>
           </View>
 
-          <View style={styles.timeInputsRow}>
-            <View style={styles.timeInputCol}>
-              <Text style={styles.inputLabel}>Out Time *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={outTime}
-                onChangeText={setOutTime}
-                placeholder="hh:mm AM/PM"
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
+          {/* Time Picker Inputs */}
+          <View style={styles.timeInputsWrapper}>
+            <AppTimePickerField
+              label="Departure (Out Time)"
+              value={outTime}
+              onChange={setOutTime}
+              placeholder="Select Out Time"
+              required
+              quickPresets={[
+                {
+                  label: 'Set Current Time',
+                  icon: 'time',
+                  onSelect: () => setOutTime(getCurrentTime12()),
+                },
+                {
+                  label: '+15m',
+                  onSelect: () => setOutTime(addMinutesToTime12(outTime || getCurrentTime12(), 15)),
+                },
+                {
+                  label: '+30m',
+                  onSelect: () => setOutTime(addMinutesToTime12(outTime || getCurrentTime12(), 30)),
+                },
+              ]}
+            />
 
-            <View style={styles.timeInputCol}>
-              <Text style={styles.inputLabel}>Expected Return</Text>
-              <TextInput
-                style={styles.textInput}
-                value={expectedReturnTime}
-                onChangeText={setExpectedReturnTime}
-                placeholder="e.g. 04:00 PM"
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
+            <AppTimePickerField
+              label="Expected Return Time"
+              value={expectedReturnTime}
+              onChange={setExpectedReturnTime}
+              placeholder="e.g. 03:30 PM (Optional)"
+              allowClear
+              quickPresets={[
+                {
+                  label: '+30 mins',
+                  onSelect: () => setExpectedReturnTime(addMinutesToTime12(outTime || getCurrentTime12(), 30)),
+                },
+                {
+                  label: '+1 hour',
+                  onSelect: () => setExpectedReturnTime(addMinutesToTime12(outTime || getCurrentTime12(), 60)),
+                },
+                {
+                  label: '+2 hours',
+                  onSelect: () => setExpectedReturnTime(addMinutesToTime12(outTime || getCurrentTime12(), 120)),
+                },
+                {
+                  label: 'Not Returning',
+                  onSelect: () => setExpectedReturnTime(''),
+                },
+              ]}
+            />
           </View>
 
           {/* Reason Chips */}
@@ -679,6 +707,16 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 1,
   },
+  resultMetaClass: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  resultMetaAdm: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
   resultFather: {
     fontSize: 11,
     color: colors.textMuted,
@@ -713,6 +751,16 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   selectedMeta: {
     fontSize: 12,
     color: isDark ? '#7dd3fc' : '#0284c7',
+    marginTop: 2,
+  },
+  selectedMetaClass: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  selectedMetaAdm: {
+    fontSize: 12,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   selectedFather: {
@@ -865,6 +913,10 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.primary,
+  },
+  timeInputsWrapper: {
+    gap: 4,
+    marginBottom: 6,
   },
   timeInputsRow: {
     flexDirection: 'row',

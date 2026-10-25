@@ -14,12 +14,20 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { classApi, attendanceApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 import WhatsAppModal from '../components/WhatsAppModal';
+import AppDatePicker from '../components/AppDatePicker';
 
-export default function AttendanceScreen() {
+export default function AttendanceScreen({ route }) {
   const { user } = useContext(AuthContext);
+  const { hasPermission, isSuperAdmin } = usePermission();
   const { isDark, colors } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const initialMode = route?.params?.mode === 'staff' ? 'staff' : 'student';
+  const [attendanceType, setAttendanceType] = useState(initialMode); // 'student' | 'staff'
+
+  const canSave = isSuperAdmin || hasPermission('StudentAttendance', 'Add') || hasPermission('StudentAttendance', 'Edit');
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
@@ -192,8 +200,25 @@ export default function AttendanceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Top Filter Header: Class & Section selector */}
+      {/* Top Filter Header: Date, Class & Section selector */}
       <View style={styles.topSelectorBox}>
+        {/* Date Selector Row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="calendar" size={16} color={colors.primary} />
+            <Text style={[styles.selectorLabel, { marginBottom: 0 }]}>
+              {route?.params?.mode === 'staff' ? 'Staff Date:' : 'Attendance Date:'}
+            </Text>
+          </View>
+          <View style={{ width: 185 }}>
+            <AppDatePicker
+              value={date}
+              onChange={(newDate) => setDate(newDate)}
+              containerStyle={{ marginBottom: 0 }}
+            />
+          </View>
+        </View>
+
         <Text style={styles.selectorLabel}>Select Class:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classChips}>
           {classes.map((cls) => {
@@ -333,20 +358,28 @@ export default function AttendanceScreen() {
       {/* Save Button */}
       {students.length > 0 && (
         <View style={styles.footerBar}>
-          <TouchableOpacity
-            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
-            onPress={handleSaveAttendance}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <View style={styles.saveBtnContent}>
-                <MaterialIcons name="check" size={20} color="#ffffff" />
-                <Text style={styles.saveBtnText}>Save Attendance</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {canSave ? (
+            <TouchableOpacity
+              style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSaveAttendance}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <View style={styles.saveBtnContent}>
+                  <MaterialIcons name="check" size={20} color="#ffffff" />
+                  <Text style={styles.saveBtnText}>Save Attendance</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={{ padding: 12, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center' }}>
+              <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                View-only mode: You do not have permission to modify attendance.
+              </Text>
+            </View>
+          )}
         </View>
       )}
 

@@ -165,7 +165,10 @@ export default function GatePassListScreen({ route, navigation }) {
           <View style={styles.detailsCol}>
             <Text style={styles.studentName}>{item.studentName}</Text>
             <Text style={styles.metaText}>
-              Class: {item.className || 'N/A'} {item.sectionName ? `(${item.sectionName})` : ''} • Adm: {item.admissionNo}
+              Class: <Text style={{ fontWeight: '700', color: colors.textPrimary }}>{item.className || 'N/A'}{item.sectionName ? ` (${item.sectionName})` : ''}</Text>
+            </Text>
+            <Text style={[styles.metaText, { color: '#0284c7', fontWeight: '600', marginTop: 1 }]}>
+              Adm No: #{item.admissionNo || '—'}
             </Text>
             <View style={styles.escortRow}>
               <MaterialIcons name="verified-user" size={14} color="#64748b" />

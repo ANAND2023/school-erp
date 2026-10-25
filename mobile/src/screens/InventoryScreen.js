@@ -18,10 +18,22 @@ import {
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { inventoryApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 
-export default function InventoryScreen() {
+export default function InventoryScreen({ route }) {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAddItem = isSuperAdmin || hasPermission('ItemsMaster', 'Add') || hasPermission('InventoryOverview', 'Add');
+  const canDeleteItem = isSuperAdmin || hasPermission('ItemsMaster', 'Delete') || hasPermission('InventoryOverview', 'Delete');
+
+  const initialTab = route?.params?.tab || 'items';
+  const [subTab, setSubTab] = useState(
+    ['categories', 'suppliers', 'manufactures', 'inward', 'issue', 'ledger', 'store-setup'].includes(initialTab)
+      ? initialTab
+      : 'items'
+  );
 
   const [searchText, setSearchText] = useState('');
   const [items, setItems] = useState([]);
@@ -213,6 +225,38 @@ export default function InventoryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Submodule Tabs matching Web Sidebar Image 5 */}
+      <View style={styles.subTabBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subTabScroll}>
+          {[
+            { key: 'items', label: 'Items Master', icon: 'cube' },
+            { key: 'categories', label: 'Categories', icon: 'grid' },
+            { key: 'suppliers', label: 'Suppliers & Vendors', icon: 'people' },
+            { key: 'inward', label: 'Stock Inward (Purchases)', icon: 'download' },
+            { key: 'issue', label: 'Stock Issue & Returns', icon: 'upload' },
+            { key: 'ledger', label: 'Movement Ledger', icon: 'receipt' },
+          ].map((t) => {
+            const active = subTab === t.key;
+            return (
+              <TouchableOpacity
+                key={t.key}
+                style={[styles.subTabBtn, active && styles.subTabBtnActive]}
+                onPress={() => setSubTab(t.key)}
+              >
+                <Ionicons
+                  name={t.icon}
+                  size={13}
+                  color={active ? '#ffffff' : colors.textSecondary}
+                />
+                <Text style={[styles.subTabBtnText, active && styles.subTabBtnTextActive]}>
+                  {t.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
@@ -300,13 +344,15 @@ export default function InventoryScreen() {
       )}
 
       {/* Floating Add Item Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={() => setAddModalVisible(true)}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </TouchableOpacity>
+      {canAddItem && (
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={() => setAddModalVisible(true)}
+        >
+          <MaterialIcons name="add" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Item Detail & Actions Modal */}
       {selectedItem && (
@@ -362,13 +408,15 @@ export default function InventoryScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={() => handleDeleteItem(selectedItem)}
-              >
-                <MaterialIcons name="delete-outline" size={20} color="#dc2626" />
-                <Text style={styles.deleteBtnText}>Delete Item</Text>
-              </TouchableOpacity>
+              {canDeleteItem && (
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => handleDeleteItem(selectedItem)}
+                >
+                  <MaterialIcons name="delete-outline" size={20} color="#dc2626" />
+                  <Text style={styles.deleteBtnText}>Delete Item</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Modal>
@@ -522,6 +570,37 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  subTabBar: {
+    backgroundColor: colors.cardBg,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  subTabScroll: {
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  subTabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: isDark ? '#334155' : '#f1f5f9',
+  },
+  subTabBtnActive: {
+    backgroundColor: '#0284c7',
+  },
+  subTabBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  subTabBtnTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
   searchContainer: {
     backgroundColor: colors.cardBg,

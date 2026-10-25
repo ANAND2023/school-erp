@@ -20,27 +20,50 @@ export const usePermission = () => {
 
     if (!menu) return false;
 
+    const targetKey = String(menu).trim().toLowerCase();
+
+    // Audit logs strictly super admin only
+    if (targetKey === 'auditlogs') {
+      return false;
+    }
+
     let perm = permissions.find(
-      (p) => p.menu?.toLowerCase() === menu?.toLowerCase()
+      (p) => p.menu && p.menu.trim().toLowerCase() === targetKey
     );
 
-    // Cross-module fallback between Admissions and Students
-    if (!perm && menu.toLowerCase() === 'admissions') {
-      perm = permissions.find((p) => p.menu?.toLowerCase() === 'students');
-    }
-    if (!perm && menu.toLowerCase() === 'students') {
+    // Contextual parent fallbacks for high-level umbrella menus
+    if (!perm && targetKey === 'fees') {
       perm = permissions.find((p) =>
-        ['admissions', 'feecollection', 'feeassignment', 'demandbill', 'studentattendance', 'marksentry'].includes(p.menu?.toLowerCase())
+        ['feecollection', 'feestructure', 'feeassignment', 'demandbill', 'feeconcessions', 'feereports'].includes(
+          p.menu?.trim().toLowerCase()
+        )
       );
     }
 
-    if (!perm && (menu.toLowerCase() === 'feediscountmaster' || menu.toLowerCase() === 'feediscount')) {
+    if (!perm && targetKey === 'transport') {
       perm = permissions.find((p) =>
-        ['fees', 'feestructure', 'feecollection', 'users', 'simplemasters', 'masters'].includes(p.menu?.toLowerCase())
+        ['vehicles', 'routesstops', 'transportallocations'].includes(
+          p.menu?.trim().toLowerCase()
+        )
       );
     }
 
-    if (!perm && menu.toLowerCase() === 'transport') return true;
+    if (!perm && targetKey === 'promotion') {
+      perm = permissions.find((p) =>
+        ['promotion', 'transfercertificates'].includes(
+          p.menu?.trim().toLowerCase()
+        )
+      );
+    }
+
+    if (!perm && (targetKey === 'feediscountmaster' || targetKey === 'feediscount')) {
+      perm = permissions.find((p) =>
+        ['feestructure', 'feeconcessions', 'feecollection'].includes(
+          p.menu?.trim().toLowerCase()
+        )
+      );
+    }
+
     if (!perm) return false;
 
     switch (action) {

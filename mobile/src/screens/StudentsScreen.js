@@ -22,8 +22,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { studentApi, classApi, masterApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 import { generateAdmissionSlipHtml, executePrint, executeSharePdf } from '../utils/printTemplates';
 import WhatsAppModal from '../components/WhatsAppModal';
+import AppDatePicker from '../components/AppDatePicker';
 
 const DEFAULT_CATEGORIES = [
   { id: 1, name: 'General' },
@@ -44,8 +46,13 @@ const DEFAULT_RELIGIONS = [
 
 export default function StudentsScreen({ navigation }) {
   const { user, activeAcademicYearName } = useContext(AuthContext);
+  const { hasPermission, isSuperAdmin } = usePermission();
   const { isDark, colors } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAdd = isSuperAdmin || hasPermission(['Admissions', 'Students'], 'Add');
+  const canEdit = isSuperAdmin || hasPermission('Students', 'Edit');
+  const canPrint = isSuperAdmin || hasPermission('Students', 'Print');
 
   const [classes, setClasses] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -502,7 +509,8 @@ export default function StudentsScreen({ navigation }) {
         branch: branchInfo,
         activeAcademicYearName,
       });
-      await executePrint(html);
+      const fileName = `Admission_Slip_${selectedStudentDetail.fullName || 'Student'}_${selectedStudentDetail.admissionNo || 'ADM'}.pdf`;
+      await executePrint(html, fileName);
     } finally {
       setPrinting(false);
     }
@@ -583,14 +591,16 @@ export default function StudentsScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* 2. EDIT STUDENT (Full Edit Mode) */}
-          <TouchableOpacity
-            style={styles.cardActionBtn}
-            onPress={() => handleOpenEditStudent(item)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="edit" size={15} color="#ea580c" />
-            <Text style={[styles.cardActionBtnText, { color: '#ea580c' }]}>Edit</Text>
-          </TouchableOpacity>
+          {canEdit && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={() => handleOpenEditStudent(item)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="edit" size={15} color="#ea580c" />
+              <Text style={[styles.cardActionBtnText, { color: '#ea580c' }]}>Edit</Text>
+            </TouchableOpacity>
+          )}
 
           {/* 3. Collect Fee */}
           <TouchableOpacity
@@ -603,14 +613,16 @@ export default function StudentsScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* 4. Official Admission Slip */}
-          <TouchableOpacity
-            style={styles.cardActionBtn}
-            onPress={() => handleOpenAdmissionSlip(item)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="print" size={15} color="#0284c7" />
-            <Text style={[styles.cardActionBtnText, { color: '#0284c7' }]}>Slip</Text>
-          </TouchableOpacity>
+          {canPrint && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={() => handleOpenAdmissionSlip(item)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="print" size={15} color="#0284c7" />
+              <Text style={[styles.cardActionBtnText, { color: '#0284c7' }]}>Slip</Text>
+            </TouchableOpacity>
+          )}
 
           {/* 5. Issue Gate Pass */}
           <TouchableOpacity
@@ -650,22 +662,34 @@ export default function StudentsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Search Bar */}
+      {/* Search Bar & New Admission Button */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <MaterialIcons name="search" size={20} color="#94a3b8" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by student name or admission no..."
-            placeholderTextColor="#94a3b8"
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearchText(''); fetchStudents(1, false); }}>
-              <MaterialIcons name="close" size={18} color="#94a3b8" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={[styles.searchBox, { flex: 1 }]}>
+            <MaterialIcons name="search" size={20} color="#94a3b8" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by student name or admission no..."
+              placeholderTextColor="#94a3b8"
+              value={searchText}
+              onChangeText={setSearchText}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+            />
+            {searchText.length > 0 && (
+              <TouchableOpacity onPress={() => { setSearchText(''); fetchStudents(1, false); }}>
+                <MaterialIcons name="close" size={18} color="#94a3b8" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {canAdd && (
+            <TouchableOpacity
+              style={styles.addStudentBtn}
+              onPress={() => navigation.navigate('NewAdmission')}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="person-add" size={18} color="#ffffff" />
+              <Text style={styles.addStudentBtnText}>New</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -757,17 +781,19 @@ export default function StudentsScreen({ navigation }) {
                   </Text>
 
                   {/* Direct Edit Button inside Profile */}
-                  <TouchableOpacity
-                    style={styles.heroEditBtn}
-                    onPress={() => {
-                      const s = selectedStudentDetail;
-                      setSelectedStudentDetail(null);
-                      handleOpenEditStudent(s);
-                    }}
-                  >
-                    <MaterialIcons name="edit" size={15} color="#ffffff" />
-                    <Text style={styles.heroEditBtnText}>Edit Student Profile</Text>
-                  </TouchableOpacity>
+                  {canEdit && (
+                    <TouchableOpacity
+                      style={styles.heroEditBtn}
+                      onPress={() => {
+                        const s = selectedStudentDetail;
+                        setSelectedStudentDetail(null);
+                        handleOpenEditStudent(s);
+                      }}
+                    >
+                      <MaterialIcons name="edit" size={15} color="#ffffff" />
+                      <Text style={styles.heroEditBtnText}>Edit Student Profile</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Details Section */}
@@ -840,31 +866,33 @@ export default function StudentsScreen({ navigation }) {
                 ) : null}
 
                 {/* Print Official Admission Slip Action Bar */}
-                <View style={styles.modalPrintRow}>
-                  <TouchableOpacity
-                    style={[styles.modalPrintBtn, printing && { opacity: 0.7 }]}
-                    onPress={handlePrintStudentSlip}
-                    disabled={printing}
-                  >
-                    {printing ? (
-                      <ActivityIndicator color="#ffffff" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="print" size={18} color="#ffffff" />
-                        <Text style={styles.modalPrintBtnText}>Print Official Admission Slip</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+                {canPrint && (
+                  <View style={styles.modalPrintRow}>
+                    <TouchableOpacity
+                      style={[styles.modalPrintBtn, printing && { opacity: 0.7 }]}
+                      onPress={handlePrintStudentSlip}
+                      disabled={printing}
+                    >
+                      {printing ? (
+                        <ActivityIndicator color="#ffffff" size="small" />
+                      ) : (
+                        <>
+                          <Ionicons name="print" size={18} color="#ffffff" />
+                          <Text style={styles.modalPrintBtnText}>Print Official Admission Slip</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.modalShareBtn, printing && { opacity: 0.7 }]}
-                    onPress={handleShareStudentSlip}
-                    disabled={printing}
-                  >
-                    <Ionicons name="share-social-outline" size={18} color="#065f46" />
-                    <Text style={styles.modalShareBtnText}>Share PDF</Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={[styles.modalShareBtn, printing && { opacity: 0.7 }]}
+                      onPress={handleShareStudentSlip}
+                      disabled={printing}
+                    >
+                      <Ionicons name="share-social-outline" size={18} color="#065f46" />
+                      <Text style={styles.modalShareBtnText}>Share PDF</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </ScrollView>
             )}
           </View>
@@ -1002,12 +1030,15 @@ export default function StudentsScreen({ navigation }) {
                           />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.editLabel}>Date of Birth (YYYY-MM-DD) *</Text>
-                          <TextInput
-                            style={styles.editInput}
+                          <AppDatePicker
+                            label="Date of Birth"
                             value={editDob}
-                            onChangeText={setEditDob}
-                            placeholderTextColor="#94a3b8"
+                            onChange={setEditDob}
+                            required
+                            isDob={true}
+                            minYear={1995}
+                            maxYear={2026}
+                            placeholder="Select Birth Date"
                           />
                         </View>
                       </View>
@@ -1490,7 +1521,8 @@ export default function StudentsScreen({ navigation }) {
                   try {
                     setPrinting(true);
                     const html = generateAdmissionSlipHtml(slipStudent, { user, branch: branchInfo, activeAcademicYearName });
-                    await executePrint(html);
+                    const fileName = `Admission_Slip_${slipStudent?.admissionNo || 'Student'}.pdf`;
+                    await executePrint(html, fileName);
                   } finally {
                     setPrinting(false);
                   }
@@ -1572,6 +1604,21 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     paddingHorizontal: 12,
     height: 42,
     gap: 8,
+  },
+  addStudentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#0f766e',
+    paddingHorizontal: 12,
+    height: 42,
+    borderRadius: 10,
+    justifyContent: 'center',
+  },
+  addStudentBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   searchInput: {
     flex: 1,

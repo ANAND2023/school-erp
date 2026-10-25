@@ -4,6 +4,8 @@ export const enquiryApi = {
   getEnquiries: (params) => apiClient.get('/enquiries', { params }),
   getEnquiry: (id) => apiClient.get(`/enquiries/${id}`),
   createEnquiry: (data) => apiClient.post('/enquiries', data),
+  updateEnquiry: (id, data) => apiClient.put(`/enquiries/${id}`, data),
+  deleteEnquiry: (id) => apiClient.delete(`/enquiries/${id}`),
   addFollowup: (id, data) => apiClient.post(`/enquiries/${id}/followup`, data),
 };
 

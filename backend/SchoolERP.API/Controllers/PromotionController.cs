@@ -36,17 +36,46 @@ namespace SchoolERP.API.Controllers
         [HasPermission("Promotion", "View")]
         public async Task<ActionResult<ApiResponse<object>>> GetEligibleStudents(
             [FromQuery] long classId,
-            [FromQuery] long sectionId,
-            [FromQuery] long academicYearId)
+            [FromQuery] long? sectionId,
+            [FromQuery] long? academicYearId)
         {
             var branchId = _currentUserService.BranchId;
+            var targetYearId = (academicYearId.HasValue && academicYearId.Value > 0)
+                ? academicYearId.Value
+                : _currentUserService.AcademicYearId;
 
-            // Fetch current enrollments
-            var enrollments = await _context.StudentEnrollments
+            // Fetch enrollments query
+            var query = _context.StudentEnrollments
                 .Include(e => e.Student)
                 .Include(e => e.Class)
                 .Include(e => e.Section)
-                .Where(e => e.ClassId == classId && e.SectionId == sectionId && e.AcademicYearId == academicYearId && e.Status == StudentStatus.Active)
+                .Where(e => e.ClassId == classId && e.Status == StudentStatus.Active && e.Student!.BranchId == branchId);
+
+            if (sectionId.HasValue && sectionId.Value > 0)
+            {
+                query = query.Where(e => e.SectionId == sectionId.Value);
+            }
+
+            if (targetYearId > 0)
+            {
+                var hasInTargetYear = await query.AnyAsync(e => e.AcademicYearId == targetYearId);
+                if (hasInTargetYear)
+                {
+                    query = query.Where(e => e.AcademicYearId == targetYearId);
+                }
+                else
+                {
+                    // Fallback to the latest academic year where this class has enrollments
+                    var latestYearId = await query.Select(e => e.AcademicYearId).OrderByDescending(y => y).FirstOrDefaultAsync();
+                    if (latestYearId > 0)
+                    {
+                        query = query.Where(e => e.AcademicYearId == latestYearId);
+                        targetYearId = latestYearId;
+                    }
+                }
+            }
+
+            var enrollments = await query
                 .OrderBy(e => e.RollNo)
                 .ThenBy(e => e.Student!.FirstName)
                 .ToListAsync();
@@ -55,7 +84,7 @@ namespace SchoolERP.API.Controllers
 
             // Fetch pending fee dues (FR-8.3)
             var dues = await _context.StudentFeeDues
-                .Where(d => studentIds.Contains(d.StudentId) && d.AcademicYearId == academicYearId && d.BalanceAmount > 0)
+                .Where(d => studentIds.Contains(d.StudentId) && d.AcademicYearId == targetYearId && d.BalanceAmount > 0)
                 .GroupBy(d => d.StudentId)
                 .Select(g => new
                 {
@@ -69,28 +98,35 @@ namespace SchoolERP.API.Controllers
             {
                 var s = e.Student!;
                 dues.TryGetValue(s.Id, out var dueInfo);
+                var fullName = $"{s.FirstName} {s.LastName}".Trim();
 
                 return new
                 {
                     StudentId = s.Id,
+                    Id = s.Id,
                     EnrollmentId = e.Id,
                     AdmissionNo = s.AdmissionNo,
-                    FullName = $"{s.FirstName} {s.LastName}".Trim(),
+                    FullName = fullName,
+                    StudentName = fullName,
+                    FirstName = s.FirstName,
+                    LastName = s.LastName,
                     RollNo = e.RollNo,
+                    ClassId = e.ClassId,
                     ClassName = e.Class?.Name,
+                    SectionId = e.SectionId,
                     SectionName = e.Section?.Name,
                     PendingDues = dueInfo?.PendingAmount ?? 0,
                     PendingDuesCount = dueInfo?.PendingCount ?? 0,
                     RecommendedAction = "Promoted", // Default
-                    TargetSectionId = sectionId
+                    TargetSectionId = e.SectionId
                 };
             }).ToList();
 
             return Ok(ApiResponse<object>.Ok(new
             {
                 ClassId = classId,
-                SectionId = sectionId,
-                AcademicYearId = academicYearId,
+                SectionId = sectionId ?? 0,
+                AcademicYearId = targetYearId,
                 TotalCount = studentList.Count,
                 Students = studentList
             }));

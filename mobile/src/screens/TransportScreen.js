@@ -18,10 +18,21 @@ import {
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { transportApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 
 export default function TransportScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAddVeh = isSuperAdmin || hasPermission('Vehicles', 'Add');
+  const canEditVeh = isSuperAdmin || hasPermission('Vehicles', 'Edit');
+  const canDelVeh = isSuperAdmin || hasPermission('Vehicles', 'Delete');
+
+  const canAddRoute = isSuperAdmin || hasPermission('RoutesStops', 'Add');
+  const canEditRoute = isSuperAdmin || hasPermission('RoutesStops', 'Edit');
+  const canDelRoute = isSuperAdmin || hasPermission('RoutesStops', 'Delete');
+
   const [activeTab, setActiveTab] = useState('vehicles'); // 'vehicles' or 'routes'
   const [vehicles, setVehicles] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -336,17 +347,21 @@ export default function TransportScreen() {
                     </View>
 
                     <View style={styles.vehActionsRow}>
-                      <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEditVehicle(item)}>
-                        <MaterialIcons name="edit" size={17} color="#4f46e5" />
-                      </TouchableOpacity>
+                      {canEditVeh && (
+                        <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEditVehicle(item)}>
+                          <MaterialIcons name="edit" size={17} color="#4f46e5" />
+                        </TouchableOpacity>
+                      )}
                       {dPhone ? (
                         <TouchableOpacity style={styles.callBtn} onPress={() => handleCall(dPhone)}>
                           <MaterialIcons name="phone" size={17} color="#0284c7" />
                         </TouchableOpacity>
                       ) : null}
-                      <TouchableOpacity style={styles.delBtn} onPress={() => handleDeleteVehicle(item)}>
-                        <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
-                      </TouchableOpacity>
+                      {canDelVeh && (
+                        <TouchableOpacity style={styles.delBtn} onPress={() => handleDeleteVehicle(item)}>
+                          <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -375,12 +390,16 @@ export default function TransportScreen() {
                   <View style={styles.stopsBadge}>
                     <Text style={styles.stopsBadgeText}>{item.stops?.length || 0} Stops</Text>
                   </View>
-                  <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEditRoute(item)}>
-                    <MaterialIcons name="edit" size={17} color="#4f46e5" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.delBtn} onPress={() => handleDeleteRoute(item)}>
-                    <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
-                  </TouchableOpacity>
+                  {canEditRoute && (
+                    <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEditRoute(item)}>
+                      <MaterialIcons name="edit" size={17} color="#4f46e5" />
+                    </TouchableOpacity>
+                  )}
+                  {canDelRoute && (
+                    <TouchableOpacity style={styles.delBtn} onPress={() => handleDeleteRoute(item)}>
+                      <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -403,19 +422,21 @@ export default function TransportScreen() {
       )}
 
       {/* Floating Add Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={() => {
-          if (activeTab === 'vehicles') {
-            handleOpenAddVehicle();
-          } else {
-            handleOpenAddRoute();
-          }
-        }}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </TouchableOpacity>
+      {(activeTab === 'vehicles' ? canAddVeh : canAddRoute) && (
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (activeTab === 'vehicles') {
+              handleOpenAddVehicle();
+            } else {
+              handleOpenAddRoute();
+            }
+          }}
+        >
+          <MaterialIcons name="add" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Add / Edit Vehicle Modal */}
       <Modal

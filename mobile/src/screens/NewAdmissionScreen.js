@@ -20,6 +20,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { generateAdmissionSlipHtml, executePrint, executeSharePdf } from '../utils/printTemplates';
 import WhatsAppModal from '../components/WhatsAppModal';
+import AppDatePicker from '../components/AppDatePicker';
 
 const DEFAULT_CATEGORIES = [
   { id: 1, name: 'General' },
@@ -338,10 +339,16 @@ export default function NewAdmissionScreen({ route, navigation }) {
         firstName: firstName.trim().toUpperCase(),
         lastName: lastName.trim().toUpperCase(),
         dob: dob,
+        dateOfBirth: dob,
         gender: gender,
         bloodGroup: bloodGroup,
         aadhaarNo: aadhaarNo,
+        categoryName: categories.find((c) => c.id === selectedCategoryId)?.name || 'General',
+        religionName: religions.find((r) => r.id === selectedReligionId)?.name || 'Hindu',
         photoUrl: studentPhoto || null,
+        fatherPhotoUrl: fatherPhoto || null,
+        motherPhotoUrl: motherPhoto || null,
+        guardianPhotoUrl: guardianPhoto || null,
         className: currentClassObj?.name || 'Assigned Class',
         sectionName: secName,
         rollNo: rollNo || '—',
@@ -350,7 +357,17 @@ export default function NewAdmissionScreen({ route, navigation }) {
         guardianName: fatherName.trim().toUpperCase(),
         guardianMobile: mobile.trim(),
         guardians,
-        address: address ? `${address}, ${city}`.trim() : city || '—',
+        fatherName: fatherName.trim().toUpperCase(),
+        fatherMobile: mobile.trim(),
+        fatherOccupation: fatherOccupation?.trim() || '—',
+        motherName: motherName?.trim().toUpperCase() || '—',
+        motherMobile: motherMobile?.trim() || '—',
+        motherOccupation: motherOccupation?.trim() || '—',
+        emergencyContact: emergencyContact?.trim() || mobile.trim() || '—',
+        address: address ? `${address}`.trim() : city || '—',
+        city,
+        state,
+        pincode,
       };
 
       setAdmittedStudentData(admittedStudent);
@@ -372,7 +389,8 @@ export default function NewAdmissionScreen({ route, navigation }) {
         branch: branchInfo,
         activeAcademicYearName,
       });
-      await executePrint(html);
+      const fileName = `Admission_Slip_${admittedStudentData.fullName || 'Student'}_${admittedStudentData.admissionNo || 'ADM'}.pdf`;
+      await executePrint(html, fileName);
     } finally {
       setPrinting(false);
     }
@@ -606,13 +624,15 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
             <View style={styles.fieldRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Date of Birth (YYYY-MM-DD) *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="2019-05-15"
+                <AppDatePicker
+                  label="Date of Birth"
                   value={dob}
-                  onChangeText={setDob}
-                  placeholderTextColor="#94a3b8"
+                  onChange={setDob}
+                  required
+                  isDob={true}
+                  minYear={1995}
+                  maxYear={2026}
+                  placeholder="Select Birth Date"
                 />
               </View>
               <View style={{ flex: 1 }}>

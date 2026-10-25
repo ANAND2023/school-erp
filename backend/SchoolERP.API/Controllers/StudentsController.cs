@@ -43,6 +43,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] long? sectionId,
             [FromQuery] StudentStatus? status,
             [FromQuery] long? categoryId,
+            [FromQuery] long? academicYearId,
             [FromQuery] int pageNo = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -54,8 +55,39 @@ namespace SchoolERP.API.Controllers
                 .ThenInclude(s => s!.Guardians)
                 .Include(e => e.Class)
                 .Include(e => e.Section)
-                .Where(e => e.Student!.BranchId == branchId && e.AcademicYearId == yearId)
+                .Where(e => e.Student!.BranchId == branchId)
                 .AsNoTracking();
+
+            // Academic Year filtering:
+            if (academicYearId.HasValue)
+            {
+                if (academicYearId.Value > 0)
+                {
+                    query = query.Where(e => e.AcademicYearId == academicYearId.Value);
+                }
+                // academicYearId == 0 searches across all academic years
+            }
+            else if (!string.IsNullOrWhiteSpace(search))
+            {
+                var sTerm = search.Trim().ToLower();
+                var hasInCurrentYear = await query.AnyAsync(e => e.AcademicYearId == yearId && (
+                    e.Student!.AdmissionNo.ToLower().Contains(sTerm) ||
+                    e.Student.FirstName.ToLower().Contains(sTerm) ||
+                    e.Student.LastName.ToLower().Contains(sTerm) ||
+                    (e.Student.FirstName + " " + e.Student.LastName).ToLower().Contains(sTerm) ||
+                    (e.Class != null && e.Class.Name.ToLower().Contains(sTerm)) ||
+                    e.Student.Guardians.Any(g => g.Mobile.Contains(sTerm) || g.Name.ToLower().Contains(sTerm))));
+
+                if (hasInCurrentYear)
+                {
+                    query = query.Where(e => e.AcademicYearId == yearId);
+                }
+                // If not found in current year, search across all years so the student is found
+            }
+            else if (yearId > 0)
+            {
+                query = query.Where(e => e.AcademicYearId == yearId);
+            }
 
             // Default to Active students unless specified (FR-3.9)
             if (status.HasValue)
@@ -95,6 +127,8 @@ namespace SchoolERP.API.Controllers
                     Id = e.StudentId,
                     AdmissionNo = e.Student!.AdmissionNo,
                     FullName = e.Student.FullName,
+                    FirstName = e.Student.FirstName,
+                    LastName = e.Student.LastName,
                     Gender = e.Student.Gender,
                     DateOfBirth = e.Student.DateOfBirth,
                     ClassId = e.ClassId,
@@ -654,10 +688,19 @@ namespace SchoolERP.API.Controllers
             // FR-3.7: Teacher/Admin can assign roll numbers class-section wise in bulk
             var yearId = _currentUserService.AcademicYearId;
 
+            if (request?.Assignments == null || !request.Assignments.Any())
+            {
+                return BadRequest(ApiResponse.Fail("No roll number assignments provided."));
+            }
+
             foreach (var item in request.Assignments)
             {
-                var enrollment = await _context.StudentEnrollments.FirstOrDefaultAsync(e =>
-                    e.StudentId == item.StudentId && e.AcademicYearId == yearId);
+                var enrollment = await _context.StudentEnrollments
+                    .Where(e => e.StudentId == item.StudentId)
+                    .OrderByDescending(e => yearId > 0 && e.AcademicYearId == yearId ? 1 : 0)
+                    .ThenByDescending(e => e.Status == StudentStatus.Active ? 1 : 0)
+                    .ThenByDescending(e => e.Id)
+                    .FirstOrDefaultAsync();
 
                 if (enrollment != null)
                 {
@@ -676,8 +719,12 @@ namespace SchoolERP.API.Controllers
             // FR-3.8: Admin can change section of a student within the same class and year; history is kept.
             var yearId = _currentUserService.AcademicYearId;
 
-            var enrollment = await _context.StudentEnrollments.FirstOrDefaultAsync(e =>
-                e.StudentId == request.StudentId && e.AcademicYearId == yearId);
+            var enrollment = await _context.StudentEnrollments
+                .Where(e => e.StudentId == request.StudentId)
+                .OrderByDescending(e => yearId > 0 && e.AcademicYearId == yearId ? 1 : 0)
+                .ThenByDescending(e => e.Status == StudentStatus.Active ? 1 : 0)
+                .ThenByDescending(e => e.Id)
+                .FirstOrDefaultAsync();
 
             if (enrollment == null)
             {
@@ -694,11 +741,11 @@ namespace SchoolERP.API.Controllers
             _context.StudentSectionHistories.Add(new StudentSectionHistory
             {
                 StudentId = request.StudentId,
-                AcademicYearId = yearId,
+                AcademicYearId = enrollment.AcademicYearId,
                 ClassId = enrollment.ClassId,
                 FromSectionId = fromSectionId,
                 ToSectionId = request.ToSectionId,
-                Reason = request.Reason,
+                Reason = request.Reason ?? "Section shift requested",
                 ChangedOn = DateTime.UtcNow,
                 ChangedBy = _currentUserService.UserId ?? 1,
                 IsActive = true

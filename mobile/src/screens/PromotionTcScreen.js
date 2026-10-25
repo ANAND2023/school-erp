@@ -15,12 +15,20 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { tcApi, classApi, studentApi } from '../api/client';
+import { tcApi, classApi, studentApi, academicYearApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
+import AppDatePicker from '../components/AppDatePicker';
 
 export default function PromotionTcScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canIssueTc = isSuperAdmin || hasPermission('TransferCertificates', 'Add');
+  const canPrintTc = isSuperAdmin || hasPermission('TransferCertificates', 'Print');
+  const canPromote = isSuperAdmin || hasPermission('Promotion', 'Edit') || hasPermission('Promotion', 'Add');
+
   const [activeTab, setActiveTab] = useState('tc'); // 'tc' | 'promotion'
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,25 +43,36 @@ export default function PromotionTcScreen() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchingStudents, setSearchingStudents] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [tcIssueDate, setTcIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [tcReason, setTcReason] = useState('Transfer of Parent');
   const [conduct, setConduct] = useState('Good');
   const [issuingTc, setIssuingTc] = useState(false);
 
   // Promotion State
   const [classes, setClasses] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [fromAyId, setFromAyId] = useState(null);
+  const [toAyId, setToAyId] = useState(null);
   const [fromClassId, setFromClassId] = useState(null);
+  const [fromSectionId, setFromSectionId] = useState(null);
   const [toClassId, setToClassId] = useState(null);
+  const [toSectionId, setToSectionId] = useState(null);
   const [eligibleStudents, setEligibleStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState({});
   const [loadingEligible, setLoadingEligible] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [promoStudentSearch, setPromoStudentSearch] = useState('');
+
+  const getDisplayName = (s) =>
+    s?.fullName || s?.studentName || `${s?.firstName || ''} ${s?.lastName || ''}`.trim() || 'Student';
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [tcRes, classRes] = await Promise.all([
+      const [tcRes, classRes, ayRes] = await Promise.all([
         tcApi.getTransferCertificates().catch(() => ({ data: [] })),
         classApi.getClasses().catch(() => ({ data: [] })),
+        academicYearApi.getAcademicYears().catch(() => ({ data: [] })),
       ]);
 
       const tcs = tcRes.data?.data?.items || tcRes.data?.items || tcRes.data?.data || tcRes.data || [];
@@ -66,8 +85,22 @@ export default function PromotionTcScreen() {
       if (validClasses.length >= 2) {
         setFromClassId(validClasses[0].id);
         setToClassId(validClasses[1].id);
+        if (validClasses[0].sections?.length > 0) setFromSectionId(validClasses[0].sections[0].id);
+        if (validClasses[1].sections?.length > 0) setToSectionId(validClasses[1].sections[0].id);
       } else if (validClasses.length === 1) {
         setFromClassId(validClasses[0].id);
+        if (validClasses[0].sections?.length > 0) setFromSectionId(validClasses[0].sections[0].id);
+      }
+
+      const ays = ayRes.data?.data || ayRes.data || [];
+      const validAys = Array.isArray(ays) ? ays : [];
+      setAcademicYears(validAys);
+      if (validAys.length >= 2) {
+        setFromAyId(validAys[0].id);
+        setToAyId(validAys[1].id);
+      } else if (validAys.length === 1) {
+        setFromAyId(validAys[0].id);
+        setToAyId(validAys[0].id);
       }
     } catch (err) {
       console.warn('Error loading TC/Promotion data:', err);
@@ -81,21 +114,44 @@ export default function PromotionTcScreen() {
     loadData();
   }, []);
 
+  const handleFromClassChange = (classId) => {
+    setFromClassId(classId);
+    const cls = classes.find((c) => c.id === classId);
+    if (cls?.sections?.length > 0) {
+      setFromSectionId(cls.sections[0].id);
+    } else {
+      setFromSectionId(null);
+    }
+
+    // Auto suggest next class
+    const curIdx = classes.findIndex((c) => c.id === classId);
+    if (curIdx >= 0 && curIdx + 1 < classes.length) {
+      const nextCls = classes[curIdx + 1];
+      setToClassId(nextCls.id);
+      if (nextCls.sections?.length > 0) {
+        setToSectionId(nextCls.sections[0].id);
+      } else {
+        setToSectionId(null);
+      }
+    }
+  };
+
   // Search Students for TC
   const handleSearchStudents = async (query) => {
     setStudentSearch(query);
-    if (!query.trim() || query.length < 2) {
+    if (!query || !query.trim()) {
       setSearchResults([]);
       return;
     }
 
     try {
       setSearchingStudents(true);
-      const res = await studentApi.getStudents({ search: query, pageSize: 10 });
+      // academicYearId: 0 allows searching across active student records
+      const res = await studentApi.getStudents({ search: query.trim(), pageSize: 20, academicYearId: 0 });
       const items = res.data?.data?.items || res.data?.items || res.data?.data || [];
       setSearchResults(Array.isArray(items) ? items : []);
     } catch (err) {
-      // ignore
+      console.warn('Error searching students for TC:', err);
     } finally {
       setSearchingStudents(false);
     }
@@ -109,7 +165,7 @@ export default function PromotionTcScreen() {
 
     try {
       setIssuingTc(true);
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = tcIssueDate || new Date().toISOString().split('T')[0];
       const payload = {
         studentId: Number(selectedStudent.id || selectedStudent.studentId),
         applicationDate: todayStr,
@@ -123,7 +179,7 @@ export default function PromotionTcScreen() {
       };
 
       await tcApi.issueTc(payload);
-      Alert.alert('TC Issued Successfully! 📜', `Transfer certificate issued for ${selectedStudent.firstName || selectedStudent.fullName}!`);
+      Alert.alert('TC Issued Successfully! 📜', `Transfer certificate issued for ${getDisplayName(selectedStudent)}!`);
       setModalTcVisible(false);
       setSelectedStudent(null);
       setStudentSearch('');
@@ -146,14 +202,17 @@ export default function PromotionTcScreen() {
 
     try {
       setLoadingEligible(true);
-      const currentClassObj = classes.find((c) => c.id === fromClassId);
-      const firstSecId = currentClassObj?.sections?.[0]?.id || 1;
-
-      const res = await tcApi.getEligiblePromotion({
+      const params = {
         classId: Number(fromClassId),
-        sectionId: Number(firstSecId),
-        academicYearId: 1,
-      });
+      };
+      if (fromSectionId) {
+        params.sectionId = Number(fromSectionId);
+      }
+      if (fromAyId) {
+        params.academicYearId = Number(fromAyId);
+      }
+
+      const res = await tcApi.getEligiblePromotion(params);
       const items = res.data?.data?.students || res.data?.data || [];
       const list = Array.isArray(items) ? items : [];
       setEligibleStudents(list);
@@ -164,9 +223,13 @@ export default function PromotionTcScreen() {
         initialMap[s.id || s.studentId] = true;
       });
       setSelectedStudentIds(initialMap);
+
+      if (list.length === 0) {
+        Alert.alert('Notice', 'No active students found in this class / section.');
+      }
     } catch (err) {
       console.warn('Error fetching eligible students:', err);
-      Alert.alert('Notice', 'No eligible promotion records found for this class.');
+      Alert.alert('Notice', 'No eligible promotion records found for this class / section.');
       setEligibleStudents([]);
     } finally {
       setLoadingEligible(false);
@@ -203,12 +266,12 @@ export default function PromotionTcScreen() {
               setPromoting(true);
               const currentClassObj = classes.find((c) => c.id === fromClassId);
               const toClassObj = classes.find((c) => c.id === toClassId);
-              const fromSecId = currentClassObj?.sections?.[0]?.id || 1;
-              const toSecId = toClassObj?.sections?.[0]?.id || 1;
+              const fromSecId = fromSectionId || currentClassObj?.sections?.[0]?.id || 1;
+              const toSecId = toSectionId || toClassObj?.sections?.[0]?.id || 1;
 
               const payload = {
-                fromAcademicYearId: 1,
-                toAcademicYearId: 1,
+                fromAcademicYearId: Number(fromAyId || 1),
+                toAcademicYearId: Number(toAyId || fromAyId || 1),
                 fromClassId: Number(fromClassId),
                 fromSectionId: Number(fromSecId),
                 toClassId: Number(toClassId),
@@ -239,10 +302,26 @@ export default function PromotionTcScreen() {
     const q = searchTc.toLowerCase();
     return (
       (item.tcNo && item.tcNo.toLowerCase().includes(q)) ||
+      (item.tcNumber && item.tcNumber.toLowerCase().includes(q)) ||
       (item.studentName && item.studentName.toLowerCase().includes(q)) ||
-      (item.className && item.className.toLowerCase().includes(q))
+      (item.className && item.className.toLowerCase().includes(q)) ||
+      (item.admissionNo && item.admissionNo.toLowerCase().includes(q))
     );
   });
+
+  const filteredEligibleStudents = useMemo(() => {
+    if (!promoStudentSearch.trim()) return eligibleStudents;
+    const q = promoStudentSearch.toLowerCase();
+    return eligibleStudents.filter((st) => {
+      const name = (st.fullName || st.studentName || `${st.firstName || ''} ${st.lastName || ''}`).toLowerCase();
+      const adm = String(st.admissionNo || '').toLowerCase();
+      const roll = String(st.rollNo || '').toLowerCase();
+      return name.includes(q) || adm.includes(q) || roll.includes(q);
+    });
+  }, [eligibleStudents, promoStudentSearch]);
+
+  const currentFromClassObj = classes.find((c) => c.id === fromClassId);
+  const currentToClassObj = classes.find((c) => c.id === toClassId);
 
   return (
     <View style={styles.container}>
@@ -292,13 +371,15 @@ export default function PromotionTcScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              style={styles.issueBtn}
-              onPress={() => setModalTcVisible(true)}
-            >
-              <Ionicons name="add" size={18} color="#ffffff" />
-              <Text style={styles.issueBtnText}>Issue TC</Text>
-            </TouchableOpacity>
+            {canIssueTc && (
+              <TouchableOpacity
+                style={styles.issueBtn}
+                onPress={() => setModalTcVisible(true)}
+              >
+                <Ionicons name="add" size={18} color="#ffffff" />
+                <Text style={styles.issueBtnText}>Issue TC</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {loading ? (
@@ -376,13 +457,34 @@ export default function PromotionTcScreen() {
           <View style={styles.promoSelectorCard}>
             <Text style={styles.cardHeading}>Select Class Transition</Text>
 
-            <Text style={styles.promoLabel}>Current Class (Promote From):</Text>
+            {/* Academic Years Selector */}
+            {academicYears.length > 0 && (
+              <>
+                <Text style={styles.promoLabel}>Current Academic Year (Promote From):</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
+                  {academicYears.map((ay) => (
+                    <TouchableOpacity
+                      key={ay.id}
+                      style={[styles.classChip, fromAyId === ay.id && styles.classChipActive]}
+                      onPress={() => setFromAyId(ay.id)}
+                    >
+                      <Text style={[styles.classChipText, fromAyId === ay.id && styles.classChipTextActive]}>
+                        {ay.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            {/* From Class & Section */}
+            <Text style={[styles.promoLabel, { marginTop: 6 }]}>Current Class (Promote From):</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
               {classes.map((c) => (
                 <TouchableOpacity
                   key={c.id}
                   style={[styles.classChip, fromClassId === c.id && styles.classChipActive]}
-                  onPress={() => setFromClassId(c.id)}
+                  onPress={() => handleFromClassChange(c.id)}
                 >
                   <Text style={[styles.classChipText, fromClassId === c.id && styles.classChipTextActive]}>
                     {c.name}
@@ -391,13 +493,65 @@ export default function PromotionTcScreen() {
               ))}
             </ScrollView>
 
-            <Text style={[styles.promoLabel, { marginTop: 12 }]}>Next Class (Promote To):</Text>
+            {currentFromClassObj?.sections?.length > 0 && (
+              <>
+                <Text style={[styles.promoLabel, { marginTop: 4 }]}>Current Section:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                  <TouchableOpacity
+                    style={[styles.classChip, !fromSectionId && styles.classChipActive]}
+                    onPress={() => setFromSectionId(null)}
+                  >
+                    <Text style={[styles.classChipText, !fromSectionId && styles.classChipTextActive]}>
+                      All Sections
+                    </Text>
+                  </TouchableOpacity>
+                  {currentFromClassObj.sections.map((s) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[styles.classChip, fromSectionId === s.id && styles.classChipActive]}
+                      onPress={() => setFromSectionId(s.id)}
+                    >
+                      <Text style={[styles.classChipText, fromSectionId === s.id && styles.classChipTextActive]}>
+                        Section {s.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            {/* To Academic Year */}
+            {academicYears.length > 0 && (
+              <>
+                <Text style={[styles.promoLabel, { marginTop: 12 }]}>Target Academic Year (Promote To):</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
+                  {academicYears.map((ay) => (
+                    <TouchableOpacity
+                      key={ay.id}
+                      style={[styles.classChip, toAyId === ay.id && styles.classChipActiveNext]}
+                      onPress={() => setToAyId(ay.id)}
+                    >
+                      <Text style={[styles.classChipText, toAyId === ay.id && styles.classChipTextActive]}>
+                        {ay.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            {/* To Class & Section */}
+            <Text style={[styles.promoLabel, { marginTop: 6 }]}>Target Class (Promote To):</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
               {classes.map((c) => (
                 <TouchableOpacity
                   key={c.id}
                   style={[styles.classChip, toClassId === c.id && styles.classChipActiveNext]}
-                  onPress={() => setToClassId(c.id)}
+                  onPress={() => {
+                    setToClassId(c.id);
+                    if (c.sections?.length > 0) setToSectionId(c.sections[0].id);
+                    else setToSectionId(null);
+                  }}
                 >
                   <Text style={[styles.classChipText, toClassId === c.id && styles.classChipTextActive]}>
                     {c.name}
@@ -406,12 +560,38 @@ export default function PromotionTcScreen() {
               ))}
             </ScrollView>
 
+            {currentToClassObj?.sections?.length > 0 && (
+              <>
+                <Text style={[styles.promoLabel, { marginTop: 4 }]}>Target Section:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                  {currentToClassObj.sections.map((s) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[styles.classChip, toSectionId === s.id && styles.classChipActiveNext]}
+                      onPress={() => setToSectionId(s.id)}
+                    >
+                      <Text style={[styles.classChipText, toSectionId === s.id && styles.classChipTextActive]}>
+                        Section {s.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
             <TouchableOpacity
               style={styles.loadEligibleBtn}
               onPress={loadEligibleForPromotion}
+              disabled={loadingEligible}
             >
-              <Ionicons name="search" size={16} color="#ffffff" />
-              <Text style={styles.loadEligibleBtnText}>Fetch Eligible Students</Text>
+              {loadingEligible ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Ionicons name="search" size={16} color="#ffffff" />
+                  <Text style={styles.loadEligibleBtnText}>Fetch Eligible Students</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -420,13 +600,32 @@ export default function PromotionTcScreen() {
             <ActivityIndicator color="#0284c7" style={{ marginVertical: 20 }} />
           ) : eligibleStudents.length > 0 ? (
             <View style={{ marginTop: 16 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text style={styles.cardHeading}>Eligible Students ({eligibleStudents.length})</Text>
+              {/* Promotion Student Search Filter */}
+              <View style={styles.promoSearchBox}>
+                <Ionicons name="search" size={16} color="#94a3b8" />
+                <TextInput
+                  style={styles.promoSearchInput}
+                  placeholder="Search student by name, roll no, adm no..."
+                  placeholderTextColor="#94a3b8"
+                  value={promoStudentSearch}
+                  onChangeText={setPromoStudentSearch}
+                />
+                {promoStudentSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setPromoStudentSearch('')}>
+                    <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
+                <Text style={styles.cardHeading}>
+                  Eligible Students ({filteredEligibleStudents.length}{promoStudentSearch ? ` of ${eligibleStudents.length}` : ''})
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
-                    const allSelected = eligibleStudents.every((s) => selectedStudentIds[s.id || s.studentId]);
-                    const newMap = {};
-                    eligibleStudents.forEach((s) => {
+                    const allSelected = filteredEligibleStudents.every((s) => selectedStudentIds[s.id || s.studentId]);
+                    const newMap = { ...selectedStudentIds };
+                    filteredEligibleStudents.forEach((s) => {
                       newMap[s.id || s.studentId] = !allSelected;
                     });
                     setSelectedStudentIds(newMap);
@@ -436,9 +635,10 @@ export default function PromotionTcScreen() {
                 </TouchableOpacity>
               </View>
 
-              {eligibleStudents.map((st, idx) => {
+              {filteredEligibleStudents.map((st, idx) => {
                 const sId = st.id || st.studentId;
                 const isChecked = !!selectedStudentIds[sId];
+                const name = getDisplayName(st);
                 return (
                   <TouchableOpacity
                     key={sId || idx}
@@ -451,29 +651,44 @@ export default function PromotionTcScreen() {
                       color={isChecked ? '#0284c7' : '#94a3b8'}
                     />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={styles.promoStudentName}>
-                        {st.studentName || `${st.firstName || ''} ${st.lastName || ''}`}
+                      <Text style={styles.promoStudentName}>{name}</Text>
+                      <Text style={styles.promoStudentRoll}>
+                        Roll: {st.rollNo ?? (idx + 1)} • Adm: {st.admissionNo || sId} • Class {st.className || ''} {st.sectionName ? `(${st.sectionName})` : ''}
                       </Text>
-                      <Text style={styles.promoStudentRoll}>Roll: {st.rollNo || idx + 1} • Adm: {st.admissionNo || sId}</Text>
+                      {st.pendingDues > 0 && (
+                        <Text style={{ fontSize: 11, color: '#dc2626', fontWeight: '600', marginTop: 2 }}>
+                          Pending Dues: ₹{st.pendingDues}
+                        </Text>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
               })}
 
-              <TouchableOpacity
-                style={[styles.promoteBtn, promoting && { opacity: 0.7 }]}
-                onPress={handleBulkPromote}
-                disabled={promoting}
-              >
-                {promoting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                    <Text style={styles.promoteBtnText}>Promote Selected Students</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              {canPromote ? (
+                <TouchableOpacity
+                  style={[styles.promoteBtn, promoting && { opacity: 0.7 }]}
+                  onPress={handleBulkPromote}
+                  disabled={promoting}
+                >
+                  {promoting ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                      <Text style={styles.promoteBtnText}>
+                        Promote Selected ({Object.values(selectedStudentIds).filter(Boolean).length}) Students
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={{ padding: 12, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center', marginTop: 12 }}>
+                  <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                    View-only mode: You do not have permission to execute student promotions.
+                  </Text>
+                </View>
+              )}
             </View>
           ) : null}
         </ScrollView>
@@ -500,43 +715,81 @@ export default function PromotionTcScreen() {
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
               <Text style={styles.modalLabel}>Search & Select Student *</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Type student name or admission no..."
-                value={studentSearch}
-                onChangeText={handleSearchStudents}
-                placeholderTextColor="#94a3b8"
-              />
+              <View style={styles.modalSearchBox}>
+                <Ionicons name="search" size={16} color="#94a3b8" />
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Type student name or admission no..."
+                  value={studentSearch}
+                  onChangeText={handleSearchStudents}
+                  placeholderTextColor="#94a3b8"
+                />
+                {studentSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => { setStudentSearch(''); setSearchResults([]); }}>
+                    <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {searchingStudents && <ActivityIndicator size="small" color="#0284c7" style={{ marginVertical: 6 }} />}
 
               {searchResults.length > 0 && !selectedStudent && (
                 <View style={styles.searchResultsBox}>
-                  {searchResults.map((s) => (
-                    <TouchableOpacity
-                      key={s.id}
-                      style={styles.searchResultItem}
-                      onPress={() => {
-                        setSelectedStudent(s);
-                        setStudentSearch(`${s.firstName} ${s.lastName || ''} (${s.admissionNo})`);
-                        setSearchResults([]);
-                      }}
-                    >
-                      <Text style={styles.searchResultText}>{s.firstName} {s.lastName}</Text>
-                      <Text style={styles.searchResultSub}>Adm #{s.admissionNo} • Class {s.className}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
+                    {searchResults.map((s) => {
+                      const name = getDisplayName(s);
+                      return (
+                        <TouchableOpacity
+                          key={s.id}
+                          style={styles.searchResultItem}
+                          onPress={() => {
+                            setSelectedStudent(s);
+                            setStudentSearch(`${name} (${s.admissionNo})`);
+                            setSearchResults([]);
+                          }}
+                        >
+                          <Text style={styles.searchResultText}>{name}</Text>
+                          <Text style={styles.searchResultSub}>
+                            Adm #{s.admissionNo} • Class {s.className || 'N/A'} {s.sectionName ? `(${s.sectionName})` : ''}
+                            {s.guardianName ? ` • Guardian: ${s.guardianName}` : ''}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
               )}
 
               {selectedStudent && (
                 <View style={styles.selectedStudentBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color="#15803d" />
-                  <Text style={styles.selectedStudentText}>
-                    Selected: {selectedStudent.firstName} {selectedStudent.lastName}
-                  </Text>
+                  <Ionicons name="checkmark-circle" size={20} color="#15803d" />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.selectedStudentText}>
+                      Selected: {getDisplayName(selectedStudent)}
+                    </Text>
+                    <Text style={styles.selectedStudentSub}>
+                      Adm #{selectedStudent.admissionNo} • Class {selectedStudent.className || 'N/A'} {selectedStudent.sectionName ? `(${selectedStudent.sectionName})` : ''}
+                      {selectedStudent.guardianName ? ` • Guardian: ${selectedStudent.guardianName}` : ''}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedStudent(null);
+                      setStudentSearch('');
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={18} color="#64748b" />
+                  </TouchableOpacity>
                 </View>
               )}
+
+              <AppDatePicker
+                label="TC Issue Date"
+                value={tcIssueDate}
+                onChange={setTcIssueDate}
+                required
+              />
 
               <Text style={styles.modalLabel}>Reason for Leaving</Text>
               <View style={styles.reasonsGrid}>
@@ -882,13 +1135,29 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
   },
+  modalSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 42,
+    gap: 6,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
   searchResultsBox: {
     backgroundColor: colors.cardBg,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     marginTop: 4,
-    maxHeight: 140,
+    maxHeight: 180,
   },
   searchResultItem: {
     padding: 10,
@@ -903,20 +1172,46 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   searchResultSub: {
     fontSize: 11,
     color: colors.textSecondary,
+    marginTop: 2,
   },
   selectedStudentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: isDark ? '#064e3b' : '#dcfce7',
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 6,
-    gap: 6,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: isDark ? '#047857' : '#86efac',
   },
   selectedStudentText: {
     color: isDark ? '#6ee7b7' : '#15803d',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  selectedStudentSub: {
+    fontSize: 11,
+    color: isDark ? '#a7f3d0' : '#166534',
+    marginTop: 2,
+  },
+  promoSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 40,
+    marginTop: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    gap: 6,
+  },
+  promoSearchInput: {
+    flex: 1,
     fontSize: 13,
-    fontWeight: '600',
+    color: colors.textPrimary,
   },
   reasonsGrid: {
     flexDirection: 'row',

@@ -19,11 +19,18 @@ import {
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { staffApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 import WhatsAppModal from '../components/WhatsAppModal';
+import AppDatePicker from '../components/AppDatePicker';
 
 export default function StaffScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAdd = isSuperAdmin || hasPermission('Staff', 'Add');
+  const canEdit = isSuperAdmin || hasPermission('Staff', 'Edit');
+  const canDelete = isSuperAdmin || hasPermission('Staff', 'Delete');
   const [searchText, setSearchText] = useState('');
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +48,7 @@ export default function StaffScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [employeeCode, setEmployeeCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [mobile, setMobile] = useState('');
@@ -48,6 +56,9 @@ export default function StaffScreen() {
   const [gender, setGender] = useState('Male');
   const [selectedDeptId, setSelectedDeptId] = useState(null);
   const [selectedDesigId, setSelectedDesigId] = useState(null);
+  const [joiningDate, setJoiningDate] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [status, setStatus] = useState('Active');
   const [employmentType, setEmploymentType] = useState('FullTime');
   const [salaryBasic, setSalaryBasic] = useState('');
   const [qualification, setQualification] = useState('');
@@ -56,11 +67,30 @@ export default function StaffScreen() {
   const [panNo, setPanNo] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNo, setAccountNo] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
   const [savingStaff, setSavingStaff] = useState(false);
+
+  const loadMasters = async () => {
+    try {
+      const [deptRes, desigRes] = await Promise.allSettled([
+        staffApi.getDepartments(),
+        staffApi.getDesignations(),
+      ]);
+      const depts = deptRes.status === 'fulfilled' && deptRes.value.data?.success ? (deptRes.value.data.data || []) : [];
+      const desigs = desigRes.status === 'fulfilled' && desigRes.value.data?.success ? (desigRes.value.data.data || []) : [];
+      setDepartments(depts);
+      setDesignations(desigs);
+      return { depts, desigs };
+    } catch (e) {
+      console.warn('Staff masters error:', e);
+      return { depts: [], desigs: [] };
+    }
+  };
 
   const handleOpenNew = () => {
     setEditingStaff(null);
     setLoadingDetails(false);
+    setEmployeeCode('');
     setFirstName('');
     setLastName('');
     setMobile('');
@@ -68,6 +98,9 @@ export default function StaffScreen() {
     setGender('Male');
     setSelectedDeptId(departments[0]?.id || null);
     setSelectedDesigId(designations[0]?.id || null);
+    setJoiningDate(new Date().toISOString().split('T')[0]);
+    setDateOfBirth('');
+    setStatus('Active');
     setQualification('');
     setSalaryBasic('');
     setExperienceYears('');
@@ -75,6 +108,7 @@ export default function StaffScreen() {
     setPanNo('');
     setBankName('');
     setAccountNo('');
+    setIfscCode('');
     setAddModalVisible(true);
   };
 
@@ -83,33 +117,44 @@ export default function StaffScreen() {
     setEditingStaff(staff);
     setDetailModalVisible(false);
     setAddModalVisible(true);
+    setLoadingDetails(true);
 
-    // Initial prefill from list item
-    const names = (staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`).trim().split(' ');
+    // Ensure departments and designations are ready
+    let currentDepts = departments;
+    let currentDesigs = designations;
+    if (currentDepts.length === 0 || currentDesigs.length === 0) {
+      const masters = await loadMasters();
+      if (masters.depts.length > 0) currentDepts = masters.depts;
+      if (masters.desigs.length > 0) currentDesigs = masters.desigs;
+    }
+
+    // Step 1: Pre-fill immediately from staff object (list item)
+    const rawName = (staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`).trim();
+    const names = rawName.split(' ');
     setFirstName(staff.firstName || names[0] || '');
-    setLastName(staff.lastName || names.slice(1).join(' ') || '');
+    setLastName(staff.lastName || (names.length > 1 ? names.slice(1).join(' ') : ''));
+    setEmployeeCode(staff.employeeCode || '');
     setMobile(staff.mobile || '');
     setEmail(staff.email || '');
 
     let initGender = staff.gender;
-    if (initGender === 1 || initGender === '1' || initGender === 'Male') initGender = 'Male';
-    else if (initGender === 2 || initGender === '2' || initGender === 'Female') initGender = 'Female';
-    else if (initGender === 3 || initGender === '3' || initGender === 'Other') initGender = 'Other';
+    if (initGender === 1 || initGender === '1' || String(initGender).toLowerCase() === 'male') initGender = 'Male';
+    else if (initGender === 2 || initGender === '2' || String(initGender).toLowerCase() === 'female') initGender = 'Female';
+    else if (initGender === 3 || initGender === '3' || String(initGender).toLowerCase() === 'other') initGender = 'Other';
     else initGender = 'Male';
     setGender(initGender);
 
-    // Match department and designation by ID or Name
     const deptName = (staff.departmentName || staff.department || '').trim().toLowerCase();
-    const matchedDept = departments.find(
+    const matchedDept = currentDepts.find(
       (d) => d.id === staff.departmentId || (deptName && d.name?.trim().toLowerCase() === deptName)
     );
-    setSelectedDeptId(matchedDept ? matchedDept.id : (staff.departmentId || null));
+    setSelectedDeptId(matchedDept ? matchedDept.id : (staff.departmentId || currentDepts[0]?.id || null));
 
     const desigName = (staff.designationName || staff.designation || '').trim().toLowerCase();
-    const matchedDesig = designations.find(
+    const matchedDesig = currentDesigs.find(
       (d) => d.id === staff.designationId || (desigName && d.name?.trim().toLowerCase() === desigName)
     );
-    setSelectedDesigId(matchedDesig ? matchedDesig.id : (staff.designationId || null));
+    setSelectedDesigId(matchedDesig ? matchedDesig.id : (staff.designationId || currentDesigs[0]?.id || null));
 
     setQualification(staff.qualification || '');
     setSalaryBasic(staff.salaryBasic != null ? String(staff.salaryBasic) : '');
@@ -118,59 +163,78 @@ export default function StaffScreen() {
     setPanNo(staff.panNo || '');
     setBankName(staff.bankName || '');
     setAccountNo(staff.accountNo || '');
+    setIfscCode(staff.ifscCode || '');
+    setJoiningDate(staff.joiningDate ? String(staff.joiningDate).split('T')[0] : '');
+    setDateOfBirth(staff.dateOfBirth ? String(staff.dateOfBirth).split('T')[0] : '');
 
-    // Fetch full EmployeeDetailDto from server to guarantee all fields are populated
+    let initStatus = 'Active';
+    if (staff.status === 1 || staff.status === '1' || staff.status === 'Active') initStatus = 'Active';
+    else if (staff.status === 2 || staff.status === '2' || staff.status === 'OnLeave') initStatus = 'OnLeave';
+    else if (staff.status === 3 || staff.status === '3' || staff.status === 'Resigned') initStatus = 'Resigned';
+    else if (staff.status === 4 || staff.status === '4' || staff.status === 'Terminated') initStatus = 'Terminated';
+    setStatus(initStatus);
+
+    // Step 2: Fetch full detail from backend to populate all fields (bank, salary, dates, etc.)
     const staffId = staff.id || staff.employeeId;
     if (staffId) {
       try {
-        setLoadingDetails(true);
-        if (departments.length === 0 || designations.length === 0) {
-          await loadMasters();
-        }
-
-        const res = await staffApi.getEmployeeDetail(staffId);
+        const fetchMethod = staffApi.getEmployeeDetail || staffApi.getEmployee;
+        const res = await fetchMethod(staffId);
         if (res.data?.success && res.data?.data) {
           const d = res.data.data;
           if (d.firstName) setFirstName(d.firstName);
-          if (d.lastName) setLastName(d.lastName);
+          if (d.lastName != null) setLastName(d.lastName);
+          if (d.employeeCode) setEmployeeCode(d.employeeCode);
           if (d.mobile) setMobile(d.mobile);
-          if (d.email) setEmail(d.email);
+          if (d.email != null) setEmail(d.email);
 
           let g = d.gender;
-          if (g === 1 || g === '1' || g === 'Male') g = 'Male';
-          else if (g === 2 || g === '2' || g === 'Female') g = 'Female';
-          else if (g === 3 || g === '3' || g === 'Other') g = 'Other';
+          if (g === 1 || g === '1' || String(g).toLowerCase() === 'male') g = 'Male';
+          else if (g === 2 || g === '2' || String(g).toLowerCase() === 'female') g = 'Female';
+          else if (g === 3 || g === '3' || String(g).toLowerCase() === 'other') g = 'Other';
           if (g) setGender(g);
 
-          // Update department ID
           if (d.departmentId) {
-            setSelectedDeptId(d.departmentId);
-          } else if (d.departmentName) {
-            const foundDept = departments.find((x) => x.name?.trim().toLowerCase() === d.departmentName.trim().toLowerCase());
+            setSelectedDeptId(Number(d.departmentId));
+          } else if (d.departmentName && currentDepts.length > 0) {
+            const foundDept = currentDepts.find((x) => x.name?.trim().toLowerCase() === d.departmentName.trim().toLowerCase());
             if (foundDept) setSelectedDeptId(foundDept.id);
           }
 
-          // Update designation ID
           if (d.designationId) {
-            setSelectedDesigId(d.designationId);
-          } else if (d.designationName) {
-            const foundDesig = designations.find((x) => x.name?.trim().toLowerCase() === d.designationName.trim().toLowerCase());
+            setSelectedDesigId(Number(d.designationId));
+          } else if (d.designationName && currentDesigs.length > 0) {
+            const foundDesig = currentDesigs.find((x) => x.name?.trim().toLowerCase() === d.designationName.trim().toLowerCase());
             if (foundDesig) setSelectedDesigId(foundDesig.id);
           }
 
-          if (d.qualification) setQualification(d.qualification);
+          if (d.qualification != null) setQualification(d.qualification);
           if (d.salaryBasic != null) setSalaryBasic(String(d.salaryBasic));
           if (d.experienceYears != null) setExperienceYears(String(d.experienceYears));
-          if (d.aadhaarNo) setAadhaarNo(d.aadhaarNo);
-          if (d.panNo) setPanNo(d.panNo);
-          if (d.bankName) setBankName(d.bankName);
-          if (d.accountNo) setAccountNo(d.accountNo);
+          if (d.aadhaarNo != null) setAadhaarNo(d.aadhaarNo);
+          if (d.panNo != null) setPanNo(d.panNo);
+          if (d.bankName != null) setBankName(d.bankName);
+          if (d.accountNo != null) setAccountNo(d.accountNo);
+          if (d.ifscCode != null) setIfscCode(d.ifscCode);
+          if (d.joiningDate != null) setJoiningDate(String(d.joiningDate).split('T')[0]);
+          if (d.dateOfBirth != null) setDateOfBirth(String(d.dateOfBirth).split('T')[0]);
+
+          if (d.status != null) {
+            let st = 'Active';
+            if (d.status === 1 || d.status === '1' || d.status === 'Active') st = 'Active';
+            else if (d.status === 2 || d.status === '2' || d.status === 'OnLeave') st = 'OnLeave';
+            else if (d.status === 3 || d.status === '3' || d.status === 'Resigned') st = 'Resigned';
+            else if (d.status === 4 || d.status === '4' || d.status === 'Terminated') st = 'Terminated';
+            setStatus(st);
+          }
         }
       } catch (err) {
         console.warn('Error fetching full staff detail for edit:', err);
       } finally {
         setLoadingDetails(false);
       }
+    } else {
+      setLoadingDetails(false);
     }
   };
 
@@ -221,23 +285,6 @@ export default function StaffScreen() {
     }
   };
 
-  const loadMasters = async () => {
-    try {
-      const [deptRes, desigRes] = await Promise.allSettled([
-        staffApi.getDepartments(),
-        staffApi.getDesignations(),
-      ]);
-      if (deptRes.status === 'fulfilled' && deptRes.value.data?.success) {
-        setDepartments(deptRes.value.data.data || []);
-      }
-      if (desigRes.status === 'fulfilled' && desigRes.value.data?.success) {
-        setDesignations(desigRes.value.data.data || []);
-      }
-    } catch (e) {
-      console.warn('Staff masters error:', e);
-    }
-  };
-
   useEffect(() => {
     fetchStaff();
     loadMasters();
@@ -268,6 +315,14 @@ export default function StaffScreen() {
     try {
       setSavingStaff(true);
       const todayStr = new Date().toISOString();
+      const statusMap = {
+        Active: 1,
+        OnLeave: 2,
+        Resigned: 3,
+        Terminated: 4,
+        Retired: 5,
+      };
+
       const payload = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -276,7 +331,8 @@ export default function StaffScreen() {
         gender: gender,
         departmentId: selectedDeptId || (departments[0]?.id || null),
         designationId: selectedDesigId || (designations[0]?.id || null),
-        joiningDate: editingStaff?.joiningDate || todayStr,
+        joiningDate: joiningDate ? `${joiningDate}T00:00:00Z` : (editingStaff?.joiningDate || todayStr),
+        dateOfBirth: dateOfBirth ? `${dateOfBirth}T00:00:00Z` : null,
         qualification: qualification.trim() || null,
         salaryBasic: salaryBasic ? parseFloat(salaryBasic) : null,
         experienceYears: experienceYears ? parseInt(experienceYears, 10) : null,
@@ -284,7 +340,9 @@ export default function StaffScreen() {
         panNo: panNo.trim() || null,
         bankName: bankName.trim() || null,
         accountNo: accountNo.trim() || null,
-        status: editingStaff?.status || 'Active',
+        ifscCode: ifscCode.trim() || null,
+        status: statusMap[status] || 1,
+        photoUrl: editingStaff?.photoUrl || null,
       };
 
       let res;
@@ -299,10 +357,15 @@ export default function StaffScreen() {
         setAddModalVisible(false);
         setEditingStaff(null);
         // Reset form
+        setEmployeeCode('');
         setFirstName('');
         setLastName('');
         setMobile('');
         setEmail('');
+        setGender('Male');
+        setJoiningDate('');
+        setDateOfBirth('');
+        setStatus('Active');
         setQualification('');
         setSalaryBasic('');
         setExperienceYears('');
@@ -310,6 +373,7 @@ export default function StaffScreen() {
         setPanNo('');
         setBankName('');
         setAccountNo('');
+        setIfscCode('');
         fetchStaff();
       } else {
         Alert.alert('Failed', res.data?.message || 'Could not save staff member.');
@@ -355,15 +419,17 @@ export default function StaffScreen() {
           </View>
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={styles.editCardBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleOpenEdit(item);
-              }}
-            >
-              <MaterialIcons name="edit" size={17} color="#4f46e5" />
-            </TouchableOpacity>
+            {canEdit && (
+              <TouchableOpacity
+                style={styles.editCardBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleOpenEdit(item);
+                }}
+              >
+                <MaterialIcons name="edit" size={17} color="#4f46e5" />
+              </TouchableOpacity>
+            )}
 
             {item.mobile ? (
               <>
@@ -445,13 +511,15 @@ export default function StaffScreen() {
       )}
 
       {/* Floating Add Staff Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={handleOpenNew}
-      >
-        <MaterialIcons name="person-add" size={24} color="#ffffff" />
-      </TouchableOpacity>
+      {canAdd && (
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={handleOpenNew}
+        >
+          <MaterialIcons name="person-add" size={24} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Detail Modal */}
       {selectedStaff && (
@@ -512,13 +580,15 @@ export default function StaffScreen() {
 
               {/* Direct Actions */}
               <View style={styles.detailActionRow}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#4f46e5' }]}
-                  onPress={() => handleOpenEdit(selectedStaff)}
-                >
-                  <MaterialIcons name="edit" size={18} color="#ffffff" />
-                  <Text style={styles.actionBtnText}>Edit</Text>
-                </TouchableOpacity>
+                {canEdit && (
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#4f46e5' }]}
+                    onPress={() => handleOpenEdit(selectedStaff)}
+                  >
+                    <MaterialIcons name="edit" size={18} color="#ffffff" />
+                    <Text style={styles.actionBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
 
                 {selectedStaff.mobile ? (
                   <>
@@ -577,6 +647,18 @@ export default function StaffScreen() {
             )}
 
             <ScrollView contentContainerStyle={styles.formScroll}>
+              {/* Employee Code Badge if Editing */}
+              {!!employeeCode && (
+                <View style={styles.codeBadgeBanner}>
+                  <Ionicons name="id-card-outline" size={18} color="#0284c7" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.codeBadgeBannerText}>
+                      Employee ID: <Text style={{ fontWeight: '800' }}>{employeeCode}</Text>
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               <Text style={styles.formLabel}>First Name *</Text>
               <TextInput
                 style={styles.formInput}
@@ -673,6 +755,43 @@ export default function StaffScreen() {
                 </>
               )}
 
+              {/* Joining Date & Date of Birth */}
+              <View style={{ marginTop: 8, gap: 10 }}>
+                <AppDatePicker
+                  label="Joining Date"
+                  value={joiningDate}
+                  onChange={setJoiningDate}
+                />
+
+                <AppDatePicker
+                  label="Date of Birth"
+                  value={dateOfBirth}
+                  onChange={setDateOfBirth}
+                  isDob
+                />
+              </View>
+
+              {/* Staff Status */}
+              <Text style={[styles.formLabel, { marginTop: 12 }]}>Staff Status</Text>
+              <View style={styles.chipsRow}>
+                {[
+                  { key: 'Active', label: 'Active' },
+                  { key: 'OnLeave', label: 'On Leave' },
+                  { key: 'Resigned', label: 'Resigned' },
+                  { key: 'Terminated', label: 'Terminated' },
+                ].map((st) => (
+                  <TouchableOpacity
+                    key={st.key}
+                    style={[styles.chip, status === st.key && styles.chipSelected]}
+                    onPress={() => setStatus(st.key)}
+                  >
+                    <Text style={[styles.chipText, status === st.key && styles.chipTextSelected]}>
+                      {st.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Text style={styles.formLabel}>Qualification</Text>
               <TextInput
                 style={styles.formInput}
@@ -741,6 +860,17 @@ export default function StaffScreen() {
                 keyboardType="numeric"
                 value={accountNo}
                 onChangeText={setAccountNo}
+              />
+
+              <Text style={styles.formLabel}>Bank IFSC Code</Text>
+              <TextInput
+                style={styles.formInput}
+                placeholder="e.g. SBIN0001234"
+                placeholderTextColor="#94a3b8"
+                autoCapitalize="characters"
+                maxLength={11}
+                value={ifscCode}
+                onChangeText={setIfscCode}
               />
 
               <TouchableOpacity
@@ -1087,6 +1217,23 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: colors.textPrimary,
+  },
+  codeBadgeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: isDark ? '#1e293b' : '#e0f2fe',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: isDark ? '#334155' : '#bae6fd',
+  },
+  codeBadgeBannerText: {
+    fontSize: 13,
+    color: '#0284c7',
+    fontWeight: '600',
   },
   formScroll: {
     paddingBottom: 30,

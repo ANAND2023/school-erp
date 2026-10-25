@@ -20,13 +20,21 @@ import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { studentApi, classApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 import { generateEnquirySlipHtml, executePrint, executeSharePdf } from '../utils/printTemplates';
 import WhatsAppModal from '../components/WhatsAppModal';
+import AppDatePicker from '../components/AppDatePicker';
 
 export default function EnquiriesScreen({ navigation }) {
   const { user, activeAcademicYearName } = useContext(AuthContext);
+  const { hasPermission, isSuperAdmin } = usePermission();
   const { isDark, colors } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAddEnquiry = isSuperAdmin || hasPermission('Enquiries', 'Add');
+  const canEditEnquiry = isSuperAdmin || hasPermission('Enquiries', 'Edit');
+  const canPrintEnquiry = isSuperAdmin || hasPermission('Enquiries', 'Print');
+  const canConvert = isSuperAdmin || hasPermission(['Admissions', 'Students'], 'Add');
 
   const [enquiries, setEnquiries] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -163,20 +171,37 @@ export default function EnquiriesScreen({ navigation }) {
     setGuardianName('');
     setMobile('');
     setEmail('');
-    setFormClassId('');
+    setFormClassId(classes.length > 0 ? String(classes[0].id) : '');
     setSource('Walk-in');
     setNotes('');
     setStatusVal(1);
     setModalVisible(true);
   };
 
+  const isEnquiryConverted = (enquiry) => {
+    if (!enquiry) return false;
+    const s = String(enquiry.status ?? '').trim().toUpperCase();
+    return (
+      enquiry.status === 3 ||
+      enquiry.status === '3' ||
+      s === '3' ||
+      s === 'CONVERTED' ||
+      s.includes('CONVERT') ||
+      Boolean(enquiry.convertedStudentId)
+    );
+  };
+
   const handleOpenEdit = (enquiry) => {
+    if (isEnquiryConverted(enquiry)) {
+      Alert.alert('Action Locked', 'This enquiry has already been converted to an admission and cannot be edited.');
+      return;
+    }
     setEditingEnquiry(enquiry);
     setStudentName(enquiry.studentName || '');
     setGuardianName(enquiry.guardianName || '');
     setMobile(enquiry.mobile || '');
     setEmail(enquiry.email || '');
-    setFormClassId(enquiry.classId ? String(enquiry.classId) : '');
+    setFormClassId(enquiry.classId ? String(enquiry.classId) : (classes.length > 0 ? String(classes[0].id) : ''));
     setSource(enquiry.source || 'Walk-in');
     setNotes(enquiry.notes || enquiry.remarks || '');
     setStatusVal(Number(enquiry.status) || 1);
@@ -196,7 +221,7 @@ export default function EnquiriesScreen({ navigation }) {
         guardianName: guardianName.trim(),
         mobile: mobile.trim(),
         email: email.trim() || null,
-        classId: formClassId ? Number(formClassId) : null,
+        classId: formClassId ? Number(formClassId) : (classes.length > 0 ? classes[0].id : null),
         source: source.trim() || 'Walk-in',
         notes: notes.trim() || null,
         status: Number(statusVal),
@@ -221,6 +246,7 @@ export default function EnquiriesScreen({ navigation }) {
       };
 
       setModalVisible(false);
+      setEditingEnquiry(null);
       setStudentName('');
       setGuardianName('');
       setMobile('');
@@ -236,7 +262,15 @@ export default function EnquiriesScreen({ navigation }) {
         Alert.alert('Success', 'Enquiry updated successfully!');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Failed to save enquiry.';
+      let msg = err.response?.data?.message;
+      if (!msg && err.response?.data?.errors) {
+        const errs = err.response.data.errors;
+        if (typeof errs === 'object') {
+          const firstKey = Object.keys(errs)[0];
+          msg = Array.isArray(errs[firstKey]) ? errs[firstKey][0] : String(errs[firstKey]);
+        }
+      }
+      if (!msg) msg = err.message || 'Failed to save enquiry.';
       Alert.alert('Error', msg);
     } finally {
       setSaving(false);
@@ -244,6 +278,10 @@ export default function EnquiriesScreen({ navigation }) {
   };
 
   const handleOpenFollowup = async (enquiry) => {
+    if (isEnquiryConverted(enquiry)) {
+      Alert.alert('Notice', 'This enquiry has already been converted to an admission. Follow-ups are closed.');
+      return;
+    }
     setFollowupEnquiry(enquiry);
     setFollowupResponse('');
     setFollowupNotes('');
@@ -305,7 +343,8 @@ export default function EnquiriesScreen({ navigation }) {
     try {
       setPrinting(true);
       const html = generateEnquirySlipHtml(slipEnquiry, { user, branch: branchInfo, activeAcademicYearName });
-      await executePrint(html);
+      const fileName = `Enquiry_Slip_${slipEnquiry.studentName || 'Student'}.pdf`;
+      await executePrint(html, fileName);
     } finally {
       setPrinting(false);
     }
@@ -388,15 +427,17 @@ export default function EnquiriesScreen({ navigation }) {
   const renderEnquiryCard = ({ item }) => {
     const badge = getStatusInfo(item.status);
     const initial = (item.studentName || 'E')[0].toUpperCase();
+    const isConverted = isEnquiryConverted(item);
 
     return (
       <View style={styles.card}>
-        {/* Card Header & Profile Row (Tap to open detailed profile modal) */}
-        <TouchableOpacity
-          onPress={() => openEnquiryDetail(item)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardRow}>
+        {/* Card Header & Profile Row with Top-Right Edit Button */}
+        <View style={styles.cardHeaderContainer}>
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => openEnquiryDetail(item)}
+            activeOpacity={0.8}
+          >
             {/* Student Avatar Icon Placeholder */}
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitial}>{initial}</Text>
@@ -421,12 +462,12 @@ export default function EnquiriesScreen({ navigation }) {
               </View>
 
               <Text style={styles.enquiryMeta}>
-                Enquiry #{item.enquiryNo || item.id} • Source: <Text style={{ color: '#0f172a', fontWeight: '600' }}>{item.source || 'Walk-in'}</Text>
+                Enquiry #{item.enquiryNo || item.id} • Source: <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{item.source || 'Walk-in'}</Text>
               </Text>
 
               <Text style={styles.guardianText}>
-                Guardian: <Text style={{ color: '#1e293b', fontWeight: '600' }}>{item.guardianName || 'N/A'}</Text>
-                {' '}• Mobile: <Text style={{ color: '#1e293b', fontWeight: '600' }}>{item.mobile || 'N/A'}</Text>
+                Guardian: <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{item.guardianName || 'N/A'}</Text>
+                {' '}• Mobile: <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{item.mobile || 'N/A'}</Text>
               </Text>
 
               {item.notes ? (
@@ -437,51 +478,98 @@ export default function EnquiriesScreen({ navigation }) {
                 </View>
               ) : null}
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        {/* Action Buttons Strip - Clean single horizontal row matching StudentsScreen */}
+          {/* Top-Right Edit Button */}
+          {canEditEnquiry && (
+            <TouchableOpacity
+              style={[
+                styles.topEditBtn,
+                isConverted && styles.topEditBtnDisabled,
+              ]}
+              onPress={() => {
+                if (isConverted) {
+                  Alert.alert('Action Locked', 'This enquiry is converted to an admission and cannot be edited.');
+                  return;
+                }
+                handleOpenEdit(item);
+              }}
+              disabled={isConverted}
+              activeOpacity={isConverted ? 1 : 0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialIcons
+                name="edit"
+                size={14}
+                color={isConverted ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#94a3b8' : '#64748b')}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Action Buttons Strip - Clean single horizontal row */}
         <View style={styles.cardActionsRow}>
-          {/* 1. Follow-up Button */}
+          {/* 1. Follow-up Button (Disabled if enquiry is converted) */}
           <TouchableOpacity
-            style={styles.cardActionBtn}
-            onPress={() => handleOpenFollowup(item)}
-            activeOpacity={0.8}
+            style={[styles.cardActionBtn, isConverted && styles.cardActionBtnDisabled]}
+            onPress={() => {
+              if (isConverted) {
+                Alert.alert('Enquiry Converted', 'This enquiry is already converted to an admission. Follow-ups are closed.');
+                return;
+              }
+              handleOpenFollowup(item);
+            }}
+            disabled={isConverted}
+            activeOpacity={isConverted ? 1 : 0.8}
           >
-            <MaterialIcons name="chat-bubble-outline" size={14} color="#d97706" />
-            <Text style={[styles.cardActionBtnText, { color: '#d97706' }]}>Follow-up</Text>
+            <MaterialIcons
+              name="chat-bubble-outline"
+              size={13}
+              color={isConverted ? '#94a3b8' : '#d97706'}
+            />
+            <Text style={[styles.cardActionBtnText, { color: isConverted ? '#94a3b8' : '#d97706' }]}>
+              Follow-up
+            </Text>
           </TouchableOpacity>
 
-          {/* 2. Admit Button */}
-          <TouchableOpacity
-            style={styles.cardActionBtn}
-            onPress={() => navigation.navigate('NewAdmission', { prefill: item })}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="school" size={14} color="#0284c7" />
-            <Text style={[styles.cardActionBtnText, { color: '#0284c7' }]}>Admit</Text>
-          </TouchableOpacity>
+          {/* 2. Admit Button (Disabled / Marked Admitted if enquiry is converted) */}
+          {canConvert && (
+            <TouchableOpacity
+              style={[styles.cardActionBtn, isConverted && styles.cardActionBtnDisabled]}
+              onPress={() => {
+                if (isConverted) {
+                  Alert.alert('Enquiry Converted', 'This student has already been admitted through this enquiry.');
+                  return;
+                }
+                navigation.navigate('NewAdmission', { prefill: item });
+              }}
+              disabled={isConverted}
+              activeOpacity={isConverted ? 1 : 0.8}
+            >
+              <MaterialIcons
+                name={isConverted ? 'check-circle' : 'school'}
+                size={13}
+                color={isConverted ? '#94a3b8' : '#0284c7'}
+              />
+              <Text style={[styles.cardActionBtnText, { color: isConverted ? '#94a3b8' : '#0284c7' }]}>
+                {isConverted ? 'Admitted' : 'Admit'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* 3. Slip Button */}
-          <TouchableOpacity
-            style={styles.cardActionBtn}
-            onPress={() => handleOpenSlip(item)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="print" size={14} color="#0f766e" />
-            <Text style={[styles.cardActionBtnText, { color: '#0f766e' }]}>Slip</Text>
-          </TouchableOpacity>
+          {canPrintEnquiry && (
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={() => handleOpenSlip(item)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="print" size={13} color="#0f766e" />
+              <Text style={[styles.cardActionBtnText, { color: '#0f766e' }]}>Slip</Text>
+            </TouchableOpacity>
+          )}
 
-          {/* 4. Edit Button */}
-          <TouchableOpacity
-            style={[styles.cardActionIconBtn, { backgroundColor: '#f8fafc' }]}
-            onPress={() => handleOpenEdit(item)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="edit" size={14} color="#64748b" />
-          </TouchableOpacity>
-
-          {/* 5. WhatsApp Button */}
+          {/* 4. WhatsApp Button */}
           {item.mobile ? (
             <TouchableOpacity
               style={[styles.cardActionIconBtn, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
@@ -492,7 +580,7 @@ export default function EnquiriesScreen({ navigation }) {
             </TouchableOpacity>
           ) : null}
 
-          {/* 6. Phone Call Button */}
+          {/* 5. Phone Call Button */}
           {item.mobile ? (
             <TouchableOpacity
               style={[styles.cardActionIconBtn, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}
@@ -509,7 +597,7 @@ export default function EnquiriesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Top Search Bar & + New Button (Matching StudentsScreen) */}
+      {/* Top Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={20} color="#94a3b8" />
@@ -526,11 +614,6 @@ export default function EnquiriesScreen({ navigation }) {
             </TouchableOpacity>
           ) : null}
         </View>
-
-        <TouchableOpacity style={styles.addBtn} onPress={handleOpenNew} activeOpacity={0.8}>
-          <Ionicons name="add" size={18} color="#ffffff" />
-          <Text style={styles.addBtnText}>New</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Status Chips Row */}
@@ -616,14 +699,16 @@ export default function EnquiriesScreen({ navigation }) {
         />
       )}
 
-      {/* Floating Add Enquiry Button (Matching Staff & Faculty) */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={handleOpenNew}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </TouchableOpacity>
+      {/* Floating Add Enquiry Button */}
+      {canAddEnquiry && (
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={handleOpenNew}
+        >
+          <MaterialIcons name="add" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* ======================================================== */}
       {/* ENQUIRY PROFILE MODAL (Matching StudentsScreen Profile)   */}
@@ -638,9 +723,23 @@ export default function EnquiriesScreen({ navigation }) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Enquiry Profile</Text>
-              <TouchableOpacity onPress={() => setSelectedEnquiryDetail(null)}>
-                <MaterialIcons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                {canEditEnquiry && selectedEnquiryDetail && !isEnquiryConverted(selectedEnquiryDetail) && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      const item = selectedEnquiryDetail;
+                      setSelectedEnquiryDetail(null);
+                      handleOpenEdit(item);
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="edit" size={20} color="#64748b" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setSelectedEnquiryDetail(null)}>
+                  <MaterialIcons name="close" size={24} color="#64748b" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {selectedEnquiryDetail && (
@@ -655,6 +754,14 @@ export default function EnquiriesScreen({ navigation }) {
                   <Text style={styles.heroClass}>
                     Class: {selectedEnquiryDetail.className || 'General Enquiry'} • Enquiry #{selectedEnquiryDetail.enquiryNo || selectedEnquiryDetail.id}
                   </Text>
+                  {isEnquiryConverted(selectedEnquiryDetail) && (
+                    <View style={styles.convertedNoticeBanner}>
+                      <MaterialIcons name="check-circle" size={16} color={isDark ? '#4ade80' : '#15803d'} />
+                      <Text style={styles.convertedNoticeBannerText}>
+                        Converted to Admission • Follow-up, Admit & Edit are locked
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Academic & Inquiry Information */}
@@ -734,37 +841,73 @@ export default function EnquiriesScreen({ navigation }) {
                 {/* Action Buttons inside Profile Modal */}
                 <View style={styles.modalProfileActionsRow}>
                   <TouchableOpacity
-                    style={styles.modalPrimaryActionBtn}
+                    style={[
+                      styles.modalPrimaryActionBtn,
+                      isEnquiryConverted(selectedEnquiryDetail) && styles.modalActionBtnDisabled,
+                    ]}
+                    disabled={isEnquiryConverted(selectedEnquiryDetail)}
                     onPress={() => {
+                      if (isEnquiryConverted(selectedEnquiryDetail)) return;
                       setSelectedEnquiryDetail(null);
                       handleOpenFollowup(selectedEnquiryDetail);
                     }}
                   >
-                    <MaterialIcons name="chat-bubble" size={16} color="#ffffff" />
-                    <Text style={styles.modalPrimaryActionBtnText}>Log Follow-up</Text>
+                    <MaterialIcons
+                      name="chat-bubble"
+                      size={16}
+                      color={isEnquiryConverted(selectedEnquiryDetail) ? '#94a3b8' : '#ffffff'}
+                    />
+                    <Text
+                      style={[
+                        styles.modalPrimaryActionBtnText,
+                        isEnquiryConverted(selectedEnquiryDetail) && { color: '#94a3b8' },
+                      ]}
+                    >
+                      Log Follow-up
+                    </Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.modalAdmitBtn}
-                    onPress={() => {
-                      setSelectedEnquiryDetail(null);
-                      navigation.navigate('NewAdmission', { prefill: selectedEnquiryDetail });
-                    }}
-                  >
-                    <MaterialIcons name="school" size={16} color="#ffffff" />
-                    <Text style={styles.modalAdmitBtnText}>Convert to Admission</Text>
-                  </TouchableOpacity>
+                  {canConvert && (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalAdmitBtn,
+                        isEnquiryConverted(selectedEnquiryDetail) && styles.modalActionBtnDisabled,
+                      ]}
+                      disabled={isEnquiryConverted(selectedEnquiryDetail)}
+                      onPress={() => {
+                        if (isEnquiryConverted(selectedEnquiryDetail)) return;
+                        setSelectedEnquiryDetail(null);
+                        navigation.navigate('NewAdmission', { prefill: selectedEnquiryDetail });
+                      }}
+                    >
+                      <MaterialIcons
+                        name={isEnquiryConverted(selectedEnquiryDetail) ? 'check-circle' : 'school'}
+                        size={16}
+                        color={isEnquiryConverted(selectedEnquiryDetail) ? '#94a3b8' : '#ffffff'}
+                      />
+                      <Text
+                        style={[
+                          styles.modalAdmitBtnText,
+                          isEnquiryConverted(selectedEnquiryDetail) && { color: '#94a3b8' },
+                        ]}
+                      >
+                        {isEnquiryConverted(selectedEnquiryDetail) ? 'Already Admitted' : 'Convert to Admission'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
-                  <TouchableOpacity
-                    style={styles.modalSlipBtn}
-                    onPress={() => {
-                      setSelectedEnquiryDetail(null);
-                      handleOpenSlip(selectedEnquiryDetail);
-                    }}
-                  >
-                    <MaterialIcons name="print" size={16} color="#0f766e" />
-                    <Text style={styles.modalSlipBtnText}>Slip</Text>
-                  </TouchableOpacity>
+                  {canPrintEnquiry && (
+                    <TouchableOpacity
+                      style={styles.modalSlipBtn}
+                      onPress={() => {
+                        setSelectedEnquiryDetail(null);
+                        handleOpenSlip(selectedEnquiryDetail);
+                      }}
+                    >
+                      <MaterialIcons name="print" size={16} color="#0f766e" />
+                      <Text style={styles.modalSlipBtnText}>Slip</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </ScrollView>
             )}
@@ -941,29 +1084,12 @@ export default function EnquiriesScreen({ navigation }) {
                 placeholderTextColor="#94a3b8"
               />
 
-              <Text style={styles.inputLabel}>Next Follow-up Date</Text>
-              <View style={styles.datePickerInputRow}>
-                <TextInput
-                  style={[styles.modalInput, { flex: 1, marginBottom: 0 }]}
-                  placeholder="YYYY-MM-DD"
-                  value={nextDateText}
-                  onChangeText={setNextDateText}
-                  placeholderTextColor="#94a3b8"
-                />
-                <TouchableOpacity
-                  style={styles.calendarTriggerBtn}
-                  onPress={() => {
-                    const baseDate = nextDateText ? new Date(nextDateText) : new Date();
-                    if (!isNaN(baseDate.getTime())) {
-                      setCalendarMonth(baseDate.getMonth());
-                      setCalendarYear(baseDate.getFullYear());
-                    }
-                    setCalendarTarget('followup');
-                  }}
-                >
-                  <MaterialIcons name="calendar-today" size={18} color="#ffffff" />
-                </TouchableOpacity>
-              </View>
+              <AppDatePicker
+                label="Next Follow-up Date"
+                value={nextDateText}
+                onChange={setNextDateText}
+                placeholder="Select follow-up date"
+              />
 
               {/* Quick Date Presets */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickDateChipsRow}>
@@ -1398,10 +1524,32 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  cardHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
   cardRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+  },
+  topEditBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  topEditBtnDisabled: {
+    opacity: 0.45,
+    backgroundColor: isDark ? '#1e293b40' : '#f1f5f9',
+    borderColor: isDark ? '#334155' : '#e2e8f0',
   },
   avatarPlaceholder: {
     width: 42,
@@ -1499,18 +1647,28 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     borderColor: colors.cardBorder,
     gap: 4,
   },
+  cardActionBtnDisabled: {
+    backgroundColor: isDark ? '#1e293b40' : '#f1f5f9',
+    borderColor: isDark ? '#334155' : '#e2e8f0',
+    opacity: 0.65,
+  },
   cardActionBtnText: {
     fontSize: 11,
     fontWeight: '700',
   },
   cardActionIconBtn: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  cardActionIconBtnDisabled: {
+    backgroundColor: isDark ? '#1e293b40' : '#f1f5f9',
+    borderColor: isDark ? '#334155' : '#e2e8f0',
+    opacity: 0.5,
   },
 
   // Center / Empty States
@@ -1700,6 +1858,29 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     color: isDark ? '#2dd4bf' : '#0f766e',
     fontSize: 12,
     fontWeight: '700',
+  },
+  modalActionBtnDisabled: {
+    backgroundColor: isDark ? '#334155' : '#cbd5e1',
+    borderColor: isDark ? '#475569' : '#94a3b8',
+    opacity: 0.65,
+  },
+  convertedNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: isDark ? '#052e16' : '#dcfce7',
+    borderWidth: 1,
+    borderColor: isDark ? '#166534' : '#86efac',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  convertedNoticeBannerText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: isDark ? '#4ade80' : '#15803d',
+    flexShrink: 1,
   },
 
   // Form Inputs

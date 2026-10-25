@@ -204,7 +204,8 @@ export default function StudentPortalScreen({ navigation }) {
         return;
       }
       const html = generateFeeReceiptHtml(receiptData, { user, branch: branchInfo, activeAcademicYearName });
-      await executePrint(html);
+      const fileName = `Fee_Receipt_${receiptData?.studentName || 'Student'}_${receiptData?.receiptNo || receiptId}.pdf`;
+      await executePrint(html, fileName);
     } catch (e) {
       Alert.alert('Error', 'Failed to generate receipt slip.');
     } finally {

@@ -175,4 +175,16 @@ namespace SchoolERP.Domain.Entities
 
         public virtual FeeReceipt? FeeReceipt { get; set; }
     }
+
+    public class FeeDiscountScheme : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Type { get; set; } = "Percentage"; // "Percentage", "Fixed Amount", "Full Waiver"
+        public decimal Value { get; set; }
+        public string? Description { get; set; }
+
+        public virtual Branch? Branch { get; set; }
+    }
 }

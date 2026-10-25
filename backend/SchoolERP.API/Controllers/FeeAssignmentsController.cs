@@ -17,6 +17,7 @@ namespace SchoolERP.API.Controllers
 {
     [ApiController]
     [Route("api/fees")]
+    [Route("api/feeassignments")]
     [Authorize]
     public class FeeAssignmentsController : ControllerBase
     {
@@ -267,6 +268,63 @@ namespace SchoolERP.API.Controllers
                 Value = concession.Value,
                 Reason = concession.Reason
             }, "Fee concession created and applied to student dues successfully."));
+        }
+
+        [HttpPut("concessions/{id}")]
+        [HasPermission("FeeConcessions", "Edit")]
+        public async Task<ActionResult<ApiResponse<FeeConcessionDto>>> UpdateConcession(long id, [FromBody] UpdateFeeConcessionDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var conc = await _context.FeeConcessions
+                .Include(c => c.Student)
+                .Include(c => c.FeeHead)
+                .FirstOrDefaultAsync(c => c.Id == id && c.BranchId == branchId);
+            if (conc == null) return NotFound(ApiResponse<FeeConcessionDto>.Fail("Concession not found."));
+
+            conc.Type = request.Type;
+            conc.Value = request.Value;
+            conc.Reason = request.Reason?.Trim();
+
+            // Re-apply concession to StudentFeeDues
+            var studentDues = await _context.StudentFeeDues
+                .Where(d => d.StudentId == conc.StudentId &&
+                            d.FeeHeadId == conc.FeeHeadId &&
+                            d.AcademicYearId == conc.AcademicYearId &&
+                            d.BranchId == branchId &&
+                            d.IsActive)
+                .ToListAsync();
+
+            foreach (var due in studentDues)
+            {
+                decimal concessionAmt = 0;
+                if (request.Type == ConcessionType.Percentage)
+                {
+                    concessionAmt = Math.Round((due.OriginalAmount * request.Value) / 100m, 2);
+                }
+                else
+                {
+                    concessionAmt = Math.Min(request.Value, due.OriginalAmount);
+                }
+
+                due.ConcessionAmount = concessionAmt;
+                due.BalanceAmount = Math.Max(0, due.OriginalAmount - due.ConcessionAmount - due.PaidAmount);
+                due.Status = due.BalanceAmount <= 0 ? DueStatus.Paid : (due.PaidAmount > 0 ? DueStatus.PartiallyPaid : DueStatus.Unpaid);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<FeeConcessionDto>.Ok(new FeeConcessionDto
+            {
+                Id = conc.Id,
+                StudentId = conc.StudentId,
+                StudentName = conc.Student?.FullName ?? "",
+                AdmissionNo = conc.Student?.AdmissionNo ?? "",
+                FeeHeadId = conc.FeeHeadId,
+                FeeHeadName = conc.FeeHead?.Name ?? "",
+                Type = conc.Type,
+                Value = conc.Value,
+                Reason = conc.Reason
+            }, "Fee concession updated successfully."));
         }
 
         [HttpDelete("concessions/{id}")]

@@ -17,10 +17,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { attendanceApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
+import AppDatePicker from '../components/AppDatePicker';
 
 export default function LeaveManagementScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canApplyLeave = isSuperAdmin || hasPermission('LeaveManagement', 'Add');
+  const canApproveLeave = isSuperAdmin || hasPermission('LeaveManagement', 'Edit');
+  const canManageHolidays = isSuperAdmin || hasPermission(['HolidayCalendar', 'StudentAttendance', 'AttendanceReports'], 'Add') || hasPermission(['HolidayCalendar', 'StudentAttendance'], 'Edit');
 
   const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'holidays'
   const [loading, setLoading] = useState(true);
@@ -33,6 +40,15 @@ export default function LeaveManagementScreen() {
   // Holidays state
   const [holidays, setHolidays] = useState([]);
   const [loadingHolidays, setLoadingHolidays] = useState(false);
+
+  // Holiday CRUD modal state
+  const [holidayModalVisible, setHolidayModalVisible] = useState(false);
+  const [editingHolidayId, setEditingHolidayId] = useState(null);
+  const [holidayName, setHolidayName] = useState('');
+  const [holidayDate, setHolidayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [holidayDescription, setHolidayDescription] = useState('');
+  const [savingHoliday, setSavingHoliday] = useState(false);
+  const [holidaySearch, setHolidaySearch] = useState('');
 
   // Apply Leave Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -159,6 +175,112 @@ export default function LeaveManagementScreen() {
     return { bg: '#fef3c7', text: '#b45309', label: 'Pending' };
   };
 
+  const handleOpenAddHoliday = () => {
+    setEditingHolidayId(null);
+    setHolidayName('');
+    setHolidayDate(new Date().toISOString().split('T')[0]);
+    setHolidayDescription('');
+    setHolidayModalVisible(true);
+  };
+
+  const handleOpenEditHoliday = (item) => {
+    setEditingHolidayId(item.id);
+    setHolidayName(item.name || item.title || '');
+    const rawDate = item.holidayDate || item.date;
+    const d = rawDate ? String(rawDate).split('T')[0] : new Date().toISOString().split('T')[0];
+    setHolidayDate(d);
+    setHolidayDescription(item.description || '');
+    setHolidayModalVisible(true);
+  };
+
+  const handleSaveHoliday = async () => {
+    if (!holidayName.trim()) {
+      Alert.alert('Validation Error', 'Please enter a name for the holiday.');
+      return;
+    }
+    if (!holidayDate.trim()) {
+      Alert.alert('Validation Error', 'Please specify the holiday date (YYYY-MM-DD).');
+      return;
+    }
+
+    try {
+      setSavingHoliday(true);
+      const payload = {
+        name: holidayName.trim(),
+        holidayDate: holidayDate.trim(),
+        description: holidayDescription.trim(),
+      };
+
+      if (editingHolidayId) {
+        await attendanceApi.updateHoliday(editingHolidayId, payload);
+        Alert.alert('Success', 'Holiday updated successfully.');
+      } else {
+        await attendanceApi.createHoliday(payload);
+        Alert.alert('Success', 'Holiday added successfully.');
+      }
+
+      setHolidayModalVisible(false);
+      loadHolidays();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to save holiday.';
+      Alert.alert('Error', msg);
+    } finally {
+      setSavingHoliday(false);
+    }
+  };
+
+  const handleDeleteHoliday = (item) => {
+    const title = item.name || item.title || 'this holiday';
+    Alert.alert(
+      'Delete Holiday',
+      `Are you sure you want to delete "${title}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await attendanceApi.deleteHoliday(item.id);
+              Alert.alert('Deleted', 'Holiday has been removed.');
+              loadHolidays();
+            } catch (err) {
+              const msg = err.response?.data?.message || 'Failed to delete holiday.';
+              Alert.alert('Error', msg);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getHolidayDateParts = (rawDate) => {
+    if (!rawDate) return { month: 'HOL', day: '--', year: '', weekday: '' };
+    try {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return { month: 'HOL', day: '--', year: '', weekday: '' };
+      return {
+        month: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+        day: d.getDate(),
+        year: d.getFullYear(),
+        weekday: d.toLocaleString('en-US', { weekday: 'short' }),
+      };
+    } catch (e) {
+      return { month: 'HOL', day: '--', year: '', weekday: '' };
+    }
+  };
+
+  const filteredHolidays = useMemo(() => {
+    if (!holidaySearch.trim()) return holidays;
+    const q = holidaySearch.toLowerCase();
+    return holidays.filter(
+      (h) =>
+        (h.name && h.name.toLowerCase().includes(q)) ||
+        (h.description && h.description.toLowerCase().includes(q)) ||
+        (h.holidayDate && String(h.holidayDate).includes(q))
+    );
+  }, [holidays, holidaySearch]);
+
   const renderLeaveCard = ({ item }) => {
     const badge = getStatusBadge(item.status);
     const isPending = badge.label === 'Pending';
@@ -191,7 +313,7 @@ export default function LeaveManagementScreen() {
           <Text style={styles.reasonText}>"{item.reason}"</Text>
         ) : null}
 
-        {isPending && (
+        {isPending && canApproveLeave && (
           <View style={styles.actionBtnsRow}>
             <TouchableOpacity
               style={styles.rejectBtn}
@@ -266,13 +388,15 @@ export default function LeaveManagementScreen() {
               ))}
             </ScrollView>
 
-            <TouchableOpacity
-              style={styles.applyBtn}
-              onPress={() => setModalVisible(true)}
-            >
-              <Ionicons name="add" size={18} color="#ffffff" />
-              <Text style={styles.applyBtnText}>Apply</Text>
-            </TouchableOpacity>
+            {canApplyLeave && (
+              <TouchableOpacity
+                style={styles.applyBtn}
+                onPress={() => setModalVisible(true)}
+              >
+                <Ionicons name="add" size={18} color="#ffffff" />
+                <Text style={styles.applyBtnText}>Apply</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {loading ? (
@@ -313,6 +437,35 @@ export default function LeaveManagementScreen() {
       {/* TAB 2: HOLIDAY CALENDAR */}
       {activeTab === 'holidays' && (
         <View style={{ flex: 1 }}>
+          {/* Header Action Bar */}
+          <View style={styles.filterRow}>
+            <View style={styles.holidaySearchBox}>
+              <Ionicons name="search-outline" size={16} color="#94a3b8" />
+              <TextInput
+                style={styles.holidaySearchInput}
+                placeholder="Search holidays..."
+                placeholderTextColor="#94a3b8"
+                value={holidaySearch}
+                onChangeText={setHolidaySearch}
+              />
+              {holidaySearch.length > 0 && (
+                <TouchableOpacity onPress={() => setHolidaySearch('')}>
+                  <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {canManageHolidays && (
+              <TouchableOpacity
+                style={styles.applyBtn}
+                onPress={handleOpenAddHoliday}
+              >
+                <Ionicons name="add" size={18} color="#ffffff" />
+                <Text style={styles.applyBtnText}>Add Holiday</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {loadingHolidays ? (
             <View style={styles.centerLoading}>
               <ActivityIndicator size="large" color="#0284c7" />
@@ -320,7 +473,7 @@ export default function LeaveManagementScreen() {
             </View>
           ) : (
             <FlatList
-              data={holidays}
+              data={filteredHolidays}
               keyExtractor={(item, idx) => String(item.id || idx)}
               contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
               refreshControl={
@@ -333,27 +486,60 @@ export default function LeaveManagementScreen() {
                   colors={['#0284c7']}
                 />
               }
-              renderItem={({ item }) => (
-                <View style={styles.holidayCard}>
-                  <View style={styles.holidayDateBox}>
-                    <Text style={styles.holidayMonth}>
-                      {item.date ? new Date(item.date).toLocaleString('default', { month: 'short' }).toUpperCase() : 'HOL'}
-                    </Text>
-                    <Text style={styles.holidayDay}>
-                      {item.date ? new Date(item.date).getDate() : '--'}
-                    </Text>
+              renderItem={({ item }) => {
+                const rawDate = item.holidayDate || item.date;
+                const { month, day, year, weekday } = getHolidayDateParts(rawDate);
+                return (
+                  <View style={styles.holidayCard}>
+                    <View style={styles.holidayDateBox}>
+                      <Text style={styles.holidayMonth}>{month}</Text>
+                      <Text style={styles.holidayDay}>{day}</Text>
+                      <Text style={styles.holidayWeekday}>{weekday || year}</Text>
+                    </View>
+
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.holidayTitle}>{item.name || item.title || 'School Holiday'}</Text>
+                      {item.description ? (
+                        <Text style={styles.holidayDesc}>{item.description}</Text>
+                      ) : (
+                        <Text style={[styles.holidayDesc, { fontStyle: 'italic', opacity: 0.7 }]}>
+                          Official non-working day
+                        </Text>
+                      )}
+                      <Text style={styles.holidayDateSub}>
+                        {rawDate ? String(rawDate).split('T')[0] : ''}
+                      </Text>
+                    </View>
+
+                    {canManageHolidays && (
+                      <View style={styles.holidayActionCol}>
+                        <TouchableOpacity
+                          style={styles.holidayEditBtn}
+                          onPress={() => handleOpenEditHoliday(item)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="pencil" size={15} color="#0284c7" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.holidayDeleteBtn}
+                          onPress={() => handleDeleteHoliday(item)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="trash-outline" size={15} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.holidayTitle}>{item.title || item.name || 'School Holiday'}</Text>
-                    <Text style={styles.holidayDesc}>{item.description || 'Official non-working day'}</Text>
-                  </View>
-                </View>
-              )}
+                );
+              }}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Ionicons name="sunny-outline" size={44} color="#cbd5e1" />
-                  <Text style={styles.emptyTitle}>No Upcoming Holidays</Text>
-                  <Text style={styles.emptySub}>Holiday calendar has not been uploaded yet.</Text>
+                  <Text style={styles.emptyTitle}>No Holidays Found</Text>
+                  <Text style={styles.emptySub}>
+                    {holidaySearch ? 'No holidays matching your search.' : 'Tap "+ Add Holiday" to configure academic holidays.'}
+                  </Text>
                 </View>
               }
             />
@@ -411,23 +597,24 @@ export default function LeaveManagementScreen() {
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>From Date (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={fromDate}
-                onChangeText={setFromDate}
-                placeholder="2026-10-24"
-                placeholderTextColor="#94a3b8"
-              />
-
-              <Text style={styles.inputLabel}>To Date (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={toDate}
-                onChangeText={setToDate}
-                placeholder="2026-10-25"
-                placeholderTextColor="#94a3b8"
-              />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <AppDatePicker
+                    label="From Date"
+                    value={fromDate}
+                    onChange={setFromDate}
+                    required
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppDatePicker
+                    label="To Date"
+                    value={toDate}
+                    onChange={setToDate}
+                    required
+                  />
+                </View>
+              </View>
 
               <Text style={styles.inputLabel}>Reason for Leave *</Text>
               <TextInput
@@ -450,6 +637,119 @@ export default function LeaveManagementScreen() {
                   <>
                     <Ionicons name="send" size={16} color="#ffffff" style={{ marginRight: 6 }} />
                     <Text style={styles.modalSubmitBtnText}>Submit Leave Application</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Holiday Add / Edit Modal */}
+      <Modal
+        visible={holidayModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setHolidayModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons
+                  name={editingHolidayId ? 'create-outline' : 'calendar-outline'}
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text style={styles.modalTitle}>
+                  {editingHolidayId ? 'Edit Holiday' : 'Add New Holiday'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setHolidayModalVisible(false)}>
+                <Ionicons name="close" size={22} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              <Text style={styles.inputLabel}>Holiday Name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={holidayName}
+                onChangeText={setHolidayName}
+                placeholder="e.g. Diwali, Independence Day, Winter Break"
+                placeholderTextColor="#94a3b8"
+              />
+
+              <AppDatePicker
+                label="Holiday Date"
+                value={holidayDate}
+                onChange={setHolidayDate}
+                required
+              />
+
+              {/* Quick Date Shortcuts */}
+              <View style={styles.quickDateRow}>
+                <TouchableOpacity
+                  style={styles.quickDateChip}
+                  onPress={() => setHolidayDate(new Date().toISOString().split('T')[0])}
+                >
+                  <Text style={styles.quickDateText}>Today</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.quickDateChip}
+                  onPress={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    setHolidayDate(d.toISOString().split('T')[0]);
+                  }}
+                >
+                  <Text style={styles.quickDateText}>Tomorrow</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.quickDateChip}
+                  onPress={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 7);
+                    setHolidayDate(d.toISOString().split('T')[0]);
+                  }}
+                >
+                  <Text style={styles.quickDateText}>+7 Days</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.modalInput, { height: 75, textAlignVertical: 'top' }]}
+                value={holidayDescription}
+                onChangeText={setHolidayDescription}
+                placeholder="Optional details or instructions..."
+                placeholderTextColor="#94a3b8"
+                multiline
+              />
+
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, savingHoliday && { opacity: 0.7 }]}
+                onPress={handleSaveHoliday}
+                disabled={savingHoliday}
+              >
+                {savingHoliday ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={editingHolidayId ? 'checkmark-circle' : 'add-circle'}
+                      size={18}
+                      color="#ffffff"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={styles.modalSubmitBtnText}>
+                      {editingHolidayId ? 'Update Holiday' : 'Save Holiday'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -700,6 +1000,77 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  holidaySearchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 38,
+    gap: 6,
+  },
+  holidaySearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textPrimary,
+    padding: 0,
+  },
+  holidayWeekday: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  holidayDateSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 3,
+  },
+  holidayActionCol: {
+    flexDirection: 'column',
+    gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  holidayEditBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: isDark ? '#1e293b' : '#e0f2fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: isDark ? '#0369a1' : '#bae6fd',
+  },
+  holidayDeleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: isDark ? '#450a0a' : '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: isDark ? '#991b1b' : '#fecaca',
+  },
+  quickDateRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  quickDateChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: isDark ? '#1e293b' : '#e2e8f0',
+  },
+  quickDateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   modalOverlay: {
     flex: 1,

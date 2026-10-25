@@ -307,9 +307,14 @@ namespace SchoolERP.API.Controllers
         [Authorize]
         public async Task<ActionResult<ApiResponse<SchoolDto>>> UpdateSchool(long id, [FromBody] UpdateSchoolRequestDto request)
         {
-            if (_currentUserService.UserType != UserType.SuperAdmin)
+            var isSuperAdmin = _currentUserService.UserType == UserType.SuperAdmin;
+            if (!isSuperAdmin)
             {
-                return StatusCode(403, ApiResponse<SchoolDto>.Fail("Only Super Admin can edit schools."));
+                var userBranch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == _currentUserService.BranchId);
+                if (userBranch == null || userBranch.SchoolId != id)
+                {
+                    return StatusCode(403, ApiResponse<SchoolDto>.Fail("Only Super Admin or School Admin can edit this school."));
+                }
             }
 
             var school = await _context.Schools

@@ -19,6 +19,7 @@ import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { feesApi, studentApi, classApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 import {
   generateFeeReceiptHtml,
   numberToIndianWords,
@@ -58,8 +59,13 @@ const getPresetDates = (presetKey) => {
 
 export default function FeesScreen({ route, navigation }) {
   const { user, activeAcademicYearName } = useContext(AuthContext);
+  const { hasPermission, isSuperAdmin } = usePermission();
   const { isDark, colors } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canCollect = isSuperAdmin || hasPermission(['FeeCollection', 'Fees'], 'Add');
+  const canCancel = isSuperAdmin || hasPermission(['FeeCollection', 'Fees'], 'Delete');
+  const canPrint = isSuperAdmin || hasPermission(['FeeCollection', 'Fees', 'FeeReports'], 'Print');
   const [activeTab, setActiveTab] = useState('summary'); // 'summary' or 'dues'
 
   // Branch Info
@@ -891,7 +897,8 @@ export default function FeesScreen({ route, navigation }) {
         branch: branchInfo,
         activeAcademicYearName,
       });
-      await executePrint(html);
+      const fileName = `Fee_Receipt_${printReceiptData.studentName || 'Student'}_${printReceiptData.receiptNo || 'REC'}.pdf`;
+      await executePrint(html, fileName);
     } finally {
       setPrinting(false);
     }
@@ -1119,13 +1126,15 @@ export default function FeesScreen({ route, navigation }) {
 
                         {/* Card Actions: Print Slip, WhatsApp, Cancel */}
                         <View style={styles.receiptCardActions}>
-                          <TouchableOpacity
-                            style={styles.printSlipMiniBtn}
-                            onPress={() => handleOpenReceipt(rec)}
-                          >
-                            <Ionicons name="print-outline" size={13} color="#0284c7" />
-                            <Text style={styles.printSlipMiniBtnText}>Print</Text>
-                          </TouchableOpacity>
+                          {canPrint && (
+                            <TouchableOpacity
+                              style={styles.printSlipMiniBtn}
+                              onPress={() => handleOpenReceipt(rec)}
+                            >
+                              <Ionicons name="print-outline" size={13} color="#0284c7" />
+                              <Text style={styles.printSlipMiniBtnText}>Print</Text>
+                            </TouchableOpacity>
+                          )}
 
                           <TouchableOpacity
                             style={styles.waMiniBtn}
@@ -1134,7 +1143,7 @@ export default function FeesScreen({ route, navigation }) {
                             <Ionicons name="logo-whatsapp" size={13} color="#16a34a" />
                           </TouchableOpacity>
 
-                          {!isCancelled && (
+                          {!isCancelled && canCancel && (
                             <TouchableOpacity
                               style={styles.cancelMiniBtn}
                               onPress={() => handleOpenCancelReceiptModal(rec)}
@@ -1658,25 +1667,33 @@ export default function FeesScreen({ route, navigation }) {
                   />
 
                   {/* Collect Fee Button */}
-                  <TouchableOpacity
-                    style={[styles.collectBtn, (submittingFee || Boolean(discountError)) && styles.collectBtnDisabled]}
-                    onPress={handleCollectFee}
-                    disabled={submittingFee || Boolean(discountError)}
-                    activeOpacity={0.8}
-                  >
-                    {submittingFee ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <View style={styles.collectBtnRow}>
-                        <MaterialIcons name="receipt" size={20} color="#ffffff" />
-                        <Text style={styles.collectBtnText}>
-                          {isPartPayment
-                            ? `Collect Part Payment (₹${Number(amountToPay || 0).toLocaleString('en-IN')})`
-                            : `Collect Fee & Generate Receipt (₹${Number(amountToPay || 0).toLocaleString('en-IN')})`}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
+                  {canCollect ? (
+                    <TouchableOpacity
+                      style={[styles.collectBtn, (submittingFee || Boolean(discountError)) && styles.collectBtnDisabled]}
+                      onPress={handleCollectFee}
+                      disabled={submittingFee || Boolean(discountError)}
+                      activeOpacity={0.8}
+                    >
+                      {submittingFee ? (
+                        <ActivityIndicator color="#ffffff" />
+                      ) : (
+                        <View style={styles.collectBtnRow}>
+                          <MaterialIcons name="receipt" size={20} color="#ffffff" />
+                          <Text style={styles.collectBtnText}>
+                            {isPartPayment
+                              ? `Collect Part Payment (₹${Number(amountToPay || 0).toLocaleString('en-IN')})`
+                              : `Collect Fee & Generate Receipt (₹${Number(amountToPay || 0).toLocaleString('en-IN')})`}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ padding: 12, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                        View-only mode: You do not have permission to collect fee payments.
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
             ) : null}

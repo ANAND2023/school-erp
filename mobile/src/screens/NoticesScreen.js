@@ -18,10 +18,17 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { notificationApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 
 export default function NoticesScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canAddNotice = isSuperAdmin || hasPermission('Notifications', 'Add');
+  const canEditNotice = isSuperAdmin || hasPermission('Notifications', 'Edit');
+  const canDeleteNotice = isSuperAdmin || hasPermission('Notifications', 'Delete');
+
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -198,20 +205,24 @@ export default function NoticesScreen() {
 
           {/* Edit & Delete Action Buttons */}
           <View style={styles.cardActionsRow}>
-            <TouchableOpacity
-              style={styles.cardActionEditBtn}
-              onPress={() => handleOpenEditNotice(item)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons name="edit" size={17} color="#4f46e5" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cardActionDeleteBtn}
-              onPress={() => handleDeleteNotice(item)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
-            </TouchableOpacity>
+            {canEditNotice && (
+              <TouchableOpacity
+                style={styles.cardActionEditBtn}
+                onPress={() => handleOpenEditNotice(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="edit" size={17} color="#4f46e5" />
+              </TouchableOpacity>
+            )}
+            {canDeleteNotice && (
+              <TouchableOpacity
+                style={styles.cardActionDeleteBtn}
+                onPress={() => handleDeleteNotice(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -243,13 +254,15 @@ export default function NoticesScreen() {
       )}
 
       {/* Floating Add Notice Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={handleOpenNewNotice}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </TouchableOpacity>
+      {canAddNotice && (
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={handleOpenNewNotice}
+        >
+          <MaterialIcons name="add" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Publish / Edit Notice Modal */}
       <Modal

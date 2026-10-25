@@ -117,16 +117,34 @@ export default function EmployeeFormPage() {
   useEffect(() => {
     if (isEdit && employeeRes?.data?.data) {
       const e = employeeRes.data.data;
+
+      let normalizedGender = 'Male';
+      if (e.gender === 1 || e.gender === '1' || String(e.gender).toLowerCase() === 'male') {
+        normalizedGender = 'Male';
+      } else if (e.gender === 2 || e.gender === '2' || String(e.gender).toLowerCase() === 'female') {
+        normalizedGender = 'Female';
+      } else if (e.gender === 3 || e.gender === '3' || String(e.gender).toLowerCase() === 'other') {
+        normalizedGender = 'Other';
+      }
+
+      let normalizedStatus = 1;
+      if (typeof e.status === 'number') {
+        normalizedStatus = e.status;
+      } else if (typeof e.status === 'string') {
+        const map = { active: 1, onleave: 2, resigned: 3, terminated: 4, retired: 5 };
+        normalizedStatus = map[e.status.toLowerCase()] || parseInt(e.status, 10) || 1;
+      }
+
       setFormData({
         employeeCode: e.employeeCode || '',
         firstName: e.firstName || '',
         lastName: e.lastName || '',
-        departmentId: e.departmentId || '',
-        designationId: e.designationId || '',
+        departmentId: e.departmentId != null ? Number(e.departmentId) : '',
+        designationId: e.designationId != null ? Number(e.designationId) : '',
         joiningDate: e.joiningDate ? dayjs(e.joiningDate).format('YYYY-MM-DD') : '',
         mobile: e.mobile || '',
         email: e.email || '',
-        gender: e.gender || 'Male',
+        gender: normalizedGender,
         dateOfBirth: e.dateOfBirth ? dayjs(e.dateOfBirth).format('YYYY-MM-DD') : '',
         qualification: e.qualification || '',
         experienceYears: e.experienceYears ?? '',
@@ -137,7 +155,9 @@ export default function EmployeeFormPage() {
         ifscCode: e.ifscCode || '',
         salaryBasic: e.salaryBasic ?? '',
         photoUrl: e.photoUrl || '',
-        status: e.status || 1, hasUserAccount: !!e.userId || !!e.hasUserAccount, autoCreateUser: false,
+        status: normalizedStatus,
+        hasUserAccount: !!e.userId || !!e.hasUserAccount,
+        autoCreateUser: false,
         username: '',
         password: '',
         roleId: '',
@@ -188,8 +208,17 @@ export default function EmployeeFormPage() {
       email: formData.email?.trim() || null,
       departmentId: formData.departmentId ? Number(formData.departmentId) : null,
       designationId: formData.designationId ? Number(formData.designationId) : null,
+      joiningDate: formData.joiningDate ? formData.joiningDate : dayjs().format('YYYY-MM-DD'),
+      dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth : null,
+      qualification: formData.qualification?.trim() || null,
       experienceYears: formData.experienceYears !== '' ? Number(formData.experienceYears) : null,
       salaryBasic: formData.salaryBasic !== '' ? Number(formData.salaryBasic) : null,
+      panNo: formData.panNo?.trim() || null,
+      aadhaarNo: formData.aadhaarNo?.trim() || null,
+      bankName: formData.bankName?.trim() || null,
+      accountNo: formData.accountNo?.trim() || null,
+      ifscCode: formData.ifscCode?.trim() || null,
+      photoUrl: formData.photoUrl?.trim() || null,
       roleId: formData.roleId ? Number(formData.roleId) : null,
     };
 

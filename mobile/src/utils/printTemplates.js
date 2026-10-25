@@ -76,6 +76,60 @@ export function numberToIndianWords(num) {
 }
 
 /**
+ * Converts a date string (YYYY-MM-DD) to English calendar words
+ * e.g. "2016-08-12" -> "Twelfth August Two Thousand Sixteen"
+ */
+export function dateToWords(dateStr) {
+  if (!dateStr) return '—';
+  const cleanDateStr = String(dateStr).split('T')[0];
+  const parts = cleanDateStr.split('-');
+  let d;
+  if (parts.length === 3 && parts[0].length === 4) {
+    d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  } else {
+    d = new Date(dateStr);
+  }
+  if (isNaN(d.getTime())) return '—';
+
+  const dayNames = [
+    '', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+    'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+    'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth', 'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth', 'Thirty-First'
+  ];
+
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const numToWords = (n) => {
+    if (n < 20) return ones[n];
+    const digit = n % 10;
+    return tens[Math.floor(n / 10)] + (digit ? ' ' + ones[digit] : '');
+  };
+
+  const dayWord = dayNames[d.getDate()] || String(d.getDate());
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthWord = monthNames[d.getMonth()] || '';
+  const year = d.getFullYear();
+
+  let yearWord = '';
+  if (year >= 2000 && year < 2100) {
+    const rem = year - 2000;
+    yearWord = 'Two Thousand' + (rem > 0 ? ' ' + numToWords(rem) : '');
+  } else if (year >= 1900 && year < 2000) {
+    const century = Math.floor(year / 100);
+    const rem = year % 100;
+    yearWord = numToWords(century) + ' Hundred' + (rem > 0 ? ' ' + numToWords(rem) : '');
+  } else {
+    yearWord = String(year);
+  }
+
+  return `${dayWord} ${monthWord} ${yearWord}`.trim();
+}
+
+/**
  * Formats school branding consistently from branch and user context
  */
 export function getSchoolBranding(user = {}, branch = {}) {
@@ -88,6 +142,7 @@ export function getSchoolBranding(user = {}, branch = {}) {
   const email = branch?.email || user?.schoolEmail || 'admissions@dpsdelhi.edu.in';
   const affiliationNo = branch?.affiliationNumber || branch?.affiliationNo || '2130892';
   const logoUrl = branch?.logoUrl || user?.schoolLogoUrl || '';
+  const principalSignatureUrl = branch?.principalSignatureUrl || user?.principalSignatureUrl || '';
 
   return {
     schoolName,
@@ -97,6 +152,7 @@ export function getSchoolBranding(user = {}, branch = {}) {
     email,
     affiliationNo,
     logoUrl,
+    principalSignatureUrl,
   };
 }
 
@@ -398,6 +454,9 @@ export function generateEnquirySlipHtml(enquiry = {}, school = {}, config = {}) 
 <body>
   <div class="slip-container">
     <div class="header">
+      ${brand.logoUrl ? `
+        <img src="${brand.logoUrl}" style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; margin-bottom: 4px;" alt="Logo" />
+      ` : ''}
       <h1 class="school-name">${brand.schoolName}</h1>
       <div class="subtitle">${brand.branchName} • Affiliated to CBSE, New Delhi (Affiliation No: ${brand.affiliationNo})</div>
       <div class="address-line">Address: ${brand.address} | Helpline: ${brand.phone} | Email: ${brand.email}</div>
@@ -558,9 +617,21 @@ export function generateFeeReceiptHtml(receipt = {}, school = {}, config = {}) {
       <!-- Header -->
       <div class="header-row">
         <div class="emblem-box">
-          <div class="emblem-circle">
-            <span style="font-size: 20px;">🎓</span>
-          </div>
+          ${brand.logoUrl ? `
+            <img src="${brand.logoUrl}" style="width: 44px; height: 44px; object-fit: contain; border-radius: 4px;" alt="Logo" />
+          ` : `
+            <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="47" stroke="${primaryColor}" stroke-width="3.5" fill="${secondaryColor}" />
+              <circle cx="50" cy="50" r="42" stroke="#b45309" stroke-width="1.5" stroke-dasharray="3 2" />
+              <circle cx="50" cy="46" r="28" fill="${primaryColor}" />
+              <polygon points="50,26 53,35 63,35 55,41 58,50 50,44 42,50 45,41 37,35 47,35" fill="#fef08a" />
+              <path d="M36 52 Q44 48 50 52 Q56 48 64 52 L64 64 Q56 60 50 64 Q44 60 36 64 Z" fill="#ffffff" stroke="${primaryColor}" stroke-width="0.8" />
+              <line x1="50" y1="52" x2="50" y2="64" stroke="${primaryColor}" stroke-width="1.2" />
+              <path d="M22 45 Q18 56 26 66 M78 45 Q82 56 74 66" stroke="${primaryColor}" stroke-width="3" stroke-linecap="round" fill="none" />
+              <path d="M22 72 Q50 82 78 72 L74 80 Q50 90 26 80 Z" fill="#b45309" />
+              <text x="50" y="79" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle" letter-spacing="0.8" font-family="Arial, sans-serif">EDUCATION</text>
+            </svg>
+          `}
         </div>
         <div class="school-details">
           <div class="school-title">${brand.schoolName}</div>
@@ -651,12 +722,20 @@ export function generateFeeReceiptHtml(receipt = {}, school = {}, config = {}) {
         <div class="sig-item">
           <div class="sig-dash">Authorized Signatory</div>
         </div>
+        <div class="sig-item">
+          <div class="sig-dash">Parent / Student</div>
+        </div>
       </div>
 
-      <!-- Terms -->
+      <!-- Terms & Rules -->
       <div class="terms-note">
+        <b>TERMS & CONDITIONS / FEE RULES:</b><br>
         • Fees once deposited will not be refunded or transferred under any circumstances.<br>
-        • Computer generated fee receipt • Powered by Digital Vidya Sarthi (DVS ERP)
+        • Cheque payments are accepted subject to realization.<br>
+        • Please retain this receipt safely for future academic clearance & tax records.
+      </div>
+      <div style="text-align: center; font-size: 8px; color: #64748b; margin-top: 4px; border-top: 1px dashed #cbd5e1; padding-top: 2px;">
+        Computer Generated Fee Receipt • Powered by Digital Vidya Sarthi (DVS ERP)
       </div>
     </div>
   `;
@@ -929,7 +1008,11 @@ export function generateGatePassSlipHtml(pass = {}, school = {}) {
       <!-- Header Row -->
       <div class="pass-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <div class="pass-emblem">🏫</div>
+          ${brand.logoUrl ? `
+            <img src="${brand.logoUrl}" style="width: 38px; height: 38px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; padding: 2px; background: #ffffff;" alt="Logo" />
+          ` : `
+            <div class="pass-emblem">🏫</div>
+          `}
           <div>
             <div class="pass-school">${brand.schoolName}</div>
             <div class="pass-branch">Branch: ${brand.branchName} • Ph: ${brand.phone}</div>
@@ -1207,7 +1290,7 @@ export function generateGatePassSlipHtml(pass = {}, school = {}) {
 
 /**
  * 4. ADMISSION ACKNOWLEDGMENT SLIP HTML TEMPLATE
- * Replicates AdmissionSlipDesignerPage.jsx
+ * Replicates AdmissionReportModal.jsx & AdmissionSlipDesignerPage.jsx 100%
  */
 export function generateAdmissionSlipHtml(student = {}, school = {}, config = {}) {
   const brand = getSchoolBranding(school.user, school.branch);
@@ -1215,287 +1298,586 @@ export function generateAdmissionSlipHtml(student = {}, school = {}, config = {}
   const secondaryColor = config.secondaryColor || '#ecfdf5';
   const borderColor = config.borderColor || '#065f46';
 
-  const admNo = student.admissionNo || student.admissionNumber || 'ADM-NEW';
+  const admNo = student.admissionNo || student.admissionNumber || 'Pending Confirmation';
   const admDate = student.admissionDate
     ? new Date(student.admissionDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const studentName = (student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student').toUpperCase();
-  const dob = student.dob ? new Date(student.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  const className = student.className || student.currentClass || '—';
-  const sectionName = student.sectionName || student.currentSection || 'A';
-  const rollNo = student.rollNo || '—';
-  const guardian = student.guardians?.[0] || {};
-  const fatherName = (guardian.name || student.fatherName || '—').toUpperCase();
-  const mobile = guardian.mobile || student.mobile || student.emergencyContact || '—';
-  const address = student.address || '—';
-  const sessionName = student.academicYearName || school?.activeAcademicYearName || '2026-27';
+  const studentFullName = (student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student').toUpperCase();
+
+  const rawDob = student.dateOfBirth || student.dob;
+  const dobFigures = rawDob
+    ? new Date(rawDob).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+    : '—';
+  const dobWords = rawDob ? dateToWords(rawDob) : '—';
+
+  const className = student.currentEnrollment?.className || student.className || student.currentClass || '—';
+  const sectionName = student.currentEnrollment?.sectionName || student.sectionName || student.currentSection || '—';
+  const rollNo = student.currentEnrollment?.rollNo || student.rollNo || null;
+  const academicYear = student.currentEnrollment?.academicYearName || student.academicYearName || school?.activeAcademicYearName || '2026-2027';
+
+  const guardians = Array.isArray(student.guardians) ? student.guardians : [];
+  const fatherObj = guardians.find((g) => g.relation?.toLowerCase() === 'father') || {};
+  const motherObj = guardians.find((g) => g.relation?.toLowerCase() === 'mother') || {};
+  const primaryGuardian = guardians.find((g) => g.isPrimary) || guardians[0] || fatherObj || {};
+
+  const fatherName = fatherObj.name || student.fatherName || primaryGuardian.name || '—';
+  const fatherMobile = fatherObj.mobile || student.fatherMobile || primaryGuardian.mobile || '—';
+  const fatherOccupation = fatherObj.occupation || student.fatherOccupation || '—';
+
+  const motherName = motherObj.name || student.motherName || '—';
+  const motherMobile = motherObj.mobile || student.motherMobile || '—';
+  const motherOccupation = motherObj.occupation || student.motherOccupation || '—';
+
+  const gender = student.gender || '—';
+  const bloodGroup = student.bloodGroup || '—';
+  const aadhaarNo = student.aadhaarNo || '—';
+  const categoryName = student.categoryName || student.category || 'General';
+  const religionName = student.religionName || student.religion || 'Hindu';
+  const emergencyContact = student.emergencyContact || student.fatherMobile || primaryGuardian.mobile || '—';
+
+  const fullAddress = student.address
+    ? `${student.address}${student.city ? `, ${student.city}` : ''}${student.state ? `, ${student.state}` : ''}${student.pincode ? ` - ${student.pincode}` : ''}`
+    : '—';
+
+  const studentPhoto = student.photoUrl || student.photoBase64 || null;
+  const fatherPhoto =
+    student.fatherPhotoUrl ||
+    student.documents?.find((d) => (d.title || d.documentTypeName || '').toLowerCase().includes('father'))?.filePath ||
+    null;
+  const motherPhoto =
+    student.motherPhotoUrl ||
+    student.documents?.find((d) => (d.title || d.documentTypeName || '').toLowerCase().includes('mother'))?.filePath ||
+    null;
+  const guardianPhoto =
+    student.guardianPhotoUrl ||
+    student.documents?.find((d) => (d.title || d.documentTypeName || '').toLowerCase().includes('guardian'))?.filePath ||
+    null;
+
+  const photoList = [
+    { label: "Student's Photo", url: studentPhoto },
+    { label: "Father's Photo", url: fatherPhoto },
+    { label: "Mother's Photo", url: motherPhoto },
+    { label: "Guardian's Photo", url: guardianPhoto },
+  ];
+
+  // Document checklist matching web app
+  const docs = student.documents || [];
+  const docTitles = docs.map((d) => (d.title || d.documentTypeName || '').toLowerCase());
+  const configuredDocs = [
+    '1. Original Birth Certificate (Municipal Corp / Gram Panchayat)',
+    '2. Student & Parents\' Aadhaar Cards (Photocopies)',
+    '3. Transfer Certificate (TC) from Previous School (Countersigned)',
+    '4. Previous Class Marksheet / Progress Report Card',
+    '5. 4 Passport-size Photographs of Student & 2 of Parents',
+    '6. Valid Address Proof (Electricity Bill / Voter ID / Passport / Domicile)',
+  ];
+
+  const checklistItems = configuredDocs.map((docText, idx) => {
+    const lower = docText.toLowerCase();
+    const isSubmitted =
+      ((lower.includes('birth') || lower.includes('dob')) && docTitles.some((t) => t.includes('birth') || t.includes('dob'))) ||
+      ((lower.includes('aadhaar') || lower.includes('aadhar')) && docTitles.some((t) => t.includes('aadhaar') || t.includes('aadhar'))) ||
+      ((lower.includes('transfer') || lower.includes('tc')) && docTitles.some((t) => t.includes('transfer') || t.includes('tc'))) ||
+      ((lower.includes('marksheet') || lower.includes('report') || lower.includes('result')) && docTitles.some((t) => t.includes('marksheet') || t.includes('report') || t.includes('result'))) ||
+      (lower.includes('photo') && Boolean(studentPhoto)) ||
+      ((lower.includes('address') || lower.includes('domicile')) && docTitles.some((t) => t.includes('address') || t.includes('domicile') || t.includes('voter') || t.includes('electricity'))) ||
+      docTitles.some((t) => lower.split(' ').some((word) => word.length > 3 && t.includes(word)));
+
+    return {
+      id: idx + 1,
+      name: docText,
+      isSubmitted: Boolean(isSubmitted),
+    };
+  });
+
+  const todayFormatted = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+  const todayDateTime = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Admission_Slip_${studentName}_${admNo}</title>
+  <title>Admission_Report_${studentFullName}_${admNo}</title>
   <style>
-    @page { size: A4 portrait; margin: 8mm; }
-    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page {
+      size: A4 portrait;
+      margin: 6mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     body {
-      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #1e293b;
       margin: 0;
-      padding: 8px;
+      padding: 0;
       background: #ffffff;
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.25;
     }
-    .adm-container {
-      border: 2px solid ${borderColor};
-      border-radius: 8px;
-      padding: 20px;
-      max-width: 780px;
+    .slip-container {
+      width: 100%;
+      max-width: 800px;
       margin: 0 auto;
+      border: 2px solid ${primaryColor};
+      border-radius: 4px;
+      padding: 10px 14px;
       background: #ffffff;
+      box-sizing: border-box;
     }
-    .header {
+    .header-box {
       text-align: center;
-      border-bottom: 2.5px double ${borderColor};
-      padding-bottom: 10px;
-      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2.5px double ${primaryColor};
+    }
+    .header-flex {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 3px;
+    }
+    .school-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      border-radius: 4px;
+      flex-shrink: 0;
     }
     .school-name {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 900;
       color: ${primaryColor};
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin: 0 0 3px 0;
+      margin: 0;
       line-height: 1.15;
     }
-    .subtitle {
-      font-size: 12px;
-      color: #334155;
+    .school-sub {
+      font-size: 11px;
       font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .address-line {
-      font-size: 10.5px;
       color: #475569;
-      margin-bottom: 6px;
+      margin-top: 1px;
     }
-    .slip-badge {
+    .school-contact {
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .slip-badge-pill {
       display: inline-block;
+      margin-top: 5px;
+      padding: 3px 18px;
       background: ${primaryColor};
       color: #ffffff;
-      padding: 3px 16px;
       border-radius: 4px;
-      font-weight: 800;
-      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      font-size: 10.5px;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
     }
     .meta-bar {
-      margin-bottom: 12px;
-      padding: 6px 12px;
+      margin: 6px 0;
+      padding: 6px 10px;
       background: ${secondaryColor};
-      border-radius: 6px;
-      border: 1.5px solid ${borderColor};
+      border-radius: 4px;
+      border: 1.5px solid ${primaryColor};
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .meta-item { flex: 1; }
-    .meta-label {
-      font-size: 9px;
+    .meta-col {
+      flex: 1;
+      text-align: left;
+    }
+    .meta-col-label {
+      font-size: 8.5px;
       color: #64748b;
       font-weight: 700;
       text-transform: uppercase;
-    }
-    .meta-val {
-      font-size: 13px;
-      font-weight: 800;
-      color: ${primaryColor};
-    }
-    .section-title {
-      background: ${secondaryColor};
-      border-left: 3.5px solid ${primaryColor};
-      padding: 4px 10px;
-      border-radius: 0 4px 4px 0;
-      font-weight: 800;
-      font-size: 11px;
-      color: ${primaryColor};
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      row-gap: 6px;
-      column-gap: 16px;
-      margin-bottom: 12px;
-    }
-    .d-label {
-      font-size: 9.5px;
-      color: #64748b;
-      text-transform: uppercase;
-      font-weight: 600;
       margin-bottom: 1px;
     }
-    .d-val {
-      font-size: 12px;
+    .meta-col-val {
+      font-size: 11.5px;
       font-weight: 700;
       color: #0f172a;
     }
-    .sigs-row {
+    .meta-col-val.adm-highlight {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: ${primaryColor};
+    }
+    .section-banner {
+      background: ${secondaryColor};
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+      color: ${primaryColor};
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 5px;
+    }
+    .grid-table td {
+      padding: 2px 4px;
+      vertical-align: top;
+    }
+    .field-lbl {
+      font-size: 8.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 1px;
+    }
+    .field-val {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .parents-grid {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+    .parent-card {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #fafafa;
+    }
+    .parent-card-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: ${primaryColor};
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .parent-card-row {
+      font-size: 10px;
+      line-height: 1.35;
+      color: #334155;
+    }
+    .photos-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+    .photo-slot {
+      flex: 1;
+      text-align: center;
+    }
+    .photo-box-frame {
+      width: 74px;
+      height: 90px;
+      margin: 0 auto;
+      border-radius: 4px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .photo-box-frame.has-img {
+      border: 1.5px solid ${primaryColor};
+    }
+    .photo-box-frame.no-img {
+      border: 1.5px dashed #94a3b8;
+    }
+    .photo-slot-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 3px;
+    }
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 12px;
+      margin-bottom: 5px;
+    }
+    .checklist-item {
+      font-size: 9.5px;
+      display: flex;
+      align-items: center;
+      line-height: 1.25;
+    }
+    .undertaking-box {
+      border: 1px dashed #94a3b8;
+      border-radius: 4px;
+      padding: 5px 8px;
+      background: #fafafa;
+      margin-bottom: 6px;
+    }
+    .undertaking-title {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: ${primaryColor};
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+    .undertaking-text {
+      font-size: 8.5px;
+      color: #475569;
+      line-height: 1.25;
+    }
+    .signatures-grid {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 20px;
-      padding-top: 10px;
+      margin-top: 8px;
+      padding-top: 4px;
     }
     .sig-col {
-      text-align: center;
       flex: 1;
+      text-align: center;
+      padding: 0 4px;
     }
-    .sig-line {
-      height: 30px;
+    .sig-line-bar {
       border-bottom: 1px solid #475569;
-      margin-bottom: 4px;
+      height: 24px;
+      margin-bottom: 3px;
     }
-    .sig-text {
-      font-size: 10px;
+    .sig-col-title {
+      font-size: 9.5px;
       font-weight: 700;
-      color: #1e293b;
+      color: #0f172a;
     }
-    .seal-box {
-      width: 80px;
-      height: 52px;
-      border: 1.5px dashed #94a3b8;
+    .sig-col-sub {
+      font-size: 8.5px;
+      color: #64748b;
+    }
+    .seal-box-stamp {
+      width: 58px;
+      height: 36px;
+      margin: 0 auto;
+      border: 1px dashed #94a3b8;
       border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 8px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .footer-note {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 4px;
+      margin-top: 6px;
       text-align: center;
       font-size: 8.5px;
-      font-weight: 700;
       color: #64748b;
-    }
-    .footer {
-      margin-top: 14px;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 6px;
-      text-align: center;
-      font-size: 9px;
-      color: #94a3b8;
     }
   </style>
 </head>
 <body>
-  <div class="adm-container">
-    <div class="header">
-      <h1 class="school-name">${brand.schoolName}</h1>
-      <div class="subtitle">${brand.branchName} • Affiliation No: ${brand.affiliationNo}</div>
-      <div class="address-line">Address: ${brand.address} | Contact: ${brand.phone} | Email: ${brand.email}</div>
-      <div class="slip-badge">Student Admission & Registration Slip</div>
-    </div>
-
-    <div class="meta-bar">
-      <div class="meta-item">
-        <div class="meta-label">Scholar / Adm No</div>
-        <div class="meta-val">${admNo}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Admission Date</div>
-        <div class="meta-val" style="color: #0f172a;">${admDate}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Academic Session</div>
-        <div class="meta-val">${sessionName}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Status</div>
-        <div class="meta-val" style="color: #16a34a;">CONFIRMED</div>
-      </div>
-    </div>
-
-    <div class="section-title">1. Student Personal & Demographic Profile</div>
-    <div style="display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;">
-      <div class="detail-grid" style="flex: 1; margin-bottom: 0;">
-        <div><div class="d-label">Student Full Name:</div><div class="d-val">${studentName}</div></div>
-        <div><div class="d-label">Date of Birth (DOB):</div><div class="d-val">${dob}</div></div>
-        <div><div class="d-label">Gender:</div><div class="d-val">${student.gender || '—'}</div></div>
-        <div><div class="d-label">Blood Group:</div><div class="d-val">${student.bloodGroup || '—'}</div></div>
-        <div><div class="d-label">Aadhaar Card No:</div><div class="d-val">${student.aadhaarNo || '—'}</div></div>
-        <div><div class="d-label">Category / Religion:</div><div class="d-val">${student.category || 'General'}</div></div>
-      </div>
-      <div style="display: flex; gap: 8px;">
-        ${(student.photoUrl || student.photoBase64) ? `
-          <div style="text-align: center;">
-            <img src="${student.photoUrl || student.photoBase64}" style="width: 78px; height: 94px; object-fit: cover; border-radius: 4px; border: 1.5px solid ${primaryColor};" />
-            <div style="font-size: 8px; color: ${primaryColor}; font-weight: 700; margin-top: 2px;">Student Photo</div>
-          </div>
+  <div class="slip-container">
+    <!-- Header -->
+    <div class="header-box">
+      <div class="header-flex">
+        ${brand.logoUrl ? `
+          <img src="${brand.logoUrl}" class="school-logo" alt="School Logo" />
         ` : `
-          <div style="width: 78px; height: 94px; border: 1.5px dashed #94a3b8; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8.5px; color: #64748b; background: #fafafa; flex-shrink: 0; padding: 4px;">
-            Affix Student<br>Photo
-          </div>
+          <div style="font-size: 28px; line-height: 1;">🏛️</div>
         `}
-        <div style="width: 78px; height: 94px; border: 1.5px dashed #94a3b8; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8.5px; color: #64748b; background: #fafafa; flex-shrink: 0; padding: 4px;">
-          Affix Father<br>Photo
-        </div>
-        <div style="width: 78px; height: 94px; border: 1.5px dashed #94a3b8; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8.5px; color: #64748b; background: #fafafa; flex-shrink: 0; padding: 4px;">
-          Affix Mother<br>Photo
+        <div>
+          <h1 class="school-name">${brand.schoolName}</h1>
+          <div class="school-sub">${brand.branchName} • Affiliated to CBSE, New Delhi (Affiliation No: ${brand.affiliationNo})</div>
         </div>
       </div>
+      <div class="school-contact">Address: ${brand.address} | Phone: ${brand.phone} | Email: ${brand.email}</div>
+      <div class="slip-badge-pill">OFFICIAL STUDENT ADMISSION & REGISTRATION ACKNOWLEDGEMENT</div>
     </div>
 
-    <div class="section-title">2. Academic Enrollment & Class Allocation</div>
-    <div class="detail-grid">
-      <div><div class="d-label">Admitted to Class:</div><div class="d-val" style="color: ${primaryColor}; font-weight: 800;">${className}</div></div>
-      <div><div class="d-label">Allocated Section:</div><div class="d-val">${sectionName}</div></div>
-      <div><div class="d-label">Assigned Roll No:</div><div class="d-val">${rollNo}</div></div>
-      <div><div class="d-label">Enrollment Status:</div><div class="d-val" style="color: #16a34a;">Active Regular Student</div></div>
-    </div>
-
-    <div class="section-title">3. Parent & Guardian Contact Information</div>
-    <div class="detail-grid">
-      <div><div class="d-label">Father / Guardian Name:</div><div class="d-val">${fatherName}</div></div>
-      <div><div class="d-label">Primary Mobile:</div><div class="d-val">${mobile}</div></div>
-      <div style="grid-column: span 2;"><div class="d-label">Residential Address:</div><div class="d-val">${address}</div></div>
-    </div>
-
-    <div class="section-title">4. Documents Verification Checklist</div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-bottom: 10px; font-size: 10px;">
-      <div>☑ 1. Date of Birth Certificate (Birth Certificate)</div>
-      <div>☑ 2. Student & Parents' Aadhaar Cards (Photocopy)</div>
-      <div>☑ 3. Transfer Certificate (TC) from Previous School</div>
-      <div>☑ 4. Previous Class Progress Report / Marksheet</div>
-      <div>☑ 5. 4 Passport-size Photographs of Student</div>
-      <div>☑ 6. Valid Address Proof (Electricity Bill / Voter ID)</div>
-    </div>
-
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 10px; margin-bottom: 10px; font-size: 9.5px; color: #475569; line-height: 1.35;">
-      <b>Parent Undertaking & Declaration:</b> I hereby certify that the information supplied above is true and correct. I promise to abide by all the school rules, fee payment schedules, and educational discipline guidelines of the institution.
-    </div>
-
-    <div class="sigs-row">
-      <div class="sig-col" style="padding-right: 8px;">
-        <div class="sig-line"></div>
-        <div class="sig-text">Student Signature</div>
+    <!-- Meta Reference Bar -->
+    <div class="meta-bar">
+      <div class="meta-col">
+        <div class="meta-col-label">ADMISSION NUMBER</div>
+        <div class="meta-col-val adm-highlight">${admNo}</div>
       </div>
-      <div class="sig-col" style="padding: 0 8px;">
-        <div class="sig-line"></div>
-        <div class="sig-text">Parent / Guardian Sign</div>
+      <div class="meta-col">
+        <div class="meta-col-label">DATE OF ADMISSION</div>
+        <div class="meta-col-val">${admDate}</div>
       </div>
-      <div class="sig-col" style="padding: 0 8px;">
-        <div class="sig-line"></div>
-        <div class="sig-text">Admission Incharge</div>
+      <div class="meta-col">
+        <div class="meta-col-label">CLASS & SECTION</div>
+        <div class="meta-col-val">${className} - ${sectionName}</div>
       </div>
-      <div style="flex-shrink: 0; padding-left: 8px;">
-        <div class="seal-box">OFFICIAL<br>PRINCIPAL / SEAL</div>
+      <div class="meta-col">
+        <div class="meta-col-label">SESSION / ROLL NO</div>
+        <div class="meta-col-val">${academicYear} ${rollNo ? `(Roll #${rollNo})` : '(Roll: Pending)'}</div>
       </div>
     </div>
 
-    <div class="footer">
-      Computer Generated Student Admission & Registration Form • Digital Vidya Sarthi (DVS ERP)
+    <!-- 1. Pupil Personal Information -->
+    <div class="section-banner">
+      <span>1. Pupil Personal Information</span>
+    </div>
+    <table class="grid-table">
+      <tr>
+        <td style="width: 32%;">
+          <div class="field-lbl">Full Name of Student:</div>
+          <div class="field-val" style="font-size: 11.5px; text-transform: uppercase;">${studentFullName}</div>
+        </td>
+        <td style="width: 18%;">
+          <div class="field-lbl">Gender:</div>
+          <div class="field-val">${gender}</div>
+        </td>
+        <td style="width: 22%;">
+          <div class="field-lbl">Blood Group:</div>
+          <div class="field-val" style="color: #dc2626; font-weight: 800;">${bloodGroup}</div>
+        </td>
+        <td style="width: 28%;">
+          <div class="field-lbl">Aadhaar No:</div>
+          <div class="field-val">${aadhaarNo}</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="field-lbl">Date of Birth (in figures):</div>
+          <div class="field-val">${dobFigures}</div>
+        </td>
+        <td colspan="3">
+          <div class="field-lbl">Date of Birth (in words):</div>
+          <div class="field-val" style="font-style: italic; font-weight: 500; color: #334155;">${dobWords}</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="field-lbl">Category:</div>
+          <div class="field-val" style="font-weight: 600;">${categoryName}</div>
+        </td>
+        <td>
+          <div class="field-lbl">Religion:</div>
+          <div class="field-val" style="font-weight: 600;">${religionName}</div>
+        </td>
+        <td>
+          <div class="field-lbl">Nationality:</div>
+          <div class="field-val" style="font-weight: 600;">Indian</div>
+        </td>
+        <td>
+          <div class="field-lbl">Emergency Contact:</div>
+          <div class="field-val" style="color: ${primaryColor}; font-weight: 800;">${emergencyContact}</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <div class="field-lbl">Residential Address:</div>
+          <div class="field-val" style="font-weight: 500;">${fullAddress}</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- 2. Parents & Guardians Information -->
+    <div class="section-banner">
+      <span>2. Parents & Guardians Information</span>
+    </div>
+    <div class="parents-grid">
+      <div class="parent-card">
+        <div class="parent-card-title">FATHER'S DETAILS</div>
+        <div class="parent-card-row">Name: <b>${fatherName}</b></div>
+        <div class="parent-card-row">Mobile: <b>${fatherMobile}</b></div>
+        <div class="parent-card-row">Occupation: ${fatherOccupation}</div>
+      </div>
+      <div class="parent-card">
+        <div class="parent-card-title">MOTHER'S DETAILS</div>
+        <div class="parent-card-row">Name: <b>${motherName}</b></div>
+        <div class="parent-card-row">Mobile: <b>${motherMobile}</b></div>
+        <div class="parent-card-row">Occupation: ${motherOccupation}</div>
+      </div>
+    </div>
+
+    <!-- 3. Official Identification Photographs -->
+    <div class="section-banner">
+      <span>3. Official Identification Photographs</span>
+      <span style="font-size: 8.5px; font-weight: 600; color: #64748b;">Standard Passport Size</span>
+    </div>
+    <div class="photos-row">
+      ${photoList.map((item) => `
+        <div class="photo-slot">
+          <div class="photo-box-frame ${item.url ? 'has-img' : 'no-img'}">
+            ${item.url ? `
+              <img src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="${item.label}" />
+            ` : `
+              <div style="font-size: 20px; color: #94a3b8; line-height: 1;">👤</div>
+              <div style="font-size: 7.5px; color: #94a3b8; margin-top: 2px;">Affix Photo</div>
+            `}
+          </div>
+          <div class="photo-slot-label">${item.label}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- 4. Document Submission & Verification Checklist -->
+    <div class="section-banner">
+      <span>4. Document Submission & Verification Checklist</span>
+    </div>
+    <div class="checklist-grid">
+      ${checklistItems.map((doc) => `
+        <div class="checklist-item">
+          ${doc.isSubmitted ? `
+            <span style="color: #16a34a; font-weight: 900; font-size: 11px; margin-right: 4px;">✔</span>
+            <span style="font-weight: 600; color: #0f172a;">${doc.name}</span>
+          ` : `
+            <span style="color: #94a3b8; font-size: 10px; margin-right: 4px;">▢</span>
+            <span style="color: #64748b;">${doc.name} <i style="font-size: 8px; color: #94a3b8;">(Pending)</i></span>
+          `}
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- 5. Parent Undertaking & Declaration -->
+    <div class="undertaking-box">
+      <div class="undertaking-title">DECLARATION BY PARENT / GUARDIAN:</div>
+      <div class="undertaking-text">
+        I hereby declare that all particulars stated in this admission application form are true, correct, and complete to the best of my knowledge and belief. I agree to abide by all the rules, regulations, code of conduct, and fee policies of the school as in force from time to time.
+      </div>
+    </div>
+
+    <!-- 6. Signatures -->
+    <div class="signatures-grid">
+      <div class="sig-col">
+        <div class="sig-line-bar"></div>
+        <div class="sig-col-title">Parent / Guardian Signature</div>
+        <div class="sig-col-sub">Date: ${todayFormatted}</div>
+      </div>
+      <div class="sig-col" style="flex: 0.8;">
+        <div class="seal-box-stamp">School Seal</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-line-bar"></div>
+        <div class="sig-col-title">Admission Counselor / Clerk</div>
+        <div class="sig-col-sub">Verified & Entered</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-line-bar" style="display: flex; align-items: flex-end; justify-content: center;">
+          ${brand.principalSignatureUrl ? `
+            <img src="${brand.principalSignatureUrl}" style="max-height: 22px; max-width: 100px; object-fit: contain;" alt="Signature" />
+          ` : ''}
+        </div>
+        <div class="sig-col-title">Principal / Head of Institution</div>
+        <div class="sig-col-sub">Authorized Stamp</div>
+      </div>
+    </div>
+
+    <!-- 7. Footer -->
+    <div class="footer-note">
+      Generated from DVS ERP (Digital Vidya Sarthi) • Official Student Admission Slip • Generated on ${todayDateTime}
     </div>
   </div>
 </body>
@@ -1506,49 +1888,33 @@ export function generateAdmissionSlipHtml(student = {}, school = {}, config = {}
 /**
  * Universal Print & PDF Sharing Handlers
  */
-export async function executePrint(html) {
+export async function executePrint(html, fileName = 'document.pdf', options = {}) {
   try {
-    // Primary: direct Print.printAsync with html
-    await Print.printAsync({ html });
+    // Primary: direct Print.printAsync with html and explicit A4 page dimensions
+    await Print.printAsync({
+      html,
+      width: options.width || 595,
+      height: options.height || 842,
+      ...options,
+    });
     return true;
   } catch (err) {
-    console.warn('Direct printAsync failed, trying fallback:', err);
-    try {
-      // Fallback 1: generate PDF first, then pass local uri to printAsync
-      const file = await Print.printToFileAsync({ html });
-      if (file?.uri) {
-        try {
-          await Print.printAsync({ uri: file.uri });
-          return true;
-        } catch (uriErr) {
-          console.warn('URI printAsync failed, opening system Share/Print dialog:', uriErr);
-          const isShareAvail = await Sharing.isAvailableAsync().catch(() => false);
-          if (isShareAvail) {
-            await Sharing.shareAsync(file.uri, {
-              UTI: '.pdf',
-              mimeType: 'application/pdf',
-              dialogTitle: 'Print or Save Document (PDF)',
-            });
-            return true;
-          }
-        }
-      }
-    } catch (fallbackErr) {
-      console.warn('Print fallback error:', fallbackErr);
-    }
-
-    Alert.alert(
-      'Printer Notice',
-      'Unable to connect to printer directly. You can use the "Share PDF" button to print or save the document as PDF.'
-    );
-    return false;
+    console.warn('Direct printAsync failed, falling back to PDF Share/Save:', err);
+    // Smooth fallback directly to executeSharePdf so user never gets blocked by printer notices!
+    return await executeSharePdf(html, fileName, options);
   }
 }
 
-export async function executeSharePdf(html, fileName = 'document.pdf') {
+export async function executeSharePdf(html, fileName = 'document.pdf', options = {}) {
   try {
-    // 1. Generate PDF with Base64 output
-    const result = await Print.printToFileAsync({ html, base64: true });
+    // 1. Generate PDF file with base64 and explicit A4 page dimensions (595 x 842 pt = 210mm x 297mm)
+    const result = await Print.printToFileAsync({
+      html,
+      base64: true,
+      width: options.width || 595,
+      height: options.height || 842,
+      ...options,
+    });
     let shareUri = result?.uri;
 
     // 2. Sanitize file name
@@ -1560,26 +1926,35 @@ export async function executeSharePdf(html, fileName = 'document.pdf') {
       ? sanitizedBase
       : `${sanitizedBase}.pdf`;
 
-    // 3. Save to scoped app directory (Fixes Android Expo Go "Not allowed to read file under given URL")
+    // 3. Save to scoped app directory via writeAsStringAsync (Bypasses Android Expo Go "Location isn't readable" on cache/Print/)
     try {
       const targetDir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
-      if (targetDir && result?.base64) {
-        const destUri = `${targetDir}${cleanFileName}`;
-        await FileSystem.writeAsStringAsync(destUri, result.base64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        shareUri = destUri;
-      } else if (targetDir && result?.uri) {
-        const destUri = `${targetDir}${cleanFileName}`;
-        await FileSystem.copyAsync({
-          from: result.uri,
-          to: destUri,
-        });
-        shareUri = destUri;
+      if (targetDir) {
+        const dir = targetDir.endsWith('/') ? targetDir : `${targetDir}/`;
+        const destUri = `${dir}${cleanFileName}`;
+
+        if (result?.base64) {
+          await FileSystem.writeAsStringAsync(destUri, result.base64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          shareUri = destUri;
+        } else if (result?.uri) {
+          try {
+            const info = await FileSystem.getInfoAsync(destUri);
+            if (info?.exists) {
+              await FileSystem.deleteAsync(destUri, { idempotent: true });
+            }
+          } catch (_) {}
+          await FileSystem.copyAsync({
+            from: result.uri,
+            to: destUri,
+          });
+          shareUri = destUri;
+        }
       }
     } catch (fsErr) {
       console.warn('Scoped file system write notice:', fsErr);
-      // Fallback to original URI if copy fails
+      // Fallback to original URI if write/copy fails
     }
 
     // 4. Verify Sharing availability and share
@@ -1588,32 +1963,434 @@ export async function executeSharePdf(html, fileName = 'document.pdf') {
       await Sharing.shareAsync(shareUri, {
         UTI: '.pdf',
         mimeType: 'application/pdf',
-        dialogTitle: `Share ${cleanFileName}`,
+        dialogTitle: `Share ${cleanFileName.replace(/_/g, ' ')}`,
       });
       return true;
-    } else {
-      // Direct fallback to Print dialog where user can tap "Save as PDF"
-      Alert.alert(
-        'Save as PDF',
-        'Direct file sharing is unavailable. Opening print dialog where you can choose "Save as PDF".',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Print / Save PDF', onPress: () => executePrint(html) }
-        ]
-      );
-      return false;
+    } else if (shareUri) {
+      // If sharing is not available, try opening via system printer
+      try {
+        await Print.printAsync({ uri: shareUri });
+        return true;
+      } catch (printErr) {
+        console.warn('URI print fallback failed:', printErr);
+      }
     }
+
+    return false;
   } catch (err) {
     console.warn('Share PDF error:', err);
-    // If sharing dialog fails on this device/ROM, offer fallback to Print / Save as PDF
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('cancel') || msg.includes('dismiss')) {
+      return false;
+    }
     Alert.alert(
-      'PDF Export',
-      'Would you like to open the Print dialog to Save as PDF or Print directly?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save as PDF / Print', onPress: () => executePrint(html) }
-      ]
+      'Export PDF Notice',
+      'Could not open document share sheet. Please make sure storage permissions are enabled.'
     );
     return false;
   }
 }
+
+/**
+ * ============================================================================
+ * 5. STUDENT ID CARD TEMPLATE ENGINE (100% Matching Web App IdCardPrintPage)
+ * ============================================================================
+ */
+
+export const createDefaultTemplate = (branch) => {
+  const schoolTitle = branch?.schoolName || branch?.name || 'School Name';
+  const address = branch?.address ? `${branch.address}${branch.city ? ', ' + branch.city : ''}` : '';
+  const phone = branch?.phone ? `Ph: ${branch.phone}` : '';
+
+  return {
+    bgImage: '',
+    orientation: 'vertical',
+    elements: [
+      {
+        id: 'school_title',
+        field: 'staticText',
+        label: 'School Name',
+        x: 10, y: 15,
+        fontSize: 12, color: '1e3a8a', fontWeight: 'bold',
+        text: schoolTitle.toUpperCase(),
+        width: 190, height: 20, isPhoto: false, prefix: ''
+      },
+      ...(address ? [{
+        id: 'school_address',
+        field: 'staticText',
+        label: 'Address',
+        x: 10, y: 35,
+        fontSize: 7, color: '475569', fontWeight: 'normal',
+        text: address,
+        width: 190, height: 16, isPhoto: false, prefix: ''
+      }] : []),
+      ...(phone ? [{
+        id: 'school_phone',
+        field: 'staticText',
+        label: 'Contact',
+        x: 10, y: 50,
+        fontSize: 7, color: '64748b', fontWeight: 'normal',
+        text: phone,
+        width: 190, height: 14, isPhoto: false, prefix: ''
+      }] : []),
+      {
+        id: 'std_photo',
+        field: 'photo',
+        label: 'Student Photo',
+        x: 135, y: 75,
+        fontSize: 10, color: '000000', fontWeight: 'normal',
+        text: 'PHOTO',
+        width: 60, height: 75, isPhoto: true, prefix: ''
+      },
+      {
+        id: 'std_name',
+        field: 'studentName',
+        label: 'Student Name',
+        x: 15, y: 80,
+        fontSize: 10, color: '0f172a', fontWeight: 'bold',
+        text: '[Student Name]',
+        width: 110, height: 18, isPhoto: false, prefix: 'Name:'
+      },
+      {
+        id: 'std_class',
+        field: 'classSection',
+        label: 'Class & Section',
+        x: 15, y: 105,
+        fontSize: 9, color: '334155', fontWeight: 'normal',
+        text: '[Class & Sec]',
+        width: 110, height: 18, isPhoto: false, prefix: 'Class:'
+      },
+      {
+        id: 'std_adm',
+        field: 'admissionNo',
+        label: 'Admission No',
+        x: 15, y: 130,
+        fontSize: 9, color: '334155', fontWeight: 'normal',
+        text: '[Admission No]',
+        width: 110, height: 18, isPhoto: false, prefix: 'Adm No:'
+      },
+      {
+        id: 'std_father',
+        field: 'fatherName',
+        label: 'Father Name',
+        x: 15, y: 155,
+        fontSize: 9, color: '334155', fontWeight: 'normal',
+        text: '[Father Name]',
+        width: 110, height: 18, isPhoto: false, prefix: 'Father:'
+      },
+      {
+        id: 'std_dob',
+        field: 'dob',
+        label: 'DOB',
+        x: 15, y: 180,
+        fontSize: 9, color: '334155', fontWeight: 'normal',
+        text: '[Date of Birth]',
+        width: 110, height: 18, isPhoto: false, prefix: 'DOB:'
+      },
+      {
+        id: 'std_phone',
+        field: 'phone',
+        label: 'Phone',
+        x: 15, y: 205,
+        fontSize: 9, color: '334155', fontWeight: 'normal',
+        text: '[Phone]',
+        width: 110, height: 18, isPhoto: false, prefix: 'Phone:'
+      },
+      {
+        id: 'std_principal',
+        field: 'staticText',
+        label: 'Principal Signature',
+        x: 130, y: 285,
+        fontSize: 8, color: '475569', fontWeight: 'bold',
+        text: 'Principal Sign',
+        width: 70, height: 16, isPhoto: false, prefix: ''
+      }
+    ]
+  };
+};
+
+export const createDefaultBackTemplate = (branch) => {
+  return {
+    bgImage: '',
+    orientation: 'vertical',
+    elements: [
+      {
+        id: 'back_inst_title',
+        field: 'staticText',
+        label: 'Instructions',
+        x: 15, y: 20,
+        fontSize: 10, color: '1e3a8a', fontWeight: 'bold',
+        text: 'INSTRUCTIONS',
+        width: 180, height: 18, isPhoto: false, prefix: ''
+      },
+      {
+        id: 'back_inst_1',
+        field: 'staticText',
+        label: 'Instruction 1',
+        x: 15, y: 45,
+        fontSize: 8, color: '334155', fontWeight: 'normal',
+        text: '1. This card must be carried daily.',
+        width: 180, height: 16, isPhoto: false, prefix: ''
+      },
+      {
+        id: 'back_inst_2',
+        field: 'staticText',
+        label: 'Instruction 2',
+        x: 15, y: 65,
+        fontSize: 8, color: '334155', fontWeight: 'normal',
+        text: '2. In case of loss, inform school immediately.',
+        width: 180, height: 16, isPhoto: false, prefix: ''
+      },
+      {
+        id: 'std_address',
+        field: 'address',
+        label: 'Address',
+        x: 15, y: 95,
+        fontSize: 8, color: '334155', fontWeight: 'normal',
+        text: '[Residential Address]',
+        width: 180, height: 30, isPhoto: false, prefix: 'Address:'
+      }
+    ]
+  };
+};
+
+/**
+ * Renders a single ID Card HTML matching Web App IdCardPrintPage.jsx
+ */
+function renderSingleIdCardHtml(student, rawConfig) {
+  if (!rawConfig) return '';
+  const config = typeof rawConfig === 'string'
+    ? (() => { try { return JSON.parse(rawConfig); } catch (_) { return null; } })()
+    : rawConfig;
+  if (!config) return '';
+
+  const isHorizontal = config.orientation === 'horizontal';
+  const cardWidth = isHorizontal ? '85.5mm' : '53.5mm';
+  const cardHeight = isHorizontal ? '53.5mm' : '85.5mm';
+  const baseW = isHorizontal ? 330 : 210;
+  const baseH = isHorizontal ? 210 : 330;
+
+  const elementsHtml = (config.elements || []).map((el) => {
+    let val = el.text || '';
+    if (el.field === 'studentName') {
+      val = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student Name';
+    }
+    if (el.field === 'classSection') {
+      val = `${student.className || ''}${student.sectionName ? ` - ${student.sectionName}` : ''}`;
+    }
+    if (el.field === 'fatherName') {
+      val = student.fatherName || student.guardianName || '';
+    }
+    if (el.field === 'motherName') {
+      val = student.motherName || '';
+    }
+    if (el.field === 'phone') {
+      val = student.phone || student.guardianMobile || student.emergencyContact || '';
+    }
+    if (el.field === 'dob') {
+      try {
+        val = student.dateOfBirth
+          ? typeof student.dateOfBirth === 'string' && student.dateOfBirth.includes('/')
+            ? student.dateOfBirth
+            : new Date(student.dateOfBirth).toLocaleDateString('en-IN')
+          : '';
+        if (val === 'Invalid Date') val = student.dateOfBirth || '';
+      } catch (_) {
+        val = student.dateOfBirth || '';
+      }
+    }
+    if (el.field === 'address') {
+      val = student.address || '';
+    }
+    if (el.field === 'admissionNo') {
+      val = student.admissionNo || '';
+    }
+    if (el.field === 'rollNo') {
+      val = student.rollNo !== undefined && student.rollNo !== null ? String(student.rollNo) : '';
+    }
+
+    const leftMm = ((el.x || 0) / baseW) * (isHorizontal ? 85.5 : 53.5);
+    const topMm = ((el.y || 0) / baseH) * (isHorizontal ? 53.5 : 85.5);
+    const fontSizeMm = ((el.fontSize || 10) / baseW) * (isHorizontal ? 85.5 : 53.5);
+    const colorHex = String(el.color || '000000').startsWith('#') ? el.color : `#${el.color}`;
+    const widthMm = el.isPhoto ? `${(((el.width || 60) / baseW) * (isHorizontal ? 85.5 : 53.5)).toFixed(2)}mm` : 'auto';
+    const heightMm = el.isPhoto ? `${(((el.height || 75) / baseH) * (isHorizontal ? 53.5 : 85.5)).toFixed(2)}mm` : 'auto';
+
+    return `
+      <div style="
+        position: absolute;
+        left: ${leftMm.toFixed(2)}mm;
+        top: ${topMm.toFixed(2)}mm;
+        font-size: ${fontSizeMm.toFixed(2)}mm;
+        color: ${colorHex};
+        font-weight: ${el.fontWeight || 'normal'};
+        width: ${widthMm};
+        height: ${heightMm};
+        display: flex;
+        align-items: center;
+        justify-content: ${el.isPhoto ? 'center' : 'flex-start'};
+        white-space: nowrap;
+        line-height: 1;
+      ">
+        ${
+          el.isPhoto
+            ? student.photoUrl
+              ? `<img src="${student.photoUrl}" alt="student" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" />`
+              : `<div style="width: 100%; height: 100%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 3mm; border: 1px dashed #cbd5e1; border-radius: 4px; color: #94a3b8;">PHOTO</div>`
+            : `${el.prefix ? `<span style="margin-right: 2px;">${el.prefix}</span>` : ''}<span>${val}</span>`
+        }
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="id-card-render" style="
+      width: ${cardWidth};
+      height: ${cardHeight};
+      position: relative;
+      background-image: ${config.bgImage ? `url('${config.bgImage}')` : 'none'};
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-sizing: border-box;
+      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      margin: 0;
+      border-radius: 4px;
+    ">
+      ${elementsHtml}
+    </div>
+  `;
+}
+
+/**
+ * Generates Full A4 Print HTML for single or bulk ID Cards
+ * Guarantees exactly 10 cards per A4 page (2 columns x 5 rows), identical to Web App output!
+ */
+export function generateIdCardPrintHtml({
+  students = [],
+  frontConfig,
+  backConfig,
+  printSide = 'front', // 'front' | 'back' | 'both'
+  schoolInfo = {},
+}) {
+  const safeFront = typeof frontConfig === 'string'
+    ? (() => { try { return JSON.parse(frontConfig); } catch (_) { return null; } })()
+    : frontConfig;
+  const safeBack = typeof backConfig === 'string'
+    ? (() => { try { return JSON.parse(backConfig); } catch (_) { return null; } })()
+    : backConfig;
+
+  const isHorizontalMode =
+    (printSide === 'front' && safeFront?.orientation === 'horizontal') ||
+    (printSide === 'back' && safeBack?.orientation === 'horizontal') ||
+    (printSide === 'both' && (safeFront?.orientation === 'horizontal' || safeBack?.orientation === 'horizontal'));
+
+  const allCardElements = [];
+  (students || []).forEach((student) => {
+    if (printSide === 'front' || printSide === 'both') {
+      const cardHtml = renderSingleIdCardHtml(student, safeFront);
+      if (cardHtml) allCardElements.push(cardHtml);
+    }
+    if (printSide === 'back' || printSide === 'both') {
+      const cardHtml = renderSingleIdCardHtml(student, safeBack);
+      if (cardHtml) allCardElements.push(cardHtml);
+    }
+  });
+
+  // Strict 10 Cards Per A4 Page (2 x 5 grid = exactly 10 cards per A4 sheet)
+  const CARDS_PER_PAGE = 10;
+  const pages = [];
+  for (let i = 0; i < allCardElements.length; i += CARDS_PER_PAGE) {
+    pages.push(allCardElements.slice(i, i + CARDS_PER_PAGE));
+  }
+
+  const pagesHtml = pages
+    .map((pageCards) => `
+      <div class="a4-sheet">
+        <div class="id-cards-grid">
+          ${pageCards.join('')}
+        </div>
+      </div>
+    `)
+    .join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Student ID Cards - ${schoolInfo.schoolName || 'School ERP'}</title>
+  <style>
+    @page {
+      size: ${isHorizontalMode ? 'A4 portrait' : 'A4 landscape'};
+      margin: 0;
+    }
+    * {
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .a4-sheet {
+      box-sizing: border-box;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 4mm 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: always;
+      break-after: page;
+    }
+    .a4-sheet:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    .id-cards-grid {
+      display: grid !important;
+      grid-template-columns: ${isHorizontalMode ? 'repeat(2, 85.5mm)' : 'repeat(5, 53.5mm)'} !important;
+      grid-template-rows: ${isHorizontalMode ? 'repeat(5, 53.5mm)' : 'repeat(2, 85.5mm)'} !important;
+      gap: 1.2mm !important;
+      justify-content: center !important;
+      align-content: center !important;
+      margin: 0 auto !important;
+    }
+    .id-card-render {
+      margin: 0 !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    @media print {
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .a4-sheet {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .a4-sheet:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  ${pagesHtml}
+</body>
+</html>
+  `;
+}
+

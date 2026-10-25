@@ -43,7 +43,8 @@ export default function GatePassDetailScreen({ route, navigation }) {
     try {
       setPrinting(true);
       const html = generateGatePassSlipHtml(pass, { user, branch: branchInfo });
-      await executePrint(html);
+      const fileName = `GatePass_${pass.gatePassNo || 'GP'}_${pass.studentName || 'Student'}.pdf`;
+      await executePrint(html, fileName);
     } finally {
       setPrinting(false);
     }
@@ -59,6 +60,32 @@ export default function GatePassDetailScreen({ route, navigation }) {
     } finally {
       setPrinting(false);
     }
+  };
+
+  const handleWhatsAppPass = () => {
+    if (!pass) return;
+    const phone = pass.receiverContact || pass.emergencyContact || pass.parentPhone;
+    if (!phone) {
+      Alert.alert('Notice', 'No contact phone number found for this gate pass.');
+      return;
+    }
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    const fullPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const schoolName = branchInfo?.schoolName || user?.schoolName || 'School';
+    const text = encodeURIComponent(
+      `*OFFICIAL GATE PASS - ${schoolName}*\n\n` +
+      `Pass No: ${pass.gatePassNo || 'N/A'}\n` +
+      `Student: ${pass.studentName || 'Student'} (${pass.className || ''})\n` +
+      `Escort / Receiver: ${pass.receiverName || 'Guardian'} (${pass.receiverRelation || 'Escort'})\n` +
+      `Departure Time: ${pass.departureTime || 'Now'}\n` +
+      `Status: ${pass.status || 'Issued'}\n\n` +
+      `Issued by School Administration.`
+    );
+    Linking.openURL(`whatsapp://send?phone=${fullPhone}&text=${text}`).catch(() => {
+      Linking.openURL(`https://wa.me/${fullPhone}?text=${text}`).catch(() => {
+        Alert.alert('WhatsApp Error', 'Could not open WhatsApp on this device.');
+      });
+    });
   };
 
   const fetchDetail = async () => {
@@ -232,19 +259,29 @@ export default function GatePassDetailScreen({ route, navigation }) {
             ) : (
               <>
                 <Ionicons name="print" size={18} color="#ffffff" />
-                <Text style={styles.printMainBtnText}>Print Pass (2 Copies)</Text>
+                <Text style={styles.printMainBtnText}>Print Official Gate Pass (2 Copies)</Text>
               </>
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.sharePassBtn, printing && { opacity: 0.7 }]}
-            onPress={handleSharePassPdf}
-            disabled={printing}
-          >
-            <Ionicons name="share-social-outline" size={18} color="#0284c7" />
-            <Text style={styles.sharePassBtnText}>Share PDF</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity
+              style={[styles.sharePassBtn, { flex: 1 }, printing && { opacity: 0.7 }]}
+              onPress={handleSharePassPdf}
+              disabled={printing}
+            >
+              <Ionicons name="share-social-outline" size={17} color="#0284c7" />
+              <Text style={styles.sharePassBtnText}>Share PDF</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sharePassBtn, { flex: 1, backgroundColor: '#10b981', borderColor: '#10b981' }]}
+              onPress={handleWhatsAppPass}
+            >
+              <Ionicons name="logo-whatsapp" size={17} color="#ffffff" />
+              <Text style={[styles.sharePassBtnText, { color: '#ffffff' }]}>WhatsApp</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Student Section */}
@@ -484,11 +521,9 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     elevation: 2,
   },
   printActionBar: {
-    flexDirection: 'row',
-    gap: 10,
+    gap: 0,
   },
   printMainBtn: {
-    flex: 1,
     backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',

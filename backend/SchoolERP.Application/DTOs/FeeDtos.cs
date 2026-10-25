@@ -176,6 +176,42 @@ namespace SchoolERP.Application.DTOs
         public string? Reason { get; set; }
     }
 
+    public class UpdateFeeConcessionDto
+    {
+        public ConcessionType Type { get; set; } = ConcessionType.Percentage;
+        public decimal Value { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    // 7b. Fee Discount Scheme DTOs
+    public class FeeDiscountSchemeDto
+    {
+        public long Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Type { get; set; } = "Percentage";
+        public decimal Value { get; set; }
+        public string? Description { get; set; }
+    }
+
+    public class CreateFeeDiscountSchemeDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Type { get; set; } = "Percentage";
+        public decimal Value { get; set; }
+        public string? Description { get; set; }
+    }
+
+    public class UpdateFeeDiscountSchemeDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Type { get; set; } = "Percentage";
+        public decimal Value { get; set; }
+        public string? Description { get; set; }
+    }
+
     // 8. Fee Collection & Receipts
     public class CollectDuePaymentItemDto
     {

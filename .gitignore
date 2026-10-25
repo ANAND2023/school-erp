@@ -25,4 +25,10 @@ yarn-error.log*
 scratch/
 
 *.apk
+*.idsig
+*.webp
+/assets/
+/extracted_icons/
+/real_webp/
+qr_output.svg
 

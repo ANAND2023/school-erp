@@ -16,10 +16,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { examsApi, classApi } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
+import { usePermission } from '../hooks/usePermission';
 
 export default function ExamsScreen() {
   const { isDark, colors } = useTheme();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
+  const canEnterMarks = isSuperAdmin || hasPermission('MarksEntry', 'Add') || hasPermission('MarksEntry', 'Edit');
 
   const [activeTab, setActiveTab] = useState('schedules'); // 'schedules' | 'marks'
   const [loading, setLoading] = useState(true);
@@ -447,20 +451,28 @@ export default function ExamsScreen() {
 
               {/* Floating Save Button */}
               <View style={styles.saveBottomBar}>
-                <TouchableOpacity
-                  style={[styles.saveAllBtn, savingMarks && { opacity: 0.7 }]}
-                  onPress={handleSaveMarks}
-                  disabled={savingMarks}
-                >
-                  {savingMarks ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="cloud-upload" size={18} color="#ffffff" />
-                      <Text style={styles.saveAllBtnText}>Save All Marks ({students.length})</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                {canEnterMarks ? (
+                  <TouchableOpacity
+                    style={[styles.saveAllBtn, savingMarks && { opacity: 0.7 }]}
+                    onPress={handleSaveMarks}
+                    disabled={savingMarks}
+                  >
+                    {savingMarks ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <>
+                        <Ionicons name="cloud-upload" size={18} color="#ffffff" />
+                        <Text style={styles.saveAllBtnText}>Save All Marks ({students.length})</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ padding: 12, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center', width: '100%' }}>
+                    <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>
+                      View-only mode: You do not have permission to enter or edit marks.
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           )}

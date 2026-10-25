@@ -38,6 +38,19 @@ namespace SchoolERP.Application.DTOs
         public string? Notes { get; set; }
     }
 
+    public class UpdateEnquiryDto
+    {
+        public string StudentName { get; set; } = string.Empty;
+        public long? ClassId { get; set; }
+        public string GuardianName { get; set; } = string.Empty;
+        public string Mobile { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? Source { get; set; }
+        public EnquiryStatus? Status { get; set; }
+        public DateTime? NextFollowupDate { get; set; }
+        public string? Notes { get; set; }
+    }
+
     public class EnquiryFollowupDto
     {
         public long Id { get; set; }
@@ -61,6 +74,9 @@ namespace SchoolERP.Application.DTOs
         public long Id { get; set; }
         public string AdmissionNo { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string? StudentName => FullName;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         public string Gender { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; }
         public long ClassId { get; set; }

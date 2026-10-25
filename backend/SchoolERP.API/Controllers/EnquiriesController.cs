@@ -219,6 +219,105 @@ namespace SchoolERP.API.Controllers
             }, "Enquiry recorded successfully."));
         }
 
+        [HttpPut("{id}")]
+        [HasPermission("Enquiries", "Edit")]
+        public async Task<ActionResult<ApiResponse<EnquiryDto>>> UpdateEnquiry(long id, [FromBody] UpdateEnquiryDto request)
+        {
+            var branchId = _currentUserService.BranchId;
+            var enquiry = await _context.Enquiries
+                .Include(e => e.Class)
+                .FirstOrDefaultAsync(e => e.Id == id && e.BranchId == branchId);
+
+            if (enquiry == null) return NotFound(ApiResponse<EnquiryDto>.Fail("Enquiry not found."));
+
+            if (enquiry.Status == EnquiryStatus.Converted)
+            {
+                return BadRequest(ApiResponse<EnquiryDto>.Fail("This enquiry has already been converted to an admission and cannot be modified."));
+            }
+
+            // Check duplicate if name/mobile changed
+            var cleanStudentName = request.StudentName?.Trim().ToLower();
+            var cleanMobile = request.Mobile?.Trim();
+
+            if (!string.IsNullOrEmpty(cleanStudentName) && !string.IsNullOrEmpty(cleanMobile))
+            {
+                var duplicate = await _context.Enquiries
+                    .AnyAsync(e => e.BranchId == branchId &&
+                                   e.AcademicYearId == enquiry.AcademicYearId &&
+                                   e.Id != id &&
+                                   e.Mobile == cleanMobile &&
+                                   e.StudentName.ToLower() == cleanStudentName &&
+                                   e.IsActive);
+
+                if (duplicate)
+                {
+                    return BadRequest(ApiResponse<EnquiryDto>.Fail($"Another active enquiry already exists for '{request.StudentName}' with mobile '{cleanMobile}'."));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.StudentName)) enquiry.StudentName = request.StudentName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.GuardianName)) enquiry.GuardianName = request.GuardianName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.Mobile)) enquiry.Mobile = request.Mobile.Trim();
+            enquiry.Email = request.Email?.Trim();
+            if (request.ClassId.HasValue && request.ClassId.Value > 0) enquiry.ClassId = request.ClassId.Value;
+            if (!string.IsNullOrWhiteSpace(request.Source)) enquiry.Source = request.Source.Trim();
+            if (request.Status.HasValue) enquiry.Status = request.Status.Value;
+            if (request.NextFollowupDate.HasValue) enquiry.NextFollowupDate = request.NextFollowupDate.Value;
+            enquiry.Notes = request.Notes?.Trim();
+            enquiry.ModifiedOn = DateTime.UtcNow;
+            enquiry.ModifiedBy = _currentUserService.UserId ?? 1;
+
+            await _context.SaveChangesAsync();
+
+            var className = enquiry.Class?.Name;
+            if (string.IsNullOrEmpty(className) && enquiry.ClassId > 0)
+            {
+                var cls = await _context.Classes.FindAsync(enquiry.ClassId);
+                className = cls?.Name;
+            }
+
+            var ay = await _context.AcademicYears.FindAsync(enquiry.AcademicYearId);
+
+            return Ok(ApiResponse<EnquiryDto>.Ok(new EnquiryDto
+            {
+                Id = enquiry.Id,
+                AcademicYearId = enquiry.AcademicYearId,
+                AcademicYearName = ay?.Name ?? "",
+                EnquiryNo = enquiry.EnquiryNo,
+                StudentName = enquiry.StudentName,
+                ClassId = enquiry.ClassId,
+                ClassName = className ?? "General Enquiry",
+                GuardianName = enquiry.GuardianName,
+                Mobile = enquiry.Mobile,
+                Email = enquiry.Email,
+                Source = enquiry.Source,
+                Status = enquiry.Status,
+                Notes = enquiry.Notes,
+                CreatedOn = enquiry.CreatedOn
+            }, "Enquiry updated successfully."));
+        }
+
+        [HttpDelete("{id}")]
+        [HasPermission("Enquiries", "Delete")]
+        public async Task<ActionResult<ApiResponse>> DeleteEnquiry(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var enquiry = await _context.Enquiries.FirstOrDefaultAsync(e => e.Id == id && e.BranchId == branchId);
+            if (enquiry == null) return NotFound(ApiResponse.Fail("Enquiry not found."));
+
+            if (enquiry.Status == EnquiryStatus.Converted)
+            {
+                return BadRequest(ApiResponse.Fail("Converted enquiry cannot be deleted as it is linked to an admission record."));
+            }
+
+            enquiry.IsActive = false;
+            enquiry.ModifiedOn = DateTime.UtcNow;
+            enquiry.ModifiedBy = _currentUserService.UserId ?? 1;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Enquiry deleted successfully."));
+        }
+
         [HttpPost("{id}/followup")]
         [HasPermission("Enquiries", "Edit")]
         public async Task<ActionResult<ApiResponse>> AddFollowup(long id, [FromBody] AddFollowupDto request)
@@ -226,6 +325,11 @@ namespace SchoolERP.API.Controllers
             var branchId = _currentUserService.BranchId;
             var enquiry = await _context.Enquiries.FirstOrDefaultAsync(e => e.Id == id && e.BranchId == branchId);
             if (enquiry == null) return NotFound(ApiResponse.Fail("Enquiry not found."));
+
+            if (enquiry.Status == EnquiryStatus.Converted)
+            {
+                return BadRequest(ApiResponse.Fail("This enquiry has already been converted to an admission. Follow-ups are closed."));
+            }
 
             var followup = new EnquiryFollowup
             {

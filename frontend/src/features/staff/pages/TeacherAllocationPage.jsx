@@ -70,20 +70,8 @@ export default function TeacherAllocationPage() {
   });
   const allStaff = staffRes?.data?.data?.items || [];
   const teachers = useMemo(() => {
-    return allStaff.filter((emp) => {
-      const dept = (emp.departmentName || '').toLowerCase();
-      const desig = (emp.designationName || '').toLowerCase();
-      if (!dept && !desig) return true;
-      const isTeacher =
-        dept.includes('teach') || dept.includes('faculty') || dept.includes('acad') ||
-        desig.includes('teach') || desig.includes('faculty') || desig.includes('acad') ||
-        desig.includes('prof') || desig.includes('lecturer') || desig.includes('tutor') || desig.includes('coach');
-      const isNonTeaching =
-        dept.includes('account') || dept.includes('fin') || dept.includes('admin') || dept.includes('hr') || dept.includes('transport') ||
-        desig.includes('account') || desig.includes('clerk') || desig.includes('peon') || desig.includes('driver') || desig.includes('guard');
-      if (isNonTeaching && !isTeacher) return false;
-      return isTeacher;
-    });
+    if (!allStaff || !allStaff.length) return [];
+    return [...allStaff].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
   }, [allStaff]);
 
   // Fetch Class Teachers
@@ -173,7 +161,7 @@ export default function TeacherAllocationPage() {
       const term = classTeacherSearch.toLowerCase().trim();
       const matchClass = row.className?.toLowerCase().includes(term);
       const matchSection = row.sectionName?.toLowerCase().includes(term);
-      const matchTeacher = row.employeeName?.toLowerCase().includes(term) || row.employeeCode?.toLowerCase().includes(term);
+      const matchTeacher = (row.teacherName || row.employeeName)?.toLowerCase().includes(term) || (row.teacherCode || row.employeeCode)?.toLowerCase().includes(term);
       return matchClass || matchSection || matchTeacher;
     });
   }, [classTeachers, classTeacherOnlyUnassigned, classTeacherSearch]);
@@ -188,7 +176,7 @@ export default function TeacherAllocationPage() {
       const matchClass = row.className?.toLowerCase().includes(term);
       const matchSection = row.sectionName?.toLowerCase().includes(term);
       const matchSub = row.subjectName?.toLowerCase().includes(term) || row.subjectCode?.toLowerCase().includes(term);
-      const matchTeacher = row.employeeName?.toLowerCase().includes(term) || row.employeeCode?.toLowerCase().includes(term);
+      const matchTeacher = (row.teacherName || row.employeeName)?.toLowerCase().includes(term) || (row.teacherCode || row.employeeCode)?.toLowerCase().includes(term);
       return matchClass || matchSection || matchSub || matchTeacher;
     });
   }, [subjectTeachers, subjectTeacherOnlyUnassigned, subjectTypeFilter, subjectTeacherSearch]);

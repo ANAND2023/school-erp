@@ -125,33 +125,8 @@ const ClassTimetablePage = () => {
       setClasses(classList);
       setSubjects(subRes.data?.data || subRes.data || []);
       const empList = empRes.data?.data?.items || (Array.isArray(empRes.data?.data) ? empRes.data?.data : []);
-      // Filter out non-teachers
-      const teacherList = empList.filter(emp => {
-        const dept = (emp.departmentName || '').toLowerCase();
-        const desig = (emp.designationName || '').toLowerCase();
-        
-        // If neither is set, we might assume they could be a teacher (or just exclude them). 
-        // For flexibility, let's keep them if both are empty.
-        if (!dept && !desig) return true;
-
-        // Whitelist keywords that guarantee it's a teacher
-        const isTeacher = 
-          dept.includes('teach') || dept.includes('faculty') || dept.includes('acad') || 
-          desig.includes('teach') || desig.includes('faculty') || desig.includes('acad') ||
-          desig.includes('prof') || desig.includes('lecturer') || desig.includes('tutor') || desig.includes('coach');
-
-        // Blacklist keywords that guarantee it's NOT a teacher
-        const isNonTeaching = 
-          dept.includes('account') || dept.includes('fin') || dept.includes('admin') || dept.includes('hr') || dept.includes('transport') ||
-          desig.includes('account') || desig.includes('clerk') || desig.includes('peon') || desig.includes('driver') || desig.includes('guard');
-
-        if (isNonTeaching && !isTeacher) return false;
-        
-        // By default, if they have a role but it doesn't match either, we can decide to exclude or include.
-        // Let's strictly only include if they match the teacher whitelist or have no role.
-        return isTeacher;
-      });
-      setTeachers(teacherList);
+      const activeStaff = empList.filter(emp => emp.status !== 0);
+      setTeachers(activeStaff.length > 0 ? activeStaff : empList);
 
       if (classList.length > 0) {
         setSelectedClassId(classList[0].id);
@@ -360,7 +335,7 @@ const ClassTimetablePage = () => {
           const slot = (timetable?.slots || []).find(s => s.dayOfWeek === day.id && s.periodId === p.id);
           if (slot) {
             let cellText = `${slot.subjectName}`;
-            if (slot.teacherName) cellText += `\n${slot.teacherName}`;
+            if (slot.teacherName || slot.employeeName) cellText += `\n${slot.teacherName || slot.employeeName}`;
             if (slot.roomNo) cellText += `\nRoom: ${slot.roomNo}`;
             row.push(cellText);
           } else {

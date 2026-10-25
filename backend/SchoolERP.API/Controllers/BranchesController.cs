@@ -199,6 +199,9 @@ namespace SchoolERP.API.Controllers
             public long SchoolId { get; set; }
             public string Name { get; set; } = string.Empty;
             public string Code { get; set; } = string.Empty;
+            public string? SchoolName { get; set; }
+            public string? AffiliationNumber { get; set; }
+            public string? Website { get; set; }
             public string? LogoUrl { get; set; }
             public string? PrincipalSignatureUrl { get; set; }
             public string? CashierSignatureUrl { get; set; }
@@ -265,7 +268,7 @@ namespace SchoolERP.API.Controllers
         [HasPermission("Branch", "Edit")]
         public async Task<ActionResult<ApiResponse>> UpdateBranch(long id, [FromBody] CreateBranchRequest request)
         {
-            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == id);
+            var branch = await _context.Branches.Include(b => b.School).FirstOrDefaultAsync(b => b.Id == id);
             if (branch == null) return NotFound(ApiResponse.Fail("Branch not found."));
 
             branch.Name = request.Name.Trim();
@@ -282,8 +285,39 @@ namespace SchoolERP.API.Controllers
             branch.Phone = request.Phone;
             branch.Email = request.Email;
 
+            if (branch.School != null)
+            {
+                if (!string.IsNullOrWhiteSpace(request.SchoolName)) branch.School.Name = request.SchoolName.Trim();
+                if (!string.IsNullOrWhiteSpace(request.AffiliationNumber)) branch.School.AffiliationNumber = request.AffiliationNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Website)) branch.School.Website = request.Website.Trim();
+                if (!string.IsNullOrWhiteSpace(request.LogoUrl)) branch.School.LogoUrl = request.LogoUrl.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Address)) branch.School.Address = request.Address.Trim();
+                if (!string.IsNullOrWhiteSpace(request.City)) branch.School.City = request.City.Trim();
+                if (!string.IsNullOrWhiteSpace(request.State)) branch.School.State = request.State.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Pincode)) branch.School.Pincode = request.Pincode.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Phone)) branch.School.ContactNumber = request.Phone.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Email)) branch.School.Email = request.Email.Trim();
+            }
+
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse.Ok("Branch updated successfully."));
+            return Ok(ApiResponse.Ok("School and Branch profile updated successfully."));
+        }
+
+        [HttpDelete("{id}")]
+        [HasPermission("Branch", "Delete")]
+        public async Task<ActionResult<ApiResponse>> DeleteBranch(long id)
+        {
+            if (_currentUserService.UserType != UserType.SuperAdmin)
+            {
+                return StatusCode(403, ApiResponse.Fail("Only Super Admin can delete or deactivate branches."));
+            }
+
+            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == id);
+            if (branch == null) return NotFound(ApiResponse.Fail("Branch not found."));
+
+            branch.IsActive = false;
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok($"Branch '{branch.Name}' deactivated successfully."));
         }
     }
 }

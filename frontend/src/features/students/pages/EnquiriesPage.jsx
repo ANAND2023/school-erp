@@ -210,6 +210,10 @@ export const EnquiriesPage = () => {
   };
 
   const handleOpenFollowup = async (enquiry) => {
+    if (enquiry.status === 3) {
+      showSnackbar('This enquiry has already been converted to an admission. Follow-ups are closed.', 'info');
+      return;
+    }
     try {
       const res = await enquiryApi.getEnquiry(enquiry.id);
       if (res.data.success) {
@@ -362,10 +366,17 @@ export const EnquiriesPage = () => {
                 <ReceiptLongIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Log Follow-up Call / Visit">
-              <IconButton size="small" color="primary" onClick={() => handleOpenFollowup(enq)}>
-                <FollowupIcon fontSize="small" />
-              </IconButton>
+            <Tooltip title={isConverted ? "Enquiry is already converted to admission" : "Log Follow-up Call / Visit"}>
+              <span>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  disabled={isConverted}
+                  onClick={() => handleOpenFollowup(enq)}
+                >
+                  <FollowupIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
             {canAdmit && !isConverted && (
               <Tooltip title="Convert to Admission (FR-3.2)">

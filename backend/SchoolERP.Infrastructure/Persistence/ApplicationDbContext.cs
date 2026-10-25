@@ -67,6 +67,7 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<FeeReceipt> FeeReceipts => Set<FeeReceipt>();
         public DbSet<FeeReceiptDetail> FeeReceiptDetails => Set<FeeReceiptDetail>();
         public DbSet<FeePayment> FeePayments => Set<FeePayment>();
+        public DbSet<FeeDiscountScheme> FeeDiscountSchemes => Set<FeeDiscountScheme>();
 
         // Attendance & Timetable Module
         public DbSet<Holiday> Holidays => Set<Holiday>();
