@@ -190,9 +190,9 @@ namespace SchoolERP.API.Controllers
                 BranchId = branchId,
                 AcademicYearId = yearId,
                 EnquiryNo = enquiryNo,
-                StudentName = request.StudentName.Trim(),
+                StudentName = request.StudentName.Trim().ToUpper(),
                 ClassId = request.ClassId,
-                GuardianName = request.GuardianName.Trim(),
+                GuardianName = request.GuardianName.Trim().ToUpper(),
                 Mobile = request.Mobile.Trim(),
                 Email = request.Email?.Trim(),
                 Source = request.Source,
@@ -255,8 +255,8 @@ namespace SchoolERP.API.Controllers
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(request.StudentName)) enquiry.StudentName = request.StudentName.Trim();
-            if (!string.IsNullOrWhiteSpace(request.GuardianName)) enquiry.GuardianName = request.GuardianName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.StudentName)) enquiry.StudentName = request.StudentName.Trim().ToUpper();
+            if (!string.IsNullOrWhiteSpace(request.GuardianName)) enquiry.GuardianName = request.GuardianName.Trim().ToUpper();
             if (!string.IsNullOrWhiteSpace(request.Mobile)) enquiry.Mobile = request.Mobile.Trim();
             enquiry.Email = request.Email?.Trim();
             if (request.ClassId.HasValue && request.ClassId.Value > 0) enquiry.ClassId = request.ClassId.Value;

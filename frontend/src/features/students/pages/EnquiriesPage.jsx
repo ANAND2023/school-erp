@@ -519,7 +519,8 @@ export const EnquiriesPage = () => {
                 label="Student Name"
                 placeholder="Enter candidate name"
                 value={newEnquiry.studentName}
-                onChange={(e) => setNewEnquiry({ ...newEnquiry, studentName: e.target.value })}
+                onChange={(e) => setNewEnquiry({ ...newEnquiry, studentName: e.target.value.toUpperCase() })}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -567,7 +568,8 @@ export const EnquiriesPage = () => {
                 label="Parent / Guardian Name"
                 placeholder="Father or mother name"
                 value={newEnquiry.guardianName}
-                onChange={(e) => setNewEnquiry({ ...newEnquiry, guardianName: e.target.value })}
+                onChange={(e) => setNewEnquiry({ ...newEnquiry, guardianName: e.target.value.toUpperCase() })}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

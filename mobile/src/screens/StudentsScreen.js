@@ -1002,7 +1002,7 @@ export default function StudentsScreen({ navigation }) {
                           <TextInput
                             style={styles.editInput}
                             value={editFirstName}
-                            onChangeText={setEditFirstName}
+                            onChangeText={(text) => setEditFirstName(text.toUpperCase())}
                             autoCapitalize="characters"
                             placeholderTextColor="#94a3b8"
                           />
@@ -1012,7 +1012,7 @@ export default function StudentsScreen({ navigation }) {
                           <TextInput
                             style={styles.editInput}
                             value={editLastName}
-                            onChangeText={setEditLastName}
+                            onChangeText={(text) => setEditLastName(text.toUpperCase())}
                             autoCapitalize="characters"
                             placeholderTextColor="#94a3b8"
                           />
@@ -1309,7 +1309,7 @@ export default function StudentsScreen({ navigation }) {
                           <TextInput
                             style={styles.editInput}
                             value={editFatherName}
-                            onChangeText={setEditFatherName}
+                            onChangeText={(text) => setEditFatherName(text.toUpperCase())}
                             autoCapitalize="characters"
                             placeholderTextColor="#94a3b8"
                           />
@@ -1375,7 +1375,7 @@ export default function StudentsScreen({ navigation }) {
                           <TextInput
                             style={styles.editInput}
                             value={editMotherName}
-                            onChangeText={setEditMotherName}
+                            onChangeText={(text) => setEditMotherName(text.toUpperCase())}
                             autoCapitalize="characters"
                             placeholderTextColor="#94a3b8"
                           />
@@ -1426,7 +1426,8 @@ export default function StudentsScreen({ navigation }) {
                           <TextInput
                             style={styles.editInput}
                             value={editGuardianName}
-                            onChangeText={setEditGuardianName}
+                            onChangeText={(text) => setEditGuardianName(text.toUpperCase())}
+                            autoCapitalize="characters"
                             placeholderTextColor="#94a3b8"
                           />
                           <View style={styles.fieldRow}>

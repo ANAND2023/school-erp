@@ -560,8 +560,8 @@ namespace SchoolERP.API.Controllers
                     {
                         BranchId = branchId,
                         AdmissionNo = admissionNo,
-                        FirstName = request.FirstName.Trim(),
-                        LastName = request.LastName?.Trim() ?? "",
+                        FirstName = request.FirstName.Trim().ToUpper(),
+                        LastName = request.LastName?.Trim().ToUpper() ?? "",
                         DateOfBirth = request.DateOfBirth,
                         Gender = request.Gender,
                         CategoryId = request.CategoryId,
@@ -620,7 +620,7 @@ namespace SchoolERP.API.Controllers
                         {
                             StudentId = student.Id,
                             Relation = g.Relation,
-                            Name = g.Name.Trim(),
+                            Name = g.Name.Trim().ToUpper(),
                             Mobile = g.Mobile.Trim(),
                             Email = g.Email?.Trim(),
                             Occupation = g.Occupation,
@@ -788,8 +788,8 @@ namespace SchoolERP.API.Controllers
 
             if (student == null) return NotFound(ApiResponse.Fail("Student not found."));
 
-            student.FirstName = request.FirstName.Trim();
-            student.LastName = request.LastName?.Trim() ?? "";
+            student.FirstName = request.FirstName.Trim().ToUpper();
+            student.LastName = request.LastName?.Trim().ToUpper() ?? "";
             student.DateOfBirth = request.DateOfBirth;
             student.Gender = request.Gender;
             student.CategoryId = request.CategoryId;
@@ -859,7 +859,7 @@ namespace SchoolERP.API.Controllers
                     if (existing != null)
                     {
                         existing.Relation = g.Relation;
-                        existing.Name = g.Name.Trim();
+                        existing.Name = g.Name.Trim().ToUpper();
                         existing.Mobile = g.Mobile.Trim();
                         existing.Email = g.Email?.Trim();
                         existing.Occupation = g.Occupation;
@@ -872,7 +872,7 @@ namespace SchoolERP.API.Controllers
                         {
                             StudentId = student.Id,
                             Relation = g.Relation,
-                            Name = g.Name.Trim(),
+                            Name = g.Name.Trim().ToUpper(),
                             Mobile = g.Mobile.Trim(),
                             Email = g.Email?.Trim(),
                             Occupation = g.Occupation,

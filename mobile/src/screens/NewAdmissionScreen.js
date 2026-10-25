@@ -604,7 +604,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
                   style={styles.input}
                   placeholder="e.g. AARAV"
                   value={firstName}
-                  onChangeText={setFirstName}
+                  onChangeText={(text) => setFirstName(text.toUpperCase())}
                   autoCapitalize="characters"
                   placeholderTextColor="#94a3b8"
                 />
@@ -615,7 +615,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
                   style={styles.input}
                   placeholder="e.g. SHARMA"
                   value={lastName}
-                  onChangeText={setLastName}
+                  onChangeText={(text) => setLastName(text.toUpperCase())}
                   autoCapitalize="characters"
                   placeholderTextColor="#94a3b8"
                 />
@@ -712,7 +712,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
               style={styles.input}
               placeholder="e.g. RAJESH SHARMA"
               value={fatherName}
-              onChangeText={setFatherName}
+              onChangeText={(text) => setFatherName(text.toUpperCase())}
               autoCapitalize="characters"
               placeholderTextColor="#94a3b8"
             />
@@ -736,7 +736,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
                   style={styles.input}
                   placeholder="e.g. SUNITA SHARMA"
                   value={motherName}
-                  onChangeText={setMotherName}
+                  onChangeText={(text) => setMotherName(text.toUpperCase())}
                   autoCapitalize="characters"
                   placeholderTextColor="#94a3b8"
                 />
@@ -1070,7 +1070,8 @@ export default function NewAdmissionScreen({ route, navigation }) {
                   style={styles.input}
                   placeholder="Optional guardian name"
                   value={guardianName}
-                  onChangeText={setGuardianName}
+                  onChangeText={(text) => setGuardianName(text.toUpperCase())}
+                  autoCapitalize="characters"
                   placeholderTextColor="#94a3b8"
                 />
                 <View style={styles.fieldRow}>

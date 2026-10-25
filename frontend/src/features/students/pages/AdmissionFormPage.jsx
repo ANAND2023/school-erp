@@ -776,6 +776,7 @@ export const AdmissionFormPage = () => {
                     placeholder="Student first name"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value.toUpperCase() })}
+                    inputProps={{ style: { textTransform: 'uppercase' } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -784,6 +785,7 @@ export const AdmissionFormPage = () => {
                     placeholder="Surname"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value.toUpperCase() })}
+                    inputProps={{ style: { textTransform: 'uppercase' } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -865,6 +867,7 @@ export const AdmissionFormPage = () => {
                     placeholder="Primary contact name"
                     value={formData.fatherName}
                     onChange={(e) => setFormData({ ...formData, fatherName: e.target.value.toUpperCase() })}
+                    inputProps={{ style: { textTransform: 'uppercase' } }}
                     disabled={isLockParentInfo && Boolean(attachedSibling)}
                   />
                 </Grid>
@@ -886,6 +889,7 @@ export const AdmissionFormPage = () => {
                     placeholder="Mother's name (optional)"
                     value={formData.motherName}
                     onChange={(e) => setFormData({ ...formData, motherName: e.target.value.toUpperCase() })}
+                    inputProps={{ style: { textTransform: 'uppercase' } }}
                     disabled={isLockParentInfo && Boolean(attachedSibling)}
                   />
                 </Grid>
@@ -1064,6 +1068,7 @@ export const AdmissionFormPage = () => {
                       label="Father Full Name"
                       value={formData.fatherName}
                       onChange={(e) => setFormData({ ...formData, fatherName: e.target.value.toUpperCase() })}
+                      inputProps={{ style: { textTransform: 'uppercase' } }}
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>
@@ -1118,6 +1123,7 @@ export const AdmissionFormPage = () => {
                       label="Mother Full Name"
                       value={formData.motherName}
                       onChange={(e) => setFormData({ ...formData, motherName: e.target.value.toUpperCase() })}
+                      inputProps={{ style: { textTransform: 'uppercase' } }}
                       disabled={isLockParentInfo && Boolean(attachedSibling)}
                     />
                   </Grid>

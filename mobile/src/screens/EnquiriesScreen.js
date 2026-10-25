@@ -217,8 +217,8 @@ export default function EnquiriesScreen({ navigation }) {
     try {
       setSaving(true);
       const payload = {
-        studentName: studentName.trim(),
-        guardianName: guardianName.trim(),
+        studentName: studentName.trim().toUpperCase(),
+        guardianName: guardianName.trim().toUpperCase(),
         mobile: mobile.trim(),
         email: email.trim() || null,
         classId: formClassId ? Number(formClassId) : (classes.length > 0 ? classes[0].id : null),
@@ -942,18 +942,20 @@ export default function EnquiriesScreen({ navigation }) {
               <Text style={styles.inputLabel}>Candidate / Student Name *</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="e.g. Aryan Sharma"
+                placeholder="e.g. ARYAN SHARMA"
                 value={studentName}
-                onChangeText={setStudentName}
+                onChangeText={(text) => setStudentName(text.toUpperCase())}
+                autoCapitalize="characters"
                 placeholderTextColor="#94a3b8"
               />
 
               <Text style={styles.inputLabel}>Parent / Guardian Name *</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="e.g. Rajesh Sharma"
+                placeholder="e.g. RAJESH SHARMA"
                 value={guardianName}
-                onChangeText={setGuardianName}
+                onChangeText={(text) => setGuardianName(text.toUpperCase())}
+                autoCapitalize="characters"
                 placeholderTextColor="#94a3b8"
               />
 
