@@ -10,10 +10,12 @@ import {
   SafeAreaView,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { gatePassApi } from '../api/client';
@@ -144,15 +146,20 @@ export default function IssueGatePassScreen({ navigation, route }) {
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const base64Data = `data:image/jpeg;base64,${asset.base64}`;
+        let base64Data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            base64Data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
         setReceiverPhotoBase64(base64Data);
       }
     } catch (e) {
@@ -164,23 +171,32 @@ export default function IssueGatePassScreen({ navigation, route }) {
   // Image Picker: Pick from Gallery
   const handlePickFromGallery = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Gallery permission is required to select photos.');
-        return;
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (Platform.OS === 'ios' && !permission.granted) {
+          Alert.alert('Permission Denied', 'Gallery permission is required to select photos.');
+          return;
+        }
+      } catch (permErr) {
+        console.warn('Permission request error:', permErr);
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const base64Data = `data:image/jpeg;base64,${asset.base64}`;
+        let base64Data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            base64Data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
         setReceiverPhotoBase64(base64Data);
       }
     } catch (e) {

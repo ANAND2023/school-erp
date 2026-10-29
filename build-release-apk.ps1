@@ -21,7 +21,9 @@ $mobileFinalApk = "$mobileDir\SchoolERP-Release.apk"
 $realWebpDir = "D:\erp\real_webp"
 $zipalign = "D:\Android\sdk\build-tools\35.0.0\zipalign.exe"
 $apksigner = "D:\Android\sdk\build-tools\35.0.0\apksigner.bat"
-$keystore = "$mobileDir\android\app\debug.keystore"
+$keystore = "$mobileDir\android\app\release.keystore"
+$keyAlias = "dvserp"
+$keyPass = "pass:dvserp@2026"
 
 $env:JAVA_HOME = "C:\Program Files\Android\openjdk\jdk-21.0.8"
 $env:PATH = "$env:JAVA_HOME\bin;" + $env:PATH
@@ -30,7 +32,10 @@ $env:PATH = "$env:JAVA_HOME\bin;" + $env:PATH
 if (-not $SkipBundle) {
     Write-Host "`n[1/5] Bundling React Native JavaScript..." -ForegroundColor Yellow
     Set-Location $mobileDir
-    cmd /c "npx expo export:embed --platform android --dev false --entry-file index.js --bundle-output index.android.bundle --assets-dest android/app/src/main/res"
+    $env:USERPROFILE = $mobileDir
+    $env:HOMEPATH = "\erp\mobile"
+    $env:HOMEDRIVE = "D:"
+    cmd /c "set USERPROFILE=$mobileDir&& set HOMEPATH=\erp\mobile&& set HOMEDRIVE=D:&& npx expo export:embed --platform android --dev false --entry-file index.js --bundle-output index.android.bundle --assets-dest android/app/src/main/res"
     if ($LASTEXITCODE -ne 0) {
         throw "Metro bundle export failed with exit code $LASTEXITCODE"
     }
@@ -98,6 +103,53 @@ foreach ($entryName in $iconMappings.Keys) {
     }
 }
 
+# Patch AndroidManifest.xml to strip SYSTEM_ALERT_WINDOW & RECORD_AUDIO
+$manifestEntry = $zip.GetEntry("AndroidManifest.xml")
+if ($manifestEntry -ne $null) {
+    $ms = New-Object System.IO.MemoryStream
+    $es = $manifestEntry.Open()
+    $es.CopyTo($ms)
+    $es.Dispose()
+    $manifestEntry.Delete()
+
+    $mBytes = $ms.ToArray()
+    $ms.Dispose()
+
+    # Patch SYSTEM_ALERT_WINDOW (38 chars)
+    $t1 = [System.Text.Encoding]::Unicode.GetBytes("android.permission.SYSTEM_ALERT_WINDOW")
+    $r1 = [System.Text.Encoding]::Unicode.GetBytes("com.schoolerp.mobile.dummy_permission_")
+    for ($i = 0; $i -le ($mBytes.Length - $t1.Length); $i++) {
+        $match = $true
+        for ($j = 0; $j -lt $t1.Length; $j++) {
+            if ($mBytes[$i + $j] -ne $t1[$j]) { $match = $false; break }
+        }
+        if ($match) {
+            for ($j = 0; $j -lt $r1.Length; $j++) { $mBytes[$i + $j] = $r1[$j] }
+            break
+        }
+    }
+
+    # Patch RECORD_AUDIO (31 chars)
+    $t2 = [System.Text.Encoding]::Unicode.GetBytes("android.permission.RECORD_AUDIO")
+    $r2 = [System.Text.Encoding]::Unicode.GetBytes("com.schoolerp.mobile.dummy_two_")
+    for ($i = 0; $i -le ($mBytes.Length - $t2.Length); $i++) {
+        $match = $true
+        for ($j = 0; $j -lt $t2.Length; $j++) {
+            if ($mBytes[$i + $j] -ne $t2[$j]) { $match = $false; break }
+        }
+        if ($match) {
+            for ($j = 0; $j -lt $r2.Length; $j++) { $mBytes[$i + $j] = $r2[$j] }
+            break
+        }
+    }
+
+    $newEntry = $zip.CreateEntry("AndroidManifest.xml")
+    $newStream = $newEntry.Open()
+    $newStream.Write($mBytes, 0, $mBytes.Length)
+    $newStream.Dispose()
+    Write-Host "[OK] Cleaned security permissions from Manifest" -ForegroundColor Green
+}
+
 # Strip META-INF signatures
 $entriesToRemove = @($zip.Entries | Where-Object { $_.FullName -like "META-INF/*" })
 foreach ($entry in $entriesToRemove) {
@@ -116,9 +168,9 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $alignedApk)) {
 Write-Host "[OK] APK aligned successfully" -ForegroundColor Green
 
 # STEP 5: Signing with apksigner (v1, v2, v3)
-Write-Host "`n[5/5] Signing APK with apksigner..." -ForegroundColor Yellow
+Write-Host "`n[5/5] Signing APK with production apksigner..." -ForegroundColor Yellow
 if (Test-Path $finalApk) { Remove-Item $finalApk -Force }
-& $apksigner sign --ks $keystore --ks-pass pass:android --ks-key-alias androiddebugkey --out $finalApk $alignedApk
+& $apksigner sign --ks $keystore --ks-pass $keyPass --ks-key-alias $keyAlias --out $finalApk $alignedApk
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $finalApk)) {
     throw "apksigner failed with exit code $LASTEXITCODE"
 }

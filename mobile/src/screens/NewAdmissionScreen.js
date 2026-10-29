@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { studentApi, classApi, masterApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -134,14 +135,19 @@ export default function NewAdmissionScreen({ route, navigation }) {
       }
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        let data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
         setter(data);
       }
     } catch (e) {
@@ -152,21 +158,30 @@ export default function NewAdmissionScreen({ route, navigation }) {
 
   const handlePickImage = async (setter) => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Gallery permission is required.');
-        return;
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (Platform.OS === 'ios' && !permission.granted) {
+          Alert.alert('Permission Denied', 'Gallery permission is required.');
+          return;
+        }
+      } catch (permErr) {
+        console.warn('Permission error:', permErr);
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        let data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
         setter(data);
       }
     } catch (e) {
@@ -1585,7 +1600,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
         animationType="slide"
         onRequestClose={() => setSiblingModalVisible(false)}
       >
-        <SafeAreaView style={styles.siblingModalBackdrop}>
+        <View style={styles.siblingModalBackdrop}>
           <View style={styles.siblingModalContainer}>
             <View style={styles.siblingModalHeader}>
               <View style={{ flex: 1 }}>
@@ -1706,7 +1721,7 @@ export default function NewAdmissionScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );

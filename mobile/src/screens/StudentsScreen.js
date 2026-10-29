@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { studentApi, classApi, masterApi } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -374,14 +375,20 @@ export default function StudentsScreen({ navigation }) {
       }
       const res = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
         const asset = res.assets[0];
-        setter(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        let data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
+        setter(data);
       }
     } catch (e) {
       console.warn('Camera error:', e);
@@ -390,21 +397,31 @@ export default function StudentsScreen({ navigation }) {
 
   const handleEditPick = async (setter) => {
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Permission Denied', 'Gallery permission is required.');
-        return;
+      try {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (Platform.OS === 'ios' && !perm.granted) {
+          Alert.alert('Permission Denied', 'Gallery permission is required.');
+          return;
+        }
+      } catch (permErr) {
+        console.warn('Gallery perm error:', permErr);
       }
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.6,
         base64: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
         const asset = res.assets[0];
-        setter(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        let data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        if (!asset.base64 && asset.uri) {
+          try {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+            data = `data:image/jpeg;base64,${b64}`;
+          } catch (_) {}
+        }
+        setter(data);
       }
     } catch (e) {
       console.warn('Gallery error:', e);

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { toQR } = require('./mobile/node_modules/toqr');
 
-const url = 'exp://10.0.2.104:8081';
+const url = 'exp://x73w1zw-anonymous-8081.exp.direct';
 const bits = toQR(url);
 const size = Math.round(Math.sqrt(bits.length));
 
