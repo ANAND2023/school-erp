@@ -66,7 +66,7 @@ namespace SchoolERP.API.Controllers
 
             // Resolve target school if provided
             long? targetSchoolId = request.SchoolId;
-            if (!targetSchoolId.HasValue && !string.IsNullOrWhiteSpace(request.SchoolCode))
+            if (!string.IsNullOrWhiteSpace(request.SchoolCode))
             {
                 var sCode = request.SchoolCode.Trim().ToLower();
                 var matchedSchool = await _context.Schools
@@ -74,6 +74,10 @@ namespace SchoolERP.API.Controllers
                 if (matchedSchool != null)
                 {
                     targetSchoolId = matchedSchool.Id;
+                }
+                else
+                {
+                    return BadRequest(ApiResponse<LoginResponseDto>.Fail($"School with code '{request.SchoolCode}' not found. Please verify your school code."));
                 }
             }
 

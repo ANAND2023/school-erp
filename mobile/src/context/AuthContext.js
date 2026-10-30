@@ -121,12 +121,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (username, password, schoolId = null) => {
+  const login = async (username, password, schoolId = null, schoolCode = null) => {
     try {
       const payload = {
         username: username.trim(),
         password,
         schoolId: schoolId ? Number(schoolId) : null,
+        schoolCode: schoolCode ? String(schoolCode).trim() : null,
       };
 
       const res = await authApi.login(payload);
