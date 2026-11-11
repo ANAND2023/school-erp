@@ -29,14 +29,14 @@ import { printElement } from '../../../utils/printUtils';
 import ClassFeeProspectusSlip from './ClassFeeProspectusSlip';
 
 export default function ClassFeeProspectusModal({ open, onClose, initialClassId = '' }) {
-  const { activeAcademicYearName } = useAuthStore();
+  const { activeAcademicYearName, activeBranchId } = useAuthStore();
 
   const [selectedClassId, setSelectedClassId] = useState(initialClassId);
   const [selectedGroupId, setSelectedGroupId] = useState('');
 
   // Fetch classes
   const { data: classesRes } = useQuery({
-    queryKey: ['classes-list'],
+    queryKey: ['classes-list', activeBranchId],
     queryFn: () => classesApi.getClasses(),
     enabled: open,
   });
@@ -44,25 +44,30 @@ export default function ClassFeeProspectusModal({ open, onClose, initialClassId 
 
   // Fetch groups
   const { data: groupsRes } = useQuery({
-    queryKey: ['fee-groups'],
+    queryKey: ['fee-groups', activeBranchId],
     queryFn: () => feesApi.getGroups(),
     enabled: open,
   });
   const groups = groupsRes?.data?.data || [];
 
-  // Auto-select initial class
+  // Auto-select initial class & group safely validate against current school data
   useEffect(() => {
     if (open) {
-      if (initialClassId) {
-        setSelectedClassId(initialClassId);
-      } else if (classes.length > 0 && !selectedClassId) {
-        setSelectedClassId(classes[0].id);
+      if (classes.length > 0) {
+        const found = classes.find((c) => String(c.id) === String(initialClassId));
+        if (found) {
+          setSelectedClassId(found.id);
+        } else if (!selectedClassId || !classes.some((c) => String(c.id) === String(selectedClassId))) {
+          setSelectedClassId(classes[0].id);
+        }
       }
-      if (groups.length > 0 && !selectedGroupId) {
-        setSelectedGroupId(groups[0].id);
+      if (groups.length > 0) {
+        if (!selectedGroupId || !groups.some((g) => String(g.id) === String(selectedGroupId))) {
+          setSelectedGroupId(groups[0].id);
+        }
       }
     }
-  }, [open, initialClassId, classes, groups]);
+  }, [open, initialClassId, classes, groups, selectedClassId, selectedGroupId]);
 
   // Query Class Fee Summary
   const {
@@ -70,7 +75,7 @@ export default function ClassFeeProspectusModal({ open, onClose, initialClassId 
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ['class-fee-summary', selectedClassId, selectedGroupId],
+    queryKey: ['class-fee-summary', activeBranchId, selectedClassId, selectedGroupId],
     queryFn: () => feesApi.getClassFeeSummary(selectedClassId || undefined, selectedGroupId || undefined),
     enabled: open && !!selectedClassId,
   });

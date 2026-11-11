@@ -15,8 +15,95 @@ export const feesApi = {
 
   getStructures: (classId, feeGroupId) =>
     apiClient.get('/fees/structures', { params: { classId, feeGroupId } }),
-  getClassFeeSummary: (classId, feeGroupId) =>
-    apiClient.get('/fees/class-summary', { params: { classId, feeGroupId } }),
+  getClassFeeSummary: async (classId, feeGroupId) => {
+    try {
+      const res = await apiClient.get('/fees/class-summary', { params: { classId, feeGroupId } });
+      if (res?.data?.data) return res;
+    } catch (err) {
+      // If 404 on live/older backend instances, fallback to client-side synthesis from /fees/structures & /fees/installments
+      if (err.response?.status === 404) {
+        const [structuresRes, installmentsRes, classesRes, groupsRes] = await Promise.all([
+          apiClient.get('/fees/structures', { params: { classId, feeGroupId } }).catch(() => ({ data: { data: [] } })),
+          apiClient.get('/fees/installments').catch(() => ({ data: { data: [] } })),
+          apiClient.get('/classes').catch(() => ({ data: { data: [] } })),
+          apiClient.get('/fees/groups').catch(() => ({ data: { data: [] } })),
+        ]);
+
+        const structures = structuresRes?.data?.data || [];
+        const installments = (installmentsRes?.data?.data || []).sort(
+          (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || new Date(a.dueDate) - new Date(b.dueDate)
+        );
+        const classes = classesRes?.data?.data || [];
+        const groups = groupsRes?.data?.data || [];
+
+        const targetClass = classes.find((c) => String(c.id) === String(classId)) || classes[0] || { id: classId, name: 'Class' };
+        const targetGroup = groups.find((g) => String(g.id) === String(feeGroupId)) || groups[0] || { id: feeGroupId || 0, name: 'General' };
+
+        let totalAnnual = 0;
+        let totalMandatory = 0;
+        let totalOptional = 0;
+        let totalOneTime = 0;
+        let totalRecurring = 0;
+
+        const headDtos = structures.map((st) => {
+          const totalAmt = Number(st.totalAmount || 0);
+          const isOneTime = st.type === 1 || String(st.type).toLowerCase() === 'onetime';
+          const isOptional = !!st.isOptional;
+
+          totalAnnual += totalAmt;
+          if (isOptional) totalOptional += totalAmt;
+          else totalMandatory += totalAmt;
+
+          if (isOneTime) totalOneTime += totalAmt;
+          else totalRecurring += totalAmt;
+
+          return {
+            feeHeadId: st.feeHeadId,
+            feeHeadName: st.feeHeadName,
+            feeHeadCode: st.feeHeadCode,
+            feeHeadType: isOneTime ? 'OneTime' : 'Recurring',
+            isOptional,
+            totalAnnualAmount: totalAmt,
+            installmentAmounts: st.installmentAmounts || {},
+          };
+        });
+
+        const installmentDtos = installments.map((inst) => {
+          let instTotal = 0;
+          for (const st of structures) {
+            instTotal += Number(st.installmentAmounts?.[inst.id] || 0);
+          }
+          return {
+            installmentId: inst.id,
+            installmentName: inst.name,
+            dueDate: inst.dueDate,
+            displayOrder: inst.displayOrder,
+            totalAmount: instTotal,
+          };
+        });
+
+        return {
+          data: {
+            success: true,
+            data: {
+              classId: targetClass.id,
+              className: targetClass.name,
+              feeGroupId: targetGroup.id,
+              feeGroupName: targetGroup.name,
+              totalAnnualFee: totalAnnual,
+              totalMandatoryFee: totalMandatory,
+              totalOptionalFee: totalOptional,
+              totalOneTimeFee: totalOneTime,
+              totalRecurringFee: totalRecurring,
+              heads: headDtos,
+              installments: installmentDtos,
+            },
+          },
+        };
+      }
+      throw err;
+    }
+  },
   saveStructures: (data) => apiClient.post('/fees/structures', data),
 
   getFineRules: () => apiClient.get('/fees/fine-rules'),
