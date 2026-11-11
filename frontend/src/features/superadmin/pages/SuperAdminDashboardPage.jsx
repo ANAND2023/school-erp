@@ -225,6 +225,15 @@ export const SuperAdminDashboardPage = () => {
                       <div className="flex flex-column">
                         <div className="flex align-items-center gap-2">
                           <span className="font-bold text-sm text-slate-800">{school.name}</span>
+                          {school.code && (
+                            <span
+                              className="font-mono font-bold text-xs px-2 py-0.5 border-round border-1 surface-border"
+                              style={{ backgroundColor: '#eef2ff', color: '#4338ca', fontSize: '11px' }}
+                              title="School Code"
+                            >
+                              Code: {school.code}
+                            </span>
+                          )}
                           <Tag
                             value={school.status || 'Active'}
                             severity={school.status === 'Active' ? 'success' : school.status === 'Trial' ? 'warning' : 'danger'}

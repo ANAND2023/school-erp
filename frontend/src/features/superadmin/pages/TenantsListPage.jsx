@@ -378,6 +378,39 @@ export const TenantsListPage = () => {
     );
   };
 
+  // School Code Template with Copy action
+  const codeBodyTemplate = (rowData) => {
+    const code = rowData.code || '—';
+    return (
+      <div className="flex align-items-center gap-1">
+        <span
+          className="font-mono font-bold text-xs px-2 py-1 border-round border-1 surface-border shadow-xs"
+          style={{
+            backgroundColor: '#eef2ff',
+            color: '#4338ca',
+            letterSpacing: '0.8px',
+          }}
+          title={`School Code for Login: ${code}`}
+        >
+          {code}
+        </span>
+        {rowData.code && (
+          <Button
+            icon="pi pi-copy"
+            text
+            rounded
+            size="small"
+            severity="secondary"
+            className="p-0 text-slate-400 hover:text-indigo-600"
+            style={{ width: '22px', height: '22px' }}
+            title="Copy School Code"
+            onClick={() => copyToClipboard(rowData.code, 'School Code')}
+          />
+        )}
+      </div>
+    );
+  };
+
   // Name & Slug Template
   const nameBodyTemplate = (rowData) => (
     <div className="flex align-items-center gap-2">
@@ -535,6 +568,13 @@ export const TenantsListPage = () => {
           rowHover
         >
           <Column header="School / Subdomain" body={nameBodyTemplate} style={{ minWidth: '240px' }} />
+          <Column
+            field="code"
+            header="School Code"
+            body={codeBodyTemplate}
+            style={{ width: '130px' }}
+            sortable
+          />
           <Column
             field="city"
             header="Location"
