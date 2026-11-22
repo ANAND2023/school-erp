@@ -108,6 +108,7 @@ import { ModuleCatalogPage } from '../features/superadmin/pages/ModuleCatalogPag
 import { WebsiteCmsPage } from '../features/superadmin/pages/WebsiteCmsPage';
 import { SystemErrorLogsPage } from '../features/superadmin/pages/SystemErrorLogsPage';
 import { EnquirySlipDesignerPage } from '../features/superadmin/pages/EnquirySlipDesignerPage';
+import { RegistrationSlipDesignerPage } from '../features/superadmin/pages/RegistrationSlipDesignerPage';
 import { FeeSlipDesignerPage } from '../features/superadmin/pages/FeeSlipDesignerPage';
 import { AdmissionSlipDesignerPage } from '../features/superadmin/pages/AdmissionSlipDesignerPage';
 import { useAuthStore } from '../store/authStore';
@@ -786,6 +787,7 @@ export const AppRoutes = () => {
         <Route path="gateways" element={<GatewaysPage />} />
         <Route path="whatsapp" element={<WhatsAppSettingsPage />} />
         <Route path="enquiry-slip-designer" element={<EnquirySlipDesignerPage />} />
+        <Route path="registration-slip-designer" element={<RegistrationSlipDesignerPage />} />
         <Route path="fee-slip-designer" element={<FeeSlipDesignerPage />} />
         <Route path="admission-slip-designer" element={<AdmissionSlipDesignerPage />} />
         <Route path="inventory-slip-designer" element={<InventoryStoreSetupPage />} />

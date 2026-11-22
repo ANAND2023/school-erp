@@ -454,6 +454,61 @@ namespace SchoolERP.API.Controllers
             return Ok(new { success = true, message = "Registration status marked as Admitted." });
         }
 
+        [HttpGet("registration-slip-config")]
+        public async Task<IActionResult> GetRegistrationSlipConfig()
+        {
+            var branchId = _currentUser.BranchId;
+            var branch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId);
+            long? schoolId = branch?.SchoolId;
+
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "REGISTRATION_SLIP" && g.IsActive);
+            }
+
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "REGISTRATION_SLIP" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<RegistrationSlipConfigDto>(
+                        config.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        var defaultSecs = RegistrationSlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(new { success = true, data = parsed });
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(new { success = true, data = new RegistrationSlipConfigDto() });
+        }
+
         // ==========================================
         // 4. PAYMENT COLLECTION & RECEIPT
         // ==========================================

@@ -8,6 +8,10 @@ export const dynamicRegistrationApi = {
   saveFormConfig: (data) =>
     apiClient.post('/DynamicAdmission/form-config', data),
 
+  // Dynamic Registration Slip Layout & Styling (from Super Admin designer)
+  getRegistrationSlipConfig: () =>
+    apiClient.get('/DynamicAdmission/registration-slip-config'),
+
   // Slips Generation & Directory
   getSlips: (params) =>
     apiClient.get('/DynamicAdmission/slips', { params }),

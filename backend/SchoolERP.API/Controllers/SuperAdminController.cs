@@ -1821,6 +1821,154 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.5 DYNAMIC REGISTRATION SLIP BUILDER (SCHOOL-WISE)
+        // ==========================================
+        [HttpGet("registration-slip-config")]
+        public async Task<ActionResult<ApiResponse<RegistrationSlipConfigDto>>> GetRegistrationSlipConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "REGISTRATION_SLIP");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "REGISTRATION_SLIP");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<RegistrationSlipConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        var defaultSecs = RegistrationSlipConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<RegistrationSlipConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new RegistrationSlipConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<RegistrationSlipConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("registration-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveRegistrationSlipConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] RegistrationSlipConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "REGISTRATION_SLIP");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "REGISTRATION_SLIP_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "REGISTRATION_SLIP",
+                    Provider = "REGISTRATION_SLIP_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "REGISTRATION_SLIP_CONFIGURED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Platform Default",
+                null,
+                new { schoolId, request.PrimaryColor, request.FontFamily });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Registration slip layout & styling saved successfully."));
+        }
+
+        [HttpDelete("registration-slip-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetRegistrationSlipConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "REGISTRATION_SLIP");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "REGISTRATION_SLIP_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School registration slip reset to platform default successfully."));
+        }
+
+        // ==========================================
         // 10.5 DYNAMIC INVENTORY STORE & SLIP BUILDER
         // ==========================================
         [HttpGet("inventory-slip-config")]

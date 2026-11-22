@@ -183,6 +183,22 @@ export const superAdminApi = {
     return res.data;
   },
 
+  // 13. Dynamic Registration Slip Designer (School-wise)
+  getRegistrationSlipConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/registration-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveRegistrationSlipConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/registration-slip-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetRegistrationSlipConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/registration-slip-config', { params: { schoolId } });
+    return res.data;
+  },
+
   // 13. Dynamic Inventory Store Profile & Slip Designer (School-wise)
   getInventorySlipConfig: async (schoolId = null) => {
     const res = await apiClient.get('/superadmin/inventory-slip-config', { params: { schoolId } });
