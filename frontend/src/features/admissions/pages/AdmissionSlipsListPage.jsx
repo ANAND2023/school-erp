@@ -37,6 +37,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dynamicAdmissionApi } from '../api/dynamicAdmissionApi';
 import { useAuthStore } from '../../../store/authStore';
+import { AdmissionSlipModal } from '../components/AdmissionSlipModal';
 
 export const AdmissionSlipsListPage = () => {
   const queryClient = useQueryClient();
@@ -48,6 +49,7 @@ export const AdmissionSlipsListPage = () => {
 
   // Selected slip for view or pay
   const [selectedSlip, setSelectedSlip] = useState(null);
+  const [viewSlipModalOpen, setViewSlipModalOpen] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [payAmount, setPayAmount] = useState('');
   const [payMode, setPayMode] = useState('Cash');
@@ -262,8 +264,14 @@ export const AdmissionSlipsListPage = () => {
                   />
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>
-                  <Tooltip title="View / Print Slip">
-                    <IconButton size="small" onClick={() => setSelectedSlip(slip)}>
+                  <Tooltip title="View & Print Admission Slip">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSelectedSlip(slip);
+                        setViewSlipModalOpen(true);
+                      }}
+                    >
                       <ViewIcon fontSize="small" sx={{ color: '#0284c7' }} />
                     </IconButton>
                   </Tooltip>
@@ -350,6 +358,16 @@ export const AdmissionSlipsListPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* View & Print Admission Slip Modal */}
+      <AdmissionSlipModal
+        open={viewSlipModalOpen}
+        onClose={() => {
+          setViewSlipModalOpen(false);
+          setSelectedSlip(null);
+        }}
+        slip={selectedSlip}
+      />
     </Box>
   );
 };
