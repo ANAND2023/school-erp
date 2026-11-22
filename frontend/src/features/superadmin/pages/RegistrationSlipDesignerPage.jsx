@@ -443,23 +443,33 @@ export const RegistrationSlipDesignerPage = () => {
     amountInWords: 'Five Hundred Rupees Only',
   };
 
-  const UnderlineVal = ({ value, minWidth = '120px', flex = 'none' }) => (
-    <span
-      style={{
-        borderBottom: '1px solid #1e293b',
-        minWidth: minWidth,
-        flex: flex,
-        display: 'inline-block',
-        padding: '0 6px 1px 6px',
-        fontWeight: 600,
-        color: '#0f172a',
-        marginLeft: '4px',
-        marginRight: '8px',
-      }}
-    >
-      {value || '\u00A0'}
-    </span>
-  );
+  const cleanVal = (val) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val).trim();
+    if (str === 'N/A' || str === 'n/a' || str === 'null' || str === 'undefined') return '';
+    return str;
+  };
+
+  const UnderlineVal = ({ value, minWidth = '120px', flex = 'none' }) => {
+    const displayVal = cleanVal(value);
+    return (
+      <span
+        style={{
+          borderBottom: '1px solid #1e293b',
+          minWidth: minWidth,
+          flex: flex,
+          display: 'inline-block',
+          padding: '0 6px 1px 6px',
+          fontWeight: 600,
+          color: '#0f172a',
+          marginLeft: '4px',
+          marginRight: '8px',
+        }}
+      >
+        {displayVal || '\u00A0'}
+      </span>
+    );
+  };
 
   // Render a Single Copy Form Slip (matching the uploaded image with payment details at the bottom)
   const renderSingleSlipPreview = (copyTitle) => {
@@ -704,7 +714,7 @@ export const RegistrationSlipDesignerPage = () => {
                 </div>
                 <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
                   <span>Cell Phone:</span>
-                  <UnderlineVal value={mockReg.contact} flex="1" />
+                  <UnderlineVal value="" flex="1" />
                 </div>
 
                 <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
@@ -713,7 +723,7 @@ export const RegistrationSlipDesignerPage = () => {
                 </div>
                 <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
                   <span>Cell Phone:</span>
-                  <UnderlineVal value={mockReg.contact} flex="1" />
+                  <UnderlineVal value="" flex="1" />
                 </div>
               </div>
             </div>

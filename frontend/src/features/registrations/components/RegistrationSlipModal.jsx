@@ -49,7 +49,7 @@ const DEFAULT_CONFIG = {
   slipTitleTextColor: '#ffffff',
   slipTitleFontSize: 12,
 
-  copyLayout: 'SingleCopy', // Default: 1 single copy as requested
+  copyLayout: 'SingleCopy', // Default: 1 single copy
   showCuttingLine: false,
   firstCopyTitle: 'Official Record Copy',
   secondCopyTitle: 'Student Copy',
@@ -98,6 +98,13 @@ function numberToWords(amount) {
   return inWords(num).trim() + ' Rupees Only';
 }
 
+const cleanVal = (val) => {
+  if (val === null || val === undefined) return '';
+  const str = String(val).trim();
+  if (str === 'N/A' || str === 'n/a' || str === 'null' || str === 'undefined') return '';
+  return str;
+};
+
 export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, onAdmit }) => {
   if (!slip) return null;
 
@@ -143,26 +150,29 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
     window.open(url, '_blank');
   };
 
-  const formattedDate = new Date(slip.createdOn || Date.now()).toLocaleDateString('en-IN');
-  const formattedDob = slip.dob ? new Date(slip.dob).toLocaleDateString('en-IN') : 'N/A';
+  const formattedDate = slip.createdOn ? new Date(slip.createdOn).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
+  const formattedDob = slip.dob ? new Date(slip.dob).toLocaleDateString('en-IN') : '';
 
-  const UnderlineVal = ({ value, minWidth = '140px', flex = 'none' }) => (
-    <span
-      style={{
-        borderBottom: '1px solid #1e293b',
-        minWidth: minWidth,
-        flex: flex,
-        display: 'inline-block',
-        padding: '0 6px 1px 6px',
-        fontWeight: 600,
-        color: '#0f172a',
-        marginLeft: '4px',
-        marginRight: '8px',
-      }}
-    >
-      {value || '\u00A0'}
-    </span>
-  );
+  const UnderlineVal = ({ value, minWidth = '140px', flex = 'none' }) => {
+    const displayVal = cleanVal(value);
+    return (
+      <span
+        style={{
+          borderBottom: '1px solid #1e293b',
+          minWidth: minWidth,
+          flex: flex,
+          display: 'inline-block',
+          padding: '0 6px 1px 6px',
+          fontWeight: 600,
+          color: '#0f172a',
+          marginLeft: '4px',
+          marginRight: '8px',
+        }}
+      >
+        {displayVal || '\u00A0'}
+      </span>
+    );
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -337,29 +347,29 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
 
               <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                 <span>*Home Address:</span>
-                <UnderlineVal value={slip.address || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.address} flex="1" />
               </div>
 
               <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
                 <span>City:</span>
-                <UnderlineVal value={slip.city || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.city} flex="1" />
               </div>
               <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
                 <span>State:</span>
-                <UnderlineVal value={slip.state || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.state} flex="1" />
               </div>
               <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
                 <span>Zip Code:</span>
-                <UnderlineVal value={slip.pincode || slip.pinCode || slip.zipCode || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.pincode || slip.pinCode || slip.zipCode} flex="1" />
               </div>
 
               <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
                 <span>Student Email Address:</span>
-                <UnderlineVal value={slip.email || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.email} flex="1" />
               </div>
               <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
                 <span>Primary Contact Phone:</span>
-                <UnderlineVal value={slip.contactNumber || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.contactNumber} flex="1" />
               </div>
 
               <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
@@ -368,17 +378,17 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
               </div>
               <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
                 <span>Gender:</span>
-                <UnderlineVal value={slip.gender || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.gender} flex="1" />
               </div>
               <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
-                <span>Alternate Phone:</span>
-                <UnderlineVal value={slip.alternateNumber || 'N/A'} flex="1" />
+                <span>Place of Birth / City:</span>
+                <UnderlineVal value={slip.city} flex="1" />
               </div>
 
               {cfg.showPreviousSchool && (
                 <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                   <span>Previous School Attended:</span>
-                  <UnderlineVal value={slip.previousSchool || 'N/A'} flex="1" />
+                  <UnderlineVal value={slip.previousSchool} flex="1" />
                 </div>
               )}
             </div>
@@ -402,20 +412,22 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
             <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
               <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
                 <span>Father / Guardian Name:</span>
-                <UnderlineVal value={slip.fatherName || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.fatherName} flex="1" />
               </div>
+              {/* Cell Phone empty as requested */}
               <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
                 <span>Cell Phone:</span>
-                <UnderlineVal value={slip.contactNumber || 'N/A'} flex="1" />
+                <UnderlineVal value="" flex="1" />
               </div>
 
               <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
                 <span>Mother / Guardian Name:</span>
-                <UnderlineVal value={slip.motherName || 'N/A'} flex="1" />
+                <UnderlineVal value={slip.motherName} flex="1" />
               </div>
+              {/* Cell Phone empty as requested */}
               <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
                 <span>Cell Phone:</span>
-                <UnderlineVal value={slip.alternateNumber || slip.contactNumber || 'N/A'} flex="1" />
+                <UnderlineVal value="" flex="1" />
               </div>
             </div>
           </div>
@@ -481,11 +493,11 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
                     {balanceAmount.toLocaleString('en-IN')}
                   </td>
                   <td style={{ textAlign: 'center', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
-                    {slip.paymentMode || 'Cash'}
+                    {cleanVal(slip.paymentMode) || 'Cash'}
                   </td>
                   <td style={{ textAlign: 'center', padding: '4px 8px' }}>
                     <span style={{ fontWeight: 800, color: slip.paymentStatus === 'Paid' ? '#15803d' : '#b45309' }}>
-                      {slip.paymentStatus || 'Paid'}
+                      {cleanVal(slip.paymentStatus) || 'Paid'}
                     </span>
                   </td>
                 </tr>
@@ -499,7 +511,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
                     BALANCE DUE: {cur} {balanceAmount.toLocaleString('en-IN')}
                   </td>
                   <td colSpan={2} style={{ padding: '4px 8px', textAlign: 'center', fontSize: '9.5px', color: '#475569' }}>
-                    Ref / Txn No: <b>{slip.transactionReference || 'N/A'}</b>
+                    Ref / Txn No: <b>{cleanVal(slip.transactionReference)}</b>
                   </td>
                 </tr>
               </tbody>
@@ -527,7 +539,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
                   marginBottom: '3px',
                 }}
               >
-                {cfg.termsTitle || 'Declaration / Undertaking:'}
+                {cfg.termsTitle || 'Declaration & Undertaking:'}
               </div>
               <div
                 style={{
