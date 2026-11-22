@@ -23,35 +23,35 @@ const DEFAULT_CONFIG = {
   secondaryColor: '#eff6ff',
   accentColor: '#172554',
   borderColor: '#1e3a8a',
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Georgia, "Times New Roman", Times, serif',
   baseFontSize: 11,
   fontScalePercent: 100,
   headerLayout: 'Classic',
   borderStyle: 'Solid',
-  logoSize: 48,
+  logoSize: 52,
   pageSize: 'A4',
   pageOrientation: 'portrait',
-  pageMargin: '4mm',
-  pagePadding: 12,
-  pageMaxWidth: 920,
+  pageMargin: '6mm',
+  pagePadding: 18,
+  pageMaxWidth: 820,
 
-  headerSchoolNameFontSize: 17,
+  headerSchoolNameFontSize: 20,
   headerSchoolNameFontWeight: '900',
   headerSchoolNameTransform: 'uppercase',
-  headerSchoolNameLetterSpacing: '0.5px',
-  headerSubtitleFontSize: 11,
+  headerSchoolNameLetterSpacing: '0.8px',
+  headerSubtitleFontSize: 12,
   headerAddressFontSize: 10,
   headerAlignment: 'center',
-  headerDividerStyle: 'Solid',
 
-  slipTitle: 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT',
+  slipTitle: 'New Student Registration Form & Slip',
+  slipSubtitle: 'PLEASE PRINT LEGIBLY • OFFICIAL REGISTRATION RECORD',
   slipTitleBgColor: '#1e3a8a',
   slipTitleTextColor: '#ffffff',
-  slipTitleFontSize: 11,
+  slipTitleFontSize: 12,
 
-  copyLayout: 'DualSideBySide', // 'DualSideBySide' | 'SingleCopy' | 'DualStacked'
-  showCuttingLine: true,
-  firstCopyTitle: 'Office Copy',
+  copyLayout: 'SingleCopy', // Default: 1 single copy as requested
+  showCuttingLine: false,
+  firstCopyTitle: 'Official Record Copy',
   secondCopyTitle: 'Student Copy',
   currencySymbol: '₹',
 
@@ -66,26 +66,14 @@ const DEFAULT_CONFIG = {
   showTerms: true,
   showSignatures: true,
 
-  signature1: 'Candidate / Parent Signature',
+  signature1: "Parent / Guardian Signature",
   signature2: 'Authorized Signatory',
 
-  termsTitle: 'TERMS & CONDITIONS / UNDERTAKING:',
+  termsTitle: 'Declaration & Undertaking:',
   termsText:
-    '• Registration fee once deposited will not be refunded or transferred under any circumstances.\n• Registration does not guarantee admission. Final admission is subject to merit, seat availability & document verification.\n• Retain this slip safely for entrance test, interview, and counseling verification.',
+    'I hereby certify that all the information provided in this registration form is genuine and accurate. I understand that registration does not guarantee admission until all eligibility conditions, document verification, and fee requirements are fulfilled.',
 
-  footerText: 'Computer Generated Registration Slip • Powered by Digital Vidya Sarthi (DVS ERP)',
-
-  sections: [
-    { key: 'header', title: 'School Header & Affiliation', visible: true, order: 1 },
-    { key: 'meta_bar', title: 'Registration Title & Copy Badge', visible: true, order: 2 },
-    { key: 'student_details', title: 'Student & Registration Details Box', visible: true, order: 3 },
-    { key: 'fee_breakdown', title: 'Registration Fee Particulars Table', visible: true, order: 4 },
-    { key: 'payment_summary', title: 'Amount in Words & Totals Summary', visible: true, order: 5 },
-    { key: 'payment_info', title: 'Payment Mode & Bank / Ref Info', visible: true, order: 6 },
-    { key: 'terms', title: 'Registration Terms & Guidelines', visible: true, order: 7 },
-    { key: 'signatures', title: 'Signatures & School Seal', visible: true, order: 8 },
-    { key: 'footer', title: 'Footer System Note', visible: true, order: 9 },
-  ],
+  footerText: 'Official Student Registration Record • Digital Vidya Sarthi (DVS ERP)',
 };
 
 function numberToWords(amount) {
@@ -128,7 +116,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
   const schoolName = cfg.headerSchoolNameCustom?.trim() || branchInfo.schoolName || 'DELHI PUBLIC SCHOOL';
   const branchName = branchInfo.branchName || 'Main Campus';
   const schoolPhone = branchInfo.phone || '+91 9873993957';
-  const schoolSubtitle = cfg.headerSubtitleCustom?.trim() || `Branch: ${branchName} • Ph: ${schoolPhone} • CBSE Affiliation No: 2026/0912`;
+  const schoolSubtitle = cfg.headerSubtitleCustom?.trim() || `Branch: ${branchName} • Phone: ${schoolPhone} • CBSE Affiliation No: 2026/0912`;
   const schoolAddress = cfg.headerAddressCustom?.trim() || branchInfo.address || 'Knowledge Park, Educational Zone, Greater Noida, UP - 201306';
   const logoUrl = '/dvslogo1.jpeg';
   const cur = cfg.currencySymbol || '₹';
@@ -140,460 +128,44 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
 
   const handlePrint = () => {
     printElement('printable-registration-slip-container', {
-      title: `Registration_Slip_${slip.slipNumber}_${slip.studentName}`,
+      title: `Registration_Form_${slip.slipNumber}_${slip.studentName}`,
       pageSize: cfg.pageSize || 'A4',
-      orientation: cfg.copyLayout === 'DualSideBySide' ? 'landscape' : (cfg.pageOrientation || 'portrait'),
-      margin: cfg.pageMargin || '4mm',
+      orientation: 'portrait',
+      margin: cfg.pageMargin || '5mm',
     });
   };
 
   const handleShareWhatsApp = () => {
     const rawNumber = slip.contactNumber ? String(slip.contactNumber).replace(/\D/g, '') : '';
     const phone = rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
-    const msg = `*STUDENT REGISTRATION SLIP - ${schoolName}*\n\nDear Parent/Student,\nRegistration has been successfully recorded!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}\n\nThank you for choosing ${schoolName}!`;
+    const msg = `*STUDENT REGISTRATION FORM & SLIP - ${schoolName}*\n\nDear Parent/Student,\nRegistration has been recorded successfully!\n\n*Registration No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}\n\nThank you for choosing ${schoolName}!`;
     const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
-  const isVisible = (key) => {
-    if (!cfg.sections) return true;
-    const sec = cfg.sections.find((s) => s.key === key);
-    return sec ? sec.visible !== false : true;
-  };
+  const formattedDate = new Date(slip.createdOn || Date.now()).toLocaleDateString('en-IN');
+  const formattedDob = slip.dob ? new Date(slip.dob).toLocaleDateString('en-IN') : 'N/A';
 
-  // Render a Single Copy of the Receipt (Fee-slip tabular style)
-  const renderSingleSlip = (copyTitle) => {
-    return (
-      <div
-        className="registration-slip-box"
-        style={{
-          boxSizing: 'border-box',
-          width: '100%',
-          padding: `${cfg.pagePadding || 12}px`,
-          fontFamily: cfg.fontFamily || 'Inter, sans-serif',
-          color: '#111827',
-          fontSize: `${cfg.baseFontSize || 11}px`,
-          lineHeight: 1.3,
-          backgroundColor: '#ffffff',
-          border:
-            cfg.borderStyle === 'Solid'
-              ? `1.5px solid ${cfg.borderColor}`
-              : cfg.borderStyle === 'Double'
-              ? `3px double ${cfg.borderColor}`
-              : cfg.borderStyle === 'Dashed'
-              ? `1.5px dashed ${cfg.borderColor}`
-              : '1px solid #e5e7eb',
-          borderRadius: cfg.borderStyle === 'None' ? '6px' : '2px',
-          position: 'relative',
-        }}
-      >
-        {/* Watermark if enabled */}
-        {cfg.showWatermark && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%) rotate(-30deg)',
-              fontSize: '28px',
-              fontWeight: 900,
-              color: 'rgba(220, 38, 38, 0.08)',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-              textTransform: 'uppercase',
-              letterSpacing: '3px',
-              zIndex: 0,
-            }}
-          >
-            {cfg.watermarkText || 'REGISTERED / OFFICIAL'}
-          </div>
-        )}
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Header */}
-          {isVisible('header') && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: cfg.headerAlignment === 'left' ? 'flex-start' : 'center',
-                padding: `${cfg.headerPaddingY || 6}px 0`,
-                backgroundColor: cfg.headerBgColor !== 'transparent' ? cfg.headerBgColor : 'transparent',
-                borderBottom:
-                  cfg.headerDividerStyle === 'Solid'
-                    ? `1.5px solid ${cfg.headerDividerColor || cfg.borderColor}`
-                    : cfg.headerDividerStyle === 'Double'
-                    ? `2.5px double ${cfg.headerDividerColor || cfg.borderColor}`
-                    : cfg.headerDividerStyle === 'Dashed'
-                    ? `1.5px dashed ${cfg.headerDividerColor || cfg.borderColor}`
-                    : 'none',
-                marginBottom: '6px',
-              }}
-            >
-              {cfg.showSchoolLogo && (
-                <div style={{ flexShrink: 0, marginRight: '10px' }}>
-                  <img
-                    src={logoUrl}
-                    alt="Logo"
-                    style={{
-                      width: `${cfg.logoSize || 48}px`,
-                      height: `${cfg.logoSize || 48}px`,
-                      objectFit: 'contain',
-                      borderRadius: '4px',
-                      border: `1px solid ${cfg.borderColor}`,
-                      padding: '2px',
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              <div style={{ textAlign: cfg.headerAlignment === 'left' ? 'left' : 'center', flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: `${cfg.headerSchoolNameFontSize || 17}px`,
-                    fontWeight: cfg.headerSchoolNameFontWeight || '900',
-                    color: cfg.headerSchoolNameColor || cfg.primaryColor,
-                    textTransform: cfg.headerSchoolNameTransform || 'uppercase',
-                    letterSpacing: cfg.headerSchoolNameLetterSpacing || '0.5px',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {schoolName}
-                </div>
-
-                {cfg.showAffiliationNo && (
-                  <div
-                    style={{
-                      fontSize: `${cfg.headerSubtitleFontSize || 11}px`,
-                      fontWeight: 600,
-                      color: cfg.headerSubtitleColor || '#475569',
-                      marginTop: '2px',
-                    }}
-                  >
-                    {schoolSubtitle}
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    fontSize: `${cfg.headerAddressFontSize || 10}px`,
-                    color: cfg.headerAddressColor || '#1e293b',
-                    marginTop: '1px',
-                  }}
-                >
-                  {schoolAddress}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Meta Bar */}
-          {isVisible('meta_bar') && (
-            <div
-              style={{
-                backgroundColor: cfg.secondaryColor || '#eff6ff',
-                border: `1px solid ${cfg.borderColor}`,
-                padding: '3px 8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '6px',
-                borderRadius: '2px',
-              }}
-            >
-              <span
-                style={{
-                  fontWeight: 'bold',
-                  fontSize: `${cfg.slipTitleFontSize || 11}px`,
-                  color: cfg.primaryColor,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                }}
-              >
-                {cfg.slipTitle || 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT'}
-              </span>
-
-              {copyTitle && (
-                <span
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    backgroundColor: cfg.primaryColor,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {copyTitle}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Student & Registration Details Box */}
-          {isVisible('student_details') && (
-            <div
-              style={{
-                border: `1px solid ${cfg.borderColor}`,
-                marginBottom: '6px',
-                fontSize: `${cfg.baseFontSize || 11}px`,
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <div style={{ display: 'flex', borderBottom: `1px solid ${cfg.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                  <b>Registration No:</b> <span style={{ fontWeight: 700, color: cfg.primaryColor }}>{slip.slipNumber}</span>
-                </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Date:</b> <span>{new Date(slip.createdOn || Date.now()).toLocaleDateString('en-IN')}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', borderBottom: `1px solid ${cfg.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                  <b>Student Name:</b> <span style={{ fontWeight: 600 }}>{slip.studentName}</span>
-                </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Seeking Class:</b> <span style={{ fontWeight: 600 }}>{slip.className}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', borderBottom: `1px solid ${cfg.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                  <b>Father's Name:</b> <span>{slip.fatherName || 'N/A'}</span>
-                </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Mother's Name:</b> <span>{slip.motherName || 'N/A'}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', borderBottom: (cfg.showPreviousSchool && (slip.previousSchool || slip.address)) ? `1px solid ${cfg.borderColor}` : 'none' }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                  <b>Mobile Number:</b> <span>{slip.contactNumber || 'N/A'}</span>
-                </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Gender / DOB:</b> <span>{slip.gender || 'N/A'} {slip.dob ? `(${new Date(slip.dob).toLocaleDateString('en-IN')})` : ''}</span>
-                </div>
-              </div>
-
-              {cfg.showPreviousSchool && (slip.previousSchool || slip.address) && (
-                <div style={{ display: 'flex' }}>
-                  <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                    <b>Previous School:</b> <span>{slip.previousSchool || 'N/A'}</span>
-                  </div>
-                  <div style={{ width: '50%', padding: '3px 6px' }}>
-                    <b>Address:</b> <span>{slip.address || 'N/A'}{slip.city ? `, ${slip.city}` : ''}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Registration Fee Breakdown Table */}
-          {isVisible('fee_breakdown') && cfg.showFeeBreakdownTable !== false && (
-            <div style={{ marginBottom: '6px' }}>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  border: `1px solid ${cfg.borderColor}`,
-                  fontSize: `${(cfg.baseFontSize || 11) - 0.5}px`,
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: cfg.secondaryColor, borderBottom: `1px solid ${cfg.borderColor}` }}>
-                    <th style={{ width: '52%', textAlign: 'left', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      REGISTRATION PARTICULARS
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      FEE ({cur})
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      PAID ({cur})
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px' }}>
-                      DUE ({cur})
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      Academic Registration & Application Processing Fee
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      {feeAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}`, color: cfg.primaryColor, fontWeight: 600 }}>
-                      {paidAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px' }}>
-                      {balanceAmount.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-
-                  {/* Totals Row */}
-                  <tr style={{ backgroundColor: cfg.secondaryColor, fontWeight: 'bold' }}>
-                    <td colSpan={2} style={{ padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}` }}>
-                      TOTAL AMOUNT PAID
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${cfg.borderColor}`, color: cfg.primaryColor }}>
-                      {cur} {paidAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px', color: balanceAmount > 0 ? '#b91c1c' : '#15803d' }}>
-                      {cur} {balanceAmount.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Payment Summary & Words */}
-          {isVisible('payment_summary') && (
-            <div
-              style={{
-                border: `1px solid ${cfg.borderColor}`,
-                padding: '4px 6px',
-                marginBottom: '6px',
-                fontSize: `${cfg.baseFontSize || 11}px`,
-                backgroundColor: '#ffffff',
-              }}
-            >
-              {cfg.showAmountInWords && (
-                <div style={{ marginBottom: '3px' }}>
-                  <b>Amount in Words:</b> <span style={{ textTransform: 'capitalize' }}>{amountWords}</span>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
-                <span>
-                  Payment Status:{' '}
-                  <b style={{ color: slip.paymentStatus === 'Paid' ? '#15803d' : slip.paymentStatus === 'Partial' ? '#b45309' : '#b91c1c' }}>
-                    {slip.paymentStatus || 'Paid'}
-                  </b>
-                </span>
-                {cfg.showBalanceDue && (
-                  <span style={{ fontWeight: 'bold', color: balanceAmount > 0 ? '#b91c1c' : '#15803d' }}>
-                    Balance Dues: {cur} {balanceAmount.toLocaleString('en-IN')}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Payment Info */}
-          {isVisible('payment_info') && cfg.showPaymentMode && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                border: `1px solid ${cfg.borderColor}`,
-                padding: '3px 6px',
-                marginBottom: '6px',
-                fontSize: '10px',
-                backgroundColor: cfg.secondaryColor,
-              }}
-            >
-              <div>
-                <b>Payment Mode:</b> <span>{slip.paymentMode || 'Cash'}</span>
-              </div>
-              <div>
-                <b>Ref / Txn No:</b> <span>{slip.transactionReference || 'N/A'}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Terms & Conditions */}
-          {isVisible('terms') && cfg.showTerms && (
-            <div
-              style={{
-                fontSize: '9px',
-                color: '#475569',
-                border: '1px solid #e2e8f0',
-                padding: '4px 6px',
-                marginBottom: '6px',
-                backgroundColor: '#f8fafc',
-                lineHeight: 1.25,
-              }}
-            >
-              <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '2px' }}>{cfg.termsTitle}</div>
-              <div style={{ whiteSpace: 'pre-line' }}>{cfg.termsText}</div>
-            </div>
-          )}
-
-          {/* Signatures & Stamp */}
-          {isVisible('signatures') && cfg.showSignatures && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-end',
-                marginTop: '16px',
-                marginBottom: '6px',
-                padding: '0 8px',
-              }}
-            >
-              <div style={{ textAlign: 'center', width: '32%' }}>
-                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
-                  {cfg.signature1 || 'Candidate / Parent Signature'}
-                </div>
-              </div>
-
-              {cfg.showSchoolSealBox && (
-                <div
-                  style={{
-                    width: '60px',
-                    height: '42px',
-                    border: '1px dashed #94a3b8',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '8px',
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Seal / Stamp
-                </div>
-              )}
-
-              <div style={{ textAlign: 'center', width: '32%' }}>
-                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
-                  {cfg.signature2 || 'Authorized Signatory'}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          {isVisible('footer') && (
-            <div
-              style={{
-                borderTop: '1px solid #e5e7eb',
-                paddingTop: '3px',
-                textAlign: 'center',
-                fontSize: '8.5px',
-                color: '#64748b',
-                marginTop: '4px',
-              }}
-            >
-              {cfg.footerText}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const UnderlineVal = ({ value, minWidth = '140px', flex = 'none' }) => (
+    <span
+      style={{
+        borderBottom: '1px solid #1e293b',
+        minWidth: minWidth,
+        flex: flex,
+        display: 'inline-block',
+        padding: '0 6px 1px 6px',
+        fontWeight: 600,
+        color: '#0f172a',
+        marginLeft: '4px',
+        marginRight: '8px',
+      }}
+    >
+      {value || '\u00A0'}
+    </span>
+  );
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{
           fontWeight: 900,
@@ -623,71 +195,412 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2.5 }, bgcolor: '#f8fafc' }}>
-        {/* Printable Container */}
+        {/* Printable 1 Single Copy Form Slip */}
         <Box
           id="printable-registration-slip-container"
           className="printable-slip"
           sx={{
             width: '100%',
-            maxWidth: `${cfg.pageMaxWidth || 920}px`,
+            maxWidth: `${cfg.pageMaxWidth || 820}px`,
             mx: 'auto',
             bgcolor: '#ffffff',
-            p: 1.5,
+            p: { xs: 2, sm: 3 },
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             borderRadius: '4px',
+            border: `1.5px solid ${cfg.borderColor || '#1e3a8a'}`,
+            boxSizing: 'border-box',
+            fontFamily: cfg.fontFamily || 'Georgia, "Times New Roman", Times, serif',
+            color: '#0f172a',
+            fontSize: '11px',
+            lineHeight: 1.45,
             '@media print': {
               width: '100% !important',
               maxWidth: '100% !important',
-              p: '0 !important',
-              m: '0 !important',
+              p: '5mm 8mm !important',
+              m: '0 auto !important',
               boxShadow: 'none !important',
-              border: 'none !important',
+              border: `1.5px solid ${cfg.borderColor || '#1e3a8a'} !important`,
+              pageBreakInside: 'avoid !important',
+              breakInside: 'avoid !important',
             },
           }}
         >
-          {cfg.copyLayout === 'DualSideBySide' ? (
+          {/* Header */}
+          <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '4px' }}>
+              {cfg.showSchoolLogo && (
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  style={{
+                    width: `${cfg.logoSize || 52}px`,
+                    height: `${cfg.logoSize || 52}px`,
+                    objectFit: 'contain',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              )}
+              <div>
+                <div
+                  style={{
+                    fontSize: `${cfg.headerSchoolNameFontSize || 20}px`,
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    color: cfg.headerSchoolNameColor || '#0f172a',
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {schoolName}
+                </div>
+                {cfg.showAffiliationNo && (
+                  <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginTop: '2px' }}>
+                    {schoolSubtitle}
+                  </div>
+                )}
+                <div style={{ fontSize: '10px', color: '#64748b' }}>
+                  {schoolAddress}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 900,
+                marginTop: '6px',
+                color: cfg.primaryColor || '#1e3a8a',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {cfg.slipTitle || 'New Student Registration Form & Slip'}
+            </div>
+            <div style={{ fontSize: '10px', fontStyle: 'italic', fontWeight: 700, color: '#475569', marginTop: '1px' }}>
+              PLEASE PRINT LEGIBLY • OFFICIAL RECORD COPY
+            </div>
+          </div>
+
+          {/* Form Meta Row */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              padding: '4px 10px',
+              marginBottom: '10px',
+              fontSize: '11px',
+            }}
+          >
+            <div>
+              <b>Registration No:</b> <span style={{ fontFamily: 'monospace', fontWeight: 800, color: cfg.primaryColor }}>{slip.slipNumber}</span>
+            </div>
+            <div>
+              <b>Seeking Class:</b> <span style={{ fontWeight: 700 }}>{slip.className}</span>
+            </div>
+            <div>
+              <b>Academic Session:</b> <span>{slip.academicYearName || '2026-2027'}</span>
+            </div>
+            <div>
+              <b>Date:</b> <span>{formattedDate}</span>
+            </div>
+          </div>
+
+          {/* Section 1: Student Information */}
+          <div style={{ marginBottom: '10px' }}>
+            <div
+              style={{
+                fontWeight: 'bold',
+                fontSize: '12.5px',
+                textDecoration: 'underline',
+                color: '#0f172a',
+                marginBottom: '6px',
+                textTransform: 'capitalize',
+              }}
+            >
+              Student Information:
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
+              <div style={{ width: '60%', display: 'flex', alignItems: 'center' }}>
+                <span>Student's Full Name:</span>
+                <UnderlineVal value={slip.studentName} flex="1" />
+              </div>
+              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                <span>Seeking Class:</span>
+                <UnderlineVal value={slip.className} flex="1" />
+              </div>
+
+              <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                <span>*Home Address:</span>
+                <UnderlineVal value={slip.address || 'N/A'} flex="1" />
+              </div>
+
+              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                <span>City:</span>
+                <UnderlineVal value={slip.city || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
+                <span>State:</span>
+                <UnderlineVal value={slip.state || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
+                <span>Zip Code:</span>
+                <UnderlineVal value={slip.pincode || slip.pinCode || slip.zipCode || 'N/A'} flex="1" />
+              </div>
+
+              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                <span>Student Email Address:</span>
+                <UnderlineVal value={slip.email || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                <span>Primary Contact Phone:</span>
+                <UnderlineVal value={slip.contactNumber || 'N/A'} flex="1" />
+              </div>
+
+              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                <span>Date of Birth:</span>
+                <UnderlineVal value={formattedDob} flex="1" />
+              </div>
+              <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
+                <span>Gender:</span>
+                <UnderlineVal value={slip.gender || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
+                <span>Alternate Phone:</span>
+                <UnderlineVal value={slip.alternateNumber || 'N/A'} flex="1" />
+              </div>
+
+              {cfg.showPreviousSchool && (
+                <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                  <span>Previous School Attended:</span>
+                  <UnderlineVal value={slip.previousSchool || 'N/A'} flex="1" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 2: Parent / Guardian Information */}
+          <div style={{ marginBottom: '12px' }}>
+            <div
+              style={{
+                fontWeight: 'bold',
+                fontSize: '12.5px',
+                textDecoration: 'underline',
+                color: '#0f172a',
+                marginBottom: '6px',
+                textTransform: 'capitalize',
+              }}
+            >
+              Parent / Guardian Information:
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
+              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                <span>Father / Guardian Name:</span>
+                <UnderlineVal value={slip.fatherName || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                <span>Cell Phone:</span>
+                <UnderlineVal value={slip.contactNumber || 'N/A'} flex="1" />
+              </div>
+
+              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                <span>Mother / Guardian Name:</span>
+                <UnderlineVal value={slip.motherName || 'N/A'} flex="1" />
+              </div>
+              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                <span>Cell Phone:</span>
+                <UnderlineVal value={slip.alternateNumber || slip.contactNumber || 'N/A'} flex="1" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Registration Fee & Payment Details (niche payment details add kr dena) */}
+          <div style={{ marginBottom: '10px' }}>
+            <div
+              style={{
+                fontWeight: 'bold',
+                fontSize: '12.5px',
+                textDecoration: 'underline',
+                color: '#0f172a',
+                marginBottom: '6px',
+                textTransform: 'capitalize',
+              }}
+            >
+              Registration Fee & Payment Details:
+            </div>
+
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                border: '1.5px solid #1e293b',
+                fontSize: '10.5px',
+                marginBottom: '6px',
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1.5px solid #1e293b' }}>
+                  <th style={{ textAlign: 'left', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    FEE PARTICULARS
+                  </th>
+                  <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    AMOUNT ({cur})
+                  </th>
+                  <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    PAID ({cur})
+                  </th>
+                  <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    BALANCE DUE ({cur})
+                  </th>
+                  <th style={{ width: '16%', textAlign: 'center', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    PAYMENT MODE
+                  </th>
+                  <th style={{ width: '14%', textAlign: 'center', padding: '4px 8px' }}>
+                    STATUS
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
+                  <td style={{ padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    Academic Registration & Admission Processing Fee
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    {feeAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b', fontWeight: 700, color: '#0f766e' }}>
+                    {paidAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b', fontWeight: 700, color: balanceAmount > 0 ? '#b91c1c' : '#15803d' }}>
+                    {balanceAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td style={{ textAlign: 'center', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    {slip.paymentMode || 'Cash'}
+                  </td>
+                  <td style={{ textAlign: 'center', padding: '4px 8px' }}>
+                    <span style={{ fontWeight: 800, color: slip.paymentStatus === 'Paid' ? '#15803d' : '#b45309' }}>
+                      {slip.paymentStatus || 'Paid'}
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Summary / Total Row */}
+                <tr style={{ backgroundColor: '#f8fafc', fontWeight: 700, borderTop: '1.5px solid #1e293b' }}>
+                  <td colSpan={2} style={{ padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                    TOTAL AMOUNT PAID: {cur} {paidAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td colSpan={2} style={{ padding: '4px 8px', borderRight: '1px solid #1e293b', textAlign: 'right', color: balanceAmount > 0 ? '#b91c1c' : '#15803d' }}>
+                    BALANCE DUE: {cur} {balanceAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td colSpan={2} style={{ padding: '4px 8px', textAlign: 'center', fontSize: '9.5px', color: '#475569' }}>
+                    Ref / Txn No: <b>{slip.transactionReference || 'N/A'}</b>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {cfg.showAmountInWords && (
+              <div style={{ fontSize: '10.5px', marginBottom: '8px' }}>
+                <b>Amount in Words:</b>{' '}
+                <span style={{ textTransform: 'capitalize', borderBottom: '1px dotted #64748b', paddingBottom: '1px' }}>
+                  {amountWords}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Declaration / Undertaking */}
+          {cfg.showTerms && (
+            <div style={{ marginBottom: '12px' }}>
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: '11.5px',
+                  textDecoration: 'underline',
+                  color: '#0f172a',
+                  marginBottom: '3px',
+                }}
+              >
+                {cfg.termsTitle || 'Declaration / Undertaking:'}
+              </div>
+              <div
+                style={{
+                  fontSize: '9.5px',
+                  color: '#334155',
+                  lineHeight: 1.35,
+                  fontStyle: 'italic',
+                }}
+              >
+                {cfg.termsText}
+              </div>
+            </div>
+          )}
+
+          {/* Section 5: Signatures */}
+          {cfg.showSignatures && (
             <div
               style={{
                 display: 'flex',
-                gap: '8px',
-                alignItems: 'stretch',
-                width: '100%',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                marginTop: '22px',
+                paddingTop: '6px',
               }}
             >
-              <div style={{ flex: 1 }}>{renderSingleSlip(cfg.firstCopyTitle || 'Office Copy')}</div>
-              {cfg.showCuttingLine !== false && (
+              <div style={{ textAlign: 'center', width: '32%' }}>
+                <div style={{ borderTop: '1px solid #0f172a', paddingTop: '4px', fontSize: '10.5px', fontWeight: 'bold' }}>
+                  {cfg.signature1 || 'Candidate / Parent Signature'}
+                </div>
+                <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>Date: {formattedDate}</div>
+              </div>
+
+              {cfg.showSchoolSealBox && (
                 <div
                   style={{
-                    width: '18px',
+                    width: '68px',
+                    height: '46px',
+                    border: '1px dashed #94a3b8',
+                    borderRadius: '4px',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderLeft: '1px dashed #94a3b8',
-                    color: '#64748b',
-                    fontSize: '11px',
+                    fontSize: '8.5px',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  <span style={{ transform: 'rotate(90deg)', fontSize: '14px', margin: '4px 0' }}>✂</span>
+                  Seal / Stamp
                 </div>
               )}
-              <div style={{ flex: 1 }}>{renderSingleSlip(cfg.secondCopyTitle || 'Student Copy')}</div>
-            </div>
-          ) : cfg.copyLayout === 'DualStacked' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>{renderSingleSlip(cfg.firstCopyTitle || 'Office Copy')}</div>
-              {cfg.showCuttingLine !== false && (
-                <div style={{ borderTop: '1px dashed #94a3b8', textAlign: 'center', margin: '4px 0' }}>
-                  <span style={{ backgroundColor: '#ffffff', padding: '0 8px', fontSize: '10px', color: '#64748b' }}>
-                    ✂ Cut Along Line
-                  </span>
+
+              <div style={{ textAlign: 'center', width: '32%' }}>
+                <div style={{ borderTop: '1px solid #0f172a', paddingTop: '4px', fontSize: '10.5px', fontWeight: 'bold' }}>
+                  {cfg.signature2 || 'Authorized Signatory'}
                 </div>
-              )}
-              <div>{renderSingleSlip(cfg.secondCopyTitle || 'Student Copy')}</div>
+                <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>School Admission Office</div>
+              </div>
             </div>
-          ) : (
-            <div>{renderSingleSlip('')}</div>
           )}
+
+          {/* Footer Note */}
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: '14px',
+              paddingTop: '4px',
+              borderTop: '1px solid #e2e8f0',
+              fontSize: '8.5px',
+              color: '#64748b',
+            }}
+          >
+            {cfg.footerText}
+          </div>
         </Box>
       </DialogContent>
 
@@ -726,7 +639,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
           startIcon={<PrintIcon />}
           sx={{ bgcolor: cfg.primaryColor, '&:hover': { bgcolor: cfg.accentColor || cfg.primaryColor }, fontWeight: 800, textTransform: 'none' }}
         >
-          Print Slip
+          Print 1 Copy (Official Registration Form)
         </Button>
       </DialogActions>
     </Dialog>

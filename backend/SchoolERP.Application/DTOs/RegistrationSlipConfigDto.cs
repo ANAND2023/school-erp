@@ -62,7 +62,7 @@ namespace SchoolERP.Application.DTOs
         public int SlipTitleFontSize { get; set; } = 12;
 
         // Copy Layout & Titles
-        public string CopyLayout { get; set; } = "DualSideBySide"; // "DualSideBySide", "SingleCopy", "DualStacked"
+        public string CopyLayout { get; set; } = "SingleCopy"; // "SingleCopy", "DualSideBySide", "DualStacked"
         public bool ShowCuttingLine { get; set; } = true;
         public string FirstCopyTitle { get; set; } = "Office Copy";
         public string SecondCopyTitle { get; set; } = "Student Copy";

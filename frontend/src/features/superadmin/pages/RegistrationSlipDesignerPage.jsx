@@ -8,7 +8,6 @@ import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Divider } from 'primereact/divider';
-import { Dialog } from 'primereact/dialog';
 import { superAdminApi } from '../api/superAdminApi';
 import { printElement } from '../../../utils/printUtils';
 
@@ -24,12 +23,12 @@ const PRESET_PALETTES = [
 ];
 
 const FONT_OPTIONS = [
+  { label: 'Georgia / Times (Classic Formal Form)', value: 'Georgia, "Times New Roman", Times, serif' },
   { label: 'Inter (Modern & Clean)', value: 'Inter, sans-serif' },
   { label: 'Arial / System Standard', value: 'Arial, Helvetica, sans-serif' },
   { label: 'Poppins (Geometric & Friendly)', value: 'Poppins, sans-serif' },
   { label: 'Roboto (Balanced Neo-Grotesque)', value: 'Roboto, sans-serif' },
   { label: 'Montserrat (Premium Bold)', value: 'Montserrat, sans-serif' },
-  { label: 'Segoe UI (Clean Windows Default)', value: '"Segoe UI", -apple-system, sans-serif' },
 ];
 
 const FONT_WEIGHT_OPTIONS = [
@@ -47,30 +46,9 @@ const TEXT_TRANSFORM_OPTIONS = [
   { label: 'Normal / As Typed', value: 'none' },
 ];
 
-const HEADER_LAYOUTS = [
-  { label: 'Classic Centered', value: 'Classic', desc: 'Centered school logo and details' },
-  { label: 'Modern Side-by-Side', value: 'Modern', desc: 'Logo left, school center, details right' },
-  { label: 'Solid Color Banner', value: 'Banner', desc: 'Full-bleed primary colored header' },
-  { label: 'Clean Minimalist', value: 'Minimal', desc: 'Understated clean header with thin border' },
-];
-
-const HEADER_DIVIDER_OPTIONS = [
-  { label: 'Solid Line (1.5px)', value: 'Solid' },
-  { label: 'Double Line (2.5px)', value: 'Double' },
-  { label: 'Dashed Line (1.5px)', value: 'Dashed' },
-  { label: 'No Bottom Line', value: 'None' },
-];
-
-const BORDER_STYLES = [
-  { label: 'Solid Border', value: 'Solid' },
-  { label: 'Double Border', value: 'Double' },
-  { label: 'Dashed Border', value: 'Dashed' },
-  { label: 'Clean / Borderless', value: 'None' },
-];
-
 const COPY_LAYOUT_OPTIONS = [
+  { label: 'Single Form / Slip (Standard 1 Copy per Page)', value: 'SingleCopy' },
   { label: 'Dual Copies Side-by-Side (A4 Half Sheet with Scissor Line)', value: 'DualSideBySide' },
-  { label: 'Single Slip per Page (Standard / A5 friendly)', value: 'SingleCopy' },
   { label: 'Dual Stacked (Top & Bottom on Single Page)', value: 'DualStacked' },
 ];
 
@@ -112,7 +90,7 @@ export const RegistrationSlipDesignerPage = () => {
     secondaryColor: '#eff6ff',
     accentColor: '#172554',
     borderColor: '#1e3a8a',
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: 'Georgia, "Times New Roman", Times, serif',
     fontScale: 'Normal',
     baseFontSize: 11,
     fontScalePercent: 100,
@@ -120,54 +98,54 @@ export const RegistrationSlipDesignerPage = () => {
     borderStyle: 'Solid',
 
     // Sizing Controls
-    logoSize: 48,
+    logoSize: 52,
     photoWidth: 60,
     photoHeight: 70,
     pageSize: 'A4',
     pageOrientation: 'portrait',
-    pageMargin: '4mm',
-    pagePadding: 12,
-    pageMaxWidth: 800,
+    pageMargin: '6mm',
+    pagePadding: 16,
+    pageMaxWidth: 820,
 
     // Header Customization
     headerSchoolNameCustom: '',
-    headerSchoolNameFontSize: 17,
-    headerSchoolNameColor: '#1e3a8a',
+    headerSchoolNameFontSize: 20,
+    headerSchoolNameColor: '#0f172a',
     headerSchoolNameFontWeight: '900',
     headerSchoolNameFontFamily: 'inherit',
     headerSchoolNameTransform: 'uppercase',
-    headerSchoolNameLetterSpacing: '0.5px',
+    headerSchoolNameLetterSpacing: '0.8px',
 
     headerSubtitleCustom: '',
-    headerSubtitleFontSize: 11,
+    headerSubtitleFontSize: 12,
     headerSubtitleColor: '#475569',
     headerSubtitleFontWeight: '600',
 
     headerAddressCustom: '',
     headerAddressFontSize: 10,
-    headerAddressColor: '#1e293b',
+    headerAddressColor: '#64748b',
 
     headerAlignment: 'center',
     headerBgColor: 'transparent',
     headerPaddingY: 6,
     headerDividerStyle: 'Solid',
-    headerDividerColor: '#1e3a8a',
+    headerDividerColor: '#0f172a',
 
     // Slip Title Badge
-    slipTitle: 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT',
-    slipSubtitle: 'Academic Session Registration & Application Voucher',
+    slipTitle: 'New Student Registration Form & Slip',
+    slipSubtitle: 'PLEASE PRINT LEGIBLY • OFFICIAL RECORD COPY',
     slipTitleBgColor: '#1e3a8a',
     slipTitleTextColor: '#ffffff',
-    slipTitleFontSize: 11,
+    slipTitleFontSize: 13,
 
     // Watermark
     watermarkText: 'REGISTERED / OFFICIAL',
     showWatermark: false,
 
-    // Copy Layout & Titles
-    copyLayout: 'DualSideBySide',
-    showCuttingLine: true,
-    firstCopyTitle: 'Office Copy',
+    // Copy Layout & Titles (Default: SingleCopy = 1 Copy)
+    copyLayout: 'SingleCopy',
+    showCuttingLine: false,
+    firstCopyTitle: 'Official Record Copy',
     secondCopyTitle: 'Student Copy',
     thirdCopyTitle: 'Bank Copy',
     currencySymbol: '₹',
@@ -177,7 +155,7 @@ export const RegistrationSlipDesignerPage = () => {
     showAffiliationNo: true,
     showStudentPhoto: false,
     showSchoolSealBox: true,
-    showQrCode: true,
+    showQrCode: false,
     showAmountInWords: true,
     showPaymentMode: true,
     showPreviousSchool: true,
@@ -192,20 +170,20 @@ export const RegistrationSlipDesignerPage = () => {
     signature3: 'Verification Officer',
 
     // Content Texts
-    termsTitle: 'TERMS & CONDITIONS / UNDERTAKING:',
+    termsTitle: 'Declaration & Undertaking:',
     termsText:
-      '• Registration fee once deposited will not be refunded or transferred under any circumstances.\n• Registration does not guarantee admission. Final admission is subject to merit, seat availability & document verification.\n• Retain this slip safely for entrance test, interview, and counseling verification.',
-    footerText: 'Computer Generated Registration Slip • Powered by Digital Vidya Sarthi (DVS ERP)',
+      'I hereby certify that all the information provided in this registration form is genuine and accurate. I understand that registration does not guarantee admission until all eligibility conditions, document verification, and fee requirements are fulfilled.',
+    footerText: 'Official Student Registration Record • Digital Vidya Sarthi (DVS ERP)',
 
-    // Drag and Drop Sections
+    // Sections
     sections: [
       { key: 'header', title: 'School Header & Affiliation', visible: true, order: 1 },
-      { key: 'meta_bar', title: 'Registration Title & Copy Badge', visible: true, order: 2 },
-      { key: 'student_details', title: 'Student & Registration Details Box', visible: true, order: 3 },
-      { key: 'fee_breakdown', title: 'Registration Fee Particulars Table', visible: true, order: 4 },
-      { key: 'payment_summary', title: 'Amount in Words & Totals Summary', visible: true, order: 5 },
-      { key: 'payment_info', title: 'Payment Mode & Bank / Ref Info', visible: true, order: 6 },
-      { key: 'terms', title: 'Registration Terms & Guidelines', visible: true, order: 7 },
+      { key: 'meta_bar', title: 'Registration Reference & Status Bar', visible: true, order: 2 },
+      { key: 'student_details', title: 'Student Information (Fillable Form Lines)', visible: true, order: 3 },
+      { key: 'parents_details', title: 'Parent & Guardian Information', visible: true, order: 4 },
+      { key: 'fee_breakdown', title: 'Registration Fee & Payment Details Table', visible: true, order: 5 },
+      { key: 'payment_summary', title: 'Amount in Words & Totals Summary', visible: true, order: 6 },
+      { key: 'terms', title: 'Declaration & Undertaking', visible: true, order: 7 },
       { key: 'signatures', title: 'Signatures & School Seal', visible: true, order: 8 },
       { key: 'footer', title: 'Footer System Note', visible: true, order: 9 },
     ],
@@ -239,41 +217,41 @@ export const RegistrationSlipDesignerPage = () => {
         setConfig((prev) => ({
           ...prev,
           ...res.data,
+          copyLayout: res.data.copyLayout || 'SingleCopy',
           headerSchoolNameCustom: res.data.headerSchoolNameCustom || '',
-          headerSchoolNameFontSize: res.data.headerSchoolNameFontSize || 17,
-          headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || '#1e3a8a',
+          headerSchoolNameFontSize: res.data.headerSchoolNameFontSize || 20,
+          headerSchoolNameColor: res.data.headerSchoolNameColor || '#0f172a',
           headerSchoolNameFontWeight: res.data.headerSchoolNameFontWeight || '900',
           headerSchoolNameFontFamily: res.data.headerSchoolNameFontFamily || 'inherit',
           headerSchoolNameTransform: res.data.headerSchoolNameTransform || 'uppercase',
-          headerSchoolNameLetterSpacing: res.data.headerSchoolNameLetterSpacing || '0.5px',
+          headerSchoolNameLetterSpacing: res.data.headerSchoolNameLetterSpacing || '0.8px',
           headerSubtitleCustom: res.data.headerSubtitleCustom || '',
-          headerSubtitleFontSize: res.data.headerSubtitleFontSize || 11,
+          headerSubtitleFontSize: res.data.headerSubtitleFontSize || 12,
           headerSubtitleColor: res.data.headerSubtitleColor || '#475569',
           headerAddressCustom: res.data.headerAddressCustom || '',
           headerAddressFontSize: res.data.headerAddressFontSize || 10,
-          headerAddressColor: res.data.headerAddressColor || '#1e293b',
+          headerAddressColor: res.data.headerAddressColor || '#64748b',
           headerAlignment: res.data.headerAlignment || 'center',
           headerBgColor: res.data.headerBgColor || 'transparent',
           headerPaddingY: res.data.headerPaddingY || 6,
           headerDividerStyle: res.data.headerDividerStyle || 'Solid',
-          headerDividerColor: res.data.headerDividerColor || res.data.borderColor || '#1e3a8a',
-          slipTitle: res.data.slipTitle || 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT',
+          headerDividerColor: res.data.headerDividerColor || '#0f172a',
+          slipTitle: res.data.slipTitle || 'New Student Registration Form & Slip',
           slipTitleBgColor: res.data.slipTitleBgColor || res.data.primaryColor || '#1e3a8a',
           slipTitleTextColor: res.data.slipTitleTextColor || '#ffffff',
-          slipTitleFontSize: res.data.slipTitleFontSize || 11,
-          logoSize: res.data.logoSize || 48,
+          slipTitleFontSize: res.data.slipTitleFontSize || 13,
+          logoSize: res.data.logoSize || 52,
           photoWidth: res.data.photoWidth || 60,
           photoHeight: res.data.photoHeight || 70,
           baseFontSize: res.data.baseFontSize || 11,
           fontScalePercent: res.data.fontScalePercent || 100,
           pageSize: res.data.pageSize || 'A4',
           pageOrientation: res.data.pageOrientation || 'portrait',
-          pageMargin: res.data.pageMargin || '4mm',
-          pagePadding: res.data.pagePadding || 12,
-          pageMaxWidth: res.data.pageMaxWidth || 800,
-          copyLayout: res.data.copyLayout || 'DualSideBySide',
-          showCuttingLine: res.data.showCuttingLine !== undefined ? res.data.showCuttingLine : true,
-          firstCopyTitle: res.data.firstCopyTitle || 'Office Copy',
+          pageMargin: res.data.pageMargin || '6mm',
+          pagePadding: res.data.pagePadding || 16,
+          pageMaxWidth: res.data.pageMaxWidth || 820,
+          showCuttingLine: res.data.showCuttingLine !== undefined ? res.data.showCuttingLine : false,
+          firstCopyTitle: res.data.firstCopyTitle || 'Official Record Copy',
           secondCopyTitle: res.data.secondCopyTitle || 'Student Copy',
           thirdCopyTitle: res.data.thirdCopyTitle || 'Bank Copy',
           currencySymbol: res.data.currencySymbol || '₹',
@@ -281,11 +259,11 @@ export const RegistrationSlipDesignerPage = () => {
           signature2: res.data.signature2 || 'Authorized Signatory',
           signature3: res.data.signature3 || 'Verification Officer',
           showFeeBreakdownTable: res.data.showFeeBreakdownTable !== undefined ? res.data.showFeeBreakdownTable : true,
-          termsTitle: res.data.termsTitle || res.data.declarationTitle || 'TERMS & CONDITIONS / UNDERTAKING:',
+          termsTitle: res.data.termsTitle || res.data.declarationTitle || 'Declaration & Undertaking:',
           termsText:
             res.data.termsText ||
             res.data.declarationText ||
-            '• Registration fee once deposited will not be refunded or transferred under any circumstances.\n• Registration does not guarantee admission. Final admission is subject to merit, seat availability & document verification.\n• Retain this slip safely for entrance test, interview, and counseling verification.',
+            'I hereby certify that all the information provided in this registration form is genuine and accurate. I understand that registration does not guarantee admission until all eligibility conditions, document verification, and fee requirements are fulfilled.',
         }));
       }
     } catch (err) {
@@ -380,8 +358,6 @@ export const RegistrationSlipDesignerPage = () => {
       secondaryColor: palette.secondary,
       accentColor: palette.accent,
       borderColor: palette.border,
-      headerSchoolNameColor: palette.primary,
-      headerDividerColor: palette.primary,
       slipTitleBgColor: palette.primary,
     }));
   };
@@ -429,11 +405,11 @@ export const RegistrationSlipDesignerPage = () => {
   };
 
   const handlePrintSlip = () => {
-    printElement('printable-registration-slip-preview', {
-      title: `Registration_Slip_${config.schoolName || 'Template'}`,
+    printElement('printable-registration-form-preview', {
+      title: `Registration_Form_${config.schoolName || 'Template'}`,
       pageSize: config.pageSize || 'A4',
-      orientation: config.pageOrientation || 'portrait',
-      margin: config.pageMargin || '4mm',
+      orientation: 'portrait',
+      margin: config.pageMargin || '5mm',
     });
   };
 
@@ -454,20 +430,38 @@ export const RegistrationSlipDesignerPage = () => {
     gender: 'Male',
     dob: '14-10-2012',
     address: 'Plot No 999, Main Road Surya Vihar, Sec 91',
+    city: 'Greater Noida',
+    state: 'UP',
+    pincode: '201306',
+    email: 'aarav.sharma@example.com',
     previousSchool: 'St. Xavier Senior Secondary School',
-    paymentMode: 'Cash / Online Transfer',
+    paymentMode: 'Cash / UPI',
     transactionRef: 'UPI/294029410294',
-    items: [
-      { particular: 'Registration & Application Form Fee', amount: 500, paid: 500, due: 0 },
-      { particular: 'Prospectus & Admission Processing Charges', amount: 300, paid: 300, due: 0 },
-    ],
-    totalFee: 800,
-    totalPaid: 800,
-    remainingDues: 0,
-    amountInWords: 'Eight Hundred Rupees Only',
+    feeAmount: 500,
+    paidAmount: 500,
+    balanceAmount: 0,
+    amountInWords: 'Five Hundred Rupees Only',
   };
 
-  // Render a Single Slip Box
+  const UnderlineVal = ({ value, minWidth = '120px', flex = 'none' }) => (
+    <span
+      style={{
+        borderBottom: '1px solid #1e293b',
+        minWidth: minWidth,
+        flex: flex,
+        display: 'inline-block',
+        padding: '0 6px 1px 6px',
+        fontWeight: 600,
+        color: '#0f172a',
+        marginLeft: '4px',
+        marginRight: '8px',
+      }}
+    >
+      {value || '\u00A0'}
+    </span>
+  );
+
+  // Render a Single Copy Form Slip (matching the uploaded image with payment details at the bottom)
   const renderSingleSlipPreview = (copyTitle) => {
     const cur = config.currencySymbol || '₹';
     const isVisible = (key) => {
@@ -480,21 +474,14 @@ export const RegistrationSlipDesignerPage = () => {
         style={{
           boxSizing: 'border-box',
           width: '100%',
-          padding: `${config.pagePadding || 12}px`,
-          fontFamily: config.fontFamily || 'Inter, sans-serif',
-          color: '#111827',
+          padding: `${config.pagePadding || 16}px`,
+          fontFamily: config.fontFamily || 'Georgia, "Times New Roman", Times, serif',
+          color: '#0f172a',
           fontSize: `${config.baseFontSize || 11}px`,
-          lineHeight: 1.3,
+          lineHeight: 1.45,
           backgroundColor: '#ffffff',
-          border:
-            config.borderStyle === 'Solid'
-              ? `1.5px solid ${config.borderColor}`
-              : config.borderStyle === 'Double'
-              ? `3px double ${config.borderColor}`
-              : config.borderStyle === 'Dashed'
-              ? `1.5px dashed ${config.borderColor}`
-              : '1px solid #e5e7eb',
-          borderRadius: config.borderStyle === 'None' ? '6px' : '2px',
+          border: `1.5px solid ${config.borderColor || '#1e3a8a'}`,
+          borderRadius: '4px',
           position: 'relative',
         }}
       >
@@ -521,340 +508,368 @@ export const RegistrationSlipDesignerPage = () => {
         )}
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Section: Header */}
+          {/* Header */}
           {isVisible('header') && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: config.headerAlignment === 'left' ? 'flex-start' : 'center',
-                padding: `${config.headerPaddingY || 6}px 0`,
-                backgroundColor: config.headerBgColor !== 'transparent' ? config.headerBgColor : 'transparent',
-                borderBottom:
-                  config.headerDividerStyle === 'Solid'
-                    ? `1.5px solid ${config.headerDividerColor || config.borderColor}`
-                    : config.headerDividerStyle === 'Double'
-                    ? `2.5px double ${config.headerDividerColor || config.borderColor}`
-                    : config.headerDividerStyle === 'Dashed'
-                    ? `1.5px dashed ${config.headerDividerColor || config.borderColor}`
-                    : 'none',
-                marginBottom: '6px',
-              }}
-            >
-              {config.showSchoolLogo && (
-                <div
-                  style={{
-                    flexShrink: 0,
-                    marginRight: '10px',
-                    width: `${config.logoSize || 48}px`,
-                    height: `${config.logoSize || 48}px`,
-                    borderRadius: '50%',
-                    backgroundColor: config.secondaryColor,
-                    border: `1.5px solid ${config.borderColor}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    color: config.primaryColor,
-                    fontSize: '10px',
-                  }}
-                >
-                  <i className="pi pi-book" style={{ fontSize: `${(config.logoSize || 48) * 0.4}px` }}></i>
-                </div>
-              )}
+            <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '4px' }}>
+                {config.showSchoolLogo && (
+                  <div
+                    style={{
+                      width: `${config.logoSize || 52}px`,
+                      height: `${config.logoSize || 52}px`,
+                      borderRadius: '50%',
+                      backgroundColor: config.secondaryColor,
+                      border: `1.5px solid ${config.borderColor}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      color: config.primaryColor,
+                      fontSize: '10px',
+                    }}
+                  >
+                    <i className="pi pi-book" style={{ fontSize: `${(config.logoSize || 52) * 0.4}px` }}></i>
+                  </div>
+                )}
 
-              <div style={{ textAlign: config.headerAlignment === 'left' ? 'left' : 'center', flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: `${config.headerSchoolNameFontSize || 17}px`,
-                    fontWeight: config.headerSchoolNameFontWeight || '900',
-                    color: config.headerSchoolNameColor || config.primaryColor,
-                    textTransform: config.headerSchoolNameTransform || 'uppercase',
-                    letterSpacing: config.headerSchoolNameLetterSpacing || '0.5px',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {config.headerSchoolNameCustom || defaultSchoolName}
-                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: `${config.headerSchoolNameFontSize || 20}px`,
+                      fontWeight: config.headerSchoolNameFontWeight || '900',
+                      textTransform: config.headerSchoolNameTransform || 'uppercase',
+                      letterSpacing: config.headerSchoolNameLetterSpacing || '0.8px',
+                      color: config.headerSchoolNameColor || '#0f172a',
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    {config.headerSchoolNameCustom || defaultSchoolName}
+                  </div>
 
-                <div
-                  style={{
-                    fontSize: `${config.headerSubtitleFontSize || 11}px`,
-                    fontWeight: config.headerSubtitleFontWeight || '600',
-                    color: config.headerSubtitleColor || '#475569',
-                    marginTop: '2px',
-                  }}
-                >
-                  {config.headerSubtitleCustom || 'Affiliated to CBSE, New Delhi (Affiliation No: 2130892)'}
-                </div>
+                  {config.showAffiliationNo && (
+                    <div style={{ fontSize: `${config.headerSubtitleFontSize || 12}px`, color: config.headerSubtitleColor || '#475569', fontWeight: 600, marginTop: '2px' }}>
+                      {config.headerSubtitleCustom || 'Affiliated to CBSE, New Delhi (Affiliation No: 2130892)'}
+                    </div>
+                  )}
 
-                <div
-                  style={{
-                    fontSize: `${config.headerAddressFontSize || 10}px`,
-                    color: config.headerAddressColor || '#1e293b',
-                    marginTop: '1px',
-                  }}
-                >
-                  {config.headerAddressCustom || 'Plot No 999, Main Road Surya Vihar, Sec 91 • Helpline: +91 9911360909'}
+                  <div style={{ fontSize: `${config.headerAddressFontSize || 10}px`, color: config.headerAddressColor || '#64748b' }}>
+                    {config.headerAddressCustom || 'Plot No 999, Main Road Surya Vihar, Sec 91 • Helpline: +91 9911360909'}
+                  </div>
                 </div>
+              </div>
+
+              <div
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 900,
+                  marginTop: '6px',
+                  color: config.primaryColor || '#1e3a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {config.slipTitle || 'New Student Registration Form & Slip'}
+              </div>
+              <div style={{ fontSize: '10px', fontStyle: 'italic', fontWeight: 700, color: '#475569', marginTop: '1px' }}>
+                {config.slipSubtitle || 'PLEASE PRINT LEGIBLY • OFFICIAL RECORD COPY'}
               </div>
             </div>
           )}
 
-          {/* Section: Meta Bar */}
+          {/* Form Meta Bar */}
           {isVisible('meta_bar') && (
             <div
               style={{
-                backgroundColor: config.secondaryColor || '#eff6ff',
-                border: `1px solid ${config.borderColor}`,
-                padding: '3px 8px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '6px',
-                borderRadius: '2px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                padding: '4px 8px',
+                marginBottom: '10px',
+                fontSize: '10.5px',
               }}
             >
-              <span
+              <div>
+                <b>Registration No:</b> <span style={{ fontFamily: 'monospace', fontWeight: 800, color: config.primaryColor }}>{mockReg.slipNo}</span>
+              </div>
+              <div>
+                <b>Seeking Class:</b> <span style={{ fontWeight: 700 }}>{mockReg.className}</span>
+              </div>
+              <div>
+                <b>Academic Session:</b> <span>{mockReg.session}</span>
+              </div>
+              <div>
+                <b>Date:</b> <span>{mockReg.slipDate}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Student Information (Image-like fillable format) */}
+          {isVisible('student_details') && (
+            <div style={{ marginBottom: '10px' }}>
+              <div
                 style={{
                   fontWeight: 'bold',
-                  fontSize: `${config.slipTitleFontSize || 11}px`,
-                  color: config.primaryColor,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
+                  fontSize: '12.5px',
+                  textDecoration: 'underline',
+                  color: '#0f172a',
+                  marginBottom: '6px',
+                  textTransform: 'capitalize',
                 }}
               >
-                {config.slipTitle || 'REGISTRATION SLIP / ACKNOWLEDGEMENT'}
-              </span>
-
-              {copyTitle && (
-                <span
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    backgroundColor: config.primaryColor,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {copyTitle}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Section: Student & Registration Details Box */}
-          {isVisible('student_details') && (
-            <div
-              style={{
-                border: `1px solid ${config.borderColor}`,
-                marginBottom: '6px',
-                fontSize: `${config.baseFontSize || 11}px`,
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                  <b>Registration No:</b> <span style={{ fontWeight: 600, color: config.primaryColor }}>{mockReg.slipNo}</span>
-                </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Date:</b> <span>{mockReg.slipDate}</span>
-                </div>
+                Student Information:
               </div>
 
-              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                  <b>Student Name:</b> <span>{mockReg.studentName}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
+                <div style={{ width: '60%', display: 'flex', alignItems: 'center' }}>
+                  <span>Student's Full Name:</span>
+                  <UnderlineVal value={mockReg.studentName} flex="1" />
                 </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Seeking Class:</b> <span style={{ fontWeight: 600 }}>{mockReg.className}</span>
+                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                  <span>Seeking Class:</span>
+                  <UnderlineVal value={mockReg.className} flex="1" />
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                  <b>Father's Name:</b> <span>{mockReg.fatherName}</span>
+                <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                  <span>*Home Address:</span>
+                  <UnderlineVal value={mockReg.address} flex="1" />
                 </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Mother's Name:</b> <span>{mockReg.motherName}</span>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', borderBottom: config.showPreviousSchool ? `1px solid ${config.borderColor}` : 'none' }}>
-                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                  <b>Mobile Number:</b> <span>{mockReg.contact}</span>
+                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                  <span>City:</span>
+                  <UnderlineVal value={mockReg.city} flex="1" />
                 </div>
-                <div style={{ width: '50%', padding: '3px 6px' }}>
-                  <b>Gender / DOB:</b> <span>{mockReg.gender} ({mockReg.dob})</span>
+                <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
+                  <span>State:</span>
+                  <UnderlineVal value={mockReg.state} flex="1" />
                 </div>
-              </div>
+                <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
+                  <span>Zip Code:</span>
+                  <UnderlineVal value={mockReg.pincode} flex="1" />
+                </div>
 
-              {config.showPreviousSchool && (
-                <div style={{ display: 'flex' }}>
-                  <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                    <b>Previous School:</b> <span>{mockReg.previousSchool}</span>
+                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                  <span>Student Email Address:</span>
+                  <UnderlineVal value={mockReg.email} flex="1" />
+                </div>
+                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                  <span>Primary Contact Phone:</span>
+                  <UnderlineVal value={mockReg.contact} flex="1" />
+                </div>
+
+                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
+                  <span>Date of Birth:</span>
+                  <UnderlineVal value={mockReg.dob} flex="1" />
+                </div>
+                <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
+                  <span>Gender:</span>
+                  <UnderlineVal value={mockReg.gender} flex="1" />
+                </div>
+                <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
+                  <span>Place of Birth:</span>
+                  <UnderlineVal value={mockReg.city} flex="1" />
+                </div>
+
+                {config.showPreviousSchool && (
+                  <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                    <span>Previous School Attended:</span>
+                    <UnderlineVal value={mockReg.previousSchool} flex="1" />
                   </div>
-                  <div style={{ width: '50%', padding: '3px 6px' }}>
-                    <b>Session:</b> <span style={{ fontWeight: 600 }}>{mockReg.session}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Section: Registration Fee Particulars Table */}
-          {isVisible('fee_breakdown') && config.showFeeBreakdownTable && (
-            <div style={{ marginBottom: '6px' }}>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  border: `1px solid ${config.borderColor}`,
-                  fontSize: `${(config.baseFontSize || 11) - 0.5}px`,
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: config.secondaryColor, borderBottom: `1px solid ${config.borderColor}` }}>
-                    <th style={{ width: '52%', textAlign: 'left', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                      REGISTRATION PARTICULARS
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                      FEE ({cur})
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                      PAID ({cur})
-                    </th>
-                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px' }}>
-                      DUE ({cur})
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockReg.items.map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                      <td style={{ padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.particular}</td>
-                      <td style={{ textAlign: 'right', padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.amount.toLocaleString('en-IN')}</td>
-                      <td style={{ textAlign: 'right', padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.paid.toLocaleString('en-IN')}</td>
-                      <td style={{ textAlign: 'right', padding: '2px 6px' }}>{item.due.toLocaleString('en-IN')}</td>
-                    </tr>
-                  ))}
-                  {/* Totals Row */}
-                  <tr style={{ backgroundColor: config.secondaryColor, fontWeight: 'bold' }}>
-                    <td colSpan={2} style={{ padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
-                      TOTAL AMOUNT PAID
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}`, color: config.primaryColor }}>
-                      {cur} {mockReg.totalPaid.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px' }}>
-                      {cur} {mockReg.remainingDues.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Section: Payment Summary & Words */}
-          {isVisible('payment_summary') && (
-            <div
-              style={{
-                border: `1px solid ${config.borderColor}`,
-                padding: '4px 6px',
-                marginBottom: '6px',
-                fontSize: `${config.baseFontSize || 11}px`,
-                backgroundColor: '#ffffff',
-              }}
-            >
-              {config.showAmountInWords && (
-                <div style={{ marginBottom: '3px' }}>
-                  <b>Amount in Words:</b> <span style={{ textTransform: 'capitalize' }}>{mockReg.amountInWords}</span>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
-                <span>Registration Status: <b style={{ color: '#15803d' }}>Confirmed & Recorded</b></span>
-                {config.showBalanceDue && (
-                  <span style={{ fontWeight: 'bold', color: mockReg.remainingDues > 0 ? '#b91c1c' : '#15803d' }}>
-                    Balance Dues: {cur} {mockReg.remainingDues}
-                  </span>
                 )}
               </div>
             </div>
           )}
 
-          {/* Section: Payment Info */}
-          {isVisible('payment_info') && config.showPaymentMode && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                border: `1px solid ${config.borderColor}`,
-                padding: '3px 6px',
-                marginBottom: '6px',
-                fontSize: '10px',
-                backgroundColor: config.secondaryColor,
-              }}
-            >
-              <div>
-                <b>Payment Mode:</b> <span>{mockReg.paymentMode}</span>
+          {/* Section: Parent / Guardian Information */}
+          {isVisible('parents_details') && (
+            <div style={{ marginBottom: '12px' }}>
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: '12.5px',
+                  textDecoration: 'underline',
+                  color: '#0f172a',
+                  marginBottom: '6px',
+                  textTransform: 'capitalize',
+                }}
+              >
+                Parent / Guardian Information:
               </div>
-              <div>
-                <b>Ref / Txn No:</b> <span>{mockReg.transactionRef}</span>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
+                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                  <span>Father / Guardian Name:</span>
+                  <UnderlineVal value={mockReg.fatherName} flex="1" />
+                </div>
+                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                  <span>Cell Phone:</span>
+                  <UnderlineVal value={mockReg.contact} flex="1" />
+                </div>
+
+                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
+                  <span>Mother / Guardian Name:</span>
+                  <UnderlineVal value={mockReg.motherName} flex="1" />
+                </div>
+                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+                  <span>Cell Phone:</span>
+                  <UnderlineVal value={mockReg.contact} flex="1" />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Section: Terms & Conditions */}
+          {/* Section: Registration Fee & Payment Details (niche payment details add kr dena) */}
+          {isVisible('fee_breakdown') && config.showFeeBreakdownTable && (
+            <div style={{ marginBottom: '10px' }}>
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: '12.5px',
+                  textDecoration: 'underline',
+                  color: '#0f172a',
+                  marginBottom: '6px',
+                  textTransform: 'capitalize',
+                }}
+              >
+                Registration Fee & Payment Details:
+              </div>
+
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: '1.5px solid #1e293b',
+                  fontSize: '10.5px',
+                  marginBottom: '6px',
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1.5px solid #1e293b' }}>
+                    <th style={{ textAlign: 'left', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      FEE PARTICULARS
+                    </th>
+                    <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      AMOUNT ({cur})
+                    </th>
+                    <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      PAID ({cur})
+                    </th>
+                    <th style={{ width: '15%', textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      BALANCE DUE ({cur})
+                    </th>
+                    <th style={{ width: '16%', textAlign: 'center', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      PAYMENT MODE
+                    </th>
+                    <th style={{ width: '14%', textAlign: 'center', padding: '4px 8px' }}>
+                      STATUS
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
+                    <td style={{ padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      Academic Registration & Admission Processing Fee
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      {mockReg.feeAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b', fontWeight: 700, color: '#0f766e' }}>
+                      {mockReg.paidAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '4px 8px', borderRight: '1px solid #1e293b', fontWeight: 700, color: '#15803d' }}>
+                      {mockReg.balanceAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ textAlign: 'center', padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      {mockReg.paymentMode}
+                    </td>
+                    <td style={{ textAlign: 'center', padding: '4px 8px' }}>
+                      <span style={{ fontWeight: 800, color: '#15803d' }}>Paid</span>
+                    </td>
+                  </tr>
+
+                  {/* Summary / Total Row */}
+                  <tr style={{ backgroundColor: '#f8fafc', fontWeight: 700, borderTop: '1.5px solid #1e293b' }}>
+                    <td colSpan={2} style={{ padding: '4px 8px', borderRight: '1px solid #1e293b' }}>
+                      TOTAL AMOUNT PAID: {cur} {mockReg.paidAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td colSpan={2} style={{ padding: '4px 8px', borderRight: '1px solid #1e293b', textAlign: 'right', color: '#15803d' }}>
+                      BALANCE DUE: {cur} {mockReg.balanceAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td colSpan={2} style={{ padding: '4px 8px', textAlign: 'center', fontSize: '9.5px', color: '#475569' }}>
+                      Ref / Txn No: <b>{mockReg.transactionRef}</b>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {config.showAmountInWords && (
+                <div style={{ fontSize: '10.5px', marginBottom: '8px' }}>
+                  <b>Amount in Words:</b>{' '}
+                  <span style={{ textTransform: 'capitalize', borderBottom: '1px dotted #64748b', paddingBottom: '1px' }}>
+                    {mockReg.amountInWords}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Section: Declaration / Undertaking */}
           {isVisible('terms') && config.showTerms && (
-            <div
-              style={{
-                fontSize: '9px',
-                color: '#475569',
-                border: '1px solid #e2e8f0',
-                padding: '4px 6px',
-                marginBottom: '6px',
-                backgroundColor: '#f8fafc',
-                lineHeight: 1.25,
-              }}
-            >
-              <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '2px' }}>{config.termsTitle}</div>
-              <div style={{ whiteSpace: 'pre-line' }}>{config.termsText}</div>
+            <div style={{ marginBottom: '12px' }}>
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: '11.5px',
+                  textDecoration: 'underline',
+                  color: '#0f172a',
+                  marginBottom: '3px',
+                }}
+              >
+                {config.termsTitle || 'Declaration & Undertaking:'}
+              </div>
+              <div
+                style={{
+                  fontSize: '9.5px',
+                  color: '#334155',
+                  lineHeight: 1.35,
+                  fontStyle: 'italic',
+                }}
+              >
+                {config.termsText}
+              </div>
             </div>
           )}
 
-          {/* Section: Signatures & Stamp */}
+          {/* Section: Signatures */}
           {isVisible('signatures') && config.showSignatures && (
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-end',
-                marginTop: '16px',
-                marginBottom: '6px',
-                padding: '0 8px',
+                marginTop: '22px',
+                paddingTop: '6px',
               }}
             >
-              <div style={{ textAlign: 'center', width: '30%' }}>
-                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
+              <div style={{ textAlign: 'center', width: '32%' }}>
+                <div style={{ borderTop: '1px solid #0f172a', paddingTop: '4px', fontSize: '10.5px', fontWeight: 'bold' }}>
                   {config.signature1 || 'Candidate / Parent Signature'}
                 </div>
+                <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>Date: {mockReg.slipDate}</div>
               </div>
 
               {config.showSchoolSealBox && (
                 <div
                   style={{
-                    width: '60px',
-                    height: '42px',
+                    width: '68px',
+                    height: '46px',
                     border: '1px dashed #94a3b8',
                     borderRadius: '4px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '8px',
+                    fontSize: '8.5px',
                     color: '#94a3b8',
                     textTransform: 'uppercase',
                   }}
@@ -863,24 +878,25 @@ export const RegistrationSlipDesignerPage = () => {
                 </div>
               )}
 
-              <div style={{ textAlign: 'center', width: '30%' }}>
-                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
+              <div style={{ textAlign: 'center', width: '32%' }}>
+                <div style={{ borderTop: '1px solid #0f172a', paddingTop: '4px', fontSize: '10.5px', fontWeight: 'bold' }}>
                   {config.signature2 || 'Authorized Signatory'}
                 </div>
+                <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>School Admission Office</div>
               </div>
             </div>
           )}
 
-          {/* Section: Footer */}
+          {/* Footer Note */}
           {isVisible('footer') && (
             <div
               style={{
-                borderTop: '1px solid #e5e7eb',
-                paddingTop: '3px',
                 textAlign: 'center',
+                marginTop: '14px',
+                paddingTop: '4px',
+                borderTop: '1px solid #e2e8f0',
                 fontSize: '8.5px',
                 color: '#64748b',
-                marginTop: '4px',
               }}
             >
               {config.footerText}
@@ -903,7 +919,7 @@ export const RegistrationSlipDesignerPage = () => {
             <Tag value="School-Wise & Global" severity="info" rounded></Tag>
           </div>
           <p className="text-500 text-sm m-0 mt-1">
-            Customize header branding, color themes, dual/single copy layout, tables, watermark, terms, and sections.
+            Customize header branding, form layout, registration fee particulars table, terms, and sections.
           </p>
         </div>
 
@@ -970,7 +986,7 @@ export const RegistrationSlipDesignerPage = () => {
               {[
                 { id: 'header', label: 'Header & School', icon: 'pi pi-id-card' },
                 { id: 'layout', label: 'Layout & Sizing', icon: 'pi pi-sliders-h' },
-                { id: 'copies', label: 'Copy & Slip Mode', icon: 'pi pi-copy' },
+                { id: 'copies', label: 'Copy & Form Mode', icon: 'pi pi-copy' },
                 { id: 'elements', label: 'Elements & Toggles', icon: 'pi pi-check-square' },
                 { id: 'content', label: 'Terms & Signatures', icon: 'pi pi-pencil' },
                 { id: 'sections', label: 'Sections Order', icon: 'pi pi-sort-alt' },
@@ -1018,7 +1034,7 @@ export const RegistrationSlipDesignerPage = () => {
 
                 <h3 className="text-base font-semibold text-800 m-0">School Name Typography</h3>
                 <div className="field mb-2">
-                  <label className="text-sm font-medium text-700">Custom School Name Override (Leave empty to use school name)</label>
+                  <label className="text-sm font-medium text-700">Custom School Name Override</label>
                   <InputText
                     value={config.headerSchoolNameCustom || ''}
                     onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
@@ -1032,9 +1048,9 @@ export const RegistrationSlipDesignerPage = () => {
                     <label className="text-xs font-medium text-700">Font Size (px): {config.headerSchoolNameFontSize}px</label>
                     <input
                       type="range"
-                      min="12"
+                      min="14"
                       max="32"
-                      value={config.headerSchoolNameFontSize || 17}
+                      value={config.headerSchoolNameFontSize || 20}
                       onChange={(e) => setConfig({ ...config, headerSchoolNameFontSize: parseInt(e.target.value) })}
                       className="w-full"
                     />
@@ -1056,12 +1072,12 @@ export const RegistrationSlipDesignerPage = () => {
                     <div className="flex gap-2 align-items-center">
                       <input
                         type="color"
-                        value={config.headerSchoolNameColor || config.primaryColor}
+                        value={config.headerSchoolNameColor || '#0f172a'}
                         onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
                         style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
                       />
                       <InputText
-                        value={config.headerSchoolNameColor || config.primaryColor}
+                        value={config.headerSchoolNameColor || '#0f172a'}
                         onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
                         className="p-inputtext-sm w-full"
                       />
@@ -1100,34 +1116,6 @@ export const RegistrationSlipDesignerPage = () => {
                     className="w-full p-inputtext-sm"
                   />
                 </div>
-
-                <div className="grid">
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">Header Divider Style</label>
-                    <Dropdown
-                      value={config.headerDividerStyle || 'Solid'}
-                      options={HEADER_DIVIDER_OPTIONS}
-                      onChange={(e) => setConfig({ ...config, headerDividerStyle: e.value })}
-                      className="w-full p-dropdown-sm"
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">Header Divider Color</label>
-                    <div className="flex gap-2 align-items-center">
-                      <input
-                        type="color"
-                        value={config.headerDividerColor || config.borderColor}
-                        onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
-                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
-                      />
-                      <InputText
-                        value={config.headerDividerColor || config.borderColor}
-                        onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
-                        className="p-inputtext-sm w-full"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1160,20 +1148,27 @@ export const RegistrationSlipDesignerPage = () => {
                   <div className="col-6">
                     <label className="text-xs font-medium text-700">Print Margins</label>
                     <Dropdown
-                      value={config.pageMargin || '4mm'}
+                      value={config.pageMargin || '6mm'}
                       options={PAGE_MARGIN_OPTIONS}
                       onChange={(e) => setConfig({ ...config, pageMargin: e.value })}
                       className="w-full p-dropdown-sm"
                     />
                   </div>
                   <div className="col-6">
-                    <label className="text-xs font-medium text-700">Border Style</label>
-                    <Dropdown
-                      value={config.borderStyle || 'Solid'}
-                      options={BORDER_STYLES}
-                      onChange={(e) => setConfig({ ...config, borderStyle: e.value })}
-                      className="w-full p-dropdown-sm"
-                    />
+                    <label className="text-xs font-medium text-700">Border Color</label>
+                    <div className="flex gap-2 align-items-center">
+                      <input
+                        type="color"
+                        value={config.borderColor || '#1e3a8a'}
+                        onChange={(e) => setConfig({ ...config, borderColor: e.target.value })}
+                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
+                      />
+                      <InputText
+                        value={config.borderColor || '#1e3a8a'}
+                        onChange={(e) => setConfig({ ...config, borderColor: e.target.value })}
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1184,7 +1179,7 @@ export const RegistrationSlipDesignerPage = () => {
                   <div className="col-6">
                     <label className="text-xs font-medium text-700">Base Font Family</label>
                     <Dropdown
-                      value={config.fontFamily || 'Inter, sans-serif'}
+                      value={config.fontFamily || 'Georgia, "Times New Roman", Times, serif'}
                       options={FONT_OPTIONS}
                       onChange={(e) => setConfig({ ...config, fontFamily: e.value })}
                       className="w-full p-dropdown-sm"
@@ -1210,7 +1205,7 @@ export const RegistrationSlipDesignerPage = () => {
                       type="range"
                       min="30"
                       max="80"
-                      value={config.logoSize || 48}
+                      value={config.logoSize || 52}
                       onChange={(e) => setConfig({ ...config, logoSize: parseInt(e.target.value) })}
                       className="w-full"
                     />
@@ -1219,9 +1214,9 @@ export const RegistrationSlipDesignerPage = () => {
                     <label className="text-xs font-medium text-700">Inner Box Padding: {config.pagePadding}px</label>
                     <input
                       type="range"
-                      min="6"
+                      min="8"
                       max="24"
-                      value={config.pagePadding || 12}
+                      value={config.pagePadding || 16}
                       onChange={(e) => setConfig({ ...config, pagePadding: parseInt(e.target.value) })}
                       className="w-full"
                     />
@@ -1230,95 +1225,39 @@ export const RegistrationSlipDesignerPage = () => {
               </div>
             )}
 
-            {/* Tab 3: Copy & Slip Mode */}
+            {/* Tab 3: Copy & Form Mode */}
             {activeTab === 'copies' && (
               <div className="flex flex-column gap-3">
-                <h3 className="text-base font-semibold text-800 m-0">Copy Printing Mode</h3>
+                <h3 className="text-base font-semibold text-800 m-0">Print Copy Mode</h3>
                 <div className="field mb-3">
                   <label className="text-xs font-medium text-700">Copy Layout Mode</label>
                   <Dropdown
-                    value={config.copyLayout || 'DualSideBySide'}
+                    value={config.copyLayout || 'SingleCopy'}
                     options={COPY_LAYOUT_OPTIONS}
                     onChange={(e) => setConfig({ ...config, copyLayout: e.value })}
                     className="w-full p-dropdown-sm"
                   />
                   <small className="text-500">
-                    DualSideBySide prints Office Copy and Student Copy side-by-side with a scissor cutting separator line.
+                    Single Form (1 Copy) prints a standard official registration form slip with payment details at the bottom.
                   </small>
                 </div>
 
-                <div className="grid">
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">1st Copy Badge Title</label>
-                    <InputText
-                      value={config.firstCopyTitle || 'Office Copy'}
-                      onChange={(e) => setConfig({ ...config, firstCopyTitle: e.target.value })}
-                      className="w-full p-inputtext-sm"
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">2nd Copy Badge Title</label>
-                    <InputText
-                      value={config.secondCopyTitle || 'Student Copy'}
-                      onChange={(e) => setConfig({ ...config, secondCopyTitle: e.target.value })}
-                      className="w-full p-inputtext-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex align-items-center justify-content-between p-2 border-1 border-200 border-round">
-                  <span className="text-sm font-medium text-700">Show Scissor Cutting Line</span>
-                  <InputSwitch
-                    checked={config.showCuttingLine !== false}
-                    onChange={(e) => setConfig({ ...config, showCuttingLine: e.value })}
-                  />
-                </div>
-
-                <Divider />
-
-                <h3 className="text-base font-semibold text-800 m-0">Slip Title Bar</h3>
                 <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Slip Title Text</label>
+                  <label className="text-xs font-medium text-700">Form Title</label>
                   <InputText
-                    value={config.slipTitle || 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT'}
+                    value={config.slipTitle || 'New Student Registration Form & Slip'}
                     onChange={(e) => setConfig({ ...config, slipTitle: e.target.value })}
                     className="w-full p-inputtext-sm"
                   />
                 </div>
 
-                <div className="grid">
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">Title Bar Background Color</label>
-                    <div className="flex gap-2 align-items-center">
-                      <input
-                        type="color"
-                        value={config.slipTitleBgColor || config.primaryColor}
-                        onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
-                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
-                      />
-                      <InputText
-                        value={config.slipTitleBgColor || config.primaryColor}
-                        onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
-                        className="p-inputtext-sm w-full"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-6">
-                    <label className="text-xs font-medium text-700">Title Text Color</label>
-                    <div className="flex gap-2 align-items-center">
-                      <input
-                        type="color"
-                        value={config.slipTitleTextColor || '#ffffff'}
-                        onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
-                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
-                      />
-                      <InputText
-                        value={config.slipTitleTextColor || '#ffffff'}
-                        onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
-                        className="p-inputtext-sm w-full"
-                      />
-                    </div>
-                  </div>
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Form Subtitle / Note</label>
+                  <InputText
+                    value={config.slipSubtitle || 'PLEASE PRINT LEGIBLY • OFFICIAL RECORD COPY'}
+                    onChange={(e) => setConfig({ ...config, slipSubtitle: e.target.value })}
+                    className="w-full p-inputtext-sm"
+                  />
                 </div>
 
                 <Divider />
@@ -1352,14 +1291,14 @@ export const RegistrationSlipDesignerPage = () => {
                 {[
                   { key: 'showSchoolLogo', label: 'School Logo in Header' },
                   { key: 'showAffiliationNo', label: 'Affiliation & Subtitle in Header' },
-                  { key: 'showPreviousSchool', label: 'Previous School & Academic Session Details' },
-                  { key: 'showFeeBreakdownTable', label: 'Registration Fee Particulars Table' },
+                  { key: 'showPreviousSchool', label: 'Previous School Attended Field' },
+                  { key: 'showFeeBreakdownTable', label: 'Registration Fee & Payment Details Table (Bottom)' },
                   { key: 'showAmountInWords', label: 'Amount in Words Line' },
-                  { key: 'showBalanceDue', label: 'Balance Due Highlight' },
-                  { key: 'showPaymentMode', label: 'Payment Mode & Transaction Reference Bar' },
+                  { key: 'showBalanceDue', label: 'Balance Due Field' },
+                  { key: 'showPaymentMode', label: 'Payment Mode & Transaction Reference' },
                   { key: 'showSchoolSealBox', label: 'School Seal / Stamp Box' },
-                  { key: 'showTerms', label: 'Registration Terms & Guidelines' },
-                  { key: 'showSignatures', label: 'Signature Lines (Parent & Authorized Signatory)' },
+                  { key: 'showTerms', label: 'Declaration & Undertaking Text' },
+                  { key: 'showSignatures', label: 'Signatures (Parent & Authorized Signatory)' },
                 ].map((item) => (
                   <div
                     key={item.key}
@@ -1400,18 +1339,18 @@ export const RegistrationSlipDesignerPage = () => {
 
                 <Divider />
 
-                <h3 className="text-base font-semibold text-800 m-0">Registration Terms & Undertaking</h3>
+                <h3 className="text-base font-semibold text-800 m-0">Declaration & Undertaking</h3>
                 <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Terms Heading</label>
+                  <label className="text-xs font-medium text-700">Declaration Heading</label>
                   <InputText
-                    value={config.termsTitle || 'TERMS & CONDITIONS / UNDERTAKING:'}
+                    value={config.termsTitle || 'Declaration & Undertaking:'}
                     onChange={(e) => setConfig({ ...config, termsTitle: e.target.value })}
                     className="w-full p-inputtext-sm"
                   />
                 </div>
 
                 <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Terms Text (Line by line)</label>
+                  <label className="text-xs font-medium text-700">Declaration Text</label>
                   <InputTextarea
                     value={config.termsText || ''}
                     onChange={(e) => setConfig({ ...config, termsText: e.target.value })}
@@ -1436,7 +1375,7 @@ export const RegistrationSlipDesignerPage = () => {
               <div className="flex flex-column gap-2">
                 <h3 className="text-base font-semibold text-800 m-0 mb-2">Drag or Reorder Sections</h3>
                 <p className="text-xs text-500 m-0 mb-3">
-                  Use the up/down arrows or drag rows to change the sequence of slip sections. Toggle the switch to show or hide a section.
+                  Use the up/down arrows or drag rows to change the sequence of slip sections.
                 </p>
 
                 {config.sections.map((section, idx) => (
@@ -1493,10 +1432,10 @@ export const RegistrationSlipDesignerPage = () => {
                 </div>
                 <Tag
                   value={
-                    config.copyLayout === 'DualSideBySide'
+                    config.copyLayout === 'SingleCopy'
+                      ? '1 Copy (Official Form Slip)'
+                      : config.copyLayout === 'DualSideBySide'
                       ? 'Dual A4 (Side-by-Side)'
-                      : config.copyLayout === 'SingleCopy'
-                      ? 'Single Slip'
                       : 'Dual Stacked'
                   }
                   severity="primary"
@@ -1505,20 +1444,20 @@ export const RegistrationSlipDesignerPage = () => {
             }
           >
             <div
-              id="printable-registration-slip-preview"
+              id="printable-registration-form-preview"
               style={{
                 backgroundColor: '#ffffff',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 padding: '8px',
                 borderRadius: '4px',
-                maxHeight: '78vh',
+                maxHeight: '80vh',
                 overflowY: 'auto',
               }}
             >
               {config.copyLayout === 'DualSideBySide' ? (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
                   <div style={{ flex: 1 }}>{renderSingleSlipPreview(config.firstCopyTitle || 'Office Copy')}</div>
-                  {config.showCuttingLine !== false && (
+                  {config.showCuttingLine && (
                     <div
                       style={{
                         width: '18px',
@@ -1535,18 +1474,6 @@ export const RegistrationSlipDesignerPage = () => {
                     </div>
                   )}
                   <div style={{ flex: 1 }}>{renderSingleSlipPreview(config.secondCopyTitle || 'Student Copy')}</div>
-                </div>
-              ) : config.copyLayout === 'DualStacked' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div>{renderSingleSlipPreview(config.firstCopyTitle || 'Office Copy')}</div>
-                  {config.showCuttingLine !== false && (
-                    <div style={{ borderTop: '1px dashed #94a3b8', textAlign: 'center', margin: '4px 0' }}>
-                      <span style={{ backgroundColor: '#ffffff', padding: '0 8px', fontSize: '10px', color: '#64748b' }}>
-                        ✂ Cut Along Line
-                      </span>
-                    </div>
-                  )}
-                  <div>{renderSingleSlipPreview(config.secondCopyTitle || 'Student Copy')}</div>
                 </div>
               ) : (
                 <div>{renderSingleSlipPreview('')}</div>
