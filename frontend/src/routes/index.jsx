@@ -31,9 +31,9 @@ import { NumberingSeriesPage } from '../features/masters/pages/NumberingSeriesPa
 // Module 3: Students, Enquiries & Admissions
 import { EnquiriesPage } from '../features/students/pages/EnquiriesPage';
 import { AdmissionFormPage } from '../features/students/pages/AdmissionFormPage';
-import { AdmissionFormBuilderPage } from '../features/admissions/pages/AdmissionFormBuilderPage';
-import { AdmissionSlipGeneratorPage } from '../features/admissions/pages/AdmissionSlipGeneratorPage';
-import { AdmissionSlipsListPage } from '../features/admissions/pages/AdmissionSlipsListPage';
+import { RegistrationFormBuilderPage } from '../features/registrations/pages/RegistrationFormBuilderPage';
+import { RegistrationSlipGeneratorPage } from '../features/registrations/pages/RegistrationSlipGeneratorPage';
+import { RegistrationSlipsListPage } from '../features/registrations/pages/RegistrationSlipsListPage';
 import StudentsPage from '../features/students/pages/StudentsPage';
 import StudentProfilePage from '../features/students/pages/StudentProfilePage';
 import RollNumbersPage from '../features/students/pages/RollNumbersPage';
@@ -288,10 +288,26 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="registrations/builder"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+              <RegistrationFormBuilderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admissions/builder"
           element={
             <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
-              <AdmissionFormBuilderPage />
+              <RegistrationFormBuilderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="registrations/slip-generator"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+              <RegistrationSlipGeneratorPage />
             </ProtectedRoute>
           }
         />
@@ -299,7 +315,15 @@ export const AppRoutes = () => {
           path="admissions/slip-generator"
           element={
             <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
-              <AdmissionSlipGeneratorPage />
+              <RegistrationSlipGeneratorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="registrations/slips-list"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+              <RegistrationSlipsListPage />
             </ProtectedRoute>
           }
         />
@@ -307,7 +331,7 @@ export const AppRoutes = () => {
           path="admissions/slips-list"
           element={
             <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
-              <AdmissionSlipsListPage />
+              <RegistrationSlipsListPage />
             </ProtectedRoute>
           }
         />
