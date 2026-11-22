@@ -163,6 +163,7 @@ export function printElement(elementOrId, options = {}) {
           }
           #printable-enquiry-slip,
           #class-fee-prospectus-slip,
+          #printable-admission-slip,
           .printable-slip,
           #gate-pass-print-area {
             display: block !important;

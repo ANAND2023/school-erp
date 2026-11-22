@@ -15,7 +15,7 @@ import {
   WhatsApp as WhatsAppIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
-import { printWithTitle } from '../../../utils/printUtils';
+import { printElement } from '../../../utils/printUtils';
 
 export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => {
   if (!slip) return null;
@@ -27,7 +27,10 @@ export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => 
   const logoUrl = '/dvslogo1.jpeg';
 
   const handlePrint = () => {
-    printWithTitle(`Admission_Slip_${slip.slipNumber}_${slip.studentName}`);
+    printElement('printable-admission-slip', {
+      title: `Admission_Slip_${slip.slipNumber}_${slip.studentName}`,
+      margin: '6mm',
+    });
   };
 
   const handleShareWhatsApp = () => {
