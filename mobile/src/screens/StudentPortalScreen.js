@@ -247,8 +247,8 @@ export default function StudentPortalScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
-            source={require('../../assets/dvs-logo.png')}
-            style={styles.headerLogo}
+            source={require('../../assets/dvslogo1.jpeg')}
+            style={[styles.headerLogo, { borderRadius: 20 }]}
             resizeMode="contain"
           />
           <View style={{ flex: 1 }}>
@@ -827,8 +827,8 @@ export default function StudentPortalScreen({ navigation }) {
                   {/* ID Header */}
                   <View style={styles.idCardHeader}>
                     <Image
-                      source={require('../../assets/dvs-logo.png')}
-                      style={styles.idCardLogo}
+                      source={require('../../assets/dvslogo1.jpeg')}
+                      style={[styles.idCardLogo, { borderRadius: 20 }]}
                       resizeMode="contain"
                     />
                     <View style={{ flex: 1 }}>

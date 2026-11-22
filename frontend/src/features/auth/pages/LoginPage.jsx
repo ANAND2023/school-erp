@@ -265,7 +265,7 @@ export const LoginPage = () => {
           left: '-10%',
           width: '650px',
           height: '650px',
-          backgroundImage: 'url(/dvs-logo.png)',
+          backgroundImage: 'url(/dvslogo1.jpeg)',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain',
           backgroundPosition: 'center',
@@ -303,14 +303,18 @@ export const LoginPage = () => {
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Box
                   component="img"
-                  src="/dvs-logo.png"
+                  src="/dvslogo1.jpeg"
                   alt="Digital Vidya Saarthi"
                   sx={{
-                    width: { xs: 56, sm: 66 },
-                    height: { xs: 56, sm: 66 },
+                    width: { xs: 58, sm: 68 },
+                    height: { xs: 58, sm: 68 },
                     objectFit: 'contain',
+                    borderRadius: '50%',
                     flexShrink: 0,
-                    filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.4))'
+                    boxShadow: '0 4px 15px rgba(2, 132, 199, 0.35)',
+                    border: '2px solid rgba(56, 189, 248, 0.4)',
+                    background: '#ffffff',
+                    p: 0.3
                   }}
                 />
                 <Box>
@@ -741,47 +745,32 @@ export const LoginPage = () => {
             }}
           >
             <Box sx={{ width: '100%', maxWidth: '680px' }}>
-              {/* Official Brand Logo with Glowing 3D Badge (Clean transparent logo) */}
+              {/* Official Brand Logo Banner (dvslogo2) */}
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   mb: { xs: 2.5, lg: 3.5 },
-                  gap: 2.5
+                  width: '100%'
                 }}
               >
                 <Box
                   component="img"
-                  src="/dvs-logo.png"
-                  alt="Digital Vidya Saarthi"
+                  src="/dvslogo2.jpeg"
+                  alt="Digital Vidya Saarthi ERP"
                   sx={{
-                    height: { md: 95, lg: 115, xl: 125 },
-                    width: 'auto',
+                    width: '100%',
+                    maxWidth: { xs: '340px', sm: '420px', md: '500px', lg: '560px' },
+                    height: 'auto',
                     objectFit: 'contain',
-                    filter: 'drop-shadow(0 8px 25px rgba(2, 132, 199, 0.45))'
+                    borderRadius: '18px',
+                    boxShadow: '0 12px 35px rgba(2, 132, 199, 0.4)',
+                    border: '2px solid rgba(56, 189, 248, 0.5)',
+                    background: '#ffffff',
+                    p: 1.2
                   }}
                 />
-
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                    color: '#ffffff',
-                    px: 2,
-                    py: 0.8,
-                    borderRadius: '12px',
-                    fontWeight: 900,
-                    fontSize: { md: '1.2rem', lg: '1.35rem' },
-                    letterSpacing: 2,
-                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.45)',
-                    border: '1.5px solid rgba(255, 255, 255, 0.3)'
-                  }}
-                >
-                  ERP
-                </Box>
               </Box>
 
               {/* 8 Feature Cards Grid (2 rows x 4 columns) */}

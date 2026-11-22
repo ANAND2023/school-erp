@@ -575,7 +575,7 @@ export const DashboardPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             component="img"
-            src="/dvs-logo.png"
+            src="/dvslogo1.jpeg"
             alt="Digital Vidya Saarthi"
             sx={{
               width: { xs: 42, sm: 56 },

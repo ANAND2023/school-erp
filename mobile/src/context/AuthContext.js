@@ -42,9 +42,13 @@ export const AuthProvider = ({ children }) => {
   const loadStoredSession = async () => {
     try {
       const storedUrl = await AsyncStorage.getItem('@school_erp_api_url');
-      if (storedUrl) {
+      if (storedUrl && !storedUrl.includes('192.168.1.2')) {
         setApiUrl(storedUrl);
         apiClient.defaults.baseURL = storedUrl;
+      } else {
+        setApiUrl(DEFAULT_PROD_URL);
+        apiClient.defaults.baseURL = DEFAULT_PROD_URL;
+        await AsyncStorage.setItem('@school_erp_api_url', DEFAULT_PROD_URL);
       }
 
       const storedToken = await AsyncStorage.getItem('@school_erp_token');

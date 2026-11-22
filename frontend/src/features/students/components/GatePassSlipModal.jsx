@@ -37,7 +37,7 @@ const SingleGatePassSlip = ({ pass, copyTitle = '', schoolInfo = {} }) => {
     branchName = 'Main Campus',
     schoolAddress = '',
     schoolPhone = '',
-    schoolLogoUrl = '/dvs-logo.png',
+    schoolLogoUrl = '/dvslogo1.jpeg',
   } = schoolInfo;
 
   return (
@@ -304,7 +304,7 @@ export default function GatePassSlipModal({ open, onClose, pass, onStatusUpdate 
     branchName: branch.name || user?.branchName || '',
     schoolAddress: [branch.address, branch.city, branch.state, branch.pincode].filter(Boolean).join(', ') || user?.schoolAddress || '',
     schoolPhone: branch.phone || user?.schoolPhone || '',
-    schoolLogoUrl: branch.logoUrl || user?.schoolLogoUrl || '/dvs-logo.png',
+    schoolLogoUrl: branch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg',
   };
 
   const handlePrint = () => {

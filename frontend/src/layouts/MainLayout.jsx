@@ -407,13 +407,16 @@ export const MainLayout = () => {
           {/* Logo / Title */}
           <div className="flex align-items-center gap-2 ml-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <img
-              src="/dvs-logo.png"
+              src="/dvslogo1.jpeg"
               alt="Digital Vidya Saarthi Logo"
               style={{
-                width: '28px',
-                height: '28px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                backgroundColor: '#ffffff',
+                padding: '1px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
               }}
             />
             <span className="font-bold text-sm tracking-wide select-none">DVS ERP</span>

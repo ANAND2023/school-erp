@@ -889,8 +889,8 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
 
           <Image
-            source={require('../../assets/dvs-logo.png')}
-            style={styles.headerLogo}
+            source={require('../../assets/dvslogo1.jpeg')}
+            style={[styles.headerLogo, { borderRadius: 19 }]}
             resizeMode="contain"
           />
           <View style={styles.headerLeft}>
@@ -1286,8 +1286,8 @@ export default function HomeScreen({ navigation }) {
             {/* User Profile Card */}
             <View style={[styles.controlProfileCard, { backgroundColor: isDark ? '#1e293b' : '#f8fafc', borderColor: colors.cardBorder }]}>
               <Image
-                source={require('../../assets/dvs-logo.png')}
-                style={styles.controlAvatar}
+                source={require('../../assets/dvslogo1.jpeg')}
+                style={[styles.controlAvatar, { borderRadius: 24 }]}
                 resizeMode="contain"
               />
               <View style={{ flex: 1 }}>
@@ -1430,8 +1430,8 @@ export default function HomeScreen({ navigation }) {
             <View style={[styles.drawerHeader, { backgroundColor: isDark ? '#1e293b' : '#0284c7' }]}>
               <View style={styles.drawerBrandRow}>
                 <Image
-                  source={require('../../assets/dvs-logo.png')}
-                  style={styles.drawerLogo}
+                  source={require('../../assets/dvslogo1.jpeg')}
+                  style={[styles.drawerLogo, { borderRadius: 24 }]}
                   resizeMode="contain"
                 />
                 <View style={{ flex: 1, marginLeft: 10 }}>

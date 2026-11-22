@@ -469,7 +469,7 @@ export const LandingPage = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => window.scrollTo(0,0)}>
               <Box 
                 component="img"
-                src="/dvs-logo.png"
+                src="/dvslogo1.jpeg"
                 alt="Digital Vidya Saarthi Logo"
                 sx={{ 
                   width: { xs: 44, sm: 50 }, 
@@ -576,7 +576,7 @@ export const LandingPage = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
             <Box 
               component="img"
-              src="/dvs-logo.png"
+              src="/dvslogo1.jpeg"
               alt="Digital Vidya Saarthi"
               sx={{ width: 34, height: 34, objectFit: 'contain' }}
             />
@@ -2097,7 +2097,7 @@ export const LandingPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Box 
                   component="img"
-                  src="/dvs-logo.png"
+                  src="/dvslogo1.jpeg"
                   alt="Digital Vidya Saarthi"
                   sx={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}
                 />

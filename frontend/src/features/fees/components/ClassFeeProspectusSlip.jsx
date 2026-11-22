@@ -41,7 +41,7 @@ export default function ClassFeeProspectusSlip({ summary }) {
   const fullAddress = [branch.address, branch.city, branch.state, branch.pincode].filter(Boolean).join(', ') || user?.schoolAddress || '';
   const phone = branch.phone || user?.schoolPhone || '';
   const email = branch.email || user?.schoolEmail || '';
-  const logoUrl = branch.logoUrl || user?.schoolLogoUrl || '/dvs-logo.png';
+  const logoUrl = branch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
 
   const validInstallments = (summary.installments || []).filter((i) => Number(i.totalAmount || 0) > 0);
   const totalScheduled = validInstallments.reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);

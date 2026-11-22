@@ -1,12 +1,13 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const DEFAULT_PROD_URL = 'https://school-erp-api-fdjr.onrender.com/api';
-export const DEFAULT_LOCAL_URL = 'http://192.168.1.2:5171/api';
+export const DEFAULT_PROD_URL = 'https://school-erp-murex-two.vercel.app/api';
+export const DEFAULT_RENDER_URL = 'https://school-erp-api-fdjr.onrender.com/api';
+export const DEFAULT_LOCAL_URL = 'http://10.45.149.36:5171/api';
 
 const apiClient = axios.create({
   baseURL: DEFAULT_PROD_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,8 +18,10 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const storedUrl = await AsyncStorage.getItem('@school_erp_api_url');
-      if (storedUrl) {
+      if (storedUrl && !storedUrl.includes('192.168.1.2')) {
         config.baseURL = storedUrl;
+      } else {
+        config.baseURL = DEFAULT_PROD_URL;
       }
 
       const token = await AsyncStorage.getItem('@school_erp_token');
@@ -148,6 +151,20 @@ apiClient.interceptors.response.use(
         }
       } finally {
         isRefreshing = false;
+      }
+    }
+
+    // Automatic cloud fallback on network / DNS errors
+    if (!error.response && originalRequest && !originalRequest._networkFallback) {
+      originalRequest._networkFallback = true;
+      const currentBase = originalRequest.baseURL || apiClient.defaults.baseURL || DEFAULT_PROD_URL;
+      
+      if (currentBase.includes('vercel.app')) {
+        originalRequest.baseURL = DEFAULT_RENDER_URL;
+        return apiClient(originalRequest);
+      } else if (currentBase.includes('onrender.com')) {
+        originalRequest.baseURL = DEFAULT_PROD_URL;
+        return apiClient(originalRequest);
       }
     }
 

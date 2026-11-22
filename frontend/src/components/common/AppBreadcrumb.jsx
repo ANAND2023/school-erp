@@ -428,13 +428,13 @@ export const AppBreadcrumb = () => {
           ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
           : 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 55%, #e2e8f0 100%)',
         border: isDarkMode ? '1px solid #334155' : '1px solid #cbd5e1',
-        borderLeft: `5px solid ${primaryColor}`,
-        borderRadius: '12px',
-        padding: '12px 18px',
-        marginBottom: '20px',
+        borderLeft: `4px solid ${primaryColor}`,
+        borderRadius: '6px',
+        padding: '4px 10px',
+        marginBottom: '8px',
         boxShadow: isDarkMode
-          ? '0 4px 12px rgba(0, 0, 0, 0.25)'
-          : '0 2px 10px rgba(37, 99, 235, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03)',
+          ? '0 2px 6px rgba(0, 0, 0, 0.2)'
+          : '0 1px 4px rgba(37, 99, 235, 0.04)',
         transition: 'all 0.25s ease',
       }}
     >
@@ -445,10 +445,7 @@ export const AppBreadcrumb = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '8px',
-          marginBottom: '8px',
-          paddingBottom: '8px',
-          borderBottom: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(203, 213, 225, 0.6)',
+          gap: '6px',
         }}
       >
         {/* Breadcrumb Path Links */}
@@ -456,8 +453,8 @@ export const AppBreadcrumb = () => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
+            gap: '4px',
+            fontSize: '11px',
             fontWeight: 600,
             flexWrap: 'wrap',
           }}
@@ -469,11 +466,11 @@ export const AppBreadcrumb = () => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '3px',
               textDecoration: 'none',
               color: isDarkMode ? '#94a3b8' : '#475569',
-              padding: '2px 6px',
-              borderRadius: '6px',
+              padding: '1px 4px',
+              borderRadius: '4px',
               transition: 'color 0.15s ease, background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
@@ -485,11 +482,11 @@ export const AppBreadcrumb = () => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <i className="pi pi-home" style={{ fontSize: '11px', color: primaryColor }} />
+            <i className="pi pi-home" style={{ fontSize: '10px', color: primaryColor }} />
             <span>Home</span>
           </Link>
 
-          <i className="pi pi-angle-right" style={{ fontSize: '10px', color: isDarkMode ? '#64748b' : '#94a3b8' }} />
+          <i className="pi pi-angle-right" style={{ fontSize: '9px', color: isDarkMode ? '#64748b' : '#94a3b8' }} />
 
           {/* Module Category */}
           {info.module && (
@@ -499,11 +496,11 @@ export const AppBreadcrumb = () => {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '3px',
                   textDecoration: 'none',
                   color: isDarkMode ? '#94a3b8' : '#475569',
-                  padding: '2px 6px',
-                  borderRadius: '6px',
+                  padding: '1px 4px',
+                  borderRadius: '4px',
                   transition: 'color 0.15s ease, background-color 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
@@ -515,10 +512,10 @@ export const AppBreadcrumb = () => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                {info.moduleIcon && <i className={info.moduleIcon} style={{ fontSize: '11px' }} />}
+                {info.moduleIcon && <i className={info.moduleIcon} style={{ fontSize: '10px' }} />}
                 <span>{info.module}</span>
               </Link>
-              <i className="pi pi-angle-right" style={{ fontSize: '10px', color: isDarkMode ? '#64748b' : '#94a3b8' }} />
+              <i className="pi pi-angle-right" style={{ fontSize: '9px', color: isDarkMode ? '#64748b' : '#94a3b8' }} />
             </>
           )}
 
@@ -528,9 +525,9 @@ export const AppBreadcrumb = () => {
               display: 'inline-flex',
               alignItems: 'center',
               fontWeight: 700,
-              fontSize: '11.5px',
-              padding: '2px 8px',
-              borderRadius: '6px',
+              fontSize: '11px',
+              padding: '1px 6px',
+              borderRadius: '4px',
               backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.12)',
               color: primaryColor,
               border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(37, 99, 235, 0.2)',
@@ -541,24 +538,23 @@ export const AppBreadcrumb = () => {
         </nav>
 
         {/* Right contextual info: Academic Session, Date, Branch */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           {user?.branchName && (
             <span
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '11px',
+                gap: '4px',
+                fontSize: '10.5px',
                 fontWeight: 600,
-                padding: '3px 8px',
-                borderRadius: '6px',
+                padding: '1px 6px',
+                borderRadius: '4px',
                 backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
                 color: isDarkMode ? '#cbd5e1' : '#334155',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
               }}
             >
-              <i className="pi pi-building" style={{ fontSize: '10.5px', color: '#0284c7' }} />
+              <i className="pi pi-building" style={{ fontSize: '9.5px', color: '#0284c7' }} />
               <span>{user.branchName}</span>
             </span>
           )}
@@ -567,18 +563,17 @@ export const AppBreadcrumb = () => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '5px',
-              fontSize: '11px',
+              gap: '4px',
+              fontSize: '10.5px',
               fontWeight: 700,
-              padding: '3px 8px',
-              borderRadius: '6px',
+              padding: '1px 6px',
+              borderRadius: '4px',
               backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
               color: isDarkMode ? '#93c5fd' : '#1d4ed8',
               border: isDarkMode ? '1px solid #1e3a8a' : '1px solid #bfdbfe',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
           >
-            <i className="pi pi-calendar" style={{ fontSize: '10.5px', color: primaryColor }} />
+            <i className="pi pi-calendar" style={{ fontSize: '9.5px', color: primaryColor }} />
             <span>Session: {activeYearLabel}</span>
           </span>
 
@@ -586,23 +581,21 @@ export const AppBreadcrumb = () => {
             className="hidden sm:inline-flex"
             style={{
               alignItems: 'center',
-              gap: '5px',
-              fontSize: '11px',
+              gap: '4px',
+              fontSize: '10.5px',
               fontWeight: 600,
-              padding: '3px 8px',
-              borderRadius: '6px',
+              padding: '1px 6px',
+              borderRadius: '4px',
               backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
               color: isDarkMode ? '#94a3b8' : '#64748b',
               border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
           >
-            <i className="pi pi-clock" style={{ fontSize: '10.5px', color: '#d97706' }} />
+            <i className="pi pi-clock" style={{ fontSize: '9.5px', color: '#d97706' }} />
             <span>{todayDateString} &bull; {currentTimeStr}</span>
           </span>
         </div>
       </div>
-
     </div>
   );
 };

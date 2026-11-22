@@ -17,7 +17,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { authApi, DEFAULT_PROD_URL, DEFAULT_LOCAL_URL } from '../api/client';
+import { authApi, DEFAULT_PROD_URL, DEFAULT_RENDER_URL, DEFAULT_LOCAL_URL } from '../api/client';
 
 export default function LoginScreen({ navigation }) {
   const { login, apiUrl, updateApiUrl } = useContext(AuthContext);
@@ -184,8 +184,8 @@ export default function LoginScreen({ navigation }) {
 
             <View style={styles.iconCircle}>
               <Image
-                source={require('../../assets/dvs-logo.png')}
-                style={styles.brandLogo}
+                source={require('../../assets/dvslogo1.jpeg')}
+                style={[styles.brandLogo, { borderRadius: 29 }]}
                 resizeMode="contain"
               />
             </View>
@@ -411,35 +411,51 @@ export default function LoginScreen({ navigation }) {
                   <Text style={styles.serverBoxTitle}>Choose API Backend Server:</Text>
 
                   <TouchableOpacity
-                    style={[styles.serverOption, isProd && styles.serverOptionActive]}
+                    style={[styles.serverOption, apiUrl === DEFAULT_PROD_URL && styles.serverOptionActive]}
                     onPress={() => handleSelectServer(DEFAULT_PROD_URL)}
                   >
-                    <MaterialIcons name="cloud" size={18} color={isProd ? '#0284c7' : '#64748b'} />
+                    <MaterialIcons name="cloud" size={18} color={apiUrl === DEFAULT_PROD_URL ? '#0284c7' : '#64748b'} />
                     <View style={styles.serverOptionDetails}>
-                      <Text style={[styles.serverOptionName, isProd && styles.serverOptionNameActive]}>
-                        Live Production (Render)
+                      <Text style={[styles.serverOptionName, apiUrl === DEFAULT_PROD_URL && styles.serverOptionNameActive]}>
+                        Live Cloud (Fast CDN)
                       </Text>
                       <Text style={styles.serverOptionUrl} numberOfLines={1}>
                         {DEFAULT_PROD_URL}
                       </Text>
                     </View>
-                    {isProd && <MaterialIcons name="check" size={18} color="#0284c7" />}
+                    {apiUrl === DEFAULT_PROD_URL && <MaterialIcons name="check" size={18} color="#0284c7" />}
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.serverOption, isLocal && styles.serverOptionActive]}
+                    style={[styles.serverOption, apiUrl === DEFAULT_RENDER_URL && styles.serverOptionActive]}
+                    onPress={() => handleSelectServer(DEFAULT_RENDER_URL)}
+                  >
+                    <MaterialIcons name="dns" size={18} color={apiUrl === DEFAULT_RENDER_URL ? '#0284c7' : '#64748b'} />
+                    <View style={styles.serverOptionDetails}>
+                      <Text style={[styles.serverOptionName, apiUrl === DEFAULT_RENDER_URL && styles.serverOptionNameActive]}>
+                        Live Production (Render)
+                      </Text>
+                      <Text style={styles.serverOptionUrl} numberOfLines={1}>
+                        {DEFAULT_RENDER_URL}
+                      </Text>
+                    </View>
+                    {apiUrl === DEFAULT_RENDER_URL && <MaterialIcons name="check" size={18} color="#0284c7" />}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.serverOption, apiUrl === DEFAULT_LOCAL_URL && styles.serverOptionActive]}
                     onPress={() => handleSelectServer(DEFAULT_LOCAL_URL)}
                   >
-                    <MaterialIcons name="computer" size={18} color={isLocal ? '#0284c7' : '#64748b'} />
+                    <MaterialIcons name="computer" size={18} color={apiUrl === DEFAULT_LOCAL_URL ? '#0284c7' : '#64748b'} />
                     <View style={styles.serverOptionDetails}>
-                      <Text style={[styles.serverOptionName, isLocal && styles.serverOptionNameActive]}>
+                      <Text style={[styles.serverOptionName, apiUrl === DEFAULT_LOCAL_URL && styles.serverOptionNameActive]}>
                         Local PC (Wi-Fi LAN)
                       </Text>
                       <Text style={styles.serverOptionUrl} numberOfLines={1}>
                         {DEFAULT_LOCAL_URL}
                       </Text>
                     </View>
-                    {isLocal && <MaterialIcons name="check" size={18} color="#0284c7" />}
+                    {apiUrl === DEFAULT_LOCAL_URL && <MaterialIcons name="check" size={18} color="#0284c7" />}
                   </TouchableOpacity>
 
                   <View style={styles.customUrlInputRow}>
