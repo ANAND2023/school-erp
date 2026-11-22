@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -51,9 +52,11 @@ const initialSingleState = {
 };
 
 export const RegistrationSlipGeneratorPage = () => {
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { activeAcademicYearId, activeAcademicYearName } = useAuthStore();
   const [tabIndex, setTabIndex] = useState(0); // 0 = Single, 1 = Bulk
+  const [enquiryRefInfo, setEnquiryRefInfo] = useState(null);
 
   // Classes list
   const { data: classesRes } = useQuery({
@@ -71,6 +74,26 @@ export const RegistrationSlipGeneratorPage = () => {
 
   // Single Form State
   const [singleData, setSingleData] = useState(initialSingleState);
+
+  // Auto-populate when converting from Student Enquiry
+  useEffect(() => {
+    if (location.state && location.state.studentName) {
+      const s = location.state;
+      setSingleData((prev) => ({
+        ...prev,
+        studentName: s.studentName || '',
+        classId: s.classId || '',
+        fatherName: s.fatherName || s.guardianName || '',
+        contactNumber: s.contactNumber || s.mobile || '',
+        email: s.email || '',
+        gender: s.gender || 'Male',
+        dob: s.dob || '',
+      }));
+      if (s.enquiryId) {
+        setEnquiryRefInfo(`Pre-filled from Student Enquiry #${s.enquiryId} (${s.studentName})`);
+      }
+    }
+  }, [location.state]);
 
   // Bulk Form State
   const [bulkFeePerSlip, setBulkFeePerSlip] = useState(500);
@@ -184,6 +207,15 @@ export const RegistrationSlipGeneratorPage = () => {
           <CheckIcon color="success" sx={{ fontSize: 20 }} />
           <Typography variant="subtitle2" fontWeight={700}>
             {successMsg}
+          </Typography>
+        </Paper>
+      )}
+
+      {enquiryRefInfo && (
+        <Paper sx={{ p: 1.2, mb: 2, bgcolor: '#f0f9ff', border: '1px solid #7dd3fc', color: '#0369a1', display: 'flex', alignItems: 'center', gap: 1, borderRadius: 1.5 }}>
+          <CheckIcon color="info" sx={{ fontSize: 20 }} />
+          <Typography variant="subtitle2" fontWeight={700}>
+            {enquiryRefInfo}
           </Typography>
         </Paper>
       )}

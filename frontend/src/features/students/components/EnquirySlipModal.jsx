@@ -20,6 +20,7 @@ import {
   School as SchoolIcon,
   CheckCircle as CheckIcon,
   HowToReg as ConvertIcon,
+  AppRegistration as RegistrationIcon,
   WhatsApp as WhatsAppIcon,
   Person as PersonIcon,
   QrCode2 as QrCodeIcon,
@@ -118,6 +119,7 @@ export const EnquirySlipModal = ({
   enquiryData: initialEnquiryData,
   isNew = false,
   onConvertToAdmission,
+  onConvertToRegistration,
 }) => {
   const { user, activeAcademicYearName } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -1162,6 +1164,17 @@ export const EnquirySlipModal = ({
           }}
         >
           <Box>
+            {onConvertToRegistration && enquiry?.status !== 3 && (
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<RegistrationIcon />}
+                onClick={() => onConvertToRegistration(enquiry)}
+                sx={{ mr: 1, fontWeight: 700, textTransform: 'none' }}
+              >
+                Convert to Registration
+              </Button>
+            )}
             {onConvertToAdmission && enquiry?.status !== 3 && (
               <Button
                 variant="outlined"

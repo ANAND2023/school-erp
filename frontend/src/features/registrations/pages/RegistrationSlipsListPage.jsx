@@ -1,23 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  Grid,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
+  Button,
+  Grid,
   Chip,
   IconButton,
   Tooltip,
@@ -25,27 +13,51 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Pagination,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
+  Add as AddIcon,
   Search as SearchIcon,
-  Visibility as ViewIcon,
+  HowToReg as ConvertIcon,
+  ReceiptLong as ReceiptLongIcon,
+  WhatsApp as WhatsAppIcon,
   Payment as PayIcon,
+  Tune as TuneIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DataGrid } from '../../../components/DataGrid';
+import { AppInput, AppSelect } from '../../../components/common';
 import { dynamicRegistrationApi } from '../api/dynamicRegistrationApi';
 import { useAuthStore } from '../../../store/authStore';
+import { useUiStore } from '../../../store/uiStore';
 import { RegistrationSlipModal } from '../components/RegistrationSlipModal';
+import apiClient from '../../../api/client';
+
+const PAYMENT_STATUS_OPTIONS = [
+  { label: 'All Statuses', value: 'All' },
+  { label: 'Fully Paid', value: 'Paid' },
+  { label: 'Partial Paid', value: 'Partial' },
+  { label: 'Unpaid', value: 'Unpaid' },
+];
 
 export const RegistrationSlipsListPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showSnackbar } = useUiStore();
   const { activeAcademicYearId, activeAcademicYearName } = useAuthStore();
 
+  // Filters
   const [search, setSearch] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('All');
-  const [page, setPage] = useState(1);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('All');
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 15 });
 
-  // Selected slip for view or pay
+  // Selected slip for modal view or payment
   const [selectedSlip, setSelectedSlip] = useState(null);
   const [viewSlipModalOpen, setViewSlipModalOpen] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -53,34 +65,38 @@ export const RegistrationSlipsListPage = () => {
   const [payMode, setPayMode] = useState('Cash');
   const [payRef, setPayRef] = useState('');
 
-  // Dashboard Stats Query
-  const { data: statsRes } = useQuery({
-    queryKey: ['registration-dashboard-stats', activeAcademicYearId],
-    queryFn: () => dynamicRegistrationApi.getDashboardStats(activeAcademicYearId),
+  // Classes list
+  const { data: classesRes } = useQuery({
+    queryKey: ['classes-list'],
+    queryFn: () => apiClient.get('/classes'),
   });
-  const stats = statsRes?.data?.data || {
-    totalSlips: 0,
-    paidSlips: 0,
-    unpaidSlips: 0,
-    partialPaidSlips: 0,
-    totalFeeCollected: 0,
-    totalPendingCollection: 0,
-  };
+  const classesList = classesRes?.data?.data || [];
 
-  // Slips List Query
-  const { data: slipsRes } = useQuery({
-    queryKey: ['registration-slips', activeAcademicYearId, paymentStatus, search, page],
+  // Slips List Query (Session Registration Records)
+  const { data: slipsRes, isLoading } = useQuery({
+    queryKey: [
+      'registration-slips',
+      activeAcademicYearId,
+      selectedClass,
+      selectedPaymentStatus,
+      search,
+      paginationModel.page,
+      paginationModel.pageSize,
+    ],
     queryFn: () =>
       dynamicRegistrationApi.getSlips({
         academicYearId: activeAcademicYearId,
-        paymentStatus,
-        search,
-        page,
-        pageSize: 15,
+        classId: selectedClass || undefined,
+        paymentStatus: selectedPaymentStatus !== 'All' ? selectedPaymentStatus : undefined,
+        search: search.trim() || undefined,
+        page: paginationModel.page + 1,
+        pageSize: paginationModel.pageSize,
       }),
   });
 
   const slipsData = slipsRes?.data?.data || { items: [], totalCount: 0, totalPages: 1 };
+  const rows = slipsData.items || [];
+  const totalCount = slipsData.totalCount || 0;
 
   // Pay mutation
   const payMutation = useMutation({
@@ -88,13 +104,62 @@ export const RegistrationSlipsListPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['registration-slips']);
       queryClient.invalidateQueries(['admission-slips']);
-      queryClient.invalidateQueries(['registration-dashboard-stats']);
-      queryClient.invalidateQueries(['admission-dashboard-stats']);
+      showSnackbar('Payment recorded successfully!', 'success');
       setPayModalOpen(false);
       setPayAmount('');
       setPayRef('');
     },
+    onError: (err) => {
+      showSnackbar(err.response?.data?.message || 'Failed to record payment', 'error');
+    },
   });
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setSelectedClass('');
+    setSelectedPaymentStatus('All');
+    setPaginationModel({ page: 0, pageSize: 15 });
+  };
+
+  const handleConvertToAdmission = (slip) => {
+    // Pre-fill admission form with registration slip data (FR-3.2)
+    navigate('/admissions/new', {
+      state: {
+        registrationSlipId: slip.id,
+        registrationSlipNo: slip.slipNumber,
+        studentName: slip.studentName,
+        classId: slip.classId,
+        guardianName: slip.fatherName || slip.motherName,
+        fatherName: slip.fatherName,
+        motherName: slip.motherName,
+        gender: slip.gender,
+        dob: slip.dob,
+        mobile: slip.contactNumber,
+        email: slip.email,
+        address: slip.address,
+        state: slip.state,
+        city: slip.city,
+        previousSchool: slip.previousSchool,
+      },
+    });
+  };
+
+  const handleShareWhatsApp = (slip) => {
+    if (!slip.contactNumber) {
+      showSnackbar('No mobile number registered for this student.', 'warning');
+      return;
+    }
+    const rawNumber = String(slip.contactNumber).replace(/\D/g, '');
+    const phone = rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
+    const msg = `*STUDENT REGISTRATION SLIP*\n\nDear Parent/Student,\nRegistration details for ${slip.studentName}:\n\n*Slip No:* ${slip.slipNumber}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Status:* ${slip.paymentStatus}`;
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  };
 
   const handleOpenPay = (slip) => {
     setSelectedSlip(slip);
@@ -103,7 +168,10 @@ export const RegistrationSlipsListPage = () => {
   };
 
   const handleCollectPayment = () => {
-    if (!selectedSlip || !payAmount || Number(payAmount) <= 0) return;
+    if (!selectedSlip || !payAmount || Number(payAmount) <= 0) {
+      showSnackbar('Please enter a valid payment amount.', 'warning');
+      return;
+    }
     payMutation.mutate({
       admissionSlipId: selectedSlip.id,
       amount: Number(payAmount),
@@ -113,202 +181,332 @@ export const RegistrationSlipsListPage = () => {
     });
   };
 
+  const columns = [
+    {
+      field: 'studentName',
+      headerName: 'Student Name',
+      flex: 1.2,
+      minWidth: 160,
+      renderCell: (params) => (
+        <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a' }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    { field: 'className', headerName: 'Seeking Class', width: 120 },
+    {
+      field: 'academicYearName',
+      headerName: 'Session',
+      width: 110,
+      renderCell: (params) => (
+        <Chip
+          label={params.value || activeAcademicYearName || 'Current'}
+          size="small"
+          variant="outlined"
+          color="primary"
+          sx={{ fontWeight: 700, fontSize: '11px' }}
+        />
+      ),
+    },
+    {
+      field: 'slipNumber',
+      headerName: 'Slip No',
+      width: 125,
+      renderCell: (params) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>
+          {params.value}
+        </span>
+      ),
+    },
+    { field: 'fatherName', headerName: 'Parent / Guardian', flex: 1.1, minWidth: 140 },
+    { field: 'contactNumber', headerName: 'Mobile', width: 130 },
+    {
+      field: 'feeAmount',
+      headerName: 'Fee (₹)',
+      width: 90,
+      renderCell: (params) => `₹${params.value}`,
+    },
+    {
+      field: 'paidAmount',
+      headerName: 'Paid (₹)',
+      width: 90,
+      renderCell: (params) => (
+        <span style={{ color: '#16a34a', fontWeight: 700 }}>₹{params.value}</span>
+      ),
+    },
+    {
+      field: 'balanceAmount',
+      headerName: 'Balance (₹)',
+      width: 95,
+      renderCell: (params) => (
+        <span style={{ color: params.value > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
+          ₹{params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'paymentStatus',
+      headerName: 'Payment Status',
+      width: 130,
+      renderCell: (params) => {
+        const s = params.value;
+        return (
+          <Chip
+            label={s}
+            size="small"
+            color={s === 'Paid' ? 'success' : s === 'Partial' ? 'warning' : 'error'}
+            sx={{ fontWeight: 800, fontSize: '0.7rem' }}
+          />
+        );
+      },
+    },
+    {
+      field: 'admissionStatus',
+      headerName: 'Admission',
+      width: 115,
+      renderCell: (params) => {
+        const isAdmitted = params.value === 'Admitted';
+        return (
+          <Chip
+            label={isAdmitted ? 'Admitted' : 'Registered'}
+            size="small"
+            color={isAdmitted ? 'success' : 'default'}
+            variant={isAdmitted ? 'filled' : 'outlined'}
+            sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+          />
+        );
+      },
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 210,
+      sortable: false,
+      renderCell: (params) => {
+        const slip = params.row;
+        const isAdmitted = slip.admissionStatus === 'Admitted';
+
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            {/* Convert to Admission / Admit Student Option */}
+            <Tooltip title={isAdmitted ? 'Student already admitted' : 'Admit Student / Convert to Admission'}>
+              <span>
+                <IconButton
+                  size="small"
+                  color="success"
+                  disabled={isAdmitted}
+                  sx={{
+                    bgcolor: isAdmitted ? '#f1f5f9' : '#f0fdf4',
+                    '&:hover': { bgcolor: '#dcfce7' },
+                  }}
+                  onClick={() => handleConvertToAdmission(slip)}
+                >
+                  <ConvertIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            {/* View & Print Slip */}
+            <Tooltip title="View & Print Registration Slip">
+              <IconButton
+                size="small"
+                color="info"
+                sx={{
+                  bgcolor: '#f0f9ff',
+                  '&:hover': { bgcolor: '#e0f2fe' },
+                }}
+                onClick={() => {
+                  setSelectedSlip(slip);
+                  setViewSlipModalOpen(true);
+                }}
+              >
+                <ReceiptLongIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            {/* Send WhatsApp Message */}
+            <Tooltip title="Share Slip on WhatsApp">
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#25D366',
+                  bgcolor: '#f0fdf4',
+                  '&:hover': { bgcolor: '#dcfce7' },
+                }}
+                onClick={() => handleShareWhatsApp(slip)}
+              >
+                <WhatsAppIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            {/* Collect Fee (if balance > 0) */}
+            {slip.balanceAmount > 0 && (
+              <Tooltip title={`Collect Due Balance (₹${slip.balanceAmount})`}>
+                <IconButton
+                  size="small"
+                  color="warning"
+                  sx={{
+                    bgcolor: '#fffbeb',
+                    '&:hover': { bgcolor: '#fef3c7' },
+                  }}
+                  onClick={() => handleOpenPay(slip)}
+                >
+                  <PayIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        );
+      },
+    },
+  ];
+
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 } }}>
-      <Box sx={{ mb: 2.5 }}>
-        <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-          Session Registration Records & Reports
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#64748b' }}>
-          Real-time registration slip generation, payment reconciliation, and searchable slip register for <strong>{activeAcademicYearName}</strong>.
-        </Typography>
+    <Box sx={{ pb: 4 }}>
+      {/* Page Header matching EnquiriesPage */}
+      <Box
+        sx={{
+          mb: { xs: 2, sm: 3 },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { sm: 'center' },
+          gap: 1.5,
+        }}
+      >
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+            Session Registration Records & Reports
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+            Manage registered students, fees, slip generation, and convert to official admission
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<TuneIcon />}
+            onClick={() => navigate('/registrations/builder')}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              borderRadius: 2,
+              px: 2,
+              py: 0.8,
+            }}
+          >
+            Registration Form Builder
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/registrations/slip-generator')}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 800,
+              borderRadius: 2,
+              px: 2.2,
+              py: 0.8,
+            }}
+          >
+            New Registration Slip
+          </Button>
+        </Box>
       </Box>
 
-      {/* KPI Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={800} sx={{ color: '#166534', textTransform: 'uppercase' }}>
-                Total Generated
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ color: '#14532d', mt: 0.5 }}>
-                {stats.totalSlips}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ bgcolor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={800} sx={{ color: '#065f46', textTransform: 'uppercase' }}>
-                Paid Slips
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ color: '#047857', mt: 0.5 }}>
-                {stats.paidSlips}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={800} sx={{ color: '#991b1b', textTransform: 'uppercase' }}>
-                Unpaid Slips
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ color: '#b91c1c', mt: 0.5 }}>
-                {stats.unpaidSlips}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ bgcolor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={800} sx={{ color: '#92400e', textTransform: 'uppercase' }}>
-                Partial Paid
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ color: '#b45309', mt: 0.5 }}>
-                {stats.partialPaidSlips}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={800} sx={{ color: '#1e40af', textTransform: 'uppercase' }}>
-                Total Collection
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ color: '#1d4ed8', mt: 0.5 }}>
-                ₹{Number(stats.totalFeeCollected || 0).toLocaleString()}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Filter Toolbar */}
-      <Card sx={{ mb: 2.5, borderRadius: 2, border: '1px solid #e2e8f0', p: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+      {/* Filter Toolbar matching EnquiriesPage */}
+      <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
+        <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="flex-end">
           <Grid item xs={12} sm={6} md={5}>
-            <TextField
-              placeholder="Search by Student Name, Registration Slip ID, or Mobile..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ color: '#94a3b8', mr: 1 }} />,
+            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1 }}>
+                <AppInput
+                  label="Search Registration Records"
+                  placeholder="Student name, slip ID, parent, mobile..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                type="submit"
+                startIcon={<SearchIcon />}
+                sx={{
+                  height: 30,
+                  minHeight: 30,
+                  minWidth: 90,
+                  px: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  flexShrink: 0,
+                  borderRadius: 1,
+                  mt: '1px',
+                }}
+              >
+                Search
+              </Button>
+            </Box>
+          </Grid>
+          <Grid item xs={12} sm={3} md={3.5}>
+            <AppSelect
+              label="Seeking Class"
+              placeholder="All Classes"
+              value={selectedClass}
+              options={classesList.map((c) => ({ label: c.name, value: c.id }))}
+              onChange={(e) => {
+                setSelectedClass(e.target.value);
+                setPaginationModel((prev) => ({ ...prev, page: 0 }));
               }}
+              showClear
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Payment Status Filter</InputLabel>
-              <Select
-                value={paymentStatus}
-                label="Payment Status Filter"
-                onChange={(e) => setPaymentStatus(e.target.value)}
-              >
-                <MenuItem value="All">All Slips</MenuItem>
-                <MenuItem value="Paid">Fully Paid</MenuItem>
-                <MenuItem value="Partial">Partial Paid</MenuItem>
-                <MenuItem value="Unpaid">Unpaid</MenuItem>
-              </Select>
-            </FormControl>
+          <Grid item xs={12} sm={3} md={2.5}>
+            <AppSelect
+              label="Payment Status"
+              placeholder="All Statuses"
+              value={selectedPaymentStatus}
+              options={PAYMENT_STATUS_OPTIONS}
+              onChange={(e) => {
+                setSelectedPaymentStatus(e.target.value);
+                setPaginationModel((prev) => ({ ...prev, page: 0 }));
+              }}
+              showClear
+            />
           </Grid>
+          {(search || selectedClass || selectedPaymentStatus !== 'All') && (
+            <Grid item xs={12} md={1}>
+              <Button
+                variant="text"
+                color="secondary"
+                size="small"
+                startIcon={<ClearIcon />}
+                onClick={handleClearFilters}
+                sx={{ textTransform: 'none', fontSize: '11px', height: 30 }}
+              >
+                Clear
+              </Button>
+            </Grid>
+          )}
         </Grid>
-      </Card>
+      </Paper>
 
-      {/* Slips Register Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 2, border: '1px solid #e2e8f0' }}>
-        <Table size="small">
-          <TableHead sx={{ bgcolor: '#f8fafc' }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 800 }}>Slip Number</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Student Name</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Class</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Contact No</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Fee (₹)</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Paid (₹)</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Balance (₹)</TableCell>
-              <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 800, textAlign: 'center' }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {slipsData.items.map((slip) => (
-              <TableRow key={slip.id} hover>
-                <TableCell sx={{ fontWeight: 700, color: '#0284c7' }}>{slip.slipNumber}</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>{slip.studentName}</TableCell>
-                <TableCell>{slip.className}</TableCell>
-                <TableCell>{slip.contactNumber}</TableCell>
-                <TableCell>₹{slip.feeAmount}</TableCell>
-                <TableCell sx={{ color: '#16a34a', fontWeight: 700 }}>₹{slip.paidAmount}</TableCell>
-                <TableCell sx={{ color: slip.balanceAmount > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
-                  ₹{slip.balanceAmount}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={slip.paymentStatus}
-                    size="small"
-                    color={
-                      slip.paymentStatus === 'Paid'
-                        ? 'success'
-                        : slip.paymentStatus === 'Partial'
-                        ? 'warning'
-                        : 'error'
-                    }
-                    sx={{ fontWeight: 800, fontSize: '0.7rem' }}
-                  />
-                </TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>
-                  <Tooltip title="View & Print Registration Slip">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedSlip(slip);
-                        setViewSlipModalOpen(true);
-                      }}
-                    >
-                      <ViewIcon fontSize="small" sx={{ color: '#0284c7' }} />
-                    </IconButton>
-                  </Tooltip>
-                  {slip.balanceAmount > 0 && (
-                    <Tooltip title="Collect Due Payment">
-                      <IconButton size="small" onClick={() => handleOpenPay(slip)}>
-                        <PayIcon fontSize="small" sx={{ color: '#16a34a' }} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {slipsData.items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4, color: '#64748b' }}>
-                  No registration slips found for current filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Main DataGrid matching EnquiriesPage */}
+      <DataGrid
+        menuKey="Admissions"
+        columns={columns}
+        rows={rows}
+        rowCount={totalCount}
+        loading={isLoading}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+        onAddClick={() => navigate('/registrations/slip-generator')}
+        addLabel="New Registration Slip"
+      />
 
-      {/* Pagination */}
-      {slipsData.totalPages > 1 && (
-        <Box sx={{ mt: 2.5, display: 'flex', justifyContent: 'center' }}>
-          <Pagination
-            count={slipsData.totalPages}
-            page={page}
-            onChange={(e, v) => setPage(v)}
-            color="primary"
-          />
-        </Box>
-      )}
-
-      {/* Payment Collection Modal */}
+      {/* Payment Collection Dialog */}
       <Dialog open={payModalOpen} onClose={() => setPayModalOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 800 }}>Collect Due Payment</DialogTitle>
         <DialogContent dividers>
@@ -367,6 +565,7 @@ export const RegistrationSlipsListPage = () => {
           setSelectedSlip(null);
         }}
         slip={selectedSlip}
+        onAdmit={handleConvertToAdmission}
       />
     </Box>
   );

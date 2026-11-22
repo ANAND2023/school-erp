@@ -28,6 +28,7 @@ import {
   ReceiptLong as ReceiptLongIcon,
   WhatsApp as WhatsAppIcon,
   AccountBalanceWallet as FeeStructureIcon,
+  AppRegistration as RegistrationIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { DataGrid } from '../../../components/DataGrid';
@@ -265,6 +266,21 @@ export const EnquiriesPage = () => {
     });
   };
 
+  const handleConvertToRegistration = (enquiry) => {
+    // Pre-fill registration slip generator with enquiry data
+    navigate('/registrations/slip-generator', {
+      state: {
+        enquiryId: enquiry.id,
+        studentName: enquiry.studentName,
+        classId: enquiry.classId,
+        fatherName: enquiry.guardianName,
+        contactNumber: enquiry.mobile,
+        email: enquiry.email,
+        gender: enquiry.gender || 'Male',
+      },
+    });
+  };
+
   const getStatusChip = (status) => {
     const s = ENQUIRY_STATUSES.find((item) => item.value === status);
     return <Chip label={s?.label || 'Open'} color={s?.color || 'default'} size="small" />;
@@ -322,7 +338,7 @@ export const EnquiriesPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 275,
+      width: 315,
       sortable: false,
       renderCell: (params) => {
         const enq = params.row;
@@ -378,6 +394,21 @@ export const EnquiriesPage = () => {
                 </IconButton>
               </span>
             </Tooltip>
+            {!isConverted && (
+              <Tooltip title="Convert to Registration (Issue Registration Slip)">
+                <IconButton
+                  size="small"
+                  sx={{
+                    color: '#0284c7',
+                    bgcolor: '#f0f9ff',
+                    '&:hover': { bgcolor: '#e0f2fe' },
+                  }}
+                  onClick={() => handleConvertToRegistration(enq)}
+                >
+                  <RegistrationIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
             {canAdmit && !isConverted && (
               <Tooltip title="Convert to Admission (FR-3.2)">
                 <IconButton size="small" color="success" onClick={() => handleConvertToAdmission(enq)}>
@@ -729,6 +760,10 @@ export const EnquiriesPage = () => {
         enquiryId={slipEnquiry?.id}
         enquiryData={slipEnquiry}
         isNew={isNewlyCreated}
+        onConvertToRegistration={(enq) => {
+          setSlipModalOpen(false);
+          handleConvertToRegistration(enq);
+        }}
         onConvertToAdmission={(enq) => {
           setSlipModalOpen(false);
           handleConvertToAdmission(enq);

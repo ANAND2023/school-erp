@@ -57,6 +57,7 @@ import { useUiStore } from '../../../store/uiStore';
 import { AdmissionReportModal } from '../components/AdmissionReportModal';
 import { PhotoCaptureUpload } from '../components/PhotoCaptureUpload';
 import { AppInput, AppSelect, AppDatePicker } from '../../../components/common';
+import { dynamicRegistrationApi } from '../../registrations/api/dynamicRegistrationApi';
 
 const steps = ['Essential Details *', 'Personal & Address', 'Parents & Family', 'Review & Confirm'];
 
@@ -132,20 +133,29 @@ export const AdmissionFormPage = () => {
     enquiryId: null,
   });
 
-  // Pre-fill if coming from enquiry
+  // Pre-fill if coming from enquiry or registration
   useEffect(() => {
     if (location.state) {
       const state = location.state;
-      const parts = (state.studentName || '').split(' ');
+      const parts = (state.studentName || '').trim().split(/\s+/);
       setFormData((prev) => ({
         ...prev,
-        firstName: parts[0] || '',
-        lastName: parts.slice(1).join(' ') || '',
-        classId: state.classId || '',
-        fatherName: state.guardianName || '',
-        fatherMobile: state.mobile || '',
-        fatherEmail: state.email || '',
+        firstName: parts[0] || prev.firstName || '',
+        lastName: parts.slice(1).join(' ') || prev.lastName || '',
+        classId: state.classId || prev.classId || '',
+        gender: state.gender || prev.gender || 'Male',
+        dateOfBirth: state.dob ? dayjs(state.dob).format('YYYY-MM-DD') : prev.dateOfBirth,
+        fatherName: state.fatherName || state.guardianName || prev.fatherName || '',
+        motherName: state.motherName || prev.motherName || '',
+        fatherMobile: state.mobile || state.fatherMobile || prev.fatherMobile || '',
+        fatherEmail: state.email || state.fatherEmail || prev.fatherEmail || '',
+        address: state.address || prev.address || '',
+        city: state.city || prev.city || '',
+        state: state.state || prev.state || '',
+        previousSchoolName: state.previousSchool || prev.previousSchoolName || '',
         enquiryId: state.enquiryId || null,
+        registrationSlipId: state.registrationSlipId || null,
+        registrationSlipNo: state.registrationSlipNo || null,
       }));
     }
   }, [location.state]);
@@ -457,6 +467,11 @@ export const AdmissionFormPage = () => {
         showSnackbar(res.data.message || 'Student admitted successfully!', 'success');
         const admData = res.data.data || {};
         const newStudentId = admData.id;
+
+        // If coming from registration, mark registration as admitted
+        if (formData.registrationSlipId) {
+          dynamicRegistrationApi.markSlipAdmitted(formData.registrationSlipId).catch(() => {});
+        }
 
         // Persist Father, Mother, Guardian photos into student document records
         if (newStudentId) {

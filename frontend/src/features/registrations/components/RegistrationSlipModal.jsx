@@ -13,10 +13,11 @@ import {
 import {
   Print as PrintIcon,
   WhatsApp as WhatsAppIcon,
+  HowToReg as ConvertIcon,
 } from '@mui/icons-material';
 import { printElement } from '../../../utils/printUtils';
 
-export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {} }) => {
+export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, onAdmit }) => {
   if (!slip) return null;
 
   const schoolName = branchInfo.schoolName || 'DELHI PUBLIC SCHOOL';
@@ -234,6 +235,21 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {} }) 
         <Button onClick={onClose} variant="outlined" color="inherit" size="small">
           Close
         </Button>
+        {onAdmit && (
+          <Button
+            onClick={() => {
+              onClose();
+              onAdmit(slip);
+            }}
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={<ConvertIcon />}
+            sx={{ fontWeight: 800, textTransform: 'none' }}
+          >
+            Admit Student
+          </Button>
+        )}
         <Button
           onClick={handleShareWhatsApp}
           variant="contained"

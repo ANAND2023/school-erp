@@ -15,6 +15,9 @@ export const dynamicRegistrationApi = {
   getSlipById: (id) =>
     apiClient.get(`/DynamicAdmission/slips/${id}`),
 
+  markSlipAdmitted: (id) =>
+    apiClient.post(`/DynamicAdmission/slips/${id}/admit`),
+
   createIndividualSlip: (data) =>
     apiClient.post('/DynamicAdmission/slips/individual', data),
 

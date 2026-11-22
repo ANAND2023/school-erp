@@ -440,6 +440,20 @@ namespace SchoolERP.API.Controllers
             return Ok(new { success = true, data = slip });
         }
 
+        [HttpPost("slips/{id}/admit")]
+        public async Task<IActionResult> MarkSlipAdmitted(long id)
+        {
+            var branchId = _currentUser.BranchId;
+            var slip = await _context.AdmissionSlips
+                .FirstOrDefaultAsync(s => s.Id == id && s.BranchId == branchId && s.IsActive);
+            if (slip == null) return NotFound(new { success = false, message = "Registration slip not found." });
+
+            slip.AdmissionStatus = "Admitted";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Registration status marked as Admitted." });
+        }
+
         // ==========================================
         // 4. PAYMENT COLLECTION & RECEIPT
         // ==========================================
