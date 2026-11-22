@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -53,6 +53,7 @@ const initialSingleState = {
 
 export const RegistrationSlipGeneratorPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeAcademicYearId, activeAcademicYearName } = useAuthStore();
   const [tabIndex, setTabIndex] = useState(0); // 0 = Single, 1 = Bulk
@@ -613,6 +614,22 @@ export const RegistrationSlipGeneratorPage = () => {
         open={slipModalOpen}
         onClose={() => setSlipModalOpen(false)}
         slip={generatedSlip}
+        onAdmit={(slip) => {
+          navigate('/admissions/new', {
+            state: {
+              registrationSlipId: slip.id,
+              slipNumber: slip.slipNumber,
+              studentName: slip.studentName,
+              classId: slip.classId,
+              fatherName: slip.fatherName,
+              motherName: slip.motherName,
+              contactNumber: slip.contactNumber,
+              gender: slip.gender,
+              dob: slip.dob,
+              paidFee: slip.paidAmount,
+            },
+          });
+        }}
       />
     </Box>
   );

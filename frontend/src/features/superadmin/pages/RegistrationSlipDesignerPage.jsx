@@ -1,134 +1,96 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Paper,
-  Tabs,
-  Tab,
-  Divider,
-  IconButton,
-  Chip,
-  Tooltip,
-} from '@mui/material';
-import {
-  Save as SaveIcon,
-  Refresh as ResetIcon,
-  DragIndicator as DragIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  QrCode2 as QrCodeIcon,
-  AccountBalance as SchoolIcon,
-  ColorLens as ColorIcon,
-  ViewQuilt as LayoutIcon,
-  FormatSize as TypographyIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import { Card } from 'primereact/card';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { InputSwitch } from 'primereact/inputswitch';
+import { Dropdown } from 'primereact/dropdown';
+import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
+import { Divider } from 'primereact/divider';
+import { Dialog } from 'primereact/dialog';
 import { superAdminApi } from '../api/superAdminApi';
 import { printElement } from '../../../utils/printUtils';
 
-const DEFAULT_REGISTRATION_SLIP_CONFIG = {
-  schoolId: null,
-  schoolName: 'Platform Default (All Schools)',
-  isSchoolOverride: false,
+const PRESET_PALETTES = [
+  { name: 'Royal Navy', primary: '#1e3a8a', secondary: '#eff6ff', accent: '#172554', border: '#1e3a8a' },
+  { name: 'Teal Elegance', primary: '#0f766e', secondary: '#f0fdfa', accent: '#115e59', border: '#0f766e' },
+  { name: 'Forest Emerald', primary: '#065f46', secondary: '#ecfdf5', accent: '#064e3b', border: '#065f46' },
+  { name: 'Slate Executive', primary: '#1e293b', secondary: '#f8fafc', accent: '#0f172a', border: '#334155' },
+  { name: 'Crimson Heritage', primary: '#991b1b', secondary: '#fef2f2', accent: '#7f1d1d', border: '#991b1b' },
+  { name: 'Imperial Violet', primary: '#581c87', secondary: '#faf5ff', accent: '#3b0764', border: '#581c87' },
+  { name: 'Amber Gold', primary: '#b45309', secondary: '#fffbeb', accent: '#78350f', border: '#b45309' },
+  { name: 'Classic Monochrome', primary: '#000000', secondary: '#f3f4f6', accent: '#111827', border: '#000000' },
+];
 
-  primaryColor: '#0284c7',
-  secondaryColor: '#f0f9ff',
-  accentColor: '#0369a1',
-  borderColor: '#0284c7',
-  fontFamily: 'Inter, sans-serif',
-  fontScale: 'Normal',
-  baseFontSize: 12,
-  fontScalePercent: 100,
-  headerLayout: 'Classic',
-  borderStyle: 'Solid',
+const FONT_OPTIONS = [
+  { label: 'Inter (Modern & Clean)', value: 'Inter, sans-serif' },
+  { label: 'Arial / System Standard', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Poppins (Geometric & Friendly)', value: 'Poppins, sans-serif' },
+  { label: 'Roboto (Balanced Neo-Grotesque)', value: 'Roboto, sans-serif' },
+  { label: 'Montserrat (Premium Bold)', value: 'Montserrat, sans-serif' },
+  { label: 'Segoe UI (Clean Windows Default)', value: '"Segoe UI", -apple-system, sans-serif' },
+];
 
-  logoSize: 54,
-  photoWidth: 76,
-  photoHeight: 92,
-  pageSize: 'A4',
-  pageOrientation: 'portrait',
-  pageMargin: '6mm',
-  pagePadding: 16,
-  pageMaxWidth: 780,
+const FONT_WEIGHT_OPTIONS = [
+  { label: 'Normal (400)', value: '400' },
+  { label: 'Medium (500)', value: '500' },
+  { label: 'Semi-Bold (600)', value: '600' },
+  { label: 'Bold (700)', value: '700' },
+  { label: 'Extra Bold (800)', value: '800' },
+  { label: 'Heavy Black (900)', value: '900' },
+];
 
-  headerSchoolNameCustom: '',
-  headerSchoolNameFontSize: 22,
-  headerSchoolNameColor: '#0284c7',
-  headerSchoolNameFontWeight: '900',
-  headerSchoolNameFontFamily: 'inherit',
-  headerSchoolNameTransform: 'uppercase',
-  headerSchoolNameLetterSpacing: '0.8px',
+const TEXT_TRANSFORM_OPTIONS = [
+  { label: 'ALL UPPERCASE (DELHI PUBLIC SCHOOL)', value: 'uppercase' },
+  { label: 'Title Case (Delhi Public School)', value: 'capitalize' },
+  { label: 'Normal / As Typed', value: 'none' },
+];
 
-  headerSubtitleCustom: '',
-  headerSubtitleFontSize: 12,
-  headerSubtitleColor: '#334155',
-  headerSubtitleFontWeight: '600',
+const HEADER_LAYOUTS = [
+  { label: 'Classic Centered', value: 'Classic', desc: 'Centered school logo and details' },
+  { label: 'Modern Side-by-Side', value: 'Modern', desc: 'Logo left, school center, details right' },
+  { label: 'Solid Color Banner', value: 'Banner', desc: 'Full-bleed primary colored header' },
+  { label: 'Clean Minimalist', value: 'Minimal', desc: 'Understated clean header with thin border' },
+];
 
-  headerAddressCustom: '',
-  headerAddressFontSize: 11,
-  headerAddressColor: '#475569',
+const HEADER_DIVIDER_OPTIONS = [
+  { label: 'Solid Line (1.5px)', value: 'Solid' },
+  { label: 'Double Line (2.5px)', value: 'Double' },
+  { label: 'Dashed Line (1.5px)', value: 'Dashed' },
+  { label: 'No Bottom Line', value: 'None' },
+];
 
-  headerAlignment: 'center',
-  headerBgColor: 'transparent',
-  headerPaddingY: 8,
-  headerDividerStyle: 'Double',
-  headerDividerColor: '#0284c7',
+const BORDER_STYLES = [
+  { label: 'Solid Border', value: 'Solid' },
+  { label: 'Double Border', value: 'Double' },
+  { label: 'Dashed Border', value: 'Dashed' },
+  { label: 'Clean / Borderless', value: 'None' },
+];
 
-  slipTitle: 'OFFICIAL STUDENT REGISTRATION SLIP',
-  slipSubtitle: 'Academic Registration & Admission Application Slip',
-  slipTitleBgColor: '#0284c7',
-  slipTitleTextColor: '#ffffff',
-  slipTitleFontSize: 12,
+const COPY_LAYOUT_OPTIONS = [
+  { label: 'Dual Copies Side-by-Side (A4 Half Sheet with Scissor Line)', value: 'DualSideBySide' },
+  { label: 'Single Slip per Page (Standard / A5 friendly)', value: 'SingleCopy' },
+  { label: 'Dual Stacked (Top & Bottom on Single Page)', value: 'DualStacked' },
+];
 
-  watermarkText: 'REGISTERED',
-  showWatermark: false,
+const PAGE_SIZE_OPTIONS = [
+  { label: 'A4 Paper (Standard Full Page)', value: 'A4' },
+  { label: 'A5 Paper (Half Sheet / Voucher)', value: 'A5' },
+  { label: 'Letter (8.5 × 11 in)', value: 'Letter' },
+];
 
-  showSchoolLogo: true,
-  showAffiliationNo: true,
-  showStudentPhotoBox: true,
-  showQrCode: true,
-  showDobInWords: false,
-  showPreviousSchool: true,
-  showFeeBreakdown: true,
-  showPaymentMode: true,
-  showSchoolSealBox: true,
-  showDeclaration: true,
-  showSignatures: true,
+const ORIENTATION_OPTIONS = [
+  { label: 'Portrait (Vertical)', value: 'portrait' },
+  { label: 'Landscape (Horizontal)', value: 'landscape' },
+];
 
-  signature1: 'Candidate / Parent Signature',
-  signature2: 'Verification Officer',
-  signature3: 'Authorized Seal & Signature',
-
-  declarationTitle: 'DECLARATION / UNDERTAKING:',
-  declarationText:
-    'I hereby certify that all information submitted during registration is genuine and accurate. I understand that registration does not guarantee admission until all eligibility conditions and fee payments are satisfied.',
-
-  footerText: 'Official Student Registration Slip • System Generated by School ERP',
-
-  sections: [
-    { key: 'header', title: 'School Header & Affiliation', visible: true, order: 1 },
-    { key: 'meta_bar', title: 'Registration Reference & Status Bar', visible: true, order: 2 },
-    { key: 'student_info', title: 'Student Information & Seeking Class', visible: true, order: 3 },
-    { key: 'parents_info', title: 'Parent & Contact Details', visible: true, order: 4 },
-    { key: 'fee_summary', title: 'Registration Fee & Payment Ledger', visible: true, order: 5 },
-    { key: 'address_school', title: 'Residential Address & Previous School', visible: true, order: 6 },
-    { key: 'declaration', title: 'Declaration & Undertaking', visible: true, order: 7 },
-    { key: 'signatures', title: 'Signatures & School Seal', visible: true, order: 8 },
-    { key: 'footer', title: 'Footer System Note', visible: true, order: 9 },
-  ],
-};
+const PAGE_MARGIN_OPTIONS = [
+  { label: 'Compact Margins (4mm)', value: '4mm' },
+  { label: 'Standard Margins (6mm)', value: '6mm' },
+  { label: 'Comfortable Margins (8mm)', value: '8mm' },
+  { label: 'Spacious Margins (12mm)', value: '12mm' },
+];
 
 export const RegistrationSlipDesignerPage = () => {
   const toastRef = useRef(null);
@@ -136,10 +98,118 @@ export const RegistrationSlipDesignerPage = () => {
   const [saving, setSaving] = useState(false);
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState('header');
   const [draggedIndex, setDraggedIndex] = useState(null);
 
-  const [config, setConfig] = useState(DEFAULT_REGISTRATION_SLIP_CONFIG);
+  // Registration Slip Config State
+  const [config, setConfig] = useState({
+    schoolId: null,
+    schoolName: 'Platform Default (All Schools)',
+    isSchoolOverride: false,
+
+    // Colors & Fonts
+    primaryColor: '#1e3a8a',
+    secondaryColor: '#eff6ff',
+    accentColor: '#172554',
+    borderColor: '#1e3a8a',
+    fontFamily: 'Inter, sans-serif',
+    fontScale: 'Normal',
+    baseFontSize: 11,
+    fontScalePercent: 100,
+    headerLayout: 'Classic',
+    borderStyle: 'Solid',
+
+    // Sizing Controls
+    logoSize: 48,
+    photoWidth: 60,
+    photoHeight: 70,
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargin: '4mm',
+    pagePadding: 12,
+    pageMaxWidth: 800,
+
+    // Header Customization
+    headerSchoolNameCustom: '',
+    headerSchoolNameFontSize: 17,
+    headerSchoolNameColor: '#1e3a8a',
+    headerSchoolNameFontWeight: '900',
+    headerSchoolNameFontFamily: 'inherit',
+    headerSchoolNameTransform: 'uppercase',
+    headerSchoolNameLetterSpacing: '0.5px',
+
+    headerSubtitleCustom: '',
+    headerSubtitleFontSize: 11,
+    headerSubtitleColor: '#475569',
+    headerSubtitleFontWeight: '600',
+
+    headerAddressCustom: '',
+    headerAddressFontSize: 10,
+    headerAddressColor: '#1e293b',
+
+    headerAlignment: 'center',
+    headerBgColor: 'transparent',
+    headerPaddingY: 6,
+    headerDividerStyle: 'Solid',
+    headerDividerColor: '#1e3a8a',
+
+    // Slip Title Badge
+    slipTitle: 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT',
+    slipSubtitle: 'Academic Session Registration & Application Voucher',
+    slipTitleBgColor: '#1e3a8a',
+    slipTitleTextColor: '#ffffff',
+    slipTitleFontSize: 11,
+
+    // Watermark
+    watermarkText: 'REGISTERED / OFFICIAL',
+    showWatermark: false,
+
+    // Copy Layout & Titles
+    copyLayout: 'DualSideBySide',
+    showCuttingLine: true,
+    firstCopyTitle: 'Office Copy',
+    secondCopyTitle: 'Student Copy',
+    thirdCopyTitle: 'Bank Copy',
+    currencySymbol: '₹',
+
+    // Feature Toggles
+    showSchoolLogo: true,
+    showAffiliationNo: true,
+    showStudentPhoto: false,
+    showSchoolSealBox: true,
+    showQrCode: true,
+    showAmountInWords: true,
+    showPaymentMode: true,
+    showPreviousSchool: true,
+    showFeeBreakdownTable: true,
+    showBalanceDue: true,
+    showTerms: true,
+
+    // Signatures
+    showSignatures: true,
+    signature1: 'Candidate / Parent Signature',
+    signature2: 'Authorized Signatory',
+    signature3: 'Verification Officer',
+
+    // Content Texts
+    termsTitle: 'TERMS & CONDITIONS / UNDERTAKING:',
+    termsText:
+      '• Registration fee once deposited will not be refunded or transferred under any circumstances.\n• Registration does not guarantee admission. Final admission is subject to merit, seat availability & document verification.\n• Retain this slip safely for entrance test, interview, and counseling verification.',
+    footerText: 'Computer Generated Registration Slip • Powered by Digital Vidya Sarthi (DVS ERP)',
+
+    // Drag and Drop Sections
+    sections: [
+      { key: 'header', title: 'School Header & Affiliation', visible: true, order: 1 },
+      { key: 'meta_bar', title: 'Registration Title & Copy Badge', visible: true, order: 2 },
+      { key: 'student_details', title: 'Student & Registration Details Box', visible: true, order: 3 },
+      { key: 'fee_breakdown', title: 'Registration Fee Particulars Table', visible: true, order: 4 },
+      { key: 'payment_summary', title: 'Amount in Words & Totals Summary', visible: true, order: 5 },
+      { key: 'payment_info', title: 'Payment Mode & Bank / Ref Info', visible: true, order: 6 },
+      { key: 'terms', title: 'Registration Terms & Guidelines', visible: true, order: 7 },
+      { key: 'signatures', title: 'Signatures & School Seal', visible: true, order: 8 },
+      { key: 'footer', title: 'Footer System Note', visible: true, order: 9 },
+    ],
+  });
 
   useEffect(() => {
     loadSchools();
@@ -151,77 +221,172 @@ export const RegistrationSlipDesignerPage = () => {
 
   const loadSchools = async () => {
     try {
-      const res = await superAdminApi.getSchools();
-      const list = res?.data || res || [];
-      setSchools(Array.isArray(list) ? list : []);
-    } catch {
-      // Ignore
+      const res = await superAdminApi.getTenants({ page: 1, limit: 100 });
+      if (res?.success && res.data) {
+        const tenantItems = Array.isArray(res.data) ? res.data : res.data.items || [];
+        setSchools(tenantItems);
+      }
+    } catch (err) {
+      console.error('Failed to load schools list:', err);
     }
   };
 
   const loadTemplate = async (schoolId) => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await superAdminApi.getRegistrationSlipConfig(schoolId);
       if (res?.success && res.data) {
-        setConfig({
-          ...DEFAULT_REGISTRATION_SLIP_CONFIG,
+        setConfig((prev) => ({
+          ...prev,
           ...res.data,
-          sections: res.data.sections?.length ? res.data.sections : DEFAULT_REGISTRATION_SLIP_CONFIG.sections,
-        });
-      } else {
-        setConfig({ ...DEFAULT_REGISTRATION_SLIP_CONFIG, schoolId });
+          headerSchoolNameCustom: res.data.headerSchoolNameCustom || '',
+          headerSchoolNameFontSize: res.data.headerSchoolNameFontSize || 17,
+          headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || '#1e3a8a',
+          headerSchoolNameFontWeight: res.data.headerSchoolNameFontWeight || '900',
+          headerSchoolNameFontFamily: res.data.headerSchoolNameFontFamily || 'inherit',
+          headerSchoolNameTransform: res.data.headerSchoolNameTransform || 'uppercase',
+          headerSchoolNameLetterSpacing: res.data.headerSchoolNameLetterSpacing || '0.5px',
+          headerSubtitleCustom: res.data.headerSubtitleCustom || '',
+          headerSubtitleFontSize: res.data.headerSubtitleFontSize || 11,
+          headerSubtitleColor: res.data.headerSubtitleColor || '#475569',
+          headerAddressCustom: res.data.headerAddressCustom || '',
+          headerAddressFontSize: res.data.headerAddressFontSize || 10,
+          headerAddressColor: res.data.headerAddressColor || '#1e293b',
+          headerAlignment: res.data.headerAlignment || 'center',
+          headerBgColor: res.data.headerBgColor || 'transparent',
+          headerPaddingY: res.data.headerPaddingY || 6,
+          headerDividerStyle: res.data.headerDividerStyle || 'Solid',
+          headerDividerColor: res.data.headerDividerColor || res.data.borderColor || '#1e3a8a',
+          slipTitle: res.data.slipTitle || 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT',
+          slipTitleBgColor: res.data.slipTitleBgColor || res.data.primaryColor || '#1e3a8a',
+          slipTitleTextColor: res.data.slipTitleTextColor || '#ffffff',
+          slipTitleFontSize: res.data.slipTitleFontSize || 11,
+          logoSize: res.data.logoSize || 48,
+          photoWidth: res.data.photoWidth || 60,
+          photoHeight: res.data.photoHeight || 70,
+          baseFontSize: res.data.baseFontSize || 11,
+          fontScalePercent: res.data.fontScalePercent || 100,
+          pageSize: res.data.pageSize || 'A4',
+          pageOrientation: res.data.pageOrientation || 'portrait',
+          pageMargin: res.data.pageMargin || '4mm',
+          pagePadding: res.data.pagePadding || 12,
+          pageMaxWidth: res.data.pageMaxWidth || 800,
+          copyLayout: res.data.copyLayout || 'DualSideBySide',
+          showCuttingLine: res.data.showCuttingLine !== undefined ? res.data.showCuttingLine : true,
+          firstCopyTitle: res.data.firstCopyTitle || 'Office Copy',
+          secondCopyTitle: res.data.secondCopyTitle || 'Student Copy',
+          thirdCopyTitle: res.data.thirdCopyTitle || 'Bank Copy',
+          currencySymbol: res.data.currencySymbol || '₹',
+          signature1: res.data.signature1 || 'Candidate / Parent Signature',
+          signature2: res.data.signature2 || 'Authorized Signatory',
+          signature3: res.data.signature3 || 'Verification Officer',
+          showFeeBreakdownTable: res.data.showFeeBreakdownTable !== undefined ? res.data.showFeeBreakdownTable : true,
+          termsTitle: res.data.termsTitle || res.data.declarationTitle || 'TERMS & CONDITIONS / UNDERTAKING:',
+          termsText:
+            res.data.termsText ||
+            res.data.declarationText ||
+            '• Registration fee once deposited will not be refunded or transferred under any circumstances.\n• Registration does not guarantee admission. Final admission is subject to merit, seat availability & document verification.\n• Retain this slip safely for entrance test, interview, and counseling verification.',
+        }));
       }
-    } catch {
-      setConfig({ ...DEFAULT_REGISTRATION_SLIP_CONFIG, schoolId });
+    } catch (err) {
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load registration slip configuration',
+        life: 4000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
+      setSaving(true);
       const res = await superAdminApi.saveRegistrationSlipConfig(config, selectedSchoolId);
       if (res?.success) {
         toastRef.current?.show({
           severity: 'success',
-          summary: 'Template Saved',
-          detail: 'Registration Slip layout and styling saved successfully!',
+          summary: 'Saved Successfully',
+          detail: selectedSchoolId
+            ? `Custom registration slip saved for school #${selectedSchoolId}`
+            : 'Platform default registration slip template updated',
           life: 3000,
         });
+        loadTemplate(selectedSchoolId);
+      } else {
+        toastRef.current?.show({
+          severity: 'error',
+          summary: 'Save Failed',
+          detail: res?.message || 'Could not save configuration',
+          life: 4000,
+        });
       }
-    } catch {
+    } catch (err) {
       toastRef.current?.show({
         severity: 'error',
-        summary: 'Save Failed',
-        detail: 'Failed to save registration slip configuration.',
-        life: 3000,
+        summary: 'Error',
+        detail: err?.response?.data?.message || err.message,
+        life: 4000,
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = async () => {
+  const handleResetToDefault = async () => {
     if (!selectedSchoolId) {
-      setConfig(DEFAULT_REGISTRATION_SLIP_CONFIG);
-      return;
-    }
-    try {
-      await superAdminApi.resetRegistrationSlipConfig(selectedSchoolId);
       toastRef.current?.show({
         severity: 'info',
-        summary: 'Template Reset',
-        detail: 'Registration slip configuration reset to platform default.',
+        summary: 'Notice',
+        detail: 'You are already editing the Platform Default template.',
         life: 3000,
       });
-      loadTemplate(selectedSchoolId);
-    } catch {
-      // Ignore
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to remove school custom overrides and inherit platform default?')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const res = await superAdminApi.resetRegistrationSlipConfig(selectedSchoolId);
+      if (res?.success) {
+        toastRef.current?.show({
+          severity: 'success',
+          summary: 'Reset Successful',
+          detail: 'School registration slip reset to platform default',
+          life: 3000,
+        });
+        loadTemplate(selectedSchoolId);
+      }
+    } catch (err) {
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Reset Failed',
+        detail: err.message,
+        life: 4000,
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleApplyPalette = (palette) => {
+    setConfig((prev) => ({
+      ...prev,
+      primaryColor: palette.primary,
+      secondaryColor: palette.secondary,
+      accentColor: palette.accent,
+      borderColor: palette.border,
+      headerSchoolNameColor: palette.primary,
+      headerDividerColor: palette.primary,
+      slipTitleBgColor: palette.primary,
+    }));
+  };
+
+  // Section drag and drop reordering
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -230,699 +395,1167 @@ export const RegistrationSlipDesignerPage = () => {
   const handleDragOver = (e, index) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
-    const items = [...config.sections];
-    const [moved] = items.splice(draggedIndex, 1);
-    items.splice(index, 0, moved);
+
+    const updatedSections = [...config.sections];
+    const item = updatedSections.splice(draggedIndex, 1)[0];
+    updatedSections.splice(index, 0, item);
+
+    const reordered = updatedSections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
     setDraggedIndex(index);
-    setConfig({
-      ...config,
-      sections: items.map((sec, i) => ({ ...sec, order: i + 1 })),
-    });
+    setConfig((prev) => ({ ...prev, sections: reordered }));
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
   };
 
-  const toggleSectionVisible = (key) => {
-    setConfig({
-      ...config,
-      sections: config.sections.map((s) => (s.key === key ? { ...s, visible: !s.visible } : s)),
+  const moveSection = (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= config.sections.length) return;
+
+    const updated = [...config.sections];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    const reordered = updated.map((sec, idx) => ({ ...sec, order: idx + 1 }));
+    setConfig((prev) => ({ ...prev, sections: reordered }));
+  };
+
+  const toggleSectionVisibility = (index) => {
+    const updated = [...config.sections];
+    updated[index] = { ...updated[index], visible: !updated[index].visible };
+    setConfig((prev) => ({ ...prev, sections: updated }));
+  };
+
+  const handlePrintSlip = () => {
+    printElement('printable-registration-slip-preview', {
+      title: `Registration_Slip_${config.schoolName || 'Template'}`,
+      pageSize: config.pageSize || 'A4',
+      orientation: config.pageOrientation || 'portrait',
+      margin: config.pageMargin || '4mm',
     });
   };
 
-  const fontMultiplier = (config.fontScalePercent || 100) / 100;
+  // Mock registration data for live preview
+  const defaultSchoolName = selectedSchoolId
+    ? schools.find((s) => s.id === selectedSchoolId)?.name || 'KUSH PUBLIC SCHOOL'
+    : 'KUSH PUBLIC SCHOOL';
 
-  return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Toast ref={toastRef} />
+  const mockReg = {
+    slipNo: 'REG-2026-0042',
+    slipDate: '14-10-2026',
+    studentName: 'AARAV SHARMA',
+    className: 'Class 9 - Section A',
+    session: '2026-2027',
+    fatherName: 'RAJESH SHARMA',
+    motherName: 'POOJA SHARMA',
+    contact: '9911360909',
+    gender: 'Male',
+    dob: '14-10-2012',
+    address: 'Plot No 999, Main Road Surya Vihar, Sec 91',
+    previousSchool: 'St. Xavier Senior Secondary School',
+    paymentMode: 'Cash / Online Transfer',
+    transactionRef: 'UPI/294029410294',
+    items: [
+      { particular: 'Registration & Application Form Fee', amount: 500, paid: 500, due: 0 },
+      { particular: 'Prospectus & Admission Processing Charges', amount: 300, paid: 300, due: 0 },
+    ],
+    totalFee: 800,
+    totalPaid: 800,
+    remainingDues: 0,
+    amountInWords: 'Eight Hundred Rupees Only',
+  };
 
-      {/* Header Bar */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-            Registration Slip Designer (Super Admin)
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Configure school-wise registration slip templates, typography, colors, branding, and modular sections.
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            color="warning"
-            startIcon={<ResetIcon />}
-            onClick={handleReset}
-            disabled={saving || loading}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
+  // Render a Single Slip Box
+  const renderSingleSlipPreview = (copyTitle) => {
+    const cur = config.currencySymbol || '₹';
+    const isVisible = (key) => {
+      const sec = config.sections.find((s) => s.key === key);
+      return sec ? sec.visible : true;
+    };
+
+    return (
+      <div
+        style={{
+          boxSizing: 'border-box',
+          width: '100%',
+          padding: `${config.pagePadding || 12}px`,
+          fontFamily: config.fontFamily || 'Inter, sans-serif',
+          color: '#111827',
+          fontSize: `${config.baseFontSize || 11}px`,
+          lineHeight: 1.3,
+          backgroundColor: '#ffffff',
+          border:
+            config.borderStyle === 'Solid'
+              ? `1.5px solid ${config.borderColor}`
+              : config.borderStyle === 'Double'
+              ? `3px double ${config.borderColor}`
+              : config.borderStyle === 'Dashed'
+              ? `1.5px dashed ${config.borderColor}`
+              : '1px solid #e5e7eb',
+          borderRadius: config.borderStyle === 'None' ? '6px' : '2px',
+          position: 'relative',
+        }}
+      >
+        {/* Watermark if enabled */}
+        {config.showWatermark && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-30deg)',
+              fontSize: '28px',
+              fontWeight: 900,
+              color: 'rgba(220, 38, 38, 0.08)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'uppercase',
+              letterSpacing: '3px',
+              zIndex: 0,
+            }}
           >
-            Reset to Default
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SaveIcon />}
-            onClick={handleSave}
-            disabled={saving || loading}
-            sx={{ textTransform: 'none', fontWeight: 800 }}
-          >
-            {saving ? 'Saving...' : 'Save Configuration'}
-          </Button>
-        </Box>
-      </Box>
+            {config.watermarkText || 'REGISTERED / OFFICIAL'}
+          </div>
+        )}
 
-      {/* School Selector */}
-      <Card sx={{ mb: 2.5, border: '1px solid #e2e8f0', borderRadius: 2 }}>
-        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Select Target School</InputLabel>
-                <Select
-                  value={selectedSchoolId || ''}
-                  label="Select Target School"
-                  onChange={(e) => setSelectedSchoolId(e.target.value ? Number(e.target.value) : null)}
-                >
-                  <MenuItem value="">
-                    <em>Platform Default (All Schools)</em>
-                  </MenuItem>
-                  {schools.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
-                      {s.name} ({s.code || `ID: ${s.id}`})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={8}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Chip
-                  label={selectedSchoolId ? 'School-Specific Override' : 'Global Platform Default'}
-                  color={selectedSchoolId ? 'warning' : 'primary'}
-                  size="small"
-                  sx={{ fontWeight: 800 }}
-                />
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  {selectedSchoolId
-                    ? 'Custom configuration for selected school only.'
-                    : 'Changes will apply to all schools that do not have their own override.'}
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Main Designer Grid: Controls Left (5 cols), Live Slip Preview Right (7 cols) */}
-      <Grid container spacing={2.5}>
-        <Grid item xs={12} lg={5}>
-          <Card sx={{ border: '1px solid #e2e8f0', borderRadius: 2, height: '100%' }}>
-            <Tabs
-              value={activeTab}
-              onChange={(e, v) => setActiveTab(v)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ borderBottom: 1, borderColor: 'divider', px: 1, minHeight: 44 }}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Section: Header */}
+          {isVisible('header') && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: config.headerAlignment === 'left' ? 'flex-start' : 'center',
+                padding: `${config.headerPaddingY || 6}px 0`,
+                backgroundColor: config.headerBgColor !== 'transparent' ? config.headerBgColor : 'transparent',
+                borderBottom:
+                  config.headerDividerStyle === 'Solid'
+                    ? `1.5px solid ${config.headerDividerColor || config.borderColor}`
+                    : config.headerDividerStyle === 'Double'
+                    ? `2.5px double ${config.headerDividerColor || config.borderColor}`
+                    : config.headerDividerStyle === 'Dashed'
+                    ? `1.5px dashed ${config.headerDividerColor || config.borderColor}`
+                    : 'none',
+                marginBottom: '6px',
+              }}
             >
-              <Tab icon={<ColorIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Branding & Colors" sx={{ minHeight: 44, fontWeight: 700, fontSize: '0.8rem' }} />
-              <Tab icon={<LayoutIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Layout & Header" sx={{ minHeight: 44, fontWeight: 700, fontSize: '0.8rem' }} />
-              <Tab icon={<TypographyIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Elements & Toggles" sx={{ minHeight: 44, fontWeight: 700, fontSize: '0.8rem' }} />
-              <Tab icon={<DragIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Sections Sequence" sx={{ minHeight: 44, fontWeight: 700, fontSize: '0.8rem' }} />
-            </Tabs>
-
-            <CardContent sx={{ p: 2, maxHeight: '680px', overflowY: 'auto' }}>
-              {/* TAB 0: Branding & Colors */}
-              {activeTab === 0 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Theme Colors
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid item xs={6}>
-                      <TextField
-                        label="Primary Color"
-                        type="color"
-                        fullWidth
-                        size="small"
-                        value={config.primaryColor}
-                        onChange={(e) => setConfig({ ...config, primaryColor: e.target.value, borderColor: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        label="Accent / Border Color"
-                        type="color"
-                        fullWidth
-                        size="small"
-                        value={config.borderColor}
-                        onChange={(e) => setConfig({ ...config, borderColor: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        label="Secondary Tint"
-                        type="color"
-                        fullWidth
-                        size="small"
-                        value={config.secondaryColor}
-                        onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        label="Accent Text Color"
-                        type="color"
-                        fullWidth
-                        size="small"
-                        value={config.accentColor}
-                        onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
-                      />
-                    </Grid>
-                  </Grid>
-
-                  <Divider />
-
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Font & Scale
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid item xs={6}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Font Family</InputLabel>
-                        <Select
-                          value={config.fontFamily}
-                          label="Font Family"
-                          onChange={(e) => setConfig({ ...config, fontFamily: e.target.value })}
-                        >
-                          <MenuItem value="Inter, sans-serif">Inter</MenuItem>
-                          <MenuItem value="Roboto, sans-serif">Roboto</MenuItem>
-                          <MenuItem value="Poppins, sans-serif">Poppins</MenuItem>
-                          <MenuItem value="Montserrat, sans-serif">Montserrat</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Font Scale (%)</InputLabel>
-                        <Select
-                          value={config.fontScalePercent}
-                          label="Font Scale (%)"
-                          onChange={(e) => setConfig({ ...config, fontScalePercent: Number(e.target.value) })}
-                        >
-                          <MenuItem value={85}>85% (Compact)</MenuItem>
-                          <MenuItem value={100}>100% (Normal)</MenuItem>
-                          <MenuItem value={115}>115% (Comfortable)</MenuItem>
-                          <MenuItem value={130}>130% (Large)</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-
-                  <Divider />
-
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Border & Paper Sizing
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid item xs={6}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Border Style</InputLabel>
-                        <Select
-                          value={config.borderStyle}
-                          label="Border Style"
-                          onChange={(e) => setConfig({ ...config, borderStyle: e.target.value })}
-                        >
-                          <MenuItem value="Solid">Solid</MenuItem>
-                          <MenuItem value="Double">Double</MenuItem>
-                          <MenuItem value="Dashed">Dashed</MenuItem>
-                          <MenuItem value="None">None</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <TextField
-                        label="Logo Size (px)"
-                        type="number"
-                        fullWidth
-                        size="small"
-                        value={config.logoSize}
-                        onChange={(e) => setConfig({ ...config, logoSize: Number(e.target.value) })}
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
+              {config.showSchoolLogo && (
+                <div
+                  style={{
+                    flexShrink: 0,
+                    marginRight: '10px',
+                    width: `${config.logoSize || 48}px`,
+                    height: `${config.logoSize || 48}px`,
+                    borderRadius: '50%',
+                    backgroundColor: config.secondaryColor,
+                    border: `1.5px solid ${config.borderColor}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    color: config.primaryColor,
+                    fontSize: '10px',
+                  }}
+                >
+                  <i className="pi pi-book" style={{ fontSize: `${(config.logoSize || 48) * 0.4}px` }}></i>
+                </div>
               )}
 
-              {/* TAB 1: Layout & Header */}
-              {activeTab === 1 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Header Customization
-                  </Typography>
-                  <TextField
-                    label="Custom School Name (Overrides system name)"
-                    placeholder="e.g. DELHI PUBLIC SCHOOL"
-                    fullWidth
-                    size="small"
-                    value={config.headerSchoolNameCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
-                  />
-                  <TextField
-                    label="Custom Subtitle / Branch / Affiliation"
-                    placeholder="e.g. Main Campus • CBSE Affiliation No: 2026/0912"
-                    fullWidth
-                    size="small"
-                    value={config.headerSubtitleCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
-                  />
-                  <TextField
-                    label="Custom Address / Helpline"
-                    placeholder="e.g. Knowledge Park, Educational Zone • Helpline: +91 9873993957"
-                    fullWidth
-                    size="small"
-                    value={config.headerAddressCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
-                  />
+              <div style={{ textAlign: config.headerAlignment === 'left' ? 'left' : 'center', flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: `${config.headerSchoolNameFontSize || 17}px`,
+                    fontWeight: config.headerSchoolNameFontWeight || '900',
+                    color: config.headerSchoolNameColor || config.primaryColor,
+                    textTransform: config.headerSchoolNameTransform || 'uppercase',
+                    letterSpacing: config.headerSchoolNameLetterSpacing || '0.5px',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {config.headerSchoolNameCustom || defaultSchoolName}
+                </div>
 
-                  <Divider />
+                <div
+                  style={{
+                    fontSize: `${config.headerSubtitleFontSize || 11}px`,
+                    fontWeight: config.headerSubtitleFontWeight || '600',
+                    color: config.headerSubtitleColor || '#475569',
+                    marginTop: '2px',
+                  }}
+                >
+                  {config.headerSubtitleCustom || 'Affiliated to CBSE, New Delhi (Affiliation No: 2130892)'}
+                </div>
 
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Slip Badge & Title
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid item xs={8}>
-                      <TextField
-                        label="Badge Title"
-                        fullWidth
-                        size="small"
-                        value={config.slipTitle}
-                        onChange={(e) => setConfig({ ...config, slipTitle: e.target.value })}
-                      />
-                    </Grid>
-                    <Grid item xs={4}>
-                      <TextField
-                        label="Badge Color"
-                        type="color"
-                        fullWidth
-                        size="small"
-                        value={config.slipTitleBgColor}
-                        onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
-                      />
-                    </Grid>
-                  </Grid>
+                <div
+                  style={{
+                    fontSize: `${config.headerAddressFontSize || 10}px`,
+                    color: config.headerAddressColor || '#1e293b',
+                    marginTop: '1px',
+                  }}
+                >
+                  {config.headerAddressCustom || 'Plot No 999, Main Road Surya Vihar, Sec 91 • Helpline: +91 9911360909'}
+                </div>
+              </div>
+            </div>
+          )}
 
-                  <Divider />
-
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Signatures Labels
-                  </Typography>
-                  <TextField
-                    label="Signature 1 Label"
-                    size="small"
-                    fullWidth
-                    value={config.signature1}
-                    onChange={(e) => setConfig({ ...config, signature1: e.target.value })}
-                  />
-                  <TextField
-                    label="Signature 2 Label"
-                    size="small"
-                    fullWidth
-                    value={config.signature2}
-                    onChange={(e) => setConfig({ ...config, signature2: e.target.value })}
-                  />
-                  <TextField
-                    label="Signature 3 Label (School Seal)"
-                    size="small"
-                    fullWidth
-                    value={config.signature3}
-                    onChange={(e) => setConfig({ ...config, signature3: e.target.value })}
-                  />
-                </Box>
-              )}
-
-              {/* TAB 2: Elements & Toggles */}
-              {activeTab === 2 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Show / Hide Specific Elements
-                  </Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showSchoolLogo}
-                        onChange={(e) => setConfig({ ...config, showSchoolLogo: e.target.checked })}
-                      />
-                    }
-                    label="Show School Logo"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showStudentPhotoBox}
-                        onChange={(e) => setConfig({ ...config, showStudentPhotoBox: e.target.checked })}
-                      />
-                    }
-                    label="Show Student Photo Box (Passport size)"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showQrCode}
-                        onChange={(e) => setConfig({ ...config, showQrCode: e.target.checked })}
-                      />
-                    }
-                    label="Show Verification QR Code"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showFeeBreakdown}
-                        onChange={(e) => setConfig({ ...config, showFeeBreakdown: e.target.checked })}
-                      />
-                    }
-                    label="Show Registration Fee, Paid & Balance Due"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showPaymentMode}
-                        onChange={(e) => setConfig({ ...config, showPaymentMode: e.target.checked })}
-                      />
-                    }
-                    label="Show Payment Mode & Txn Reference"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showPreviousSchool}
-                        onChange={(e) => setConfig({ ...config, showPreviousSchool: e.target.checked })}
-                      />
-                    }
-                    label="Show Previous School"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showDeclaration}
-                        onChange={(e) => setConfig({ ...config, showDeclaration: e.target.checked })}
-                      />
-                    }
-                    label="Show Parent Declaration / Undertaking"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showSignatures}
-                        onChange={(e) => setConfig({ ...config, showSignatures: e.target.checked })}
-                      />
-                    }
-                    label="Show Signatures Strip"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={config.showSchoolSealBox}
-                        onChange={(e) => setConfig({ ...config, showSchoolSealBox: e.target.checked })}
-                      />
-                    }
-                    label="Show Official School Seal Area"
-                  />
-                </Box>
-              )}
-
-              {/* TAB 3: Drag & Drop Sections Sequence */}
-              {activeTab === 3 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                    Reorder & Toggle Sections
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#64748b', mb: 1 }}>
-                    Drag handle to re-order sequence. Click eye icon to toggle visibility on generated slips.
-                  </Typography>
-                  {config.sections.map((section, idx) => (
-                    <Paper
-                      key={section.key}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, idx)}
-                      onDragOver={(e) => handleDragOver(e, idx)}
-                      onDragEnd={handleDragEnd}
-                      sx={{
-                        p: 1.2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: 1.5,
-                        bgcolor: section.visible ? '#ffffff' : '#f8fafc',
-                        opacity: section.visible ? 1 : 0.6,
-                        cursor: 'grab',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <DragIcon sx={{ color: '#94a3b8' }} />
-                        <Typography variant="body2" fontWeight={700}>
-                          {section.title}
-                        </Typography>
-                      </Box>
-                      <IconButton size="small" onClick={() => toggleSectionVisible(section.key)}>
-                        {section.visible ? (
-                          <VisibilityIcon fontSize="small" sx={{ color: '#0284c7' }} />
-                        ) : (
-                          <VisibilityOffIcon fontSize="small" sx={{ color: '#94a3b8' }} />
-                        )}
-                      </IconButton>
-                    </Paper>
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Live Preview Column (Right 7 cols) */}
-        <Grid item xs={12} lg={7}>
-          <Card sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-            <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0f172a' }}>
-                  Live Registration Slip Preview (1/3 A4 Compact)
-                </Typography>
-                <Chip label="A4 Strict 1/3" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }} />
-              </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => printElement('preview-registration-slip-container')}
-                sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem' }}
-              >
-                Test Print Preview
-              </Button>
-            </Box>
-
-            <CardContent sx={{ p: 2, bgcolor: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
-              {/* Slip Printable Box */}
-              <Box
-                id="preview-registration-slip-container"
-                sx={{
-                  width: '100%',
-                  maxWidth: `${config.pageMaxWidth || 780}px`,
-                  bgcolor: '#ffffff',
-                  border:
-                    config.borderStyle === 'Double'
-                      ? `3px double ${config.borderColor}`
-                      : config.borderStyle === 'Dashed'
-                      ? `2px dashed ${config.borderColor}`
-                      : `2px solid ${config.borderColor}`,
-                  borderRadius: 2,
-                  p: `${config.pagePadding || 16}px`,
-                  fontFamily: config.fontFamily,
-                  color: '#0f172a',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                  boxSizing: 'border-box',
+          {/* Section: Meta Bar */}
+          {isVisible('meta_bar') && (
+            <div
+              style={{
+                backgroundColor: config.secondaryColor || '#eff6ff',
+                border: `1px solid ${config.borderColor}`,
+                padding: '3px 8px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '6px',
+                borderRadius: '2px',
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: `${config.slipTitleFontSize || 11}px`,
+                  color: config.primaryColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
                 }}
               >
-                {/* Header Section */}
-                <Box sx={{ borderBottom: `2px solid ${config.borderColor}`, pb: 1, mb: 1.2 }}>
-                  <Grid container alignItems="center" spacing={1.5}>
-                    {config.showSchoolLogo && (
-                      <Grid item xs={2} sx={{ textAlign: 'center' }}>
-                        <img
-                          src="/dvslogo1.jpeg"
-                          alt="Logo"
-                          style={{
-                            width: config.logoSize || 54,
-                            height: config.logoSize || 54,
-                            objectFit: 'contain',
-                            borderRadius: 6,
-                            border: '1px solid #e2e8f0',
-                            padding: 2,
-                          }}
-                        />
-                      </Grid>
-                    )}
-                    <Grid item xs={config.showSchoolLogo ? (config.showStudentPhotoBox ? 7.5 : 10) : 12}>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          color: config.headerSchoolNameColor || config.primaryColor,
-                          fontWeight: config.headerSchoolNameFontWeight || '900',
-                          textTransform: config.headerSchoolNameTransform || 'uppercase',
-                          fontSize: `${1.1 * fontMultiplier}rem`,
-                          lineHeight: 1.15,
+                {config.slipTitle || 'REGISTRATION SLIP / ACKNOWLEDGEMENT'}
+              </span>
+
+              {copyTitle && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    backgroundColor: config.primaryColor,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {copyTitle}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Section: Student & Registration Details Box */}
+          {isVisible('student_details') && (
+            <div
+              style={{
+                border: `1px solid ${config.borderColor}`,
+                marginBottom: '6px',
+                fontSize: `${config.baseFontSize || 11}px`,
+                backgroundColor: '#ffffff',
+              }}
+            >
+              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
+                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                  <b>Registration No:</b> <span style={{ fontWeight: 600, color: config.primaryColor }}>{mockReg.slipNo}</span>
+                </div>
+                <div style={{ width: '50%', padding: '3px 6px' }}>
+                  <b>Date:</b> <span>{mockReg.slipDate}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
+                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                  <b>Student Name:</b> <span>{mockReg.studentName}</span>
+                </div>
+                <div style={{ width: '50%', padding: '3px 6px' }}>
+                  <b>Seeking Class:</b> <span style={{ fontWeight: 600 }}>{mockReg.className}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', borderBottom: `1px solid ${config.borderColor}` }}>
+                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                  <b>Father's Name:</b> <span>{mockReg.fatherName}</span>
+                </div>
+                <div style={{ width: '50%', padding: '3px 6px' }}>
+                  <b>Mother's Name:</b> <span>{mockReg.motherName}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', borderBottom: config.showPreviousSchool ? `1px solid ${config.borderColor}` : 'none' }}>
+                <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                  <b>Mobile Number:</b> <span>{mockReg.contact}</span>
+                </div>
+                <div style={{ width: '50%', padding: '3px 6px' }}>
+                  <b>Gender / DOB:</b> <span>{mockReg.gender} ({mockReg.dob})</span>
+                </div>
+              </div>
+
+              {config.showPreviousSchool && (
+                <div style={{ display: 'flex' }}>
+                  <div style={{ width: '50%', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                    <b>Previous School:</b> <span>{mockReg.previousSchool}</span>
+                  </div>
+                  <div style={{ width: '50%', padding: '3px 6px' }}>
+                    <b>Session:</b> <span style={{ fontWeight: 600 }}>{mockReg.session}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Section: Registration Fee Particulars Table */}
+          {isVisible('fee_breakdown') && config.showFeeBreakdownTable && (
+            <div style={{ marginBottom: '6px' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: `1px solid ${config.borderColor}`,
+                  fontSize: `${(config.baseFontSize || 11) - 0.5}px`,
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: config.secondaryColor, borderBottom: `1px solid ${config.borderColor}` }}>
+                    <th style={{ width: '52%', textAlign: 'left', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                      REGISTRATION PARTICULARS
+                    </th>
+                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                      FEE ({cur})
+                    </th>
+                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                      PAID ({cur})
+                    </th>
+                    <th style={{ width: '16%', textAlign: 'right', padding: '3px 6px' }}>
+                      DUE ({cur})
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockReg.items.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.particular}</td>
+                      <td style={{ textAlign: 'right', padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.amount.toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign: 'right', padding: '2px 6px', borderRight: `1px solid ${config.borderColor}` }}>{item.paid.toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign: 'right', padding: '2px 6px' }}>{item.due.toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))}
+                  {/* Totals Row */}
+                  <tr style={{ backgroundColor: config.secondaryColor, fontWeight: 'bold' }}>
+                    <td colSpan={2} style={{ padding: '3px 6px', borderRight: `1px solid ${config.borderColor}` }}>
+                      TOTAL AMOUNT PAID
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '3px 6px', borderRight: `1px solid ${config.borderColor}`, color: config.primaryColor }}>
+                      {cur} {mockReg.totalPaid.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '3px 6px' }}>
+                      {cur} {mockReg.remainingDues.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Section: Payment Summary & Words */}
+          {isVisible('payment_summary') && (
+            <div
+              style={{
+                border: `1px solid ${config.borderColor}`,
+                padding: '4px 6px',
+                marginBottom: '6px',
+                fontSize: `${config.baseFontSize || 11}px`,
+                backgroundColor: '#ffffff',
+              }}
+            >
+              {config.showAmountInWords && (
+                <div style={{ marginBottom: '3px' }}>
+                  <b>Amount in Words:</b> <span style={{ textTransform: 'capitalize' }}>{mockReg.amountInWords}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
+                <span>Registration Status: <b style={{ color: '#15803d' }}>Confirmed & Recorded</b></span>
+                {config.showBalanceDue && (
+                  <span style={{ fontWeight: 'bold', color: mockReg.remainingDues > 0 ? '#b91c1c' : '#15803d' }}>
+                    Balance Dues: {cur} {mockReg.remainingDues}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Section: Payment Info */}
+          {isVisible('payment_info') && config.showPaymentMode && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                border: `1px solid ${config.borderColor}`,
+                padding: '3px 6px',
+                marginBottom: '6px',
+                fontSize: '10px',
+                backgroundColor: config.secondaryColor,
+              }}
+            >
+              <div>
+                <b>Payment Mode:</b> <span>{mockReg.paymentMode}</span>
+              </div>
+              <div>
+                <b>Ref / Txn No:</b> <span>{mockReg.transactionRef}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Terms & Conditions */}
+          {isVisible('terms') && config.showTerms && (
+            <div
+              style={{
+                fontSize: '9px',
+                color: '#475569',
+                border: '1px solid #e2e8f0',
+                padding: '4px 6px',
+                marginBottom: '6px',
+                backgroundColor: '#f8fafc',
+                lineHeight: 1.25,
+              }}
+            >
+              <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '2px' }}>{config.termsTitle}</div>
+              <div style={{ whiteSpace: 'pre-line' }}>{config.termsText}</div>
+            </div>
+          )}
+
+          {/* Section: Signatures & Stamp */}
+          {isVisible('signatures') && config.showSignatures && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                marginTop: '16px',
+                marginBottom: '6px',
+                padding: '0 8px',
+              }}
+            >
+              <div style={{ textAlign: 'center', width: '30%' }}>
+                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
+                  {config.signature1 || 'Candidate / Parent Signature'}
+                </div>
+              </div>
+
+              {config.showSchoolSealBox && (
+                <div
+                  style={{
+                    width: '60px',
+                    height: '42px',
+                    border: '1px dashed #94a3b8',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '8px',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Seal / Stamp
+                </div>
+              )}
+
+              <div style={{ textAlign: 'center', width: '30%' }}>
+                <div style={{ borderTop: '1px dashed #64748b', paddingTop: '3px', fontSize: '9.5px', fontWeight: 'bold' }}>
+                  {config.signature2 || 'Authorized Signatory'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Footer */}
+          {isVisible('footer') && (
+            <div
+              style={{
+                borderTop: '1px solid #e5e7eb',
+                paddingTop: '3px',
+                textAlign: 'center',
+                fontSize: '8.5px',
+                color: '#64748b',
+                marginTop: '4px',
+              }}
+            >
+              {config.footerText}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-4" style={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+      <Toast ref={toastRef} />
+
+      {/* Top Header Bar */}
+      <div className="flex flex-column md:flex-row justify-content-between align-items-start md:align-items-center mb-4 gap-3">
+        <div>
+          <div className="flex align-items-center gap-2">
+            <h1 className="text-2xl font-bold text-900 m-0">Dynamic Registration Slip Designer</h1>
+            <Tag value="School-Wise & Global" severity="info" rounded></Tag>
+          </div>
+          <p className="text-500 text-sm m-0 mt-1">
+            Customize header branding, color themes, dual/single copy layout, tables, watermark, terms, and sections.
+          </p>
+        </div>
+
+        <div className="flex align-items-center gap-2">
+          <Button
+            label="Test Print Preview"
+            icon="pi pi-print"
+            className="p-button-outlined p-button-secondary p-button-sm"
+            onClick={handlePrintSlip}
+          />
+          <Button
+            label="Reset to Default"
+            icon="pi pi-refresh"
+            className="p-button-outlined p-button-danger p-button-sm"
+            onClick={handleResetToDefault}
+            disabled={!selectedSchoolId || saving}
+          />
+          <Button
+            label={saving ? 'Saving...' : 'Save Configuration'}
+            icon="pi pi-check"
+            className="p-button-primary p-button-sm"
+            onClick={handleSave}
+            loading={saving}
+          />
+        </div>
+      </div>
+
+      {/* School Selection Bar */}
+      <Card className="mb-4 shadow-1 border-none">
+        <div className="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between gap-3">
+          <div className="flex align-items-center gap-3 w-full md:w-auto">
+            <span className="font-semibold text-700 whitespace-nowrap">Editing Template For:</span>
+            <Dropdown
+              value={selectedSchoolId}
+              options={[
+                { label: '🌐 Platform Global Default (All Schools)', value: null },
+                ...schools.map((s) => ({ label: `🏫 ${s.name} (${s.code || s.id})`, value: s.id })),
+              ]}
+              onChange={(e) => setSelectedSchoolId(e.value)}
+              placeholder="Select School Template"
+              className="w-full md:w-26rem"
+            />
+          </div>
+
+          <div className="flex align-items-center gap-2">
+            {config.isSchoolOverride ? (
+              <Tag value="School Custom Override Active" severity="warning" icon="pi pi-bolt"></Tag>
+            ) : selectedSchoolId ? (
+              <Tag value="Inheriting Platform Default" severity="success" icon="pi pi-check-circle"></Tag>
+            ) : (
+              <Tag value="Master Platform Template" severity="info" icon="pi pi-globe"></Tag>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Main Split Grid: Controls (Left) & Live Preview (Right) */}
+      <div className="grid">
+        {/* Left Column: Configuration Controls */}
+        <div className="col-12 xl:col-6">
+          <Card className="shadow-2 border-none">
+            {/* Nav Tabs */}
+            <div className="flex flex-wrap gap-2 border-bottom-1 border-200 pb-3 mb-4">
+              {[
+                { id: 'header', label: 'Header & School', icon: 'pi pi-id-card' },
+                { id: 'layout', label: 'Layout & Sizing', icon: 'pi pi-sliders-h' },
+                { id: 'copies', label: 'Copy & Slip Mode', icon: 'pi pi-copy' },
+                { id: 'elements', label: 'Elements & Toggles', icon: 'pi pi-check-square' },
+                { id: 'content', label: 'Terms & Signatures', icon: 'pi pi-pencil' },
+                { id: 'sections', label: 'Sections Order', icon: 'pi pi-sort-alt' },
+              ].map((tab) => (
+                <Button
+                  key={tab.id}
+                  label={tab.label}
+                  icon={tab.icon}
+                  className={`p-button-sm ${
+                    activeTab === tab.id ? 'p-button-primary' : 'p-button-text p-button-secondary'
+                  }`}
+                  onClick={() => setActiveTab(tab.id)}
+                />
+              ))}
+            </div>
+
+            {/* Tab 1: Header & School */}
+            {activeTab === 'header' && (
+              <div className="flex flex-column gap-3">
+                <h3 className="text-base font-semibold text-800 m-0">Color Theme Palettes</h3>
+                <div className="grid">
+                  {PRESET_PALETTES.map((pal, idx) => (
+                    <div key={idx} className="col-6 md:col-3">
+                      <div
+                        onClick={() => handleApplyPalette(pal)}
+                        className="cursor-pointer p-2 border-round border-1 hover:shadow-2 transition-all transition-duration-150 flex flex-column gap-2"
+                        style={{
+                          borderColor: config.primaryColor === pal.primary ? pal.primary : '#e2e8f0',
+                          borderWidth: config.primaryColor === pal.primary ? '2px' : '1px',
+                          backgroundColor: pal.secondary,
                         }}
                       >
-                        {config.headerSchoolNameCustom || 'DELHI PUBLIC SCHOOL'}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: config.primaryColor, fontWeight: 700, display: 'block', fontSize: `${0.74 * fontMultiplier}rem` }}>
-                        {config.headerSubtitleCustom || 'Main Campus • Ph: +91 9873993957 • CBSE Affiliation No: 2026/0912'}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: `${0.68 * fontMultiplier}rem`, lineHeight: 1.1 }}>
-                        {config.headerAddressCustom || 'Knowledge Park, Educational Zone, Greater Noida, UP - 201306'}
-                      </Typography>
-                    </Grid>
+                        <div className="flex align-items-center gap-1">
+                          <div className="w-1rem h-1rem border-round" style={{ backgroundColor: pal.primary }}></div>
+                          <div className="w-1rem h-1rem border-round" style={{ backgroundColor: pal.accent }}></div>
+                          <div className="w-1rem h-1rem border-round border-1 border-300" style={{ backgroundColor: pal.border }}></div>
+                        </div>
+                        <span className="text-xs font-semibold text-800">{pal.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                    {config.showStudentPhotoBox && (
-                      <Grid item xs={2.5} sx={{ textAlign: 'right' }}>
-                        <Box
-                          sx={{
-                            width: config.photoWidth || 76,
-                            height: config.photoHeight || 92,
-                            border: `1.5px dashed ${config.borderColor}`,
-                            borderRadius: 1,
-                            bgcolor: config.secondaryColor,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            ml: 'auto',
-                            p: 0.5,
-                          }}
-                        >
-                          <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', fontWeight: 700 }}>
-                            AFFIX RECENT PHOTO
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    )}
-                  </Grid>
-                </Box>
+                <Divider />
 
-                {/* Slip Meta Badge Bar */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.2, px: 0.5 }}>
-                  <Box sx={{ bgcolor: config.slipTitleBgColor || config.primaryColor, color: config.slipTitleTextColor || '#ffffff', px: 1.2, py: 0.3, borderRadius: 1 }}>
-                    <Typography variant="caption" fontWeight={900} sx={{ letterSpacing: 0.5, fontSize: `${0.7 * fontMultiplier}rem`, textTransform: 'uppercase' }}>
-                      {config.slipTitle || 'REGISTRATION SLIP'}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" fontWeight={800} sx={{ color: '#0f172a', fontSize: `${0.78 * fontMultiplier}rem` }}>
-                    Slip No: <span style={{ color: config.primaryColor, fontFamily: 'monospace' }}>REG-2026-0042</span>
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#64748b', fontSize: `${0.72 * fontMultiplier}rem` }}>
-                    Session: <strong>2026-2027</strong> &bull; Date: <strong>{new Date().toLocaleDateString()}</strong>
-                  </Typography>
-                </Box>
+                <h3 className="text-base font-semibold text-800 m-0">School Name Typography</h3>
+                <div className="field mb-2">
+                  <label className="text-sm font-medium text-700">Custom School Name Override (Leave empty to use school name)</label>
+                  <InputText
+                    value={config.headerSchoolNameCustom || ''}
+                    onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
+                    placeholder="e.g. DELHI PUBLIC SCHOOL"
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
 
-                {/* Candidate Info Grid */}
-                <Box sx={{ bgcolor: config.secondaryColor, p: 1.2, borderRadius: 1.2, border: `1px solid #e2e8f0`, mb: 1.2 }}>
-                  <Grid container spacing={1}>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Student Name</Typography>
-                      <Typography variant="body2" fontWeight={800} sx={{ fontSize: `${0.84 * fontMultiplier}rem` }}>Aarav Sharma</Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Seeking Class</Typography>
-                      <Typography variant="body2" fontWeight={800} sx={{ fontSize: `${0.84 * fontMultiplier}rem` }}>Class 1 - Section A</Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Mobile Number</Typography>
-                      <Typography variant="body2" fontWeight={800} sx={{ fontSize: `${0.84 * fontMultiplier}rem` }}>+91 9876543210</Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Father's Name</Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: `${0.82 * fontMultiplier}rem` }}>Rajesh Sharma</Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Mother's Name</Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: `${0.82 * fontMultiplier}rem` }}>Sunita Sharma</Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.68rem', display: 'block' }}>Gender / DOB</Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: `${0.82 * fontMultiplier}rem` }}>Male (15/04/2020)</Typography>
-                    </Grid>
-                  </Grid>
-                </Box>
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Font Size (px): {config.headerSchoolNameFontSize}px</label>
+                    <input
+                      type="range"
+                      min="12"
+                      max="32"
+                      value={config.headerSchoolNameFontSize || 17}
+                      onChange={(e) => setConfig({ ...config, headerSchoolNameFontSize: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Font Weight</label>
+                    <Dropdown
+                      value={config.headerSchoolNameFontWeight || '900'}
+                      options={FONT_WEIGHT_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, headerSchoolNameFontWeight: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                </div>
 
-                {/* Financial Summary */}
-                {config.showFeeBreakdown && (
-                  <Grid container spacing={1} sx={{ mb: 1.2 }}>
-                    <Grid item xs={4}>
-                      <Box sx={{ p: 0.8, bgcolor: '#f0f9ff', borderRadius: 1, border: '1px solid #bae6fd', textAlign: 'center' }}>
-                        <Typography variant="caption" sx={{ color: '#0369a1', fontWeight: 800, fontSize: '0.65rem' }}>Registration Fee</Typography>
-                        <Typography variant="subtitle2" fontWeight={900} sx={{ color: '#0c4a6e', fontSize: '0.92rem' }}>₹500</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Box sx={{ p: 0.8, bgcolor: '#f0fdf4', borderRadius: 1, border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <Typography variant="caption" sx={{ color: '#15803d', fontWeight: 800, fontSize: '0.65rem' }}>Paid Amount</Typography>
-                        <Typography variant="subtitle2" fontWeight={900} sx={{ color: '#14532d', fontSize: '0.92rem' }}>₹500</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Box sx={{ p: 0.8, bgcolor: '#fef2f2', borderRadius: 1, border: '1px solid #fecaca', textAlign: 'center' }}>
-                        <Typography variant="caption" sx={{ color: '#b91c1c', fontWeight: 800, fontSize: '0.65rem' }}>Balance Due</Typography>
-                        <Typography variant="subtitle2" fontWeight={900} sx={{ color: '#991b1b', fontSize: '0.92rem' }}>₹0</Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">School Name Color</label>
+                    <div className="flex gap-2 align-items-center">
+                      <input
+                        type="color"
+                        value={config.headerSchoolNameColor || config.primaryColor}
+                        onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
+                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
+                      />
+                      <InputText
+                        value={config.headerSchoolNameColor || config.primaryColor}
+                        onChange={(e) => setConfig({ ...config, headerSchoolNameColor: e.target.value })}
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Text Transform</label>
+                    <Dropdown
+                      value={config.headerSchoolNameTransform || 'uppercase'}
+                      options={TEXT_TRANSFORM_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, headerSchoolNameTransform: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                </div>
+
+                <Divider />
+
+                <h3 className="text-base font-semibold text-800 m-0">Subtitle & Address Details</h3>
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Subtitle / Affiliation Note</label>
+                  <InputText
+                    value={config.headerSubtitleCustom || ''}
+                    onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
+                    placeholder="e.g. Affiliated to CBSE, New Delhi (Affiliation No: 2130892)"
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Address & Contact Phone Line</label>
+                  <InputText
+                    value={config.headerAddressCustom || ''}
+                    onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
+                    placeholder="e.g. Plot No 999, Main Road Surya Vihar, Sec 91 • Helpline: +91 9911360909"
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Header Divider Style</label>
+                    <Dropdown
+                      value={config.headerDividerStyle || 'Solid'}
+                      options={HEADER_DIVIDER_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, headerDividerStyle: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Header Divider Color</label>
+                    <div className="flex gap-2 align-items-center">
+                      <input
+                        type="color"
+                        value={config.headerDividerColor || config.borderColor}
+                        onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
+                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
+                      />
+                      <InputText
+                        value={config.headerDividerColor || config.borderColor}
+                        onChange={(e) => setConfig({ ...config, headerDividerColor: e.target.value })}
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Layout & Sizing */}
+            {activeTab === 'layout' && (
+              <div className="flex flex-column gap-3">
+                <h3 className="text-base font-semibold text-800 m-0">Page Sizing & Orientation</h3>
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Paper Page Size</label>
+                    <Dropdown
+                      value={config.pageSize || 'A4'}
+                      options={PAGE_SIZE_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, pageSize: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Orientation</label>
+                    <Dropdown
+                      value={config.pageOrientation || 'portrait'}
+                      options={ORIENTATION_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, pageOrientation: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Print Margins</label>
+                    <Dropdown
+                      value={config.pageMargin || '4mm'}
+                      options={PAGE_MARGIN_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, pageMargin: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Border Style</label>
+                    <Dropdown
+                      value={config.borderStyle || 'Solid'}
+                      options={BORDER_STYLES}
+                      onChange={(e) => setConfig({ ...config, borderStyle: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                </div>
+
+                <Divider />
+
+                <h3 className="text-base font-semibold text-800 m-0">Typography & Dimensions</h3>
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Base Font Family</label>
+                    <Dropdown
+                      value={config.fontFamily || 'Inter, sans-serif'}
+                      options={FONT_OPTIONS}
+                      onChange={(e) => setConfig({ ...config, fontFamily: e.value })}
+                      className="w-full p-dropdown-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Base Text Size (px): {config.baseFontSize}px</label>
+                    <input
+                      type="range"
+                      min="9"
+                      max="14"
+                      value={config.baseFontSize || 11}
+                      onChange={(e) => setConfig({ ...config, baseFontSize: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">School Logo Size: {config.logoSize}px</label>
+                    <input
+                      type="range"
+                      min="30"
+                      max="80"
+                      value={config.logoSize || 48}
+                      onChange={(e) => setConfig({ ...config, logoSize: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Inner Box Padding: {config.pagePadding}px</label>
+                    <input
+                      type="range"
+                      min="6"
+                      max="24"
+                      value={config.pagePadding || 12}
+                      onChange={(e) => setConfig({ ...config, pagePadding: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Copy & Slip Mode */}
+            {activeTab === 'copies' && (
+              <div className="flex flex-column gap-3">
+                <h3 className="text-base font-semibold text-800 m-0">Copy Printing Mode</h3>
+                <div className="field mb-3">
+                  <label className="text-xs font-medium text-700">Copy Layout Mode</label>
+                  <Dropdown
+                    value={config.copyLayout || 'DualSideBySide'}
+                    options={COPY_LAYOUT_OPTIONS}
+                    onChange={(e) => setConfig({ ...config, copyLayout: e.value })}
+                    className="w-full p-dropdown-sm"
+                  />
+                  <small className="text-500">
+                    DualSideBySide prints Office Copy and Student Copy side-by-side with a scissor cutting separator line.
+                  </small>
+                </div>
+
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">1st Copy Badge Title</label>
+                    <InputText
+                      value={config.firstCopyTitle || 'Office Copy'}
+                      onChange={(e) => setConfig({ ...config, firstCopyTitle: e.target.value })}
+                      className="w-full p-inputtext-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">2nd Copy Badge Title</label>
+                    <InputText
+                      value={config.secondCopyTitle || 'Student Copy'}
+                      onChange={(e) => setConfig({ ...config, secondCopyTitle: e.target.value })}
+                      className="w-full p-inputtext-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex align-items-center justify-content-between p-2 border-1 border-200 border-round">
+                  <span className="text-sm font-medium text-700">Show Scissor Cutting Line</span>
+                  <InputSwitch
+                    checked={config.showCuttingLine !== false}
+                    onChange={(e) => setConfig({ ...config, showCuttingLine: e.value })}
+                  />
+                </div>
+
+                <Divider />
+
+                <h3 className="text-base font-semibold text-800 m-0">Slip Title Bar</h3>
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Slip Title Text</label>
+                  <InputText
+                    value={config.slipTitle || 'OFFICIAL REGISTRATION SLIP / ACKNOWLEDGEMENT'}
+                    onChange={(e) => setConfig({ ...config, slipTitle: e.target.value })}
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Title Bar Background Color</label>
+                    <div className="flex gap-2 align-items-center">
+                      <input
+                        type="color"
+                        value={config.slipTitleBgColor || config.primaryColor}
+                        onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
+                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
+                      />
+                      <InputText
+                        value={config.slipTitleBgColor || config.primaryColor}
+                        onChange={(e) => setConfig({ ...config, slipTitleBgColor: e.target.value })}
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Title Text Color</label>
+                    <div className="flex gap-2 align-items-center">
+                      <input
+                        type="color"
+                        value={config.slipTitleTextColor || '#ffffff'}
+                        onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
+                        style={{ width: '38px', height: '34px', padding: 0, cursor: 'pointer', border: 'none' }}
+                      />
+                      <InputText
+                        value={config.slipTitleTextColor || '#ffffff'}
+                        onChange={(e) => setConfig({ ...config, slipTitleTextColor: e.target.value })}
+                        className="p-inputtext-sm w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Divider />
+
+                <h3 className="text-base font-semibold text-800 m-0">Watermark Text</h3>
+                <div className="flex align-items-center justify-content-between p-2 border-1 border-200 border-round mb-2">
+                  <span className="text-sm font-medium text-700">Enable Diagonal Watermark</span>
+                  <InputSwitch
+                    checked={config.showWatermark}
+                    onChange={(e) => setConfig({ ...config, showWatermark: e.value })}
+                  />
+                </div>
+                {config.showWatermark && (
+                  <div className="field mb-2">
+                    <label className="text-xs font-medium text-700">Watermark Text</label>
+                    <InputText
+                      value={config.watermarkText || 'REGISTERED / OFFICIAL'}
+                      onChange={(e) => setConfig({ ...config, watermarkText: e.target.value })}
+                      className="w-full p-inputtext-sm"
+                    />
+                  </div>
                 )}
+              </div>
+            )}
 
-                {/* Undertaking / Declaration */}
-                {config.showDeclaration && (
-                  <Box sx={{ bgcolor: '#fafafa', p: 0.8, borderRadius: 1, border: '1px solid #e5e7eb', mb: 1.2 }}>
-                    <Typography variant="caption" fontWeight={800} sx={{ color: config.primaryColor, fontSize: '0.65rem', display: 'block' }}>
-                      {config.declarationTitle}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#4b5563', fontSize: '0.62rem', lineHeight: 1.15, display: 'block' }}>
-                      {config.declarationText}
-                    </Typography>
-                  </Box>
-                )}
+            {/* Tab 4: Elements & Toggles */}
+            {activeTab === 'elements' && (
+              <div className="flex flex-column gap-2">
+                <h3 className="text-base font-semibold text-800 m-0 mb-2">Elements Visibility Toggles</h3>
 
-                {/* Signatures Strip */}
-                {config.showSignatures && (
-                  <Box sx={{ pt: 1, borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <Box sx={{ textAlign: 'center', minWidth: 120 }}>
-                      <Box sx={{ borderBottom: '1px solid #0f172a', height: 18, mb: 0.3 }} />
-                      <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.65rem', color: '#475569' }}>
-                        {config.signature1}
-                      </Typography>
-                    </Box>
+                {[
+                  { key: 'showSchoolLogo', label: 'School Logo in Header' },
+                  { key: 'showAffiliationNo', label: 'Affiliation & Subtitle in Header' },
+                  { key: 'showPreviousSchool', label: 'Previous School & Academic Session Details' },
+                  { key: 'showFeeBreakdownTable', label: 'Registration Fee Particulars Table' },
+                  { key: 'showAmountInWords', label: 'Amount in Words Line' },
+                  { key: 'showBalanceDue', label: 'Balance Due Highlight' },
+                  { key: 'showPaymentMode', label: 'Payment Mode & Transaction Reference Bar' },
+                  { key: 'showSchoolSealBox', label: 'School Seal / Stamp Box' },
+                  { key: 'showTerms', label: 'Registration Terms & Guidelines' },
+                  { key: 'showSignatures', label: 'Signature Lines (Parent & Authorized Signatory)' },
+                ].map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex align-items-center justify-content-between p-2 border-1 border-100 border-round hover:surface-100 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-700">{item.label}</span>
+                    <InputSwitch
+                      checked={config[item.key] !== false}
+                      onChange={(e) => setConfig({ ...config, [item.key]: e.value })}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-                    {config.showQrCode && (
-                      <Box sx={{ textAlign: 'center' }}>
-                        <QrCodeIcon sx={{ fontSize: 32, color: config.primaryColor }} />
-                        <Typography variant="caption" sx={{ display: 'block', fontSize: '0.58rem', color: '#94a3b8' }}>
-                          VERIFIED
-                        </Typography>
-                      </Box>
-                    )}
+            {/* Tab 5: Terms & Signatures */}
+            {activeTab === 'content' && (
+              <div className="flex flex-column gap-3">
+                <h3 className="text-base font-semibold text-800 m-0">Signatures Labels</h3>
+                <div className="grid">
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Left Signature Label</label>
+                    <InputText
+                      value={config.signature1 || 'Candidate / Parent Signature'}
+                      onChange={(e) => setConfig({ ...config, signature1: e.target.value })}
+                      className="w-full p-inputtext-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="text-xs font-medium text-700">Right Signature Label</label>
+                    <InputText
+                      value={config.signature2 || 'Authorized Signatory'}
+                      onChange={(e) => setConfig({ ...config, signature2: e.target.value })}
+                      className="w-full p-inputtext-sm"
+                    />
+                  </div>
+                </div>
 
-                    {config.showSchoolSealBox && (
-                      <Box sx={{ textAlign: 'center', minWidth: 140 }}>
-                        <Box sx={{ borderBottom: '1px solid #0f172a', height: 18, mb: 0.3 }} />
-                        <Typography variant="caption" fontWeight={800} sx={{ fontSize: '0.68rem', color: '#0f172a' }}>
-                          {config.signature3}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                )}
-              </Box>
-            </CardContent>
+                <Divider />
+
+                <h3 className="text-base font-semibold text-800 m-0">Registration Terms & Undertaking</h3>
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Terms Heading</label>
+                  <InputText
+                    value={config.termsTitle || 'TERMS & CONDITIONS / UNDERTAKING:'}
+                    onChange={(e) => setConfig({ ...config, termsTitle: e.target.value })}
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Terms Text (Line by line)</label>
+                  <InputTextarea
+                    value={config.termsText || ''}
+                    onChange={(e) => setConfig({ ...config, termsText: e.target.value })}
+                    rows={4}
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+
+                <div className="field mb-2">
+                  <label className="text-xs font-medium text-700">Footer System Note</label>
+                  <InputText
+                    value={config.footerText || ''}
+                    onChange={(e) => setConfig({ ...config, footerText: e.target.value })}
+                    className="w-full p-inputtext-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Tab 6: Sections Order */}
+            {activeTab === 'sections' && (
+              <div className="flex flex-column gap-2">
+                <h3 className="text-base font-semibold text-800 m-0 mb-2">Drag or Reorder Sections</h3>
+                <p className="text-xs text-500 m-0 mb-3">
+                  Use the up/down arrows or drag rows to change the sequence of slip sections. Toggle the switch to show or hide a section.
+                </p>
+
+                {config.sections.map((section, idx) => (
+                  <div
+                    key={section.key}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className="flex align-items-center justify-content-between p-2 border-1 border-200 border-round bg-white shadow-1"
+                    style={{ cursor: 'grab' }}
+                  >
+                    <div className="flex align-items-center gap-2">
+                      <i className="pi pi-bars text-400"></i>
+                      <span className="text-xs text-500 font-bold w-1rem">{idx + 1}.</span>
+                      <span className="text-sm font-semibold text-800">{section.title}</span>
+                    </div>
+
+                    <div className="flex align-items-center gap-2">
+                      <Button
+                        icon="pi pi-chevron-up"
+                        className="p-button-text p-button-sm p-button-secondary p-1"
+                        disabled={idx === 0}
+                        onClick={() => moveSection(idx, -1)}
+                      />
+                      <Button
+                        icon="pi pi-chevron-down"
+                        className="p-button-text p-button-sm p-button-secondary p-1"
+                        disabled={idx === config.sections.length - 1}
+                        onClick={() => moveSection(idx, 1)}
+                      />
+                      <InputSwitch
+                        checked={section.visible}
+                        onChange={() => toggleSectionVisibility(idx)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+
+        {/* Right Column: Live Interactive Preview */}
+        <div className="col-12 xl:col-6">
+          <Card
+            className="shadow-2 border-none sticky"
+            style={{ top: '1rem', backgroundColor: '#f1f5f9' }}
+            title={
+              <div className="flex align-items-center justify-content-between pb-2 border-bottom-1 border-300">
+                <div className="flex align-items-center gap-2">
+                  <i className="pi pi-eye text-primary"></i>
+                  <span className="text-base font-bold text-800">Live Slip Preview</span>
+                </div>
+                <Tag
+                  value={
+                    config.copyLayout === 'DualSideBySide'
+                      ? 'Dual A4 (Side-by-Side)'
+                      : config.copyLayout === 'SingleCopy'
+                      ? 'Single Slip'
+                      : 'Dual Stacked'
+                  }
+                  severity="primary"
+                />
+              </div>
+            }
+          >
+            <div
+              id="printable-registration-slip-preview"
+              style={{
+                backgroundColor: '#ffffff',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                padding: '8px',
+                borderRadius: '4px',
+                maxHeight: '78vh',
+                overflowY: 'auto',
+              }}
+            >
+              {config.copyLayout === 'DualSideBySide' ? (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                  <div style={{ flex: 1 }}>{renderSingleSlipPreview(config.firstCopyTitle || 'Office Copy')}</div>
+                  {config.showCuttingLine !== false && (
+                    <div
+                      style={{
+                        width: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderLeft: '1px dashed #94a3b8',
+                        color: '#64748b',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <i className="pi pi-scissors" style={{ transform: 'rotate(90deg)' }}></i>
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>{renderSingleSlipPreview(config.secondCopyTitle || 'Student Copy')}</div>
+                </div>
+              ) : config.copyLayout === 'DualStacked' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div>{renderSingleSlipPreview(config.firstCopyTitle || 'Office Copy')}</div>
+                  {config.showCuttingLine !== false && (
+                    <div style={{ borderTop: '1px dashed #94a3b8', textAlign: 'center', margin: '4px 0' }}>
+                      <span style={{ backgroundColor: '#ffffff', padding: '0 8px', fontSize: '10px', color: '#64748b' }}>
+                        ✂ Cut Along Line
+                      </span>
+                    </div>
+                  )}
+                  <div>{renderSingleSlipPreview(config.secondCopyTitle || 'Student Copy')}</div>
+                </div>
+              ) : (
+                <div>{renderSingleSlipPreview('')}</div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 

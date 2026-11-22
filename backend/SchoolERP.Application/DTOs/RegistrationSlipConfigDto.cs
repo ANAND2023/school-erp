@@ -61,6 +61,16 @@ namespace SchoolERP.Application.DTOs
         public string SlipTitleTextColor { get; set; } = "#ffffff";
         public int SlipTitleFontSize { get; set; } = 12;
 
+        // Copy Layout & Titles
+        public string CopyLayout { get; set; } = "DualSideBySide"; // "DualSideBySide", "SingleCopy", "DualStacked"
+        public bool ShowCuttingLine { get; set; } = true;
+        public string FirstCopyTitle { get; set; } = "Office Copy";
+        public string SecondCopyTitle { get; set; } = "Student Copy";
+        public string ThirdCopyTitle { get; set; } = "Bank Copy";
+        public string CurrencySymbol { get; set; } = "₹";
+        public bool ShowAmountInWords { get; set; } = true;
+        public bool ShowBalanceDue { get; set; } = true;
+
         // Watermark
         public string WatermarkText { get; set; } = "REGISTERED";
         public bool ShowWatermark { get; set; } = false;
