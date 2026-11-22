@@ -26,13 +26,35 @@ import {
   People as BulkIcon,
   Person as SingleIcon,
   Print as PrintIcon,
-  Payment as PaymentIcon,
+  WhatsApp as WhatsAppIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dynamicAdmissionApi } from '../api/dynamicAdmissionApi';
 import { useAuthStore } from '../../../store/authStore';
+import { AdmissionSlipModal } from '../components/AdmissionSlipModal';
 import apiClient from '../../../api/client';
+
+const initialSingleState = {
+  studentName: '',
+  classId: '',
+  gender: 'Male',
+  dob: '',
+  fatherName: '',
+  motherName: '',
+  contactNumber: '',
+  alternateNumber: '',
+  email: '',
+  address: '',
+  state: '',
+  city: '',
+  previousSchool: '',
+  initialPaymentAmount: 500,
+  paymentMode: 'Cash',
+  transactionReference: '',
+  paymentNote: 'Initial registration fee',
+  customFields: {},
+};
 
 export const AdmissionSlipGeneratorPage = () => {
   const queryClient = useQueryClient();
@@ -54,26 +76,7 @@ export const AdmissionSlipGeneratorPage = () => {
   const formConfig = configRes?.data?.data || null;
 
   // Single Form State
-  const [singleData, setSingleData] = useState({
-    studentName: '',
-    classId: '',
-    gender: 'Male',
-    dob: '',
-    fatherName: '',
-    motherName: '',
-    contactNumber: '',
-    alternateNumber: '',
-    email: '',
-    address: '',
-    state: '',
-    city: '',
-    previousSchool: '',
-    initialPaymentAmount: 500,
-    paymentMode: 'Cash',
-    transactionReference: '',
-    paymentNote: 'Initial registration fee',
-    customFields: {},
-  });
+  const [singleData, setSingleData] = useState(initialSingleState);
 
   // Bulk Form State
   const [bulkFeePerSlip, setBulkFeePerSlip] = useState(500);
@@ -87,8 +90,9 @@ export const AdmissionSlipGeneratorPage = () => {
     { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
   ]);
 
-  // Generated Result Dialog
+  // Generated Result Dialog / Slip Modal
   const [generatedSlip, setGeneratedSlip] = useState(null);
+  const [slipModalOpen, setSlipModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   const singleMutation = useMutation({
@@ -96,8 +100,22 @@ export const AdmissionSlipGeneratorPage = () => {
     onSuccess: (res) => {
       queryClient.invalidateQueries(['admission-slips']);
       queryClient.invalidateQueries(['admission-dashboard-stats']);
-      setGeneratedSlip(res.data.data);
-      setSuccessMsg('Individual admission slip created successfully!');
+      const slip = res.data.data;
+      setGeneratedSlip(slip);
+      setSlipModalOpen(true);
+      setSuccessMsg(`Admission Slip #${slip.slipNumber} generated successfully for ${slip.studentName}!`);
+
+      // WhatsApp trigger: prompt or open
+      if (slip.contactNumber) {
+        const rawNum = String(slip.contactNumber).replace(/\D/g, '');
+        const phone = rawNum.length === 10 ? `91${rawNum}` : rawNum;
+        const msg = `*ADMISSION REGISTRATION SLIP*\n\nDear Parent/Student,\nAdmission registration has been successfully generated!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}`;
+        const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, '_blank');
+      }
+
+      // Empty the form
+      setSingleData(initialSingleState);
     },
   });
 
@@ -107,8 +125,8 @@ export const AdmissionSlipGeneratorPage = () => {
       queryClient.invalidateQueries(['admission-slips']);
       queryClient.invalidateQueries(['admission-dashboard-stats']);
       setSuccessMsg(res.data.message || 'Bulk slips generated successfully!');
-      // Reset rows
       setBulkRows([
+        { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
         { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
         { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
       ]);
@@ -118,7 +136,7 @@ export const AdmissionSlipGeneratorPage = () => {
   const handleSingleSubmit = (e) => {
     e.preventDefault();
     if (!singleData.studentName || !singleData.classId || !singleData.contactNumber) {
-      alert('Please fill mandatory student details (Name, Class, Mobile Number).');
+      alert('Please fill mandatory fields: Student Name, Class, and Mobile Number.');
       return;
     }
 
@@ -157,19 +175,19 @@ export const AdmissionSlipGeneratorPage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 } }}>
-      <Box sx={{ mb: 2.5 }}>
+    <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
           Admission Slip Generator & Payment Collection
         </Typography>
-        <Typography variant="body2" sx={{ color: '#64748b' }}>
-          Issue single or bulk admission slips with integrated payment modes for session <strong>{activeAcademicYearName || 'Current Session'}</strong>.
+        <Typography variant="caption" sx={{ color: '#64748b' }}>
+          Quick admission slip issuance (A4 1/3 compact layout) & WhatsApp receipt dispatch for <strong>{activeAcademicYearName || 'Current Session'}</strong>.
         </Typography>
       </Box>
 
       {successMsg && (
-        <Paper sx={{ p: 1.5, mb: 2, bgcolor: '#ecfdf5', border: '1px solid #6ee7b7', color: '#065f46', display: 'flex', alignItems: 'center', gap: 1, borderRadius: 2 }}>
-          <CheckIcon color="success" />
+        <Paper sx={{ p: 1.2, mb: 2, bgcolor: '#ecfdf5', border: '1px solid #6ee7b7', color: '#065f46', display: 'flex', alignItems: 'center', gap: 1, borderRadius: 1.5 }}>
+          <CheckIcon color="success" sx={{ fontSize: 20 }} />
           <Typography variant="subtitle2" fontWeight={700}>
             {successMsg}
           </Typography>
@@ -180,21 +198,19 @@ export const AdmissionSlipGeneratorPage = () => {
         <Tabs
           value={tabIndex}
           onChange={(e, v) => setTabIndex(v)}
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 0.5, minHeight: 40 }}
         >
-          <Tab icon={<SingleIcon />} iconPosition="start" label="Individual Slip Generation" sx={{ fontWeight: 700 }} />
-          <Tab icon={<BulkIcon />} iconPosition="start" label="Bulk Slips with Unified Payment" sx={{ fontWeight: 700 }} />
+          <Tab icon={<SingleIcon />} iconPosition="start" label="Individual Slip Generation" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
+          <Tab icon={<BulkIcon />} iconPosition="start" label="Bulk Slips with Unified Payment" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
         </Tabs>
 
-        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-          {/* ================= TAB 0: INDIVIDUAL SLIP ================= */}
+        <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
+          {/* ================= TAB 0: COMPACT INDIVIDUAL SLIP (3-4 FIELDS PER ROW) ================= */}
           {tabIndex === 0 && (
             <form onSubmit={handleSingleSubmit}>
-              <Typography variant="subtitle1" fontWeight={800} sx={{ color: '#1e293b', mb: 2 }}>
-                1. Student & Academic Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              {/* Row 1: Student Core Info (4 fields) */}
+              <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="Student Full Name *"
                     value={singleData.studentName}
@@ -204,12 +220,12 @@ export const AdmissionSlipGeneratorPage = () => {
                     required
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3}>
                   <FormControl fullWidth size="small" required>
-                    <InputLabel>Admission Seeking Class *</InputLabel>
+                    <InputLabel>Seeking Class *</InputLabel>
                     <Select
                       value={singleData.classId}
-                      label="Admission Seeking Class *"
+                      label="Seeking Class *"
                       onChange={(e) => setSingleData({ ...singleData, classId: e.target.value })}
                     >
                       {classesList.map((c) => (
@@ -220,7 +236,17 @@ export const AdmissionSlipGeneratorPage = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField
+                    label="Primary Mobile No *"
+                    value={singleData.contactNumber}
+                    onChange={(e) => setSingleData({ ...singleData, contactNumber: e.target.value })}
+                    fullWidth
+                    size="small"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Gender</InputLabel>
                     <Select
@@ -234,18 +260,11 @@ export const AdmissionSlipGeneratorPage = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Date of Birth"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    value={singleData.dob}
-                    onChange={(e) => setSingleData({ ...singleData, dob: e.target.value })}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+              </Grid>
+
+              {/* Row 2: Parents & Alternate Details (4 fields - DOB optional) */}
+              <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="Father's Name"
                     value={singleData.fatherName}
@@ -254,7 +273,7 @@ export const AdmissionSlipGeneratorPage = () => {
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="Mother's Name"
                     value={singleData.motherName}
@@ -263,26 +282,41 @@ export const AdmissionSlipGeneratorPage = () => {
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
-                    label="Primary Mobile Number *"
-                    value={singleData.contactNumber}
-                    onChange={(e) => setSingleData({ ...singleData, contactNumber: e.target.value })}
+                    label="Date of Birth (Optional)"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    value={singleData.dob}
+                    onChange={(e) => setSingleData({ ...singleData, dob: e.target.value })}
                     fullWidth
                     size="small"
-                    required
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
-                    label="Alternate Mobile"
+                    label="Alternate Phone"
                     value={singleData.alternateNumber}
                     onChange={(e) => setSingleData({ ...singleData, alternateNumber: e.target.value })}
                     fullWidth
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+              </Grid>
+
+              {/* Row 3: Address, Email & School (3 fields) */}
+              <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                <Grid item xs={12} md={5}>
+                  <TextField
+                    label="Residential Address"
+                    value={singleData.address}
+                    onChange={(e) => setSingleData({ ...singleData, address: e.target.value })}
+                    fullWidth
+                    size="small"
+                    placeholder="Locality / City / PIN"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3.5}>
                   <TextField
                     label="Email Address"
                     type="email"
@@ -292,44 +326,34 @@ export const AdmissionSlipGeneratorPage = () => {
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={3.5}>
                   <TextField
-                    label="Previous School Name"
+                    label="Previous School"
                     value={singleData.previousSchool}
                     onChange={(e) => setSingleData({ ...singleData, previousSchool: e.target.value })}
                     fullWidth
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Residential Address"
-                    value={singleData.address}
-                    onChange={(e) => setSingleData({ ...singleData, address: e.target.value })}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
-                </Grid>
               </Grid>
 
-              <Divider sx={{ my: 3 }} />
+              <Divider sx={{ my: 1.5 }} />
 
-              <Typography variant="subtitle1" fontWeight={800} sx={{ color: '#1e293b', mb: 2 }}>
-                2. Registration Fee & Payment Collection
+              {/* Row 4: Fee & Payment Collection (4 fields) */}
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0284c7', mb: 1, textTransform: 'uppercase' }}>
+                Fee & Payment Collection
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+              <Grid container spacing={1.5} alignItems="center">
+                <Grid item xs={12} sm={6} md={2.5}>
                   <TextField
-                    label="Total Fee Amount (₹)"
+                    label="Registration Fee (₹)"
                     value={formConfig?.applicationFee || 500}
                     disabled
                     fullWidth
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6} md={2.5}>
                   <TextField
                     label="Collected Amount (₹)"
                     type="number"
@@ -339,7 +363,7 @@ export const AdmissionSlipGeneratorPage = () => {
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6} md={2.5}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Payment Mode</InputLabel>
                     <Select
@@ -355,38 +379,29 @@ export const AdmissionSlipGeneratorPage = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} md={4.5}>
                   <TextField
-                    label="Transaction Reference / Cheque No"
+                    label="Txn Reference / Notes"
                     value={singleData.transactionReference}
                     onChange={(e) => setSingleData({ ...singleData, transactionReference: e.target.value })}
-                    placeholder="e.g. UPI Ref / Bank Txn ID"
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Payment Remarks"
-                    value={singleData.paymentNote}
-                    onChange={(e) => setSingleData({ ...singleData, paymentNote: e.target.value })}
+                    placeholder="UTR / UPI Ref / Cheque No"
                     fullWidth
                     size="small"
                   />
                 </Grid>
               </Grid>
 
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+              {/* Submit Buttons */}
+              <Box sx={{ mt: 2.5, display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
                 <Button
                   type="submit"
                   variant="contained"
                   color="primary"
-                  size="large"
                   startIcon={<PrintIcon />}
                   disabled={singleMutation.isPending}
-                  sx={{ textTransform: 'none', fontWeight: 800, px: 4 }}
+                  sx={{ textTransform: 'none', fontWeight: 800, px: 3, py: 1 }}
                 >
-                  {singleMutation.isPending ? 'Generating...' : 'Generate & Print Slip'}
+                  {singleMutation.isPending ? 'Generating...' : 'Generate & Print Admission Registration Slip'}
                 </Button>
               </Box>
             </form>
@@ -395,10 +410,7 @@ export const AdmissionSlipGeneratorPage = () => {
           {/* ================= TAB 1: BULK SLIPS GENERATOR ================= */}
           {tabIndex === 1 && (
             <Box>
-              <Typography variant="subtitle1" fontWeight={800} sx={{ color: '#1e293b', mb: 2 }}>
-                1. Unified Batch Payment Settings
-              </Typography>
-              <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid container spacing={1.5} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={3}>
                   <TextField
                     label="Fee Per Slip (₹)"
@@ -447,11 +459,11 @@ export const AdmissionSlipGeneratorPage = () => {
                 </Grid>
               </Grid>
 
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 1.5 }} />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ color: '#1e293b' }}>
-                  2. Student Entries ({bulkRows.length} Rows)
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e293b' }}>
+                  Student Entries ({bulkRows.length} Rows)
                 </Typography>
                 <Button variant="outlined" startIcon={<AddIcon />} size="small" onClick={handleBulkAddRow}>
                   Add Row
@@ -462,19 +474,19 @@ export const AdmissionSlipGeneratorPage = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>#</th>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>Student Name *</th>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>Class *</th>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>Mobile Number *</th>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>Father Name</th>
-                      <th style={{ padding: '8px 12px', fontSize: '0.85rem' }}>Gender</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>#</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>Student Name *</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>Class *</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>Mobile Number *</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>Father Name</th>
+                      <th style={{ padding: '6px 10px', fontSize: '0.8rem' }}>Gender</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bulkRows.map((row, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '6px 12px', fontWeight: 700 }}>{idx + 1}</td>
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '6px 10px', fontWeight: 700 }}>{idx + 1}</td>
+                        <td style={{ padding: '4px' }}>
                           <input
                             type="text"
                             placeholder="Student Name"
@@ -484,10 +496,10 @@ export const AdmissionSlipGeneratorPage = () => {
                               updated[idx].studentName = e.target.value;
                               setBulkRows(updated);
                             }}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: 4, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 4, border: '1px solid #cbd5e1' }}
                           />
                         </td>
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '4px' }}>
                           <select
                             value={row.classId}
                             onChange={(e) => {
@@ -495,7 +507,7 @@ export const AdmissionSlipGeneratorPage = () => {
                               updated[idx].classId = e.target.value;
                               setBulkRows(updated);
                             }}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: 4, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 4, border: '1px solid #cbd5e1' }}
                           >
                             <option value="">Select Class</option>
                             {classesList.map((c) => (
@@ -505,7 +517,7 @@ export const AdmissionSlipGeneratorPage = () => {
                             ))}
                           </select>
                         </td>
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '4px' }}>
                           <input
                             type="text"
                             placeholder="Mobile"
@@ -515,10 +527,10 @@ export const AdmissionSlipGeneratorPage = () => {
                               updated[idx].contactNumber = e.target.value;
                               setBulkRows(updated);
                             }}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: 4, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 4, border: '1px solid #cbd5e1' }}
                           />
                         </td>
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '4px' }}>
                           <input
                             type="text"
                             placeholder="Father Name"
@@ -528,10 +540,10 @@ export const AdmissionSlipGeneratorPage = () => {
                               updated[idx].fatherName = e.target.value;
                               setBulkRows(updated);
                             }}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: 4, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 4, border: '1px solid #cbd5e1' }}
                           />
                         </td>
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '4px' }}>
                           <select
                             value={row.gender}
                             onChange={(e) => {
@@ -539,7 +551,7 @@ export const AdmissionSlipGeneratorPage = () => {
                               updated[idx].gender = e.target.value;
                               setBulkRows(updated);
                             }}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: 4, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 4, border: '1px solid #cbd5e1' }}
                           >
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
@@ -552,7 +564,7 @@ export const AdmissionSlipGeneratorPage = () => {
                 </table>
               </Box>
 
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Box sx={{ mt: 2.5, display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -570,60 +582,12 @@ export const AdmissionSlipGeneratorPage = () => {
         </CardContent>
       </Card>
 
-      {/* Generated Slip Modal / Printable View */}
-      {generatedSlip && (
-        <Dialog open={Boolean(generatedSlip)} onClose={() => setGeneratedSlip(null)} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ fontWeight: 900, bgcolor: '#0284c7', color: '#ffffff', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Admission Slip Generated</span>
-            <Chip label={generatedSlip.slipNumber} sx={{ bgcolor: '#ffffff', color: '#0284c7', fontWeight: 800 }} />
-          </DialogTitle>
-          <DialogContent dividers sx={{ p: 3 }}>
-            <Box sx={{ border: '2px solid #0284c7', p: 3, borderRadius: 2, bgcolor: '#ffffff' }}>
-              <Box sx={{ textAlign: 'center', borderBottom: '2px solid #0284c7', pb: 2, mb: 2 }}>
-                <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-                  DELHI PUBLIC SCHOOL
-                </Typography>
-                <Typography variant="subtitle2" sx={{ color: '#0284c7', fontWeight: 700 }}>
-                  OFFICIAL ADMISSION REGISTRATION SLIP
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  Session: {activeAcademicYearName || '2026-2027'} &bull; Slip No: <strong>{generatedSlip.slipNumber}</strong>
-                </Typography>
-              </Box>
-
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Typography variant="body2"><strong>Student Name:</strong> {generatedSlip.studentName}</Typography>
-                  <Typography variant="body2"><strong>Class:</strong> {generatedSlip.className}</Typography>
-                  <Typography variant="body2"><strong>Mobile:</strong> {generatedSlip.contactNumber}</Typography>
-                  <Typography variant="body2"><strong>Father:</strong> {generatedSlip.fatherName || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                  <Typography variant="body2"><strong>Total Fee:</strong> ₹{generatedSlip.feeAmount}</Typography>
-                  <Typography variant="body2" sx={{ color: '#16a34a' }}><strong>Paid Amount:</strong> ₹{generatedSlip.paidAmount}</Typography>
-                  <Typography variant="body2" sx={{ color: '#dc2626' }}><strong>Balance:</strong> ₹{generatedSlip.balanceAmount}</Typography>
-                  <Typography variant="body2"><strong>Status:</strong> {generatedSlip.paymentStatus}</Typography>
-                </Grid>
-              </Grid>
-
-              <Box sx={{ mt: 3, pt: 2, borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  Generated on: {new Date(generatedSlip.createdOn).toLocaleString()}
-                </Typography>
-                <Typography variant="caption" fontWeight={700}>
-                  Authorized Signatory
-                </Typography>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setGeneratedSlip(null)}>Close</Button>
-            <Button variant="contained" startIcon={<PrintIcon />} onClick={() => window.print()}>
-              Print Slip
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
+      {/* Official Admission Registration Slip Modal */}
+      <AdmissionSlipModal
+        open={slipModalOpen}
+        onClose={() => setSlipModalOpen(false)}
+        slip={generatedSlip}
+      />
     </Box>
   );
 };
