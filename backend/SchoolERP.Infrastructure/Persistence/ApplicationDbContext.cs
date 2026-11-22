@@ -50,6 +50,12 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<StudentSibling> StudentSiblings => Set<StudentSibling>();
         public DbSet<StudentGatePass> StudentGatePasses => Set<StudentGatePass>();
 
+        // Dynamic Admission Builder & Admission Slip Management
+        public DbSet<AdmissionFormConfig> AdmissionFormConfigs => Set<AdmissionFormConfig>();
+        public DbSet<AdmissionFormField> AdmissionFormFields => Set<AdmissionFormField>();
+        public DbSet<AdmissionSlip> AdmissionSlips => Set<AdmissionSlip>();
+        public DbSet<AdmissionPayment> AdmissionPayments => Set<AdmissionPayment>();
+
         // Expenses
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<Expense> Expenses => Set<Expense>();
