@@ -54,7 +54,7 @@ export const AdmissionFormBuilderPage = () => {
   const queryClient = useQueryClient();
   const { activeAcademicYearId, activeAcademicYearName } = useAuthStore();
 
-  const [formTitle, setFormTitle] = useState('School Admission Form');
+  const [formTitle, setFormTitle] = useState('School Registration Form');
   const [formDescription, setFormDescription] = useState('');
   const [instructions, setInstructions] = useState('');
   const [applicationFee, setApplicationFee] = useState(500);
@@ -191,10 +191,10 @@ export const AdmissionFormBuilderPage = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
         <Box>
           <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-            Dynamic Admission Form Builder
+            Dynamic Registration Form Builder
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Drag-and-drop to customize admission fields for session <strong>{activeAcademicYearName || 'Current Session'}</strong>.
+            Drag-and-drop to customize student registration fields for session <strong>{activeAcademicYearName || 'Current Session'}</strong>.
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>

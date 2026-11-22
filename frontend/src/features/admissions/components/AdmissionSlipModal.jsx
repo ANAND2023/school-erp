@@ -28,7 +28,7 @@ export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => 
 
   const handlePrint = () => {
     printElement('printable-admission-slip', {
-      title: `Admission_Slip_${slip.slipNumber}_${slip.studentName}`,
+      title: `Registration_Slip_${slip.slipNumber}_${slip.studentName}`,
       margin: '6mm',
     });
   };
@@ -36,7 +36,7 @@ export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => 
   const handleShareWhatsApp = () => {
     const rawNumber = slip.contactNumber ? String(slip.contactNumber).replace(/\D/g, '') : '';
     const phone = rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
-    const msg = `*ADMISSION REGISTRATION SLIP - ${schoolName}*\n\nDear Parent/Student,\nAdmission registration has been successfully generated!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}\n\nThank you for choosing ${schoolName}!`;
+    const msg = `*STUDENT REGISTRATION SLIP - ${schoolName}*\n\nDear Parent/Student,\nRegistration has been successfully generated!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}\n\nThank you for choosing ${schoolName}!`;
     const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
@@ -56,7 +56,7 @@ export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => 
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <span>Admission Registration Slip</span>
+          <span>Student Registration Slip</span>
           <Chip
             label={slip.slipNumber}
             size="small"
@@ -143,11 +143,11 @@ export const AdmissionSlipModal = ({ open, onClose, slip, branchInfo = {} }) => 
                   }}
                 >
                   <Typography variant="caption" fontWeight={900} sx={{ letterSpacing: 0.5, fontSize: '0.68rem', textTransform: 'uppercase' }}>
-                    Admission Registration Slip
+                    Registration Slip
                   </Typography>
                 </Box>
                 <Typography variant="caption" fontWeight={800} sx={{ display: 'block', color: '#0f172a', fontSize: '0.76rem' }}>
-                  Slip: <span style={{ color: '#0284c7', fontFamily: 'monospace' }}>{slip.slipNumber}</span>
+                  Reg Slip No: <span style={{ color: '#0284c7', fontFamily: 'monospace' }}>{slip.slipNumber}</span>
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.68rem' }}>
                   Session: <strong>{slip.academicYearName || '2026-2027'}</strong>

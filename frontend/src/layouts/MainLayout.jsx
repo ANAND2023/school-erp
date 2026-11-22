@@ -56,9 +56,9 @@ const navItems = [
     icon: 'pi pi-user-plus',
     children: [
       { title: 'Enquiries', path: '/enquiries', menuKey: 'Enquiries' },
-      { title: 'Admission Form Builder', path: '/admissions/builder', menuKey: 'Admissions' },
-      { title: 'Admission Slip Generator', path: '/admissions/slip-generator', menuKey: 'Admissions' },
-      { title: 'Admission Slips Register', path: '/admissions/slips-list', menuKey: 'Admissions' },
+      { title: 'Registration Form Builder', path: '/admissions/builder', menuKey: 'Admissions' },
+      { title: 'Registration Slip Generator', path: '/admissions/slip-generator', menuKey: 'Admissions' },
+      { title: 'Registration Slips Register', path: '/admissions/slips-list', menuKey: 'Admissions' },
       { title: 'Class Fee Structure', path: '/students/fee-structure', menuKey: ['Enquiries', 'Students', 'Fees', 'FeeStructure'] },
       { title: 'New Admission', path: '/admissions/new', menuKey: 'Admissions' },
       { title: 'Student Directory', path: '/students', menuKey: 'Students' },

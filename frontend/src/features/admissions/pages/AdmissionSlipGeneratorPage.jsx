@@ -103,13 +103,13 @@ export const AdmissionSlipGeneratorPage = () => {
       const slip = res.data.data;
       setGeneratedSlip(slip);
       setSlipModalOpen(true);
-      setSuccessMsg(`Admission Slip #${slip.slipNumber} generated successfully for ${slip.studentName}!`);
+      setSuccessMsg(`Registration Slip #${slip.slipNumber} generated successfully for ${slip.studentName}!`);
 
       // WhatsApp trigger: prompt or open
       if (slip.contactNumber) {
         const rawNum = String(slip.contactNumber).replace(/\D/g, '');
         const phone = rawNum.length === 10 ? `91${rawNum}` : rawNum;
-        const msg = `*ADMISSION REGISTRATION SLIP*\n\nDear Parent/Student,\nAdmission registration has been successfully generated!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}`;
+        const msg = `*STUDENT REGISTRATION SLIP*\n\nDear Parent/Student,\nRegistration has been successfully generated!\n\n*Slip No:* ${slip.slipNumber}\n*Student Name:* ${slip.studentName}\n*Class:* ${slip.className}\n*Registration Fee:* Rs. ${slip.feeAmount}\n*Paid Amount:* Rs. ${slip.paidAmount}\n*Balance Due:* Rs. ${slip.balanceAmount}\n*Payment Status:* ${slip.paymentStatus}`;
         const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
         window.open(waUrl, '_blank');
       }
@@ -178,10 +178,10 @@ export const AdmissionSlipGeneratorPage = () => {
     <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
       <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-          Admission Slip Generator & Payment Collection
+          Registration Slip Generator & Payment Collection
         </Typography>
         <Typography variant="caption" sx={{ color: '#64748b' }}>
-          Quick admission slip issuance (A4 1/3 compact layout) & WhatsApp receipt dispatch for <strong>{activeAcademicYearName || 'Current Session'}</strong>.
+          Quick registration slip issuance (A4 1/3 compact layout) & WhatsApp receipt dispatch for <strong>{activeAcademicYearName || 'Current Session'}</strong>.
         </Typography>
       </Box>
 
@@ -200,8 +200,8 @@ export const AdmissionSlipGeneratorPage = () => {
           onChange={(e, v) => setTabIndex(v)}
           sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 0.5, minHeight: 40 }}
         >
-          <Tab icon={<SingleIcon />} iconPosition="start" label="Individual Slip Generation" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
-          <Tab icon={<BulkIcon />} iconPosition="start" label="Bulk Slips with Unified Payment" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
+          <Tab icon={<SingleIcon />} iconPosition="start" label="Individual Registration Slip" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
+          <Tab icon={<BulkIcon />} iconPosition="start" label="Bulk Registration Slips" sx={{ fontWeight: 700, minHeight: 40, py: 1 }} />
         </Tabs>
 
         <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
@@ -401,7 +401,7 @@ export const AdmissionSlipGeneratorPage = () => {
                   disabled={singleMutation.isPending}
                   sx={{ textTransform: 'none', fontWeight: 800, px: 3, py: 1 }}
                 >
-                  {singleMutation.isPending ? 'Generating...' : 'Generate & Print Admission Registration Slip'}
+                  {singleMutation.isPending ? 'Generating...' : 'Generate & Print Registration Slip'}
                 </Button>
               </Box>
             </form>
@@ -574,7 +574,7 @@ export const AdmissionSlipGeneratorPage = () => {
                   disabled={bulkMutation.isPending}
                   sx={{ textTransform: 'none', fontWeight: 800, px: 4 }}
                 >
-                  {bulkMutation.isPending ? 'Processing Batch...' : 'Generate All Batch Slips'}
+                  {bulkMutation.isPending ? 'Processing Batch...' : 'Generate All Registration Slips'}
                 </Button>
               </Box>
             </Box>

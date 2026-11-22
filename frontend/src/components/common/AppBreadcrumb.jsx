@@ -156,6 +156,30 @@ export const routeBreadcrumbMap = {
     subtitle: 'Class-wise annual fee breakdown, installment schedule, and prospectus for student enquiries',
     code: 'Module 3',
   },
+  '/admissions/builder': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/admissions/builder',
+    title: 'Registration Form Builder',
+    subtitle: 'Drag-and-drop dynamic registration form customization for academic sessions',
+    code: 'Module 3',
+  },
+  '/admissions/slip-generator': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/admissions/slip-generator',
+    title: 'Registration Slip Generator',
+    subtitle: 'Generate individual and bulk registration slips with integrated fee collection',
+    code: 'Module 3',
+  },
+  '/admissions/slips-list': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/admissions/slips-list',
+    title: 'Registration Slips Register',
+    subtitle: 'Searchable directory of generated student registration slips and payment status',
+    code: 'Module 3',
+  },
 
   // Module 4: Staff & HR
   '/staff': {

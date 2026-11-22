@@ -117,10 +117,10 @@ export const AdmissionSlipsListPage = () => {
     <Box sx={{ p: { xs: 1.5, md: 3 } }}>
       <Box sx={{ mb: 2.5 }}>
         <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-          Session Admission Records & Reports
+          Session Registration Records & Reports
         </Typography>
         <Typography variant="body2" sx={{ color: '#64748b' }}>
-          Real-time admission generation, payment reconciliation, and searchable slip register for <strong>{activeAcademicYearName}</strong>.
+          Real-time registration slip generation, payment reconciliation, and searchable slip register for <strong>{activeAcademicYearName}</strong>.
         </Typography>
       </Box>
 
@@ -193,7 +193,7 @@ export const AdmissionSlipsListPage = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={5}>
             <TextField
-              placeholder="Search by Student Name, Slip ID, or Mobile..."
+              placeholder="Search by Student Name, Registration Slip ID, or Mobile..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               fullWidth
@@ -288,7 +288,7 @@ export const AdmissionSlipsListPage = () => {
             {slipsData.items.length === 0 && (
               <TableRow>
                 <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4, color: '#64748b' }}>
-                  No admission slips found for current filters.
+                  No registration slips found for current filters.
                 </TableCell>
               </TableRow>
             )}
