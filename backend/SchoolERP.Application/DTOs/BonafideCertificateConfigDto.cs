@@ -149,6 +149,7 @@ namespace SchoolERP.Application.DTOs
             switch (normalized)
             {
                 case "birth":
+                case "dob":
                     config.CertificateTitle = "DATE OF BIRTH CERTIFICATE";
                     config.CertificateSubtitle = "EXTRACT FROM SCHOOL GENERAL ADMISSION REGISTER";
                     config.PrimaryColor = "#0f766e";
@@ -191,6 +192,7 @@ namespace SchoolERP.Application.DTOs
                     break;
 
                 case "character":
+                case "cc":
                     config.CertificateTitle = "CHARACTER & CONDUCT CERTIFICATE";
                     config.CertificateSubtitle = "TO WHOMSOEVER IT MAY CONCERN";
                     config.PrimaryColor = "#831843";
@@ -233,6 +235,7 @@ namespace SchoolERP.Application.DTOs
                     break;
 
                 case "bonafide":
+                case "bc":
                 default:
                     config.CertificateType = "bonafide";
                     config.CertificateTitle = "BONAFIDE CERTIFICATE";

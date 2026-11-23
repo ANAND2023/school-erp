@@ -243,17 +243,47 @@ export const calculateAge = (dobStr) => {
   }
 };
 
-export const BonafideCertificateModal = ({ open, onClose, studentId, studentData, certificateType = 'bonafide' }) => {
+export const BonafideCertificateModal = (props) => {
+  const {
+    open,
+    onClose,
+    studentId,
+    studentData: directStudentData,
+    student: altStudent,
+    certificateType = 'bonafide',
+    initialRefNo,
+    initialPurpose,
+    initialDate,
+    initialPrintWithLetterhead,
+    customOptions,
+    onPrinted,
+  } = props;
+
+  const studentData = directStudentData || altStudent;
+  const resolvedRefNo = initialRefNo || customOptions?.refNo;
+  const resolvedPurpose = initialPurpose || customOptions?.purpose;
+  const resolvedDate = initialDate || customOptions?.issueDate;
+  const resolvedLetterhead = initialPrintWithLetterhead !== undefined ? initialPrintWithLetterhead : customOptions?.printWithLetterhead;
+
   const printRef = useRef(null);
+  const containerRef = useRef(null);
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
 
   const [config, setConfig] = useState(null);
-  const [purpose, setPurpose] = useState(defaultTemplate.defaultPurpose);
+  const [purpose, setPurpose] = useState(resolvedPurpose || defaultTemplate.defaultPurpose);
   const [customPurpose, setCustomPurpose] = useState('');
-  const [refNo, setRefNo] = useState('');
-  const [issueDate, setIssueDate] = useState('');
-  const [printWithLetterhead, setPrintWithLetterhead] = useState(true);
+  const [refNo, setRefNo] = useState(resolvedRefNo || '');
+  const [issueDate, setIssueDate] = useState(resolvedDate || '');
+  const [printWithLetterhead, setPrintWithLetterhead] = useState(
+    resolvedLetterhead !== undefined ? resolvedLetterhead : true
+  );
+
+  useEffect(() => {
+    if (open && containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -264,10 +294,10 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       .then((res) => {
         if (res.data?.success && res.data.data) {
           setConfig(res.data.data);
-          if (res.data.data.defaultPurpose) {
+          if (!initialPurpose && res.data.data.defaultPurpose) {
             setPurpose(res.data.data.defaultPurpose);
           }
-          if (res.data.data.useLetterhead !== undefined) {
+          if (initialPrintWithLetterhead === undefined && res.data.data.useLetterhead !== undefined) {
             setPrintWithLetterhead(res.data.data.useLetterhead);
           }
         }
@@ -276,17 +306,36 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
         console.error('Failed to load certificate config:', err);
       });
 
-    // Set default Issue Date (Today in dd-MMM-yyyy)
-    const today = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
-    setIssueDate(formattedDate);
+    // Set default Issue Date (Today in dd-MMM-yyyy) if not passed
+    if (initialDate) {
+      setIssueDate(initialDate);
+    } else {
+      const today = new Date();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
+      setIssueDate(formattedDate);
+    }
 
-    // Set Default Ref No according to certificate type statutory prefix
-    const adm = studentData?.admissionNo || studentId || '001';
-    const prefix = defaultTemplate.refPrefix || 'DPS/BC';
-    setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
-  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose]);
+    // Set Default Ref No according to certificate type statutory prefix if not passed
+    if (initialRefNo) {
+      setRefNo(initialRefNo);
+    } else {
+      const today = new Date();
+      const adm = studentData?.admissionNo || studentId || '001';
+      const prefix = defaultTemplate.refPrefix || 'DPS/BC';
+      setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
+    }
+
+    if (resolvedPurpose) {
+      setPurpose(resolvedPurpose);
+    }
+    if (resolvedRefNo) {
+      setRefNo(resolvedRefNo);
+    }
+    if (resolvedDate) {
+      setIssueDate(resolvedDate);
+    }
+  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose, resolvedRefNo, resolvedPurpose, resolvedDate, resolvedLetterhead]);
 
   if (!open) return null;
 
@@ -357,6 +406,20 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       };
       const docName = `${typeLabels[typeKey] || 'Certificate'}_${sName.replace(/\s+/g, '_')}`;
       printElement(printRef.current, docName);
+      if (typeof onPrinted === 'function') {
+        onPrinted({
+          studentId: studentData?.id || studentId,
+          studentName: sName,
+          admissionNo: admNo,
+          className: cls,
+          sectionName: sec,
+          certificateType: typeKey,
+          refNo: refNo,
+          issueDate: issueDate,
+          purpose: currentPurpose,
+          printedAt: new Date().toISOString(),
+        });
+      }
     }
   };
 
@@ -944,6 +1007,9 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
     <Dialog
       visible={open}
       onHide={onClose}
+      appendTo={typeof document !== 'undefined' ? document.body : undefined}
+      baseZIndex={3000}
+      maskStyle={{ zIndex: 3000 }}
       header={
         <div className="flex align-items-center gap-2">
           <i className="pi pi-verified text-xl text-blue-600"></i>
@@ -952,7 +1018,7 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
           </span>
         </div>
       }
-      style={{ width: '920px', maxWidth: '96vw' }}
+      style={{ width: '920px', maxWidth: '96vw', zIndex: 3001 }}
       modal
       className="p-fluid"
       footer={
@@ -1079,7 +1145,7 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       </div>
 
       {/* Certificate Print Preview Container */}
-      <div className="surface-200 p-3 border-round overflow-auto" style={{ maxHeight: '72vh' }}>
+      <div ref={containerRef} className="surface-200 p-3 border-round overflow-auto" style={{ maxHeight: '62vh' }}>
         <div
           ref={printRef}
           className="bg-white mx-auto shadow-2 relative"

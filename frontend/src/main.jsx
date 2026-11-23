@@ -9,11 +9,11 @@ import App from './App';
 // Calendars, and Popups always appear above modals and dialogs.
 PrimeReact.autoZIndex = true;
 PrimeReact.zIndex = {
-  modal: 1400,
-  overlay: 9999,
-  menu: 9999,
-  tooltip: 10000,
-  toast: 11000,
+  modal: 3000,
+  overlay: 99999,
+  menu: 99999,
+  tooltip: 100000,
+  toast: 110000,
 };
 
 // PrimeReact Core CSS

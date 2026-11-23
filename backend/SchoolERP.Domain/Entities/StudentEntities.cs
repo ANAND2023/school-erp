@@ -154,6 +154,24 @@ namespace SchoolERP.Domain.Entities
         public virtual AcademicYear? AcademicYear { get; set; }
     }
 
+    public class StudentCertificate : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long StudentId { get; set; }
+        public string CertificateType { get; set; } = "bonafide"; // "bonafide", "birth", "age", "character", "ret"
+        public string CertificateNo { get; set; } = string.Empty;
+        public DateTime IssueDate { get; set; } = DateTime.UtcNow;
+        public string Purpose { get; set; } = string.Empty;
+        public string? IssuedBy { get; set; }
+        public string Status { get; set; } = "Issued"; // Issued, Valid, Cancelled
+        public string? Remarks { get; set; }
+        public string? OptionsJson { get; set; }
+
+        public virtual Student? Student { get; set; }
+        public virtual AcademicYear? AcademicYear { get; set; }
+    }
+
     public class StudentAuditLog : BaseEntity
     {
         public long StudentId { get; set; }

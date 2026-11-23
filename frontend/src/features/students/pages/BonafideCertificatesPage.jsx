@@ -1,486 +1,931 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from 'primereact/card';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
-import { Dropdown } from 'primereact/dropdown';
-import { Tag } from 'primereact/tag';
-import { Avatar } from 'primereact/avatar';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  TextField,
+  MenuItem,
+  Button,
+  Stack,
+  Alert,
+  CircularProgress,
+  Chip,
+  Avatar,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  IconButton,
+  Tooltip,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Print as PrintIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  Verified as VerifiedIcon,
+  CalendarMonth as CalendarIcon,
+  AccessTime as TimeIcon,
+  WorkspacePremium as AwardIcon,
+  Description as DocumentIcon,
+  School as SchoolIcon,
+  DeleteOutline as DeleteIcon,
+} from '@mui/icons-material';
+import dayjs from 'dayjs';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { studentApi } from '../api';
+import { certificateApi } from '../api';
 import { classesApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { BonafideCertificateModal } from '../components/BonafideCertificateModal';
+import { IssueCertificateModal } from '../components/IssueCertificateModal';
 
-const CERT_META = {
+const CERT_CONFIGS = {
   bonafide: {
+    id: 'bonafide',
     title: 'Bonafide Certificate',
-    subtitle: 'Generate and print officially verified bonafide student certificates verifying institutional enrollment and session.',
-    icon: 'pi pi-verified',
-    colorClass: 'text-blue-700 bg-blue-100',
-    buttonLabel: 'Issue Bonafide',
-    themeColor: '#1e3a8a',
+    shortTitle: 'Bonafide Certificate',
+    badge: 'DPS/BC',
+    path: '/certificates/bonafide',
+    subtitle: 'Generate and reprint officially verified bonafide student certificates verifying institutional enrollment and session.',
+    themeColor: '#0284c7',
+    lighterColor: '#f0f9ff',
+    borderColor: '#bae6fd',
+    icon: VerifiedIcon,
   },
   birth: {
+    id: 'birth',
     title: 'Date of Birth (DOB) Certificate',
+    shortTitle: 'Date of Birth Certificate',
+    badge: 'DPS/DOB',
+    path: '/certificates/birth',
     subtitle: 'Extract and issue certified Date of Birth certificates directly from official school admission register records.',
-    icon: 'pi pi-calendar',
-    colorClass: 'text-teal-700 bg-teal-100',
-    buttonLabel: 'Issue Birth Cert',
     themeColor: '#0f766e',
+    lighterColor: '#f0fdfa',
+    borderColor: '#99f6e4',
+    icon: CalendarIcon,
   },
   age: {
+    id: 'age',
     title: 'Certificate of Age',
+    shortTitle: 'Certificate of Age',
+    badge: 'DPS/AGE',
+    path: '/certificates/age',
     subtitle: 'Generate verified age certificates showing student exact calculated age as of reference date from institutional records.',
-    icon: 'pi pi-clock',
-    colorClass: 'text-amber-700 bg-amber-100',
-    buttonLabel: 'Issue Age Cert',
     themeColor: '#b45309',
+    lighterColor: '#fffbeb',
+    borderColor: '#fde68a',
+    icon: TimeIcon,
   },
   character: {
+    id: 'character',
     title: 'Character & Conduct Certificate',
+    shortTitle: 'Character Certificate',
+    badge: 'DPS/CC',
+    path: '/certificates/character',
     subtitle: 'Issue certified moral character, obedience, exemplary discipline, and academic conduct certificates.',
-    icon: 'pi pi-star',
-    colorClass: 'text-rose-700 bg-rose-100',
-    buttonLabel: 'Issue Character Cert',
-    themeColor: '#881337',
+    themeColor: '#831843',
+    lighterColor: '#fff1f2',
+    borderColor: '#fecdd3',
+    icon: AwardIcon,
   },
   ret: {
+    id: 'ret',
     title: 'RET Certificate',
+    shortTitle: 'RET Certificate',
+    badge: 'DPS/RET',
+    path: '/certificates/ret',
     subtitle: 'Generate verified record of education, examination results, academic performance, and retention status.',
-    icon: 'pi pi-file',
-    colorClass: 'text-purple-700 bg-purple-100',
-    buttonLabel: 'Issue RET Cert',
     themeColor: '#581c87',
+    lighterColor: '#faf5ff',
+    borderColor: '#e9d5ff',
+    icon: DocumentIcon,
   },
 };
 
 const CERT_TABS = [
-  { id: 'bonafide', label: 'Bonafide', icon: 'pi pi-verified', path: '/certificates/bonafide' },
-  { id: 'birth', label: 'Birth (DOB)', icon: 'pi pi-calendar', path: '/certificates/birth' },
-  { id: 'age', label: 'Age Proof', icon: 'pi pi-clock', path: '/certificates/age' },
-  { id: 'character', label: 'Character', icon: 'pi pi-star', path: '/certificates/character' },
-  { id: 'ret', label: 'RET Certificate', icon: 'pi pi-file', path: '/certificates/ret' },
+  { id: 'bonafide', label: 'Bonafide Certificate', badge: 'DPS/BC' },
+  { id: 'birth', label: 'Date of Birth Certificate', badge: 'DPS/DOB' },
+  { id: 'age', label: 'Certificate of Age', badge: 'DPS/AGE' },
+  { id: 'character', label: 'Character Certificate', badge: 'DPS/CC' },
+  { id: 'ret', label: 'RET Certificate', badge: 'DPS/RET' },
 ];
 
 export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
   const navigate = useNavigate();
-  const { activeAcademicYearId } = useAcademicYear();
+  const queryClient = useQueryClient();
+  const { activeAcademicYear } = useAcademicYear();
 
   const [activeCertType, setActiveCertType] = useState(defaultType);
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  // Filters
+  // Filters matching StudentGatePassPage
   const [search, setSearch] = useState('');
-  const [selectedClassId, setSelectedClassId] = useState(null);
-  const [selectedSectionId, setSelectedSectionId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [rows, setRows] = useState(15);
-  const [totalRecords, setTotalRecords] = useState(0);
+  const [classId, setClassId] = useState('');
+  const [sectionId, setSectionId] = useState('');
+  const [status, setStatus] = useState('All');
+  const [dateFilter, setDateFilter] = useState('All'); // 'Today' or 'All'
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Modal State
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  // Modals
+  const [issueModalOpen, setIssueModalOpen] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [selectedStudentForPrint, setSelectedStudentForPrint] = useState(null);
+  const [customCertOptions, setCustomCertOptions] = useState(null);
+  const [bannerNotice, setBannerNotice] = useState(null);
 
   useEffect(() => {
     setActiveCertType(defaultType);
   }, [defaultType]);
 
-  useEffect(() => {
-    loadClasses();
-  }, []);
+  const activeMeta = CERT_CONFIGS[activeCertType] || CERT_CONFIGS.bonafide;
+  const ActiveIcon = activeMeta.icon;
 
-  useEffect(() => {
-    loadStudents();
-  }, [page, rows, selectedClassId, selectedSectionId, activeAcademicYearId]);
+  // Fetch classes
+  const { data: classesRes } = useQuery({
+    queryKey: ['classes-list'],
+    queryFn: () => classesApi.getClasses(),
+  });
+  const classes = classesRes?.data?.data || [];
+  const selectedClass = classes.find((c) => String(c.id) === String(classId));
+  const sections = selectedClass?.sections || [];
 
-  const loadClasses = async () => {
-    try {
-      const res = await classesApi.getClasses();
-      if (res?.data?.data) {
-        setClasses(res.data.data);
+  // Fetch Stats
+  const { data: statsRes, refetch: refetchStats } = useQuery({
+    queryKey: ['certificate-stats', activeCertType],
+    queryFn: () => certificateApi.getStats({ certificateType: activeCertType }),
+  });
+  const stats = statsRes?.data?.data || {
+    totalIssued: 0,
+    issuedToday: 0,
+    bonafideCount: 0,
+    dobCount: 0,
+    ageCount: 0,
+    characterCount: 0,
+    retCount: 0,
+  };
+
+  // Build query params
+  const fromDate = dateFilter === 'Today' ? dayjs().startOf('day').toISOString() : undefined;
+  const toDate = dateFilter === 'Today' ? dayjs().endOf('day').toISOString() : undefined;
+
+  // Fetch Issued Certificates List
+  const {
+    data: certificatesRes,
+    isLoading,
+    isFetching,
+    refetch: refetchList,
+  } = useQuery({
+    queryKey: [
+      'certificates-list',
+      activeCertType,
+      search,
+      classId,
+      sectionId,
+      status,
+      dateFilter,
+      page,
+      rowsPerPage,
+    ],
+    queryFn: () =>
+      certificateApi.getCertificates({
+        certificateType: activeCertType,
+        search: search || undefined,
+        classId: classId || undefined,
+        sectionId: sectionId || undefined,
+        status: status !== 'All' ? status : undefined,
+        fromDate,
+        toDate,
+        pageNo: page + 1,
+        pageSize: rowsPerPage,
+      }),
+  });
+
+  const pagedData = certificatesRes?.data?.data;
+  const items = pagedData?.items || [];
+  const totalCount = pagedData?.totalCount || 0;
+
+  // Create Certificate Mutation
+  const createCertMutation = useMutation({
+    mutationFn: (data) => certificateApi.createCertificate(data),
+    onSuccess: (res, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['certificates-list'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-stats'] });
+
+      const newCert = res?.data?.data;
+      setBannerNotice({
+        type: 'success',
+        text: `Certificate #${newCert?.certificateNo || variables.certificateNo} issued successfully!`,
+      });
+
+      // Automatically open the printable slip/certificate
+      if (newCert) {
+        setSelectedStudentForPrint({
+          studentId: newCert.studentId,
+          studentName: newCert.studentName,
+          admissionNo: newCert.admissionNo,
+          rollNo: newCert.rollNo,
+          className: newCert.className,
+          sectionName: newCert.sectionName,
+          dob: newCert.dob,
+          fatherName: newCert.fatherName,
+          motherName: newCert.motherName,
+          photoUrl: newCert.photoUrl,
+        });
+        setCustomCertOptions({
+          refNo: newCert.certificateNo,
+          issueDate: dayjs(newCert.issueDate).format('DD-MMM-YYYY'),
+          purpose: newCert.purpose,
+          printWithLetterhead: true,
+        });
+        setPrintModalOpen(true);
       }
-    } catch (err) {
-      console.error('Failed to load classes:', err);
-    }
+    },
+    onError: (err) => {
+      setBannerNotice({
+        type: 'error',
+        text: err?.response?.data?.message || 'Failed to issue certificate.',
+      });
+    },
+  });
+
+  // Delete/Revoke Certificate Mutation
+  const deleteCertMutation = useMutation({
+    mutationFn: (id) => certificateApi.deleteCertificate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificates-list'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-stats'] });
+      setBannerNotice({ type: 'info', text: 'Certificate cancelled successfully.' });
+    },
+  });
+
+  const handleIssueSuccess = (student, certOptions) => {
+    setIssueModalOpen(false);
+
+    createCertMutation.mutate({
+      studentId: student.studentId || student.id,
+      certificateType: activeCertType,
+      certificateNo: certOptions.refNo,
+      issueDate: dayjs().toISOString(),
+      purpose: certOptions.purpose,
+      issuedBy: 'Principal / Authorized Signatory',
+      optionsJson: JSON.stringify(certOptions),
+    });
   };
 
-  const loadStudents = async () => {
-    try {
-      setLoading(true);
-      const params = {
-        page,
-        limit: rows,
-        academicYearId: activeAcademicYearId || undefined,
-        classId: selectedClassId || undefined,
-        sectionId: selectedSectionId || undefined,
-        search: search.trim() || undefined,
-      };
-
-      const res = await studentApi.getStudents(params);
-      if (res?.data?.data) {
-        const studentList = res.data.data.items || res.data.data || [];
-        setStudents(studentList);
-        setTotalRecords(res.data.data.totalCount || studentList.length || 0);
-      } else {
-        setStudents([]);
-        setTotalRecords(0);
-      }
-    } catch (err) {
-      console.error('Failed to load students for certificates:', err);
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenPrintForExisting = (row) => {
+    setSelectedStudentForPrint({
+      studentId: row.studentId,
+      studentName: row.studentName,
+      admissionNo: row.admissionNo,
+      rollNo: row.rollNo,
+      className: row.className,
+      sectionName: row.sectionName,
+      dob: row.dob,
+      fatherName: row.fatherName,
+      motherName: row.motherName,
+      photoUrl: row.photoUrl,
+    });
+    setCustomCertOptions({
+      refNo: row.certificateNo,
+      issueDate: dayjs(row.issueDate).format('DD-MMM-YYYY'),
+      purpose: row.purpose,
+      printWithLetterhead: true,
+    });
+    setPrintModalOpen(true);
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setPage(1);
-    loadStudents();
-  };
-
-  const handleResetFilters = () => {
-    setSearch('');
-    setSelectedClassId(null);
-    setSelectedSectionId(null);
-    setPage(1);
-    loadStudents();
-  };
-
-  const openCertificate = (student) => {
-    setSelectedStudent(student);
-    setModalOpen(true);
-  };
-
-  const handleTabChange = (tab) => {
-    setActiveCertType(tab.id);
-    navigate(tab.path);
-  };
-
-  const activeMeta = CERT_META[activeCertType] || CERT_META.bonafide;
-
-  // Section options based on selected class
-  const currentClassObj = classes.find((c) => c.id === selectedClassId);
-  const sectionOptions = currentClassObj?.sections
-    ? currentClassObj.sections.map((s) => ({ label: s.name, value: s.id }))
-    : [];
-
-  // Table Templates
-  const studentInfoTemplate = (row) => {
-    const photo = row.photoUrl || row.studentPhotoUrl || row.photo;
-    const name = row.studentName || row.fullName || `${row.firstName || ''} ${row.lastName || ''}`.trim() || 'Student';
-    return (
-      <div className="flex align-items-center gap-3">
-        {photo ? (
-          <img
-            src={photo}
-            alt={name}
-            className="w-3rem h-3rem border-circle object-cover shadow-1 flex-shrink-0"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        ) : (
-          <Avatar
-            label={name.charAt(0).toUpperCase()}
-            shape="circle"
-            size="large"
-            className="bg-blue-100 text-blue-800 font-bold flex-shrink-0"
-          />
-        )}
-        <div>
-          <div
-            className="font-bold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
-            onClick={() => openCertificate(row)}
-          >
-            {name}
-          </div>
-          <div className="text-xs text-slate-500 mt-1 flex align-items-center gap-2">
-            <span>
-              Adm: <strong className="text-slate-700">{row.admissionNo || 'N/A'}</strong>
-            </span>
-            {row.rollNo && (
-              <>
-                <span>•</span>
-                <span>
-                  Roll: <strong className="text-slate-700">{row.rollNo}</strong>
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const classSectionTemplate = (row) => {
-    const className = row.className || row.currentEnrollment?.className || 'N/A';
-    const sectionName = row.sectionName || row.currentEnrollment?.sectionName || '';
-    return (
-      <div>
-        <Tag value={`${className} ${sectionName ? `- ${sectionName}` : ''}`} severity="info" className="font-semibold" />
-      </div>
-    );
-  };
-
-  const parentTemplate = (row) => {
-    const fatherName =
-      row.fatherName || row.guardians?.find((g) => g.relation === 'Father')?.fullName || row.parentName || '—';
-    const contact = row.contactNumber || row.fatherPhone || row.phone || row.mobileNo || '';
-    return (
-      <div>
-        <div className="font-medium text-slate-700 text-sm">{fatherName}</div>
-        {contact && (
-          <div className="text-xs text-slate-500 mt-1">
-            <i className="pi pi-phone mr-1"></i>
-            {contact}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const actionsTemplate = (row) => {
-    return (
-      <div className="flex align-items-center gap-2 justify-content-center">
-        <Button
-          label={activeMeta.buttonLabel}
-          icon={activeMeta.icon}
-          size="small"
-          severity="primary"
-          onClick={() => openCertificate(row)}
-          className="p-button-sm shadow-1"
-        />
-      </div>
-    );
+  const handleTabChange = (typeId) => {
+    setActiveCertType(typeId);
+    setPage(0);
+    navigate(`/certificates/${typeId}`);
   };
 
   return (
-    <div className="p-3 md:p-4">
-      {/* Certificate Type Switcher Ribbon */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
+    <Box sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
+      {/* Top Banner Notice */}
+      {bannerNotice && (
+        <Alert
+          severity={bannerNotice.type}
+          sx={{ mb: 2.5 }}
+          onClose={() => setBannerNotice(null)}
+        >
+          {bannerNotice.text}
+        </Alert>
+      )}
+
+      {/* Certificate Navigation Tabs */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 3,
+          overflowX: 'auto',
+          pb: 1,
+          borderBottom: '1px solid #e2e8f0',
+        }}
+      >
         {CERT_TABS.map((tab) => {
-          const isActive = activeCertType === tab.id;
+          const isSelected = activeCertType === tab.id;
+          const conf = CERT_CONFIGS[tab.id];
           return (
-            <button
+            <Button
               key={tab.id}
-              type="button"
-              onClick={() => handleTabChange(tab)}
-              className={`p-2 px-3 border-round border-none font-bold text-xs flex align-items-center gap-2 cursor-pointer transition-all shadow-1 ${
-                isActive
-                  ? 'bg-blue-600 text-white shadow-2'
-                  : 'surface-card text-slate-700 hover:surface-100 hover:text-blue-600'
-              }`}
+              onClick={() => handleTabChange(tab.id)}
+              variant={isSelected ? 'contained' : 'outlined'}
+              size="small"
+              sx={{
+                borderRadius: 2,
+                px: 2,
+                py: 0.8,
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                bgcolor: isSelected ? conf.themeColor : 'transparent',
+                borderColor: isSelected ? conf.themeColor : '#cbd5e1',
+                color: isSelected ? '#ffffff' : '#475569',
+                boxShadow: isSelected ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
+                '&:hover': {
+                  bgcolor: isSelected ? conf.themeColor : '#f1f5f9',
+                  borderColor: isSelected ? conf.themeColor : '#94a3b8',
+                },
+                flexShrink: 0,
+              }}
             >
-              <i className={tab.icon}></i>
-              <span>{tab.label}</span>
-            </button>
+              {tab.label}
+              <Chip
+                label={tab.badge}
+                size="small"
+                sx={{
+                  ml: 1,
+                  height: 20,
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  bgcolor: isSelected ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                  color: isSelected ? '#ffffff' : '#334155',
+                }}
+              />
+            </Button>
           );
         })}
-      </div>
+      </Stack>
 
-      {/* Page Header */}
-      <div className="flex flex-column md:flex-row md:align-items-center justify-content-between gap-3 mb-4">
-        <div>
-          <div className="flex align-items-center gap-2">
-            <div className={`w-2.5rem h-2.5rem border-round flex align-items-center justify-content-center ${activeMeta.colorClass}`}>
-              <i className={`${activeMeta.icon} text-xl`}></i>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 m-0">{activeMeta.title}</h1>
-              <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-                School Certificates Module
-              </span>
-            </div>
-          </div>
-          <p className="text-sm text-slate-500 mt-2 mb-0">{activeMeta.subtitle}</p>
-        </div>
-      </div>
+      {/* Header */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Box>
+          <Typography
+            variant="h5"
+            fontWeight={800}
+            color="#0f172a"
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+          >
+            <ActiveIcon sx={{ color: activeMeta.themeColor, fontSize: 32 }} />
+            {activeMeta.title} Register
+          </Typography>
+          <Typography variant="body2" color="#64748b" sx={{ mt: 0.5 }}>
+            {activeMeta.subtitle}
+          </Typography>
+        </Box>
 
-      {/* Quick Stats */}
-      <div className="grid mb-4">
-        <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="shadow-1 border-none surface-card border-round">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">Total Student Records</span>
-                <div className="text-900 font-bold text-2xl">{totalRecords}</div>
-              </div>
-              <div className="w-3rem h-3rem border-circle bg-blue-50 text-blue-600 flex align-items-center justify-content-center">
-                <i className="pi pi-users text-xl"></i>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="shadow-1 border-none surface-card border-round">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">Active Classes</span>
-                <div className="text-900 font-bold text-2xl">{classes.length}</div>
-              </div>
-              <div className="w-3rem h-3rem border-circle bg-green-50 text-green-600 flex align-items-center justify-content-center">
-                <i className="pi pi-building text-xl"></i>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="shadow-1 border-none surface-card border-round">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">Certificate Mode</span>
-                <div className="text-900 font-bold text-base text-purple-700 mt-1">Dynamic + Letterhead</div>
-              </div>
-              <div className="w-3rem h-3rem border-circle bg-purple-50 text-purple-600 flex align-items-center justify-content-center">
-                <i className="pi pi-image text-xl"></i>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="col-12 sm:col-6 lg:col-3">
-          <Card className="shadow-1 border-none surface-card border-round">
-            <div className="flex justify-content-between align-items-center">
-              <div>
-                <span className="block text-500 font-medium text-xs mb-1">Authenticity & Security</span>
-                <div className="text-900 font-bold text-base text-emerald-700 mt-1">QR Seal Verified</div>
-              </div>
-              <div className="w-3rem h-3rem border-circle bg-emerald-50 text-emerald-600 flex align-items-center justify-content-center">
-                <i className="pi pi-qrcode text-xl"></i>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <Card className="shadow-1 border-none mb-4">
-        <form onSubmit={handleSearchSubmit} className="grid align-items-end">
-          <div className="col-12 md:col-4">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Search Student / Admission / Roll:
-            </label>
-            <span className="p-input-icon-left w-full">
-              <i className="pi pi-search" />
-              <InputText
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by student name, adm no..."
-                className="w-full p-inputtext-sm"
-              />
-            </span>
-          </div>
-
-          <div className="col-12 sm:col-6 md:col-3">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Class:</label>
-            <Dropdown
-              value={selectedClassId}
-              options={classes.map((c) => ({ label: c.name, value: c.id }))}
-              onChange={(e) => {
-                setSelectedClassId(e.value);
-                setSelectedSectionId(null);
-                setPage(1);
-              }}
-              placeholder="All Classes"
-              showClear
-              className="w-full p-inputtext-sm"
-            />
-          </div>
-
-          <div className="col-12 sm:col-6 md:col-3">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Section:</label>
-            <Dropdown
-              value={selectedSectionId}
-              options={sectionOptions}
-              onChange={(e) => {
-                setSelectedSectionId(e.value);
-                setPage(1);
-              }}
-              placeholder="All Sections"
-              disabled={!selectedClassId || sectionOptions.length === 0}
-              showClear
-              className="w-full p-inputtext-sm"
-            />
-          </div>
-
-          <div className="col-12 md:col-2 flex gap-2">
-            <Button type="submit" label="Filter" icon="pi pi-filter" size="small" className="w-full p-button-sm" />
-            <Button
-              type="button"
-              icon="pi pi-refresh"
-              outlined
-              severity="secondary"
-              size="small"
-              onClick={handleResetFilters}
-              title="Reset Filters"
-            />
-          </div>
-        </form>
-      </Card>
-
-      {/* Students Data Table */}
-      <Card className="shadow-1 border-none">
-        <DataTable
-          value={students}
-          loading={loading}
-          paginator
-          rows={rows}
-          totalRecords={totalRecords}
-          lazy
-          first={(page - 1) * rows}
-          onPage={(e) => {
-            setPage(Math.floor(e.first / e.rows) + 1);
-            setRows(e.rows);
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setIssueModalOpen(true)}
+          sx={{
+            fontWeight: 700,
+            px: 2.5,
+            py: 1,
+            borderRadius: 2,
+            bgcolor: activeMeta.themeColor,
+            boxShadow: `0 4px 12px ${activeMeta.themeColor}40`,
+            '&:hover': {
+              bgcolor: activeMeta.themeColor,
+              filter: 'brightness(0.9)',
+            },
           }}
-          rowsPerPageOptions={[10, 15, 25, 50]}
-          emptyMessage="No students found matching current filters."
-          responsiveLayout="stack"
-          className="p-datatable-sm"
         >
-          <Column header="Student" body={studentInfoTemplate} style={{ minWidth: '240px' }} />
-          <Column header="Class & Section" body={classSectionTemplate} style={{ minWidth: '140px' }} />
-          <Column header="Father's Details" body={parentTemplate} style={{ minWidth: '180px' }} />
-          <Column
-            header="Gender"
-            field="gender"
-            body={(row) => <span className="text-sm text-slate-600">{row.gender || '—'}</span>}
-            style={{ width: '100px' }}
-          />
-          <Column
-            header="DOB"
-            field="dob"
-            body={(row) => (
-              <span className="text-sm text-slate-600">
-                {row.dob ? new Date(row.dob).toLocaleDateString('en-GB') : '—'}
-              </span>
-            )}
-            style={{ width: '120px' }}
-          />
-          <Column header="Action" body={actionsTemplate} style={{ width: '180px', textAlign: 'center' }} />
-        </DataTable>
+          + Issue New {activeMeta.shortTitle}
+        </Button>
+      </Stack>
+
+      {/* Stats Summary Cards (identical layout to StudentGatePassPage) */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
+          <Card
+            sx={{
+              bgcolor: activeMeta.lighterColor,
+              border: `1px solid ${activeMeta.borderColor}`,
+              borderRadius: 2,
+            }}
+          >
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    sx={{ color: activeMeta.themeColor }}
+                    textTransform="uppercase"
+                  >
+                    Issued Today
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    color="#0f172a"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {stats.issuedToday}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: activeMeta.themeColor, width: 44, height: 44 }}>
+                  <ActiveIcon sx={{ color: '#ffffff' }} />
+                </Avatar>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={6} sm={3}>
+          <Card
+            sx={{
+              bgcolor: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: 2,
+            }}
+          >
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    color="#0369a1"
+                    textTransform="uppercase"
+                  >
+                    Total Issued
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    color="#0c4a6e"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {stats.totalIssued}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#38bdf8', width: 44, height: 44 }}>
+                  <VerifiedIcon sx={{ color: '#ffffff' }} />
+                </Avatar>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={6} sm={3}>
+          <Card
+            sx={{
+              bgcolor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: 2,
+            }}
+          >
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    color="#475569"
+                    textTransform="uppercase"
+                  >
+                    Statutory Code
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    fontWeight={800}
+                    color={activeMeta.themeColor}
+                    sx={{ mt: 0.5, fontFamily: 'monospace' }}
+                  >
+                    {activeMeta.badge}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#cbd5e1', width: 44, height: 44 }}>
+                  <DocumentIcon sx={{ color: '#334155' }} />
+                </Avatar>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={6} sm={3}>
+          <Card
+            sx={{
+              bgcolor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: 2,
+            }}
+          >
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    color="#15803d"
+                    textTransform="uppercase"
+                  >
+                    Academic Session
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight={800}
+                    color="#14532d"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {activeAcademicYear?.name || 'Active Session'}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#4ade80', width: 44, height: 44 }}>
+                  <SchoolIcon sx={{ color: '#ffffff' }} />
+                </Avatar>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Filter Toolbar Card (identical to StudentGatePassPage) */}
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Search Certificate"
+                placeholder="Student, Adm No, Ref No..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <SearchIcon sx={{ color: '#94a3b8', mr: 1, fontSize: 20 }} />
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={6} sm={2}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Class"
+                value={classId}
+                onChange={(e) => {
+                  setClassId(e.target.value);
+                  setSectionId('');
+                  setPage(0);
+                }}
+              >
+                <MenuItem value="">All Classes</MenuItem>
+                {classes.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={6} sm={2}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Section"
+                value={sectionId}
+                onChange={(e) => {
+                  setSectionId(e.target.value);
+                  setPage(0);
+                }}
+                disabled={!classId}
+              >
+                <MenuItem value="">All Sections</MenuItem>
+                {sections.map((s) => (
+                  <MenuItem key={s.id} value={s.id}>
+                    {s.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={6} sm={2}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Status"
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <MenuItem value="All">All Statuses</MenuItem>
+                <MenuItem value="Issued">Issued</MenuItem>
+                <MenuItem value="Valid">Valid</MenuItem>
+                <MenuItem value="Cancelled">Cancelled</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid item xs={6} sm={2}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Date Range"
+                value={dateFilter}
+                onChange={(e) => {
+                  setDateFilter(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <MenuItem value="All">All History</MenuItem>
+                <MenuItem value="Today">Today Only</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={1} textAlign="right">
+              <Tooltip title="Refresh List">
+                <IconButton
+                  onClick={() => {
+                    refetchList();
+                    refetchStats();
+                  }}
+                  sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+          </Grid>
+        </CardContent>
       </Card>
 
-      {/* Dynamic Certificate Print Modal */}
-      {selectedStudent && (
-        <BonafideCertificateModal
-          open={modalOpen}
-          onClose={() => {
-            setModalOpen(false);
-            setSelectedStudent(null);
+      {/* Main Table Card (identical styling to StudentGatePassPage) */}
+      <Paper sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <TableContainer>
+          <Table sx={{ minWidth: 700 }} size="small">
+            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                  Certificate Ref No & Date
+                </TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                  Student Details
+                </TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                  Parent / Guardian Details
+                </TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                  Purpose / Reason
+                </TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                  Status
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#334155' }}>
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {isLoading || isFetching ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={32} />
+                    <Typography variant="body2" color="#64748b" sx={{ mt: 1 }}>
+                      Loading issued certificates...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                    <ActiveIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 1 }} />
+                    <Typography variant="subtitle1" fontWeight={700} color="#475569">
+                      No {activeMeta.shortTitle} Records Found
+                    </Typography>
+                    <Typography variant="body2" color="#94a3b8" sx={{ mb: 2 }}>
+                      No certificates match your active filters in this academic session.
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={() => setIssueModalOpen(true)}
+                    >
+                      Issue First {activeMeta.shortTitle}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    hover
+                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  >
+                    {/* Column 1: Ref No & Date */}
+                    <TableCell>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={800}
+                        color={activeMeta.themeColor}
+                        sx={{ fontFamily: 'monospace' }}
+                      >
+                        {row.certificateNo}
+                      </Typography>
+                      <Typography variant="caption" color="#64748b">
+                        Issued on: {dayjs(row.issueDate).format('DD MMM YYYY')}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Column 2: Student Details */}
+                    <TableCell>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Avatar
+                          src={row.photoUrl}
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: activeMeta.themeColor,
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {row.studentName?.charAt(0) || 'S'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={700} color="#0f172a">
+                            {row.studentName}
+                          </Typography>
+                          <Typography variant="caption" color="#64748b" display="block">
+                            Adm: <strong>{row.admissionNo}</strong> | {row.className}{' '}
+                            {row.sectionName ? `(${row.sectionName})` : ''}
+                            {row.rollNo ? ` | Roll: ${row.rollNo}` : ''}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+
+                    {/* Column 3: Parent / Guardian */}
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600} color="#334155">
+                        {row.fatherName || '—'}
+                      </Typography>
+                      <Typography variant="caption" color="#64748b">
+                        {row.fatherMobile || row.emergencyContact || '—'}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Column 4: Purpose */}
+                    <TableCell>
+                      <Typography variant="body2" color="#334155" fontWeight={500}>
+                        {row.purpose || 'Official Verification'}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Column 5: Status */}
+                    <TableCell>
+                      <Chip
+                        label={row.status || 'Issued'}
+                        size="small"
+                        color={
+                          row.status === 'Cancelled'
+                            ? 'error'
+                            : row.status === 'Valid'
+                            ? 'success'
+                            : 'info'
+                        }
+                        variant={row.status === 'Issued' ? 'outlined' : 'filled'}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
+
+                    {/* Column 6: Actions */}
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title="Print / View Certificate">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<PrintIcon />}
+                            onClick={() => handleOpenPrintForExisting(row)}
+                            sx={{
+                              textTransform: 'none',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              py: 0.3,
+                              px: 1.2,
+                              borderColor: activeMeta.themeColor,
+                              color: activeMeta.themeColor,
+                              '&:hover': {
+                                bgcolor: activeMeta.lighterColor,
+                                borderColor: activeMeta.themeColor,
+                              },
+                            }}
+                          >
+                            Print
+                          </Button>
+                        </Tooltip>
+
+                        {row.status !== 'Cancelled' && (
+                          <Tooltip title="Cancel / Revoke Certificate">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Are you sure you want to cancel certificate ${row.certificateNo}?`
+                                  )
+                                ) {
+                                  deleteCertMutation.mutate(row.id);
+                                }
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {/* Table Pagination */}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={totalCount}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
           }}
-          studentId={selectedStudent.id}
-          studentData={selectedStudent}
+        />
+      </Paper>
+
+      {/* Modal: Issue Certificate (Student Selection & Parameters) */}
+      <IssueCertificateModal
+        open={issueModalOpen}
+        onClose={() => setIssueModalOpen(false)}
+        certificateType={activeCertType}
+        classes={classes}
+        onIssueSuccess={handleIssueSuccess}
+      />
+
+      {/* Modal: View & Print Certificate */}
+      {printModalOpen && selectedStudentForPrint && (
+        <BonafideCertificateModal
+          open={printModalOpen}
+          onClose={() => {
+            setPrintModalOpen(false);
+            setSelectedStudentForPrint(null);
+            setCustomCertOptions(null);
+          }}
+          studentData={selectedStudentForPrint}
           certificateType={activeCertType}
+          customOptions={customCertOptions}
+          initialRefNo={customCertOptions?.refNo}
+          initialPurpose={customCertOptions?.purpose}
+          initialDate={customCertOptions?.issueDate}
+          initialPrintWithLetterhead={customCertOptions?.printWithLetterhead}
         />
       )}
-    </div>
+    </Box>
   );
 };
 

@@ -37,3 +37,13 @@ export const gatePassApi = {
   searchStudents: (params) => apiClient.get('/student-gate-pass/search-students', { params }),
 };
 
+export const certificateApi = {
+  getCertificates: (params) => apiClient.get('/student-certificates', { params }),
+  getCertificate: (id) => apiClient.get(`/student-certificates/${id}`),
+  createCertificate: (data) => apiClient.post('/student-certificates', data),
+  deleteCertificate: (id) => apiClient.delete(`/student-certificates/${id}`),
+  getStats: (params) => apiClient.get('/student-certificates/stats', { params }),
+  searchStudents: (params) => apiClient.get('/student-certificates/search-students', { params }),
+};
+
+
