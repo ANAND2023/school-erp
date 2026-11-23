@@ -205,7 +205,6 @@ export const IssueCertificateModal = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      sx={{ zIndex: 3000 }}
       PaperProps={{
         sx: {
           borderRadius: 2.5,
@@ -298,6 +297,11 @@ export const IssueCertificateModal = ({
                   label="Filter Class"
                   value={selectedClassId}
                   onChange={(e) => handleClassChange(e.target.value)}
+                  SelectProps={{
+                    MenuProps: {
+                      sx: { zIndex: 3500 },
+                    },
+                  }}
                 >
                   <MenuItem value="">All Classes</MenuItem>
                   {classes.map((c) => (
@@ -317,6 +321,11 @@ export const IssueCertificateModal = ({
                   value={selectedSectionId}
                   onChange={(e) => handleSectionChange(e.target.value)}
                   disabled={!selectedClassId || sections.length === 0}
+                  SelectProps={{
+                    MenuProps: {
+                      sx: { zIndex: 3500 },
+                    },
+                  }}
                 >
                   <MenuItem value="">All Sections</MenuItem>
                   {sections.map((s) => (
@@ -331,6 +340,7 @@ export const IssueCertificateModal = ({
                 <Autocomplete
                   size="small"
                   options={studentsList}
+                  slotProps={{ popper: { sx: { zIndex: 3500 } } }}
                   getOptionLabel={(option) => {
                     if (!option) return '';
                     const name = option.fullName || option.studentName || 'Student';
@@ -533,6 +543,11 @@ export const IssueCertificateModal = ({
                   onChange={(e) => {
                     setPurpose(e.target.value);
                     setCustomPurpose('');
+                  }}
+                  SelectProps={{
+                    MenuProps: {
+                      sx: { zIndex: 3500 },
+                    },
                   }}
                 >
                   {PURPOSE_OPTIONS.map((p) => (
