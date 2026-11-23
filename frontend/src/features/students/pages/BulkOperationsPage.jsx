@@ -32,6 +32,7 @@ export const BulkOperationsPage = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [massApplyField, setMassApplyField] = useState('');
     const [massApplyValue, setMassApplyValue] = useState('');
+    const [bulkRemarks, setBulkRemarks] = useState('Bulk update via Bulk Operations');
 
     const loadRefData = async () => {
         try {
@@ -196,48 +197,66 @@ export const BulkOperationsPage = () => {
             setProgressStatus({ visible: true, current: 0, total: 100, message: 'Fetching student list...' });
             const res = await studentApi.getStudents({ classId: selectedClassId, sectionId: selectedSectionId, limit: 1000 });
             if (res.data?.success) {
-                const basicItems = res.data.data.items;
+                const basicItems = res.data.data.items || [];
                 const detailedItems = [];
+                const batchSize = 10;
 
-                for (let i = 0; i < basicItems.length; i++) {
-                    const s = basicItems[i];
-                    setProgressStatus({ visible: true, current: i + 1, total: basicItems.length, message: `Fetching details for ${s.fullName}...` });
-                    try {
-                        const dRes = await studentApi.getStudentDetail(s.id);
-                        if (dRes.data?.success) {
-                            const detail = dRes.data.data;
-                            const father = detail.guardians?.find(g => g.relation === 'Father') || {};
-                            const mother = detail.guardians?.find(g => g.relation === 'Mother') || {};
-                            const currentEnrollment = detail.enrollments?.find(en => en.academicYearId === detail.academicYearId) || {};
-                            
-                            detailedItems.push({
-                                ...s,
-                                firstName: detail.firstName || s.fullName.split(' ')[0] || '',
-                                lastName: detail.lastName || s.fullName.split(' ').slice(1).join(' ') || '',
-                                dateOfBirth: detail.dateOfBirth ? detail.dateOfBirth.split('T')[0] : '',
-                                bloodGroup: detail.bloodGroup || '',
-                                aadhaarNo: detail.aadhaarNo || '',
-                                address: detail.address || '',
-                                city: detail.city || '',
-                                state: detail.state || '',
-                                pincode: detail.pincode || '',
-                                emergencyContact: detail.emergencyContact || '',
-                                fatherName: father.name || '',
-                                fatherMobile: father.mobile || '',
-                                motherName: mother.name || '',
-                                motherMobile: mother.mobile || '',
-                                rollNo: currentEnrollment.rollNo || '',
-                                className: currentEnrollment.className || s.className || '',
-                                sectionName: currentEnrollment.sectionName || s.sectionName || '',
-                                _isDirty: false,
-                                _originalDetail: detail // Store original for update payload
-                            });
-                        } else {
-                            detailedItems.push({...s, _isDirty: false, _originalDetail: {}});
+                for (let i = 0; i < basicItems.length; i += batchSize) {
+                    const batch = basicItems.slice(i, i + batchSize);
+                    setProgressStatus({ 
+                        visible: true, 
+                        current: Math.min(i + batch.length, basicItems.length), 
+                        total: basicItems.length, 
+                        message: `Loading details (${i + 1} - ${Math.min(i + batch.length, basicItems.length)} of ${basicItems.length})...` 
+                    });
+
+                    const batchResults = await Promise.all(batch.map(async (s) => {
+                        try {
+                            const dRes = await studentApi.getStudentDetail(s.id);
+                            if (dRes.data?.success) {
+                                const detail = dRes.data.data;
+                                const father = detail.guardians?.find(g => g.relation === 'Father') || {};
+                                const mother = detail.guardians?.find(g => g.relation === 'Mother') || {};
+                                const currentEnrollment = detail.enrollments?.find(en => en.academicYearId === detail.academicYearId) || {};
+                                
+                                return {
+                                    ...s,
+                                    admissionNo: detail.admissionNo || s.admissionNo || '',
+                                    firstName: detail.firstName || (s.fullName ? s.fullName.split(' ')[0] : '') || '',
+                                    lastName: detail.lastName || (s.fullName ? s.fullName.split(' ').slice(1).join(' ') : '') || '',
+                                    dateOfBirth: detail.dateOfBirth ? detail.dateOfBirth.split('T')[0] : '',
+                                    bloodGroup: detail.bloodGroup || '',
+                                    aadhaarNo: detail.aadhaarNo || '',
+                                    address: detail.address || '',
+                                    city: detail.city || '',
+                                    state: detail.state || '',
+                                    pincode: detail.pincode || '',
+                                    emergencyContact: detail.emergencyContact || '',
+                                    fatherName: father.name || '',
+                                    fatherMobile: father.mobile || '',
+                                    motherName: mother.name || '',
+                                    motherMobile: mother.mobile || '',
+                                    rollNo: currentEnrollment.rollNo ?? (s.rollNo ?? ''),
+                                    className: currentEnrollment.className || s.className || '',
+                                    sectionName: currentEnrollment.sectionName || s.sectionName || '',
+                                    _isDirty: false,
+                                    _originalDetail: detail
+                                };
+                            }
+                        } catch (e) {
+                            console.error('Failed to get student detail', e);
                         }
-                    } catch (e) {
-                        detailedItems.push({...s, _isDirty: false, _originalDetail: {}});
-                    }
+                        return {
+                            ...s,
+                            admissionNo: s.admissionNo || '',
+                            firstName: s.fullName ? s.fullName.split(' ')[0] : '',
+                            lastName: s.fullName ? s.fullName.split(' ').slice(1).join(' ') : '',
+                            _isDirty: false,
+                            _originalDetail: {}
+                        };
+                    }));
+
+                    detailedItems.push(...batchResults);
                 }
                 setEditStudents(detailedItems);
             }
@@ -315,11 +334,11 @@ export const BulkOperationsPage = () => {
                 }
 
                 const updatePayload = {
-                    FirstName: newData.firstName,
-                    LastName: newData.lastName,
+                    FirstName: (newData.firstName || '').trim().toUpperCase(),
+                    LastName: (newData.lastName || '').trim().toUpperCase(),
                     DateOfBirth: newData.dateOfBirth ? new Date(newData.dateOfBirth).toISOString() : fullProfile.dateOfBirth,
-                    Gender: newData.gender,
-                    AdmissionNo: fullProfile.admissionNo || '',
+                    Gender: newData.gender || 'Male',
+                    AdmissionNo: (newData.admissionNo || fullProfile.admissionNo || '').trim(),
                     AdmissionDate: fullProfile.admissionDate || null,
                     BloodGroup: newData.bloodGroup,
                     AadhaarNo: newData.aadhaarNo,
@@ -327,14 +346,14 @@ export const BulkOperationsPage = () => {
                     ReligionId: fullProfile.religionId,
                     ClassId: classId,
                     SectionId: sectionId,
-                    RollNo: newData.rollNo || currentEnrollment?.rollNo || null,
+                    RollNo: newData.rollNo !== '' && newData.rollNo !== null ? Number(newData.rollNo) : (currentEnrollment?.rollNo || null),
                     Address: newData.address,
                     City: newData.city,
                     State: newData.state,
                     Pincode: newData.pincode,
                     EmergencyContact: newData.emergencyContact,
                     Status: currentEnrollment?.status || 1,
-                    Remarks: 'Bulk update via Bulk Operations',
+                    Remarks: (bulkRemarks || '').trim() || 'Bulk update via Bulk Operations',
                     Guardians: updatedGuardians
                 };
 
@@ -370,47 +389,81 @@ export const BulkOperationsPage = () => {
 
     const textCell = (rowData, options) => {
         const field = options.field;
-        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field]}</div>;
-        return <InputText value={rowData[field] || ''} onChange={(e) => onCellChange(rowData.id, field, e.target.value)} className="w-full p-inputtext-sm" />;
+        const val = rowData[field] ?? '';
+        if (!isEditMode) {
+            return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{val !== '' ? val : '—'}</div>;
+        }
+        return (
+            <InputText 
+                value={val} 
+                onChange={(e) => onCellChange(rowData.id, field, e.target.value)} 
+                className="w-full p-inputtext-sm" 
+                style={{ minHeight: '34px', fontSize: '13px' }}
+            />
+        );
+    };
+
+    const admissionNoCell = (rowData, options) => {
+        const field = options.field;
+        const val = rowData[field] ?? '';
+        if (!isEditMode) {
+            return (
+                <span className={`px-2 py-1 border-round font-bold text-xs ${rowData._isDirty ? 'bg-primary-50 text-primary-700 border-1 border-primary-200' : 'bg-blue-50 text-blue-800'}`}>
+                    {val || '—'}
+                </span>
+            );
+        }
+        return (
+            <InputText 
+                value={val} 
+                onChange={(e) => onCellChange(rowData.id, field, e.target.value)} 
+                placeholder="Adm No"
+                className="w-full p-inputtext-sm font-semibold" 
+                style={{ minHeight: '34px', fontSize: '13px' }}
+            />
+        );
     };
     
     const dateCell = (rowData, options) => {
         const field = options.field;
-        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field]}</div>;
-        return <InputText type="date" value={rowData[field] || ''} onChange={(e) => onCellChange(rowData.id, field, e.target.value)} className="w-full p-inputtext-sm" />;
+        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field] || '—'}</div>;
+        return <InputText type="date" value={rowData[field] || ''} onChange={(e) => onCellChange(rowData.id, field, e.target.value)} className="w-full p-inputtext-sm" style={{ minHeight: '34px', fontSize: '13px' }} />;
     };
 
     const genderCell = (rowData, options) => {
         const field = options.field;
-        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field]}</div>;
-        return <Dropdown value={rowData[field]} options={[{label:'Male',value:'Male'},{label:'Female',value:'Female'}]} onChange={(e) => onCellChange(rowData.id, field, e.value)} className="w-full p-inputtext-sm" placeholder="Select" />;
+        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field] || '—'}</div>;
+        return <Dropdown value={rowData[field]} options={[{label:'Male',value:'Male'},{label:'Female',value:'Female'}]} onChange={(e) => onCellChange(rowData.id, field, e.value)} className="w-full p-inputtext-sm" placeholder="Select" style={{ minHeight: '34px', fontSize: '13px' }} />;
     };
 
     const bloodGroupCell = (rowData, options) => {
         const field = options.field;
         const bgs = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
-        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field]}</div>;
-        return <Dropdown value={rowData[field]} options={bgs} onChange={(e) => onCellChange(rowData.id, field, e.value)} className="w-full p-inputtext-sm" placeholder="Select" />;
+        if (!isEditMode) return <div className={rowData._isDirty ? "text-primary font-bold" : ""}>{rowData[field] || '—'}</div>;
+        return <Dropdown value={rowData[field]} options={bgs} onChange={(e) => onCellChange(rowData.id, field, e.value)} className="w-full p-inputtext-sm" placeholder="Select" style={{ minHeight: '34px', fontSize: '13px' }} />;
     };
 
     const massFields = [
+        { label: 'Admission No', value: 'admissionNo' },
+        { label: 'First Name', value: 'firstName' },
+        { label: 'Last Name', value: 'lastName' },
+        { label: 'Roll Number', value: 'rollNo' },
+        { label: 'Gender', value: 'gender' },
+        { label: 'Blood Group', value: 'bloodGroup' },
         { label: 'City', value: 'city' },
         { label: 'State', value: 'state' },
         { label: 'Pincode', value: 'pincode' },
-        { label: 'Blood Group', value: 'bloodGroup' },
-        { label: 'Gender', value: 'gender' }
+        { label: 'Address', value: 'address' },
+        { label: 'Emergency Contact', value: 'emergencyContact' },
     ];
 
     return (
         <div className="p-3">
             <Toast ref={toast} />
-            <h2 className="text-xl font-bold mb-4" style={{ color: '#1e293b' }}>Bulk Operations</h2>
             
             <TabView>
                 <TabPanel header="UI Bulk Edit Students">
                     <Card>
-                        <p className="mb-4 text-700">Filter students by Class/Section. Click <b>"Enable Mass Edit"</b> to open all fields for typing, and use <b>Apply to All</b> to quickly copy changes across the grid. Finally, click <b>Save All Changes</b>.</p>
-                        
                         <div className="flex flex-wrap gap-3 mb-4 align-items-center p-3 surface-100 border-round">
                             <div style={{ width: '14rem' }}>
                                 <AppSelect 
@@ -447,16 +500,22 @@ export const BulkOperationsPage = () => {
                                             <Button label="Enable Mass Edit" icon="pi pi-pencil" onClick={() => setIsEditMode(true)} severity="warning" />
                                         ) : (
                                             <>
-                                                <Button label="Save All Changes" icon="pi pi-save" onClick={saveAllChanges} severity="success" />
+                                                <Button 
+                                                    label={`Save All Changes (${editStudents.filter(s => s._isDirty).length})`} 
+                                                    icon="pi pi-save" 
+                                                    onClick={saveAllChanges} 
+                                                    severity="success" 
+                                                    disabled={editStudents.filter(s => s._isDirty).length === 0} 
+                                                />
                                                 <Button label="Cancel" icon="pi pi-times" onClick={() => { setIsEditMode(false); fetchStudentsForEdit(); }} severity="secondary" text />
                                             </>
                                         )}
                                     </div>
                                     
                                     {isEditMode && (
-                                        <div className="flex align-items-center gap-2">
-                                            <span className="font-bold text-sm">Apply to All:</span>
-                                            <div style={{ width: '12rem' }}>
+                                        <div className="flex flex-wrap align-items-center gap-2">
+                                            <span className="font-bold text-sm">Apply to Selected ({selectedStudents?.length || 0}):</span>
+                                            <div style={{ width: '13rem' }}>
                                                 <AppSelect 
                                                     label="Select Field"
                                                     value={massApplyField} 
@@ -464,7 +523,7 @@ export const BulkOperationsPage = () => {
                                                     onChange={(e) => setMassApplyField(e.value)} 
                                                 />
                                             </div>
-                                            <div style={{ width: '12rem' }}>
+                                            <div style={{ width: '13rem' }}>
                                                 <AppInput 
                                                     label="Value to apply..."
                                                     value={massApplyValue} 
@@ -478,7 +537,7 @@ export const BulkOperationsPage = () => {
 
                                 <DataTable value={editStudents} dataKey="id" selection={selectedStudents} onSelectionChange={(e) => setSelectedStudents(e.value)} size="small" stripedRows scrollable scrollHeight="600px" className="p-datatable-sm" emptyMessage="No students found">
                                     <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen></Column>
-                                    <Column field="admissionNo" header="Adm No" style={{ minWidth: '100px' }} frozen></Column>
+                                    <Column field="admissionNo" header="Adm No" body={admissionNoCell} style={{ minWidth: '140px' }} frozen></Column>
                                     <Column field="firstName" header="First Name" body={textCell} style={{ minWidth: '150px' }} frozen></Column>
                                     <Column field="lastName" header="Last Name" body={textCell} style={{ minWidth: '150px' }} frozen></Column>
                                     
