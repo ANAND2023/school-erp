@@ -1326,6 +1326,21 @@ html.app-dark-mode .MuiDialog-paper .MuiDialogActions-root {
 }
 
 /* ==========================================================================
+   Modal Dialog & Mask Stacking Order
+   All Dialog Masks and Modals MUST appear above the Sidebar (z-index: 1200),
+   Top Navigation Bar (z-index: 1100), and Mobile Backdrops (z-index: 1190)
+   ========================================================================== */
+.p-dialog-mask,
+.p-component-overlay,
+.p-component-overlay-enter {
+  z-index: 3000 !important;
+}
+
+.p-dialog {
+  z-index: 3001 !important;
+}
+
+/* ==========================================================================
    Fix: Dropdown, MultiSelect, Calendar, AutoComplete Overlays
    Must Always Appear Above Modal Dialogs (MUI Dialog z-index: 1300)
    ========================================================================== */

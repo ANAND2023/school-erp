@@ -205,6 +205,7 @@ export const IssueCertificateModal = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      sx={{ zIndex: 3000 }}
       PaperProps={{
         sx: {
           borderRadius: 2.5,

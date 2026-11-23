@@ -266,6 +266,7 @@ export const BonafideCertificateModal = (props) => {
   const resolvedLetterhead = initialPrintWithLetterhead !== undefined ? initialPrintWithLetterhead : customOptions?.printWithLetterhead;
 
   const printRef = useRef(null);
+  const containerRef = useRef(null);
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
 
@@ -277,6 +278,12 @@ export const BonafideCertificateModal = (props) => {
   const [printWithLetterhead, setPrintWithLetterhead] = useState(
     resolvedLetterhead !== undefined ? resolvedLetterhead : true
   );
+
+  useEffect(() => {
+    if (open && containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -1000,6 +1007,9 @@ export const BonafideCertificateModal = (props) => {
     <Dialog
       visible={open}
       onHide={onClose}
+      appendTo={typeof document !== 'undefined' ? document.body : undefined}
+      baseZIndex={3000}
+      maskStyle={{ zIndex: 3000 }}
       header={
         <div className="flex align-items-center gap-2">
           <i className="pi pi-verified text-xl text-blue-600"></i>
@@ -1008,7 +1018,7 @@ export const BonafideCertificateModal = (props) => {
           </span>
         </div>
       }
-      style={{ width: '920px', maxWidth: '96vw' }}
+      style={{ width: '920px', maxWidth: '96vw', zIndex: 3001 }}
       modal
       className="p-fluid"
       footer={
@@ -1135,7 +1145,7 @@ export const BonafideCertificateModal = (props) => {
       </div>
 
       {/* Certificate Print Preview Container */}
-      <div className="surface-200 p-3 border-round overflow-auto" style={{ maxHeight: '72vh' }}>
+      <div ref={containerRef} className="surface-200 p-3 border-round overflow-auto" style={{ maxHeight: '62vh' }}>
         <div
           ref={printRef}
           className="bg-white mx-auto shadow-2 relative"
