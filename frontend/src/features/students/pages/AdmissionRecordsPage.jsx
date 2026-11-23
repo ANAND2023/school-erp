@@ -13,6 +13,7 @@ import * as XLSX from 'xlsx';
 import { studentApi } from '../api';
 import { classApi, academicYearApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
+import { AppInput, AppSelect } from '../../../components/common';
 
 export const AdmissionRecordsPage = () => {
     const navigate = useNavigate();
@@ -185,34 +186,36 @@ export const AdmissionRecordsPage = () => {
     const sections = activeClass?.sections || [];
 
     return (
-        <div className="p-3">
+        <div className="p-2">
             <Toast ref={toast} />
 
             {/* Header Toolbar (Compact) */}
-            <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-white border-round shadow-1 border-left-3 border-blue-600">
+            <div className="flex flex-wrap align-items-center justify-content-between gap-2 mb-2 px-3 py-1.5 bg-white border-round shadow-1 border-left-3 border-blue-600">
                 <div>
-                    <h2 className="text-lg font-bold m-0 text-900 flex align-items-center gap-2">
-                        <i className="pi pi-id-card text-blue-600 text-xl" />
+                    <h2 className="text-base font-bold m-0 text-900 flex align-items-center gap-2">
+                        <i className="pi pi-id-card text-blue-600 text-lg" />
                         Admission Records & Register
                     </h2>
-                    <span className="text-xs text-600">
+                    <span className="text-xs text-500">
                         Total Admissions: <b>{summary.totalAllTime || totalRecords}</b> | Current Session: <b>{summary.totalSession || totalRecords}</b>
                     </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                     <Button 
                         label="New Admission" 
                         icon="pi pi-user-plus" 
                         size="small"
                         severity="primary" 
+                        className="p-button-sm py-1"
                         onClick={() => navigate('/admissions/new')} 
                     />
                     <Button 
-                        label="Bulk Excel Admission" 
+                        label="Bulk Excel" 
                         icon="pi pi-file-excel" 
                         size="small"
                         severity="info" 
                         outlined 
+                        className="p-button-sm py-1"
                         onClick={() => navigate('/students/bulk-operations')} 
                     />
                     <Button 
@@ -221,146 +224,145 @@ export const AdmissionRecordsPage = () => {
                         size="small"
                         severity="secondary" 
                         outlined 
+                        className="p-button-sm py-1"
                         onClick={exportToExcel} 
                     />
                 </div>
             </div>
 
-            {/* 4 Compact Metric Cards (Slim & Low Height) */}
-            <div className="grid grid-nogutter gap-2 mb-3">
+            {/* 4 Compact Metric Cards (Ultra-Slim & Minimal Height) */}
+            <div className="grid grid-nogutter gap-2 mb-2">
                 {/* Total All-Time Admissions */}
-                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-blue-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-blue-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
                     <div>
-                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Total Admissions</span>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Total Admissions</span>
                         <div className="flex align-items-baseline gap-1">
-                            <span className="text-xl font-bold text-900">{summary.totalAllTime || totalRecords}</span>
-                            <span className="text-xs text-500">all-time</span>
+                            <span className="text-lg font-bold text-900">{summary.totalAllTime || totalRecords}</span>
+                            <span className="text-xs text-400">all-time</span>
                         </div>
                     </div>
-                    <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '34px', height: '34px' }}>
-                        <i className="pi pi-users text-blue-600 text-sm" />
+                    <div className="flex align-items-center justify-content-center bg-blue-50 text-blue-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-users text-xs" />
                     </div>
                 </div>
 
                 {/* Session Admissions */}
-                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-green-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-green-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
                     <div>
-                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Session Enrollments</span>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Session Enrollments</span>
                         <div className="flex align-items-baseline gap-1">
-                            <span className="text-xl font-bold text-green-700">{summary.totalSession || totalRecords}</span>
+                            <span className="text-lg font-bold text-green-700">{summary.totalSession || totalRecords}</span>
                             <span className="text-xs text-green-600">in session</span>
                         </div>
                     </div>
-                    <div className="flex align-items-center justify-content-center bg-green-100 border-round" style={{ width: '34px', height: '34px' }}>
-                        <i className="pi pi-calendar-plus text-green-600 text-sm" />
+                    <div className="flex align-items-center justify-content-center bg-green-50 text-green-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-calendar-plus text-xs" />
                     </div>
                 </div>
 
                 {/* Boys vs Girls */}
-                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-pink-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-pink-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
                     <div>
-                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Gender Ratio</span>
-                        <div className="text-base font-bold text-900">
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Gender Ratio</span>
+                        <div className="text-sm font-bold text-900">
                             <span className="text-blue-700">{summary.boysCount} Boys</span>
                             <span className="text-300 mx-1">/</span>
                             <span className="text-pink-600">{summary.girlsCount} Girls</span>
                         </div>
                     </div>
-                    <div className="flex align-items-center justify-content-center bg-pink-100 border-round" style={{ width: '34px', height: '34px' }}>
-                        <i className="pi pi-chart-pie text-pink-600 text-sm" />
+                    <div className="flex align-items-center justify-content-center bg-pink-50 text-pink-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-chart-pie text-xs" />
                     </div>
                 </div>
 
                 {/* Active Classes */}
-                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-orange-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-orange-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
                     <div>
-                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Enrolled Classes</span>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Enrolled Classes</span>
                         <div className="flex align-items-baseline gap-1">
-                            <span className="text-xl font-bold text-orange-600">{summary.classWise?.length || classes.length}</span>
-                            <span className="text-xs text-orange-500">classes</span>
+                            <span className="text-lg font-bold text-orange-600">{summary.classWise?.length || classes.length}</span>
+                            <span className="text-xs text-orange-400">classes</span>
                         </div>
                     </div>
-                    <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '34px', height: '34px' }}>
-                        <i className="pi pi-sitemap text-orange-600 text-sm" />
+                    <div className="flex align-items-center justify-content-center bg-orange-50 text-orange-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-sitemap text-xs" />
                     </div>
                 </div>
             </div>
 
-            {/* Main Admission Register Card */}
-            <Card className="shadow-1 border-round surface-0 p-2">
-                {/* Unified Filter Toolbar with Dropdowns */}
-                <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 surface-50 border-round border-1 border-200">
-                    <div className="flex flex-wrap align-items-center gap-3">
-                        {/* Academic Session Dropdown */}
-                        <div style={{ width: '13rem' }}>
-                            <span className="block text-xs font-bold text-600 mb-1">Academic Session:</span>
-                            <Dropdown 
+            {/* Main Admission Register Container (No Card default bulky padding) */}
+            <div className="bg-white border-round shadow-1 p-2 border-1 border-200">
+                {/* Unified Filter Toolbar with AppSelect & AppInput */}
+                <div className="flex flex-wrap align-items-center justify-content-between gap-2 mb-2 p-2 surface-50 border-round border-1 border-200">
+                    <div className="flex flex-wrap align-items-center gap-2">
+                        {/* Academic Session AppSelect */}
+                        <div style={{ width: '12rem' }}>
+                            <AppSelect 
+                                label="ACADEMIC SESSION"
                                 value={selectedYearId} 
                                 options={academicYears} 
                                 optionLabel="name" 
                                 optionValue="id" 
                                 onChange={(e) => { setSelectedYearId(e.value); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
                                 placeholder="Select Session" 
-                                className="w-full p-inputtext-sm"
+                                showClear={false}
                             />
                         </div>
 
-                        {/* Class Dropdown (Enhanced with Student Counts) */}
-                        <div style={{ width: '14rem' }}>
-                            <span className="block text-xs font-bold text-600 mb-1">Filter by Class:</span>
-                            <Dropdown 
+                        {/* Class AppSelect (Enhanced with Student Counts) */}
+                        <div style={{ width: '13.5rem' }}>
+                            <AppSelect 
+                                label="CLASS / GRADE"
                                 value={selectedClassId} 
                                 options={classDropdownOptions} 
                                 optionLabel="label" 
                                 optionValue="id" 
                                 onChange={(e) => { setSelectedClassId(e.value); setSelectedSectionId(null); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
-                                placeholder="All Classes" 
+                                placeholder="ALL CLASSES" 
                                 showClear 
-                                className="w-full p-inputtext-sm"
                             />
                         </div>
 
-                        {/* Section Dropdown */}
-                        <div style={{ width: '11rem' }}>
-                            <span className="block text-xs font-bold text-600 mb-1">Section:</span>
-                            <Dropdown 
+                        {/* Section AppSelect */}
+                        <div style={{ width: '10.5rem' }}>
+                            <AppSelect 
+                                label="SECTION"
                                 value={selectedSectionId} 
                                 options={sections} 
                                 optionLabel="name" 
                                 optionValue="id" 
                                 onChange={(e) => { setSelectedSectionId(e.value); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
-                                placeholder="All Sections" 
+                                placeholder="ALL SECTIONS" 
                                 showClear 
                                 disabled={!selectedClassId}
-                                className="w-full p-inputtext-sm"
                             />
                         </div>
 
                         {/* Reset Filters */}
                         {(selectedClassId || selectedSectionId || searchQuery) && (
-                            <div className="pt-3">
-                                <Button label="Reset" icon="pi pi-refresh" text size="small" onClick={resetFilters} />
-                            </div>
+                            <Button label="Reset" icon="pi pi-refresh" text size="small" onClick={resetFilters} className="p-button-sm py-1" />
                         )}
                     </div>
 
-                    {/* Search box */}
-                    <div className="flex align-items-center gap-2">
-                        <span className="p-input-icon-left">
-                            <i className="pi pi-search" />
-                            <InputText 
+                    {/* Search box with AppInput */}
+                    <div className="flex align-items-center gap-1">
+                        <div style={{ width: '16rem' }}>
+                            <AppInput 
+                                label="SEARCH STUDENT"
                                 value={searchQuery} 
                                 onChange={(e) => setSearchQuery(e.target.value)} 
                                 onKeyDown={onSearchTrigger}
-                                placeholder="Search Name, Adm No, Mobile..." 
-                                className="p-inputtext-sm" 
-                                style={{ width: '250px' }}
+                                placeholder="NAME, ADM NO, MOBILE..." 
+                                icon="pi pi-search"
+                                addon={searchQuery ? "pi pi-times" : undefined}
+                                onAddonClick={searchQuery ? () => { setSearchQuery(''); setLazyParams(p => ({ ...p, first: 0, page: 0 })); } : undefined}
                             />
-                        </span>
+                        </div>
                         <Button 
                             icon="pi pi-search" 
                             size="small"
                             onClick={() => { setLazyParams(p => ({ ...p, first: 0, page: 0 })); fetchStudents(); }} 
+                            style={{ height: '36px', minWidth: '36px' }}
                         />
                     </div>
                 </div>
@@ -511,7 +513,7 @@ export const AdmissionRecordsPage = () => {
                         style={{ width: '4rem', textAlign: 'center' }} 
                     />
                 </DataTable>
-            </Card>
+            </div>
         </div>
     );
 };
