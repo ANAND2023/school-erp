@@ -806,7 +806,40 @@ namespace SchoolERP.API.Controllers
 
             if (!string.IsNullOrWhiteSpace(request.AdmissionNo))
             {
-                student.AdmissionNo = request.AdmissionNo.Trim();
+                var newAdmissionNo = request.AdmissionNo.Trim();
+                if (!string.Equals(student.AdmissionNo?.Trim(), newAdmissionNo, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Find school ID for this student's branch
+                    var studentBranch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == student.BranchId);
+                    var schoolId = studentBranch?.SchoolId ?? 0;
+
+                    // Get all branch IDs under the same school
+                    var branchIds = schoolId > 0
+                        ? await _context.Branches.Where(b => b.SchoolId == schoolId).Select(b => b.Id).ToListAsync()
+                        : new List<long> { student.BranchId };
+
+                    // Check school-wise uniqueness against other students
+                    var duplicateStudent = await _context.Students
+                        .Where(s => branchIds.Contains(s.BranchId) && s.Id != id && s.AdmissionNo.ToLower() == newAdmissionNo.ToLower())
+                        .Select(s => new { s.FullName, s.AdmissionNo })
+                        .FirstOrDefaultAsync();
+
+                    if (duplicateStudent != null)
+                    {
+                        return BadRequest(ApiResponse.Fail($"Admission Number '{newAdmissionNo}' is already assigned to student '{duplicateStudent.FullName}' in this school. Admission Number must be unique across the school."));
+                    }
+
+                    student.AdmissionNo = newAdmissionNo;
+
+                    // Keep student portal user account username synchronized if it exists
+                    var studentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserType == UserType.Student && u.LinkedEntityId == student.Id);
+                    if (studentUser != null)
+                    {
+                        var school = schoolId > 0 ? await _context.Schools.FirstOrDefaultAsync(s => s.Id == schoolId) : null;
+                        var sCode = school?.Code ?? $"SCH{schoolId}";
+                        studentUser.Username = $"{sCode}_{newAdmissionNo}";
+                    }
+                }
             }
             if (request.AdmissionDate.HasValue)
             {

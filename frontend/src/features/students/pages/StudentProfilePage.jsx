@@ -1521,7 +1521,7 @@ export default function StudentProfilePage() {
                         placeholder="Registration / Adm No"
                         value={editFormData.admissionNo}
                         onChange={(e) => setEditFormData({ ...editFormData, admissionNo: e.target?.value || '' })}
-                        helperText="Official school registration number"
+                        helperText="Official school registration number (must be unique across the school)"
                       />
                     </Grid>
 
