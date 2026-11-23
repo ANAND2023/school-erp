@@ -45,11 +45,15 @@ import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { gatePassApi } from '../api';
 import { classesApi } from '../../masters/api';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 import CreateGatePassModal from '../components/CreateGatePassModal';
 import GatePassSlipModal from '../components/GatePassSlipModal';
 
 export default function StudentGatePassPage() {
   const queryClient = useQueryClient();
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || '#0284c7';
+  const themeDarker = shadeColor(themeColor, -20);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -214,7 +218,7 @@ export default function StudentGatePassPage() {
       >
         <Box>
           <Typography variant="h5" fontWeight={800} color="#0f172a" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <BadgeIcon sx={{ color: '#0284c7', fontSize: 32 }} />
+            <BadgeIcon sx={{ color: themeColor, fontSize: 32 }} />
             Student Gate Pass Management
           </Typography>
           <Typography variant="body2" color="#64748b" sx={{ mt: 0.5 }}>
@@ -224,7 +228,6 @@ export default function StudentGatePassPage() {
 
         <Button
           variant="contained"
-          color="primary"
           startIcon={<AddIcon />}
           onClick={() => setCreateModalOpen(true)}
           sx={{
@@ -232,10 +235,14 @@ export default function StudentGatePassPage() {
             px: 2.5,
             py: 1,
             borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+            bgcolor: themeColor,
+            boxShadow: `0 4px 12px ${themeColor}40`,
+            '&:hover': {
+              bgcolor: themeDarker,
+            },
           }}
         >
-          + Issue New Gate Pass
+          Issue New Gate Pass
         </Button>
       </Stack>
 
@@ -494,7 +501,7 @@ export default function StudentGatePassPage() {
                   <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     {/* Column 1: Pass No */}
                     <TableCell>
-                      <Typography variant="subtitle2" fontWeight={800} color="#0284c7" sx={{ fontFamily: 'monospace' }}>
+                      <Typography variant="subtitle2" fontWeight={800} color={themeColor} sx={{ fontFamily: 'monospace' }}>
                         {row.gatePassNo}
                       </Typography>
                       <Typography variant="caption" color="#64748b">
@@ -507,7 +514,7 @@ export default function StudentGatePassPage() {
                       <Stack direction="row" spacing={1.5} alignItems="center">
                         <Avatar
                           src={row.photoUrl}
-                          sx={{ width: 34, height: 34, bgcolor: '#0284c7', fontSize: '0.85rem', fontWeight: 700 }}
+                          sx={{ width: 34, height: 34, bgcolor: themeColor, fontSize: '0.85rem', fontWeight: 700 }}
                         >
                           {row.studentName?.charAt(0)}
                         </Avatar>

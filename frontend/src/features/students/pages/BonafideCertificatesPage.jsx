@@ -43,6 +43,7 @@ import { useNavigate } from 'react-router-dom';
 import { certificateApi } from '../api';
 import { classesApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 import { BonafideCertificateModal } from '../components/BonafideCertificateModal';
 import { IssueCertificateModal } from '../components/IssueCertificateModal';
 
@@ -121,6 +122,11 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeAcademicYear } = useAcademicYear();
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || '#0284c7';
+  const themeDarker = shadeColor(themeColor, -20);
+  const themeLighterBg = isDarkMode ? 'rgba(255,255,255,0.04)' : `${themeColor}0d`;
+  const themeBorder = isDarkMode ? 'rgba(255,255,255,0.12)' : `${themeColor}30`;
 
   const [activeCertType, setActiveCertType] = useState(defaultType);
 
@@ -308,12 +314,12 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
   };
 
   return (
-    <Box sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ p: { xs: 1.5, sm: 2.5 }, maxWidth: 1400, mx: 'auto' }}>
       {/* Top Banner Notice */}
       {bannerNotice && (
         <Alert
           severity={bannerNotice.type}
-          sx={{ mb: 2.5 }}
+          sx={{ mb: 2 }}
           onClose={() => setBannerNotice(null)}
         >
           {bannerNotice.text}
@@ -325,15 +331,14 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         direction="row"
         spacing={1}
         sx={{
-          mb: 3,
+          mb: 2.5,
           overflowX: 'auto',
-          pb: 1,
+          pb: 0.5,
           borderBottom: '1px solid #e2e8f0',
         }}
       >
         {CERT_TABS.map((tab) => {
           const isSelected = activeCertType === tab.id;
-          const conf = CERT_CONFIGS[tab.id];
           return (
             <Button
               key={tab.id}
@@ -341,19 +346,19 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
               variant={isSelected ? 'contained' : 'outlined'}
               size="small"
               sx={{
-                borderRadius: 2,
-                px: 2,
-                py: 0.8,
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 0.5,
                 textTransform: 'none',
                 fontWeight: 700,
-                fontSize: '0.85rem',
-                bgcolor: isSelected ? conf.themeColor : 'transparent',
-                borderColor: isSelected ? conf.themeColor : '#cbd5e1',
+                fontSize: '0.8rem',
+                bgcolor: isSelected ? themeColor : 'transparent',
+                borderColor: isSelected ? themeColor : '#cbd5e1',
                 color: isSelected ? '#ffffff' : '#475569',
-                boxShadow: isSelected ? '0 4px 10px rgba(0,0,0,0.1)' : 'none',
+                boxShadow: isSelected ? `0 2px 8px ${themeColor}35` : 'none',
                 '&:hover': {
-                  bgcolor: isSelected ? conf.themeColor : '#f1f5f9',
-                  borderColor: isSelected ? conf.themeColor : '#94a3b8',
+                  bgcolor: isSelected ? themeDarker : isDarkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9',
+                  borderColor: isSelected ? themeDarker : themeColor,
                 },
                 flexShrink: 0,
               }}
@@ -364,8 +369,8 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
                 size="small"
                 sx={{
                   ml: 1,
-                  height: 20,
-                  fontSize: '0.7rem',
+                  height: 18,
+                  fontSize: '0.65rem',
                   fontWeight: 800,
                   bgcolor: isSelected ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
                   color: isSelected ? '#ffffff' : '#334155',
@@ -382,76 +387,77 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
         spacing={2}
-        sx={{ mb: 3 }}
+        sx={{ mb: 2.5 }}
       >
         <Box>
           <Typography
             variant="h5"
             fontWeight={800}
-            color="#0f172a"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+            color={isDarkMode ? '#f8fafc' : '#0f172a'}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.2, fontSize: { xs: '1.15rem', sm: '1.25rem' } }}
           >
-            <ActiveIcon sx={{ color: activeMeta.themeColor, fontSize: 32 }} />
+            <ActiveIcon sx={{ color: themeColor, fontSize: 28 }} />
             {activeMeta.title} Register
           </Typography>
-          <Typography variant="body2" color="#64748b" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" color={isDarkMode ? '#94a3b8' : '#64748b'} sx={{ mt: 0.25, fontSize: '0.8rem' }}>
             {activeMeta.subtitle}
           </Typography>
         </Box>
 
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={() => setIssueModalOpen(true)}
           sx={{
             fontWeight: 700,
-            px: 2.5,
-            py: 1,
-            borderRadius: 2,
-            bgcolor: activeMeta.themeColor,
-            boxShadow: `0 4px 12px ${activeMeta.themeColor}40`,
+            fontSize: '0.82rem',
+            px: 2,
+            py: 0.7,
+            borderRadius: 1.75,
+            bgcolor: themeColor,
+            boxShadow: `0 3px 10px ${themeColor}35`,
+            textTransform: 'none',
             '&:hover': {
-              bgcolor: activeMeta.themeColor,
-              filter: 'brightness(0.9)',
+              bgcolor: themeDarker,
             },
           }}
         >
-          + Issue New {activeMeta.shortTitle}
+          Issue New {activeMeta.shortTitle}
         </Button>
       </Stack>
 
-      {/* Stats Summary Cards (identical layout to StudentGatePassPage) */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      {/* Stats Summary Cards (matched scaling with StudentGatePassPage) */}
+      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
         <Grid item xs={6} sm={3}>
           <Card
             sx={{
-              bgcolor: activeMeta.lighterColor,
-              border: `1px solid ${activeMeta.borderColor}`,
+              bgcolor: themeLighterBg,
+              border: `1px solid ${themeBorder}`,
               borderRadius: 2,
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography
                     variant="caption"
                     fontWeight={700}
-                    sx={{ color: activeMeta.themeColor }}
+                    sx={{ color: themeColor, fontSize: '0.68rem', letterSpacing: '0.5px' }}
                     textTransform="uppercase"
                   >
                     Issued Today
                   </Typography>
                   <Typography
-                    variant="h4"
+                    variant="h5"
                     fontWeight={800}
-                    color="#0f172a"
-                    sx={{ mt: 0.5 }}
+                    color={isDarkMode ? '#f8fafc' : '#0f172a'}
+                    sx={{ mt: 0.25, fontSize: '1.45rem', lineHeight: 1.2 }}
                   >
                     {stats.issuedToday}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: activeMeta.themeColor, width: 44, height: 44 }}>
-                  <ActiveIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: themeColor, width: 38, height: 38 }}>
+                  <ActiveIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -461,33 +467,34 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         <Grid item xs={6} sm={3}>
           <Card
             sx={{
-              bgcolor: '#f0f9ff',
-              border: '1px solid #bae6fd',
+              bgcolor: isDarkMode ? 'rgba(255,255,255,0.03)' : '#f0f9ff',
+              border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #bae6fd',
               borderRadius: 2,
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography
                     variant="caption"
                     fontWeight={700}
                     color="#0369a1"
+                    sx={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
                     textTransform="uppercase"
                   >
                     Total Issued
                   </Typography>
                   <Typography
-                    variant="h4"
+                    variant="h5"
                     fontWeight={800}
                     color="#0c4a6e"
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: 0.25, fontSize: '1.45rem', lineHeight: 1.2 }}
                   >
                     {stats.totalIssued}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#38bdf8', width: 44, height: 44 }}>
-                  <VerifiedIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#38bdf8', width: 38, height: 38 }}>
+                  <VerifiedIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -497,33 +504,33 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         <Grid item xs={6} sm={3}>
           <Card
             sx={{
-              bgcolor: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              bgcolor: isDarkMode ? 'rgba(255,255,255,0.03)' : '#f8fafc',
+              border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
               borderRadius: 2,
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography
                     variant="caption"
                     fontWeight={700}
                     color="#475569"
+                    sx={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
                     textTransform="uppercase"
                   >
                     Statutory Code
                   </Typography>
                   <Typography
-                    variant="h5"
+                    variant="h6"
                     fontWeight={800}
-                    color={activeMeta.themeColor}
-                    sx={{ mt: 0.5, fontFamily: 'monospace' }}
+                    sx={{ color: themeColor, mt: 0.25, fontSize: '1.15rem', fontFamily: 'monospace', lineHeight: 1.2 }}
                   >
                     {activeMeta.badge}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#cbd5e1', width: 44, height: 44 }}>
-                  <DocumentIcon sx={{ color: '#334155' }} />
+                <Avatar sx={{ bgcolor: '#cbd5e1', width: 38, height: 38 }}>
+                  <DocumentIcon sx={{ color: '#334155', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -533,18 +540,19 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         <Grid item xs={6} sm={3}>
           <Card
             sx={{
-              bgcolor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
+              bgcolor: isDarkMode ? 'rgba(255,255,255,0.03)' : '#f0fdf4',
+              border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #bbf7d0',
               borderRadius: 2,
             }}
           >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography
                     variant="caption"
                     fontWeight={700}
                     color="#15803d"
+                    sx={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
                     textTransform="uppercase"
                   >
                     Academic Session
@@ -553,13 +561,13 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
                     variant="h6"
                     fontWeight={800}
                     color="#14532d"
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: 0.25, fontSize: '1.05rem', lineHeight: 1.2 }}
                   >
                     {activeAcademicYear?.name || 'Active Session'}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#4ade80', width: 44, height: 44 }}>
-                  <SchoolIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#4ade80', width: 38, height: 38 }}>
+                  <SchoolIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -567,10 +575,10 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         </Grid>
       </Grid>
 
-      {/* Filter Toolbar Card (identical to StudentGatePassPage) */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Grid container spacing={2} alignItems="center">
+      {/* Filter Toolbar Card (matched scaling with StudentGatePassPage) */}
+      <Card sx={{ mb: 2.5, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Grid container spacing={1.5} alignItems="center">
             <Grid item xs={12} sm={3}>
               <TextField
                 fullWidth
@@ -687,28 +695,28 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         </CardContent>
       </Card>
 
-      {/* Main Table Card (identical styling to StudentGatePassPage) */}
+      {/* Main Table Card (matched scaling with StudentGatePassPage) */}
       <Paper sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <TableContainer>
           <Table sx={{ minWidth: 700 }} size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: isDarkMode ? '#1e293b' : '#f8fafc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Certificate Ref No & Date
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Student Details
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Parent / Guardian Details
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Purpose / Reason
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Status
                 </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell align="center" sx={{ fontWeight: 800, color: isDarkMode ? '#cbd5e1' : '#334155', py: 1, fontSize: '0.78rem' }}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -727,18 +735,28 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
               ) : items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                    <ActiveIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 1 }} />
+                    <ActiveIcon sx={{ fontSize: 44, color: '#cbd5e1', mb: 1 }} />
                     <Typography variant="subtitle1" fontWeight={700} color="#475569">
                       No {activeMeta.shortTitle} Records Found
                     </Typography>
-                    <Typography variant="body2" color="#94a3b8" sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="#94a3b8" sx={{ mb: 2, fontSize: '0.8rem' }}>
                       No certificates match your active filters in this academic session.
                     </Typography>
                     <Button
                       variant="outlined"
                       size="small"
-                      startIcon={<AddIcon />}
+                      startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                       onClick={() => setIssueModalOpen(true)}
+                      sx={{
+                        borderColor: themeColor,
+                        color: themeColor,
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        '&:hover': {
+                          borderColor: themeColor,
+                          bgcolor: themeLighterBg,
+                        },
+                      }}
                     >
                       Issue First {activeMeta.shortTitle}
                     </Button>
@@ -756,36 +774,36 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
                       <Typography
                         variant="subtitle2"
                         fontWeight={800}
-                        color={activeMeta.themeColor}
-                        sx={{ fontFamily: 'monospace' }}
+                        color={themeColor}
+                        sx={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
                       >
                         {row.certificateNo}
                       </Typography>
-                      <Typography variant="caption" color="#64748b">
+                      <Typography variant="caption" color="#64748b" sx={{ fontSize: '0.72rem' }}>
                         Issued on: {dayjs(row.issueDate).format('DD MMM YYYY')}
                       </Typography>
                     </TableCell>
 
                     {/* Column 2: Student Details */}
                     <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack direction="row" spacing={1.2} alignItems="center">
                         <Avatar
                           src={row.photoUrl}
                           sx={{
-                            width: 34,
-                            height: 34,
-                            bgcolor: activeMeta.themeColor,
-                            fontSize: '0.85rem',
+                            width: 32,
+                            height: 32,
+                            bgcolor: themeColor,
+                            fontSize: '0.8rem',
                             fontWeight: 700,
                           }}
                         >
                           {row.studentName?.charAt(0) || 'S'}
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={700} color="#0f172a">
+                          <Typography variant="body2" fontWeight={700} color={isDarkMode ? '#f8fafc' : '#0f172a'} sx={{ fontSize: '0.82rem' }}>
                             {row.studentName}
                           </Typography>
-                          <Typography variant="caption" color="#64748b" display="block">
+                          <Typography variant="caption" color="#64748b" display="block" sx={{ fontSize: '0.72rem' }}>
                             Adm: <strong>{row.admissionNo}</strong> | {row.className}{' '}
                             {row.sectionName ? `(${row.sectionName})` : ''}
                             {row.rollNo ? ` | Roll: ${row.rollNo}` : ''}
@@ -796,17 +814,17 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
 
                     {/* Column 3: Parent / Guardian */}
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600} color="#334155">
+                      <Typography variant="body2" fontWeight={600} color={isDarkMode ? '#e2e8f0' : '#334155'} sx={{ fontSize: '0.8rem' }}>
                         {row.fatherName || '—'}
                       </Typography>
-                      <Typography variant="caption" color="#64748b">
+                      <Typography variant="caption" color="#64748b" sx={{ fontSize: '0.72rem' }}>
                         {row.fatherMobile || row.emergencyContact || '—'}
                       </Typography>
                     </TableCell>
 
                     {/* Column 4: Purpose */}
                     <TableCell>
-                      <Typography variant="body2" color="#334155" fontWeight={500}>
+                      <Typography variant="body2" color={isDarkMode ? '#cbd5e1' : '#334155'} fontWeight={500} sx={{ fontSize: '0.8rem' }}>
                         {row.purpose || 'Official Verification'}
                       </Typography>
                     </TableCell>
@@ -824,7 +842,7 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
                             : 'info'
                         }
                         variant={row.status === 'Issued' ? 'outlined' : 'filled'}
-                        sx={{ fontWeight: 700 }}
+                        sx={{ fontWeight: 700, fontSize: '0.7rem', height: 22 }}
                       />
                     </TableCell>
 
@@ -835,19 +853,19 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
                           <Button
                             variant="outlined"
                             size="small"
-                            startIcon={<PrintIcon />}
+                            startIcon={<PrintIcon sx={{ fontSize: 15 }} />}
                             onClick={() => handleOpenPrintForExisting(row)}
                             sx={{
                               textTransform: 'none',
                               fontWeight: 700,
-                              fontSize: '0.75rem',
-                              py: 0.3,
-                              px: 1.2,
-                              borderColor: activeMeta.themeColor,
-                              color: activeMeta.themeColor,
+                              fontSize: '0.72rem',
+                              py: 0.25,
+                              px: 1,
+                              borderColor: themeColor,
+                              color: themeColor,
                               '&:hover': {
-                                bgcolor: activeMeta.lighterColor,
-                                borderColor: activeMeta.themeColor,
+                                bgcolor: themeLighterBg,
+                                borderColor: themeColor,
                               },
                             }}
                           >

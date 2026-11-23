@@ -33,6 +33,7 @@ import {
 import dayjs from 'dayjs';
 import { certificateApi, studentApi } from '../api';
 import { DEFAULT_CERT_TEMPLATES, dateToWords } from './BonafideCertificateModal';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 
 const PURPOSE_OPTIONS = [
   'Passport Application',
@@ -56,7 +57,9 @@ export const IssueCertificateModal = ({
 }) => {
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
-  const themeColor = defaultTemplate.primaryColor || '#0284c7';
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || defaultTemplate.primaryColor || '#0284c7';
+  const themeDarker = shadeColor(themeColor, -20);
 
   // Filters
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -235,7 +238,7 @@ export const IssueCertificateModal = ({
               Issue {defaultTemplate.shortTitle || defaultTemplate.certificateTitle}
             </Typography>
             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-              Statutory Code: <strong style={{ color: '#38bdf8' }}>{defaultTemplate.refPrefix}</strong> • Institutional Register
+              Statutory Code: <strong style={{ color: themeColor }}>{defaultTemplate.refPrefix}</strong> • Institutional Register
             </Typography>
           </Box>
         </Stack>
@@ -245,10 +248,11 @@ export const IssueCertificateModal = ({
             label={defaultTemplate.refPrefix}
             size="small"
             sx={{
-              bgcolor: 'rgba(255,255,255,0.15)',
+              bgcolor: `${themeColor}30`,
               color: '#ffffff',
               fontWeight: 800,
               fontFamily: 'monospace',
+              border: `1px solid ${themeColor}60`,
             }}
           />
           <IconButton
@@ -521,7 +525,14 @@ export const IssueCertificateModal = ({
                       <Switch
                         checked={printWithLetterhead}
                         onChange={(e) => setPrintWithLetterhead(e.target.checked)}
-                        color="primary"
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: themeColor,
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: themeColor,
+                          },
+                        }}
                       />
                     }
                     label={
@@ -597,8 +608,7 @@ export const IssueCertificateModal = ({
             bgcolor: themeColor,
             boxShadow: `0 4px 12px ${themeColor}40`,
             '&:hover': {
-              bgcolor: themeColor,
-              filter: 'brightness(0.9)',
+              bgcolor: themeDarker,
             },
           }}
         >
