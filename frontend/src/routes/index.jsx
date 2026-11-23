@@ -296,7 +296,7 @@ export const AppRoutes = () => {
         <Route
           path="registrations/builder"
           element={
-            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+            <ProtectedRoute requiredMenu={['Admissions', 'Students', 'Masters']}>
               <RegistrationFormBuilderPage />
             </ProtectedRoute>
           }
@@ -304,7 +304,15 @@ export const AppRoutes = () => {
         <Route
           path="admissions/builder"
           element={
-            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+            <ProtectedRoute requiredMenu={['Admissions', 'Students', 'Masters']}>
+              <RegistrationFormBuilderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="masters/registration-builder"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students', 'Masters']}>
               <RegistrationFormBuilderPage />
             </ProtectedRoute>
           }
