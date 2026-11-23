@@ -2100,6 +2100,154 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.7 DYNAMIC BONAFIDE CERTIFICATE BUILDER (SCHOOL-WISE)
+        // ==========================================
+        [HttpGet("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetBonafideCertificateConfig([FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "BONAFIDE_CERTIFICATE");
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "BONAFIDE_CERTIFICATE");
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<BonafideCertificateConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        var defaultSecs = BonafideCertificateConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = new BonafideCertificateConfigDto
+            {
+                SchoolId = schoolId,
+                SchoolName = schoolName,
+                IsSchoolOverride = false
+            };
+
+            return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveBonafideCertificateConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] BonafideCertificateConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "BONAFIDE_CERTIFICATE");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "BONAFIDE_CERTIFICATE_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "BONAFIDE_CERTIFICATE",
+                    Provider = "BONAFIDE_CERTIFICATE_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsActive = true,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "BONAFIDE_CERTIFICATE_CONFIG_UPDATED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Global Default",
+                null,
+                new { schoolId, IsOverride = schoolId.HasValue, request.PrimaryColor, request.CertificateTitle });
+
+            return Ok(ApiResponse<bool>.Ok(true, "Bonafide certificate template layout saved successfully."));
+        }
+
+        [HttpDelete("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetBonafideCertificateConfig([FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "BONAFIDE_CERTIFICATE");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "BONAFIDE_CERTIFICATE_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "School bonafide certificate reset to platform default successfully."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

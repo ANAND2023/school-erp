@@ -1044,5 +1044,68 @@ namespace SchoolERP.API.Controllers
 
             return Ok(ApiResponse<AdmissionSlipConfigDto>.Ok(new AdmissionSlipConfigDto()));
         }
+
+        [HttpGet("bonafide-certificate-config")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetBonafideCertificateConfig()
+        {
+            var branchId = _currentUserService.BranchId;
+            long? schoolId = null;
+
+            if (branchId > 0)
+            {
+                schoolId = await _context.Branches
+                    .Where(b => b.Id == branchId)
+                    .Select(b => (long?)b.SchoolId)
+                    .FirstOrDefaultAsync();
+            }
+
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "BONAFIDE_CERTIFICATE" && g.IsActive);
+            }
+
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "BONAFIDE_CERTIFICATE" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<BonafideCertificateConfigDto>(
+                        config.CredentialsEncrypted,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        var defaultSecs = BonafideCertificateConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(new BonafideCertificateConfigDto()));
+        }
     }
 }

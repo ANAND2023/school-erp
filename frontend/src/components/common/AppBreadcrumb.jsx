@@ -382,6 +382,14 @@ export const routeBreadcrumbMap = {
     subtitle: 'Issue formal school leaving certificates, record withdrawal reasons, and print certificates',
     code: 'Module 8',
   },
+  '/certificates/bonafide': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-verified',
+    modulePath: '/certificates/bonafide',
+    title: 'Bonafide Certificate',
+    subtitle: 'Generate, preview, and print officially verified bonafide certificates with dynamic letterhead and formatting',
+    code: 'Certificates',
+  },
 
   // Central Reports
   '/reports': {

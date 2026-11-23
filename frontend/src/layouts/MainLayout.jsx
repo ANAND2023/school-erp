@@ -138,6 +138,15 @@ const navItems = [
     ],
   },
   {
+    title: 'Certificates',
+    menuKey: ['Students', 'TransferCertificates', 'Promotion'],
+    icon: 'pi pi-verified',
+    children: [
+      { title: 'Bonafide Certificate', path: '/certificates/bonafide', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'Transfer Certificate (TC)', path: '/tc', menuKey: 'TransferCertificates' },
+    ],
+  },
+  {
     title: 'Inventory & Stock',
     menuKey: 'Inventory',
     icon: 'pi pi-box',

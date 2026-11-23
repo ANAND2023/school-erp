@@ -61,6 +61,7 @@ import {
   CameraAlt as CameraAltIcon,
   Image as ImageIcon,
   Cameraswitch as CameraswitchIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -69,6 +70,7 @@ import { studentApi } from '../api';
 import { simpleMasterApi, classApi } from '../../masters/api';
 import { usePermission } from '../../../hooks/usePermission';
 import { AdmissionReportModal } from '../components/AdmissionReportModal';
+import { BonafideCertificateModal } from '../components/BonafideCertificateModal';
 import { PhotoCaptureUpload } from '../components/PhotoCaptureUpload';
 import { printWithTitle } from '../../../utils/printUtils';
 import { AppModal, AppInput, AppSelect, AppDatePicker } from '../../../components/common';
@@ -121,6 +123,7 @@ export default function StudentProfilePage() {
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [isIdCardOpen, setIsIdCardOpen] = useState(false);
   const [isAdmissionSlipOpen, setIsAdmissionSlipOpen] = useState(false);
+  const [isBonafideModalOpen, setIsBonafideModalOpen] = useState(false);
   const [docFormData, setDocFormData] = useState({ title: '', documentTypeId: '', filePath: '' });
   const [docFileInfo, setDocFileInfo] = useState({ fileName: '', fileSize: '', isImage: false, isPdf: false });
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -723,6 +726,24 @@ export default function StudentProfilePage() {
                 }}
               >
                 Admission Slip
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<VerifiedIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setIsBonafideModalOpen(true)}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                  py: 0.6,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 1.5,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Bonafide Certificate
               </Button>
 
               {can('SectionChange', 'Edit') && (
@@ -2431,6 +2452,16 @@ export default function StudentProfilePage() {
         <AdmissionReportModal
           open={isAdmissionSlipOpen}
           onClose={() => setIsAdmissionSlipOpen(false)}
+          studentId={student.id}
+          studentData={student}
+        />
+      )}
+
+      {/* Official Dynamic Bonafide Certificate Modal */}
+      {student && (
+        <BonafideCertificateModal
+          open={isBonafideModalOpen}
+          onClose={() => setIsBonafideModalOpen(false)}
           studentId={student.id}
           studentData={student}
         />

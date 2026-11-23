@@ -214,4 +214,20 @@ export const superAdminApi = {
     const res = await apiClient.delete('/superadmin/inventory-slip-config', { params: { schoolId } });
     return res.data;
   },
+
+  // 14. Dynamic Bonafide Certificate Designer (School-wise)
+  getBonafideCertificateConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/bonafide-certificate-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveBonafideCertificateConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/bonafide-certificate-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetBonafideCertificateConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/bonafide-certificate-config', { params: { schoolId } });
+    return res.data;
+  },
 };
