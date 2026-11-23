@@ -422,6 +422,22 @@ export const routeBreadcrumbMap = {
     subtitle: 'Issue verified record of education, examination results, and institutional retention certificate',
     code: 'Certificates',
   },
+  '/students/awr-report': {
+    module: 'Students & Registers',
+    moduleIcon: 'pi pi-table',
+    modulePath: '/students/awr-report',
+    title: 'Admission & Withdrawal Register (A.W.R.)',
+    subtitle: 'Statutory student general register records, admission/withdrawal ledger, and official folio extracts',
+    code: 'AWR',
+  },
+  '/awr-report': {
+    module: 'Students & Registers',
+    moduleIcon: 'pi pi-table',
+    modulePath: '/students/awr-report',
+    title: 'Admission & Withdrawal Register (A.W.R.)',
+    subtitle: 'Statutory student general register records, admission/withdrawal ledger, and official folio extracts',
+    code: 'AWR',
+  },
 
   // Central Reports
   '/reports': {

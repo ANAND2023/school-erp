@@ -2290,6 +2290,155 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.B AWR REPORT CONFIG (ADMISSION & WITHDRAWAL REGISTER)
+        // ==========================================
+        [HttpGet("awr-config")]
+        public async Task<ActionResult<ApiResponse<AwrReportConfigDto>>> GetAwrConfig(
+            [FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var defaultConfig = AwrReportConfigDto.GetDefaultConfig();
+
+            // 1. Try school-specific override if requested
+            if (schoolId.HasValue)
+            {
+                var schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId.Value && g.GatewayType == "AWR_REPORT_CONFIG" && g.IsActive);
+
+                if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+                {
+                    try
+                    {
+                        var cfg = JsonSerializer.Deserialize<AwrReportConfigDto>(schoolConfig.CredentialsEncrypted);
+                        if (cfg != null)
+                        {
+                            cfg.SchoolId = schoolId.Value;
+                            cfg.IsSchoolOverride = true;
+                            var school = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(t => t.Id == schoolId.Value);
+                            cfg.SchoolName = school?.Name ?? $"School #{schoolId.Value}";
+                            return Ok(ApiResponse<AwrReportConfigDto>.Ok(cfg));
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            // 2. Try global default (SchoolId == null)
+            var globalConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "AWR_REPORT_CONFIG" && g.IsActive);
+
+            if (globalConfig != null && !string.IsNullOrWhiteSpace(globalConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var cfg = JsonSerializer.Deserialize<AwrReportConfigDto>(globalConfig.CredentialsEncrypted);
+                    if (cfg != null)
+                    {
+                        cfg.SchoolId = schoolId;
+                        cfg.IsSchoolOverride = false;
+                        if (schoolId.HasValue)
+                        {
+                            var school = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(t => t.Id == schoolId.Value);
+                            cfg.SchoolName = school?.Name ?? $"School #{schoolId.Value} (Inheriting Global)";
+                        }
+                        else
+                        {
+                            cfg.SchoolName = "Platform Default (All Schools)";
+                        }
+                        return Ok(ApiResponse<AwrReportConfigDto>.Ok(cfg));
+                    }
+                }
+                catch { }
+            }
+
+            defaultConfig.SchoolId = schoolId;
+            defaultConfig.IsSchoolOverride = false;
+            defaultConfig.SchoolName = schoolId.HasValue ? $"School #{schoolId.Value} (Default)" : "Platform Default (All Schools)";
+            return Ok(ApiResponse<AwrReportConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("awr-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveAwrConfig(
+            [FromBody] AwrReportConfigDto request,
+            [FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "AWR_REPORT_CONFIG");
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = "AWR_REPORT_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = "AWR_REPORT_CONFIG",
+                    Provider = "AWR_REPORT_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsActive = true,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                "AWR_CONFIG_UPDATED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Global Default",
+                null,
+                new { schoolId, IsOverride = schoolId.HasValue, request.PrimaryColor, request.ReportTitle });
+
+            return Ok(ApiResponse<bool>.Ok(true, "AWR report template layout saved successfully."));
+        }
+
+        [HttpDelete("awr-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetAwrConfig(
+            [FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "AWR_REPORT_CONFIG");
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    "AWR_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "AWR report template reset to platform default."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

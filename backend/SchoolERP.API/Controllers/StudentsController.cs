@@ -1124,5 +1124,301 @@ namespace SchoolERP.API.Controllers
 
             return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(BonafideCertificateConfigDto.GetDefaultConfigForType(type)));
         }
+
+        // =========================================================================
+        // AWR REPORT (ADMISSION & WITHDRAWAL REGISTER)
+        // =========================================================================
+        [HttpGet("awr-config")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<AwrReportConfigDto>>> GetAwrConfig()
+        {
+            var branchId = _currentUserService.BranchId;
+            var branch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId);
+            var schoolId = branch?.SchoolId;
+            var config = await GetAwrConfigInternalAsync(schoolId);
+            return Ok(ApiResponse<AwrReportConfigDto>.Ok(config));
+        }
+
+        private async Task<AwrReportConfigDto> GetAwrConfigInternalAsync(long? schoolId)
+        {
+            TenantGatewayConfig? config = null;
+            if (schoolId.HasValue)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "AWR_REPORT_CONFIG" && g.IsActive);
+            }
+
+            if (config == null)
+            {
+                config = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "AWR_REPORT_CONFIG" && g.IsActive);
+            }
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<AwrReportConfigDto>(
+                        config.CredentialsEncrypted,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        return parsed;
+                    }
+                }
+                catch { }
+            }
+
+            return AwrReportConfigDto.GetDefaultConfig();
+        }
+
+        [HttpGet("awr-report")]
+        public async Task<ActionResult<ApiResponse<AwrReportResponseDto>>> GetAwrReport(
+            [FromQuery] long? academicYearId,
+            [FromQuery] long? classId,
+            [FromQuery] long? sectionId,
+            [FromQuery] string? status, // "all", "active", "withdrawn"
+            [FromQuery] string? search,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate)
+        {
+            var branchId = _currentUserService.BranchId;
+
+            // Load master dictionaries for categories and religions
+            var simpleMasters = await _context.SimpleMasters
+                .AsNoTracking()
+                .Where(m => m.BranchId == branchId && m.IsActive)
+                .ToDictionaryAsync(m => m.Id, m => m.Name);
+
+            // Load Transfer Certificates for this branch
+            var tcList = await _context.TransferCertificates
+                .AsNoTracking()
+                .Where(t => t.BranchId == branchId)
+                .ToListAsync();
+
+            var tcByStudentId = tcList
+                .GroupBy(t => t.StudentId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.IssueDate).First());
+
+            // Query Students
+            var studentQuery = _context.Students
+                .Include(s => s.Guardians)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Class)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Section)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.AcademicYear)
+                .Where(s => s.BranchId == branchId)
+                .AsNoTracking();
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                studentQuery = studentQuery.Where(st =>
+                    st.AdmissionNo.ToLower().Contains(s) ||
+                    st.FirstName.ToLower().Contains(s) ||
+                    st.LastName.ToLower().Contains(s) ||
+                    (st.FirstName + " " + st.LastName).ToLower().Contains(s) ||
+                    st.Guardians.Any(g => g.Name.ToLower().Contains(s) || g.Mobile.Contains(s)));
+            }
+
+            if (fromDate.HasValue)
+            {
+                studentQuery = studentQuery.Where(st => st.AdmissionDate >= fromDate.Value.Date);
+            }
+            if (toDate.HasValue)
+            {
+                studentQuery = studentQuery.Where(st => st.AdmissionDate <= toDate.Value.Date.AddDays(1).AddTicks(-1));
+            }
+
+            var students = await studentQuery
+                .OrderBy(s => s.AdmissionDate)
+                .ThenBy(s => s.AdmissionNo)
+                .ToListAsync();
+
+            // Calculate Summary Metrics
+            int totalRegistered = students.Count;
+            int activeCount = 0;
+            int withdrawnCount = 0;
+            int newThisYear = 0;
+
+            var currentYearId = _currentUserService.AcademicYearId;
+            var currentYear = await _context.AcademicYears.AsNoTracking().FirstOrDefaultAsync(y => y.Id == currentYearId && y.BranchId == branchId);
+            var startOfYear = currentYear?.StartDate ?? new DateTime(DateTime.UtcNow.Year, 4, 1);
+
+            var studentItems = new List<AwrStudentItemDto>();
+
+            foreach (var st in students)
+            {
+                // TC lookup
+                tcByStudentId.TryGetValue(st.Id, out var tc);
+
+                bool isWithdrawn = st.Status == StudentStatus.Left ||
+                                   st.Status == StudentStatus.TcIssued ||
+                                   st.Status == StudentStatus.PassedOut ||
+                                   tc != null;
+
+                if (isWithdrawn)
+                    withdrawnCount++;
+                else
+                    activeCount++;
+
+                if (st.AdmissionDate >= startOfYear)
+                    newThisYear++;
+
+                // Status Filter application
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    var stFilter = status.Trim().ToLowerInvariant();
+                    if (stFilter == "active" && isWithdrawn) continue;
+                    if (stFilter == "withdrawn" && !isWithdrawn) continue;
+                }
+
+                // Enrollment resolution
+                var targetEnrollment = (academicYearId.HasValue && academicYearId.Value > 0)
+                    ? st.Enrollments.FirstOrDefault(e => e.AcademicYearId == academicYearId.Value)
+                    : st.Enrollments.OrderByDescending(e => e.AcademicYearId).FirstOrDefault();
+
+                // Class & Section filters
+                if (classId.HasValue && classId.Value > 0)
+                {
+                    if (targetEnrollment == null || targetEnrollment.ClassId != classId.Value)
+                        continue;
+                }
+                if (sectionId.HasValue && sectionId.Value > 0)
+                {
+                    if (targetEnrollment == null || targetEnrollment.SectionId != sectionId.Value)
+                        continue;
+                }
+
+                // First enrollment (Class to which admitted)
+                var firstEnrollment = st.Enrollments.OrderBy(e => e.AcademicYearId).ThenBy(e => e.CreatedOn).FirstOrDefault();
+                string classAdmitted = firstEnrollment?.Class?.Name ?? targetEnrollment?.Class?.Name ?? "";
+
+                // Guardians
+                var father = st.Guardians.FirstOrDefault(g => g.Relation != null && g.Relation.Equals("Father", StringComparison.OrdinalIgnoreCase));
+                var mother = st.Guardians.FirstOrDefault(g => g.Relation != null && g.Relation.Equals("Mother", StringComparison.OrdinalIgnoreCase));
+                var primaryGuardian = st.Guardians.FirstOrDefault(g => g.IsPrimary) ?? st.Guardians.FirstOrDefault();
+
+                // Category & Religion
+                string catName = (st.CategoryId.HasValue && simpleMasters.TryGetValue(st.CategoryId.Value, out var cName)) ? cName : "General";
+                string relName = (st.ReligionId.HasValue && simpleMasters.TryGetValue(st.ReligionId.Value, out var rName)) ? rName : "Hindu";
+
+                studentItems.Add(new AwrStudentItemDto
+                {
+                    StudentId = st.Id,
+                    AdmissionNo = st.AdmissionNo,
+                    AdmissionDate = st.AdmissionDate,
+                    AdmissionDateFormatted = st.AdmissionDate.ToString("dd-MMM-yyyy"),
+                    StudentName = st.FullName,
+                    FirstName = st.FirstName,
+                    LastName = st.LastName,
+                    Gender = st.Gender ?? "Male",
+                    PhotoUrl = st.PhotoUrl,
+                    DateOfBirth = st.DateOfBirth,
+                    DobFormatted = st.DateOfBirth.ToString("dd-MMM-yyyy"),
+                    DobWords = ConvertDateToWords(st.DateOfBirth),
+                    PlaceOfBirth = st.City ?? "",
+
+                    FatherName = father?.Name ?? primaryGuardian?.Name ?? "",
+                    FatherOccupation = father?.Occupation ?? "",
+                    FatherMobile = father?.Mobile ?? primaryGuardian?.Mobile ?? "",
+                    MotherName = mother?.Name ?? "",
+                    MotherOccupation = mother?.Occupation ?? "",
+                    GuardianName = primaryGuardian?.Name ?? "",
+                    GuardianRelation = primaryGuardian?.Relation ?? "",
+
+                    CategoryName = catName,
+                    ReligionName = relName,
+                    Nationality = "Indian",
+                    BloodGroup = st.BloodGroup ?? "",
+                    AadhaarNo = st.AadhaarNo ?? "",
+                    Address = st.Address ?? "",
+                    City = st.City ?? "",
+                    State = st.State ?? "",
+                    Pincode = st.Pincode ?? "",
+
+                    PreviousSchool = "",
+                    PreviousClass = "",
+                    ClassAdmitted = classAdmitted,
+                    CurrentClass = targetEnrollment?.Class?.Name ?? "",
+                    CurrentSection = targetEnrollment?.Section?.Name ?? "",
+                    RollNo = targetEnrollment?.RollNo,
+                    AcademicYear = targetEnrollment?.AcademicYear?.Name ?? currentYear?.Name ?? "",
+                    Status = isWithdrawn ? "Withdrawn" : "Active",
+
+                    WithdrawalDate = tc?.IssueDate,
+                    WithdrawalDateFormatted = tc?.IssueDate.ToString("dd-MMM-yyyy") ?? "",
+                    ReasonForLeaving = tc?.ReasonForLeaving ?? (isWithdrawn ? "Struck off / Left" : ""),
+                    LastClassStudied = tc?.LastClassStudied ?? targetEnrollment?.Class?.Name ?? "",
+                    Conduct = tc?.Conduct ?? "Good",
+                    TcNumber = tc?.TcNumber ?? "",
+                    TcIssueDate = tc?.IssueDate,
+                    TcIssueDateFormatted = tc?.IssueDate.ToString("dd-MMM-yyyy") ?? "",
+                    Remarks = tc?.Remarks ?? ""
+                });
+            }
+
+            // Load active AwrConfig for the school
+            var branch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId);
+            var schoolId = branch?.SchoolId;
+            var awrConfig = await GetAwrConfigInternalAsync(schoolId);
+
+            var response = new AwrReportResponseDto
+            {
+                Summary = new AwrReportSummaryDto
+                {
+                    TotalRegistered = totalRegistered,
+                    ActiveOnRoll = activeCount,
+                    TotalWithdrawn = withdrawnCount,
+                    NewAdmissionsThisYear = newThisYear
+                },
+                Students = studentItems,
+                Config = awrConfig
+            };
+
+            return Ok(ApiResponse<AwrReportResponseDto>.Ok(response));
+        }
+
+        private static string ConvertDateToWords(DateTime date)
+        {
+            string[] dayNames = new[]
+            {
+                "", "First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth",
+                "Eleventh", "Twelfth", "Thirteenth", "Fourteenth", "Fifteenth", "Sixteenth", "Seventeenth", "Eighteenth", "Nineteenth", "Twentieth",
+                "Twenty-First", "Twenty-Second", "Twenty-Third", "Twenty-Fourth", "Twenty-Fifth", "Twenty-Sixth", "Twenty-Seventh", "Twenty-Eighth", "Twenty-Ninth", "Thirtieth", "Thirty-First"
+            };
+            string[] monthNames = new[]
+            {
+                "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+            };
+            string[] ones = new[] { "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
+            string[] tens = new[] { "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+
+            string dayWord = (date.Day >= 1 && date.Day <= 31) ? dayNames[date.Day] : date.Day.ToString();
+            string monthWord = (date.Month >= 1 && date.Month <= 12) ? monthNames[date.Month] : "";
+            int year = date.Year;
+            string yearWord = "";
+            if (year >= 2000 && year < 2100)
+            {
+                int rem = year - 2000;
+                yearWord = "Two Thousand" + (rem > 0 ? " " + (rem < 20 ? ones[rem] : tens[rem / 10] + (rem % 10 > 0 ? " " + ones[rem % 10] : "")) : "");
+            }
+            else if (year >= 1900 && year < 2000)
+            {
+                int rem = year - 1900;
+                yearWord = "Nineteen Hundred" + (rem > 0 ? " " + (rem < 20 ? ones[rem] : tens[rem / 10] + (rem % 10 > 0 ? " " + ones[rem % 10] : "")) : "");
+            }
+            else
+            {
+                yearWord = year.ToString();
+            }
+
+            return $"{dayWord} {monthWord} {yearWord}".Trim();
+        }
     }
 }
