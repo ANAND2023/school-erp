@@ -185,19 +185,20 @@ export const RegistrationSlipsListPage = () => {
     {
       field: 'studentName',
       headerName: 'Student Name',
-      flex: 1.2,
-      minWidth: 160,
+      width: 170,
+      minWidth: 170,
       renderCell: (params) => (
-        <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a' }}>
+        <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a', fontSize: '12px' }}>
           {params.value}
         </Typography>
       ),
     },
-    { field: 'className', headerName: 'Seeking Class', width: 120 },
+    { field: 'className', headerName: 'Seeking Class', width: 120, minWidth: 120 },
     {
       field: 'academicYearName',
       headerName: 'Session',
       width: 110,
+      minWidth: 110,
       renderCell: (params) => (
         <Chip
           label={params.value || activeAcademicYearName || 'Current'}
@@ -212,24 +213,27 @@ export const RegistrationSlipsListPage = () => {
       field: 'slipNumber',
       headerName: 'Slip No',
       width: 125,
+      minWidth: 125,
       renderCell: (params) => (
         <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>
           {params.value}
         </span>
       ),
     },
-    { field: 'fatherName', headerName: 'Parent / Guardian', flex: 1.1, minWidth: 140 },
-    { field: 'contactNumber', headerName: 'Mobile', width: 130 },
+    { field: 'fatherName', headerName: 'Parent / Guardian', width: 150, minWidth: 150 },
+    { field: 'contactNumber', headerName: 'Mobile', width: 130, minWidth: 130 },
     {
       field: 'feeAmount',
       headerName: 'Fee (₹)',
       width: 90,
+      minWidth: 90,
       renderCell: (params) => `₹${params.value}`,
     },
     {
       field: 'paidAmount',
       headerName: 'Paid (₹)',
       width: 90,
+      minWidth: 90,
       renderCell: (params) => (
         <span style={{ color: '#16a34a', fontWeight: 700 }}>₹{params.value}</span>
       ),
@@ -238,6 +242,7 @@ export const RegistrationSlipsListPage = () => {
       field: 'balanceAmount',
       headerName: 'Balance (₹)',
       width: 95,
+      minWidth: 95,
       renderCell: (params) => (
         <span style={{ color: params.value > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
           ₹{params.value}
@@ -247,7 +252,8 @@ export const RegistrationSlipsListPage = () => {
     {
       field: 'paymentStatus',
       headerName: 'Payment Status',
-      width: 130,
+      width: 120,
+      minWidth: 120,
       renderCell: (params) => {
         const s = params.value;
         return (
@@ -264,6 +270,7 @@ export const RegistrationSlipsListPage = () => {
       field: 'admissionStatus',
       headerName: 'Admission',
       width: 115,
+      minWidth: 115,
       renderCell: (params) => {
         const isAdmitted = params.value === 'Admitted';
         return (
@@ -280,14 +287,20 @@ export const RegistrationSlipsListPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 210,
+      width: 170,
+      minWidth: 170,
       sortable: false,
+      frozen: true,
+      alignFrozen: 'right',
+      headerStyle: { width: '170px', minWidth: '170px', textAlign: 'center' },
+      bodyStyle: { width: '170px', minWidth: '170px', textAlign: 'center' },
+      style: { width: '170px', minWidth: '170px', textAlign: 'center' },
       renderCell: (params) => {
         const slip = params.row;
         const isAdmitted = slip.admissionStatus === 'Admitted';
 
         return (
-          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
             {/* Convert to Admission / Admit Student Option */}
             <Tooltip title={isAdmitted ? 'Student already admitted' : 'Admit Student / Convert to Admission'}>
               <span>
@@ -296,12 +309,14 @@ export const RegistrationSlipsListPage = () => {
                   color="success"
                   disabled={isAdmitted}
                   sx={{
+                    width: 28,
+                    height: 28,
                     bgcolor: isAdmitted ? '#f1f5f9' : '#f0fdf4',
                     '&:hover': { bgcolor: '#dcfce7' },
                   }}
                   onClick={() => handleConvertToAdmission(slip)}
                 >
-                  <ConvertIcon fontSize="small" />
+                  <ConvertIcon sx={{ fontSize: '1rem' }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -312,6 +327,8 @@ export const RegistrationSlipsListPage = () => {
                 size="small"
                 color="info"
                 sx={{
+                  width: 28,
+                  height: 28,
                   bgcolor: '#f0f9ff',
                   '&:hover': { bgcolor: '#e0f2fe' },
                 }}
@@ -320,7 +337,7 @@ export const RegistrationSlipsListPage = () => {
                   setViewSlipModalOpen(true);
                 }}
               >
-                <ReceiptLongIcon fontSize="small" />
+                <ReceiptLongIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Tooltip>
 
@@ -329,29 +346,33 @@ export const RegistrationSlipsListPage = () => {
               <IconButton
                 size="small"
                 sx={{
+                  width: 28,
+                  height: 28,
                   color: '#25D366',
                   bgcolor: '#f0fdf4',
                   '&:hover': { bgcolor: '#dcfce7' },
                 }}
                 onClick={() => handleShareWhatsApp(slip)}
               >
-                <WhatsAppIcon fontSize="small" />
+                <WhatsAppIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Tooltip>
 
             {/* Collect Fee (if balance > 0) */}
             {slip.balanceAmount > 0 && (
-              <Tooltip title={`Collect Due Balance (₹${slip.balanceAmount})`}>
+               <Tooltip title={`Collect Due Balance (₹${slip.balanceAmount})`}>
                 <IconButton
                   size="small"
                   color="warning"
                   sx={{
+                    width: 28,
+                    height: 28,
                     bgcolor: '#fffbeb',
                     '&:hover': { bgcolor: '#fef3c7' },
                   }}
                   onClick={() => handleOpenPay(slip)}
                 >
-                  <PayIcon fontSize="small" />
+                  <PayIcon sx={{ fontSize: '1rem' }} />
                 </IconButton>
               </Tooltip>
             )}
@@ -362,23 +383,23 @@ export const RegistrationSlipsListPage = () => {
   ];
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 2 }}>
       {/* Page Header matching EnquiriesPage */}
       <Box
         sx={{
-          mb: { xs: 2, sm: 3 },
+          mb: 1.5,
           display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
           alignItems: { sm: 'center' },
-          gap: 1.5,
+          gap: 1,
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.35rem' }, lineHeight: 1.2 }}>
             Session Registration Records & Reports
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.82rem' }, mt: 0.25 }}>
             Manage registered students, fees, slip generation, and convert to official admission
           </Typography>
         </Box>
@@ -386,14 +407,20 @@ export const RegistrationSlipsListPage = () => {
           <Button
             variant="outlined"
             color="primary"
-            startIcon={<TuneIcon />}
+            startIcon={<TuneIcon sx={{ fontSize: '16px !important' }} />}
             onClick={() => navigate('/registrations/builder')}
             sx={{
+              height: 32,
+              minHeight: 32,
+              px: 1.5,
+              py: 0,
               textTransform: 'none',
-              fontWeight: 700,
-              borderRadius: 2,
-              px: 2,
-              py: 0.8,
+              fontWeight: 600,
+              fontSize: '12px',
+              borderRadius: '6px',
+              borderWidth: '1.5px',
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+              '&:hover': { borderWidth: '1.5px' },
             }}
           >
             Registration Form Builder
@@ -401,14 +428,18 @@ export const RegistrationSlipsListPage = () => {
           <Button
             variant="contained"
             color="primary"
-            startIcon={<AddIcon />}
+            startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
             onClick={() => navigate('/registrations/slip-generator')}
             sx={{
+              height: 32,
+              minHeight: 32,
+              px: 1.5,
+              py: 0,
               textTransform: 'none',
-              fontWeight: 800,
-              borderRadius: 2,
-              px: 2.2,
-              py: 0.8,
+              fontWeight: 600,
+              fontSize: '12px',
+              borderRadius: '6px',
+              alignSelf: { xs: 'flex-start', sm: 'center' },
             }}
           >
             New Registration Slip
@@ -417,10 +448,10 @@ export const RegistrationSlipsListPage = () => {
       </Box>
 
       {/* Filter Toolbar matching EnquiriesPage */}
-      <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
-        <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="flex-end">
+      <Paper sx={{ p: 1.5, mb: 1.5, borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <Grid container spacing={1.5} alignItems="center">
           <Grid item xs={12} sm={6} md={5}>
-            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <Box sx={{ flex: 1 }}>
                 <AppInput
                   label="Search Registration Records"
@@ -432,18 +463,18 @@ export const RegistrationSlipsListPage = () => {
               <Button
                 variant="contained"
                 type="submit"
-                startIcon={<SearchIcon />}
+                startIcon={<SearchIcon sx={{ fontSize: '16px !important' }} />}
                 sx={{
-                  height: 30,
-                  minHeight: 30,
-                  minWidth: 90,
+                  height: 32,
+                  minHeight: 32,
+                  minWidth: 84,
                   px: 1.5,
+                  py: 0,
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '12px',
                   flexShrink: 0,
-                  borderRadius: 1,
-                  mt: '1px',
+                  borderRadius: '6px',
                 }}
               >
                 Search
@@ -482,9 +513,9 @@ export const RegistrationSlipsListPage = () => {
                 variant="text"
                 color="secondary"
                 size="small"
-                startIcon={<ClearIcon />}
+                startIcon={<ClearIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={handleClearFilters}
-                sx={{ textTransform: 'none', fontSize: '11px', height: 30 }}
+                sx={{ textTransform: 'none', fontSize: '12px', fontWeight: 600, height: 32, minHeight: 32 }}
               >
                 Clear
               </Button>
@@ -504,6 +535,7 @@ export const RegistrationSlipsListPage = () => {
         onPaginationModelChange={setPaginationModel}
         onAddClick={() => navigate('/registrations/slip-generator')}
         addLabel="New Registration Slip"
+        tableStyle={{ minWidth: '1250px' }}
       />
 
       {/* Payment Collection Dialog */}
