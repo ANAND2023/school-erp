@@ -648,7 +648,9 @@ table td {
   min-height: 54px !important;
 }
 
-/* Sticky frozen Actions column styling */
+/* Sticky frozen Actions column styling across all PrimeReact DataTables */
+.p-datatable .p-datatable-tbody > tr > td.p-frozen-column,
+.p-datatable .p-datatable-thead > tr > th.p-frozen-column,
 .app-demand-bills-table .p-datatable-tbody > tr > td.p-frozen-column,
 .app-demand-bills-table .p-datatable-thead > tr > th.p-frozen-column {
   background-color: #ffffff !important;
@@ -656,11 +658,22 @@ table td {
   z-index: 2 !important;
 }
 
+.p-datatable .p-datatable-thead > tr > th.p-frozen-column,
 .app-demand-bills-table .p-datatable-thead > tr > th.p-frozen-column {
+  background-color: #f8fafc !important;
+  z-index: 3 !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover > td.p-frozen-column,
+.app-demand-bills-table .p-datatable-tbody > tr:hover > td.p-frozen-column {
   background-color: #f8fafc !important;
 }
 
-.app-demand-bills-table .p-datatable-tbody > tr:hover > td.p-frozen-column {
+.p-datatable.p-datatable-striped .p-datatable-tbody > tr:nth-child(even) > td.p-frozen-column {
+  background-color: #fcfcfc !important;
+}
+
+.p-datatable.p-datatable-striped .p-datatable-tbody > tr:nth-child(even):hover > td.p-frozen-column {
   background-color: #f8fafc !important;
 }
 

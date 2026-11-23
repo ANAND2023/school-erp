@@ -152,6 +152,16 @@ export const AppTable = ({
     });
   }, [columns]);
 
+  const rightFrozenCol = useMemo(() => {
+    return normalizedColumns.find((c) => c.frozen && (c.alignFrozen === 'right' || !c.alignFrozen));
+  }, [normalizedColumns]);
+
+  const rightFrozenWidth = useMemo(() => {
+    if (!rightFrozenCol) return 0;
+    const w = rightFrozenCol.width || rightFrozenCol.minWidth || 0;
+    return typeof w === 'number' ? w : parseInt(w, 10) || 0;
+  }, [rightFrozenCol]);
+
   // Edge Auto-scroll & Overflow Indicators
   const containerRef = useRef(null);
   const animIdRef = useRef(null);
@@ -229,8 +239,8 @@ export const AppTable = ({
     const wrapper = getScrollWrapper();
     if (!wrapper) return;
 
-    // Do not scroll if hovering directly on interactive action buttons or form controls
-    if (e.target.closest('button:not(.app-table-scroll-btn), a, input, select, .MuiIconButton-root, .p-inputtext, .p-dropdown')) {
+    // Do not scroll if hovering directly on interactive action buttons or form controls or frozen column
+    if (e.target.closest('button:not(.app-table-scroll-btn), a, input, select, .MuiIconButton-root, .p-inputtext, .p-dropdown, .p-frozen-column')) {
       stopAutoScroll();
       return;
     }
@@ -478,6 +488,7 @@ export const AppTable = ({
           type="button"
           aria-label="Scroll right"
           className="app-table-scroll-btn app-table-scroll-btn-right"
+          style={rightFrozenWidth > 0 ? { right: `${rightFrozenWidth + 8}px` } : undefined}
           onClick={() => {
             const wrapper = getScrollWrapper();
             if (wrapper) wrapper.scrollBy({ left: 220, behavior: 'smooth' });

@@ -304,12 +304,13 @@ export const EnquiriesPage = () => {
   };
 
   const columns = [
-    { field: 'studentName', headerName: 'Student Name', flex: 1.2, minWidth: 160 },
-    { field: 'className', headerName: 'Class Sought', width: 120 },
+    { field: 'studentName', headerName: 'Student Name', width: 170, minWidth: 170 },
+    { field: 'className', headerName: 'Class Sought', width: 120, minWidth: 120 },
     {
       field: 'academicYearName',
       headerName: 'Session',
       width: 110,
+      minWidth: 110,
       renderCell: (params) => (
         <Chip
           label={params.value || activeAcademicYearName || 'Current'}
@@ -320,26 +321,34 @@ export const EnquiriesPage = () => {
         />
       ),
     },
-    { field: 'guardianName', headerName: 'Parent / Guardian', flex: 1.2, minWidth: 150 },
-    { field: 'mobile', headerName: 'Mobile', width: 130 },
-    { field: 'source', headerName: 'Source', width: 110 },
+    { field: 'guardianName', headerName: 'Parent / Guardian', width: 160, minWidth: 160 },
+    { field: 'mobile', headerName: 'Mobile', width: 130, minWidth: 130 },
+    { field: 'source', headerName: 'Source', width: 110, minWidth: 110 },
     {
       field: 'status',
       headerName: 'Status',
       width: 120,
+      minWidth: 120,
       renderCell: (params) => getStatusChip(params.value),
     },
     {
       field: 'nextFollowupDate',
       headerName: 'Next Follow-up',
       width: 140,
+      minWidth: 140,
       renderCell: (params) => (params.value ? dayjs(params.value).format('DD MMM YYYY') : '-'),
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 315,
+      width: 220,
+      minWidth: 220,
       sortable: false,
+      frozen: true,
+      alignFrozen: 'right',
+      headerStyle: { width: '220px', minWidth: '220px', textAlign: 'center' },
+      bodyStyle: { width: '220px', minWidth: '220px', textAlign: 'center' },
+      style: { width: '220px', minWidth: '220px', textAlign: 'center' },
       renderCell: (params) => {
         const enq = params.row;
         const canEdit = hasPermission('Enquiries', 'Edit');
@@ -347,11 +356,13 @@ export const EnquiriesPage = () => {
         const isConverted = enq.status === 3;
 
         return (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
             <Tooltip title={`Class Fee Structure (${enq.className || 'Class'})`}>
               <IconButton
                 size="small"
                 sx={{
+                  width: 28,
+                  height: 28,
                   color: '#0284c7',
                   bgcolor: '#f0f9ff',
                   '&:hover': { bgcolor: '#e0f2fe' },
@@ -361,25 +372,32 @@ export const EnquiriesPage = () => {
                   setFeeProspectusOpen(true);
                 }}
               >
-                <FeeStructureIcon fontSize="small" />
+                <FeeStructureIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Send WhatsApp Message">
               <IconButton
                 size="small"
                 sx={{
+                  width: 28,
+                  height: 28,
                   color: '#25D366',
                   bgcolor: '#f0fdf4',
                   '&:hover': { bgcolor: '#dcfce7' },
                 }}
                 onClick={() => handleOpenWhatsApp(enq)}
               >
-                <WhatsAppIcon fontSize="small" />
+                <WhatsAppIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Print Enquiry Slip">
-              <IconButton size="small" color="info" onClick={() => handleOpenSlip(enq)}>
-                <ReceiptLongIcon fontSize="small" />
+              <IconButton
+                size="small"
+                color="info"
+                sx={{ width: 28, height: 28 }}
+                onClick={() => handleOpenSlip(enq)}
+              >
+                <ReceiptLongIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Tooltip>
             <Tooltip title={isConverted ? "Enquiry is already converted to admission" : "Log Follow-up Call / Visit"}>
@@ -388,9 +406,10 @@ export const EnquiriesPage = () => {
                   size="small"
                   color="primary"
                   disabled={isConverted}
+                  sx={{ width: 28, height: 28 }}
                   onClick={() => handleOpenFollowup(enq)}
                 >
-                  <FollowupIcon fontSize="small" />
+                  <FollowupIcon sx={{ fontSize: '1rem' }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -399,20 +418,27 @@ export const EnquiriesPage = () => {
                 <IconButton
                   size="small"
                   sx={{
+                    width: 28,
+                    height: 28,
                     color: '#0284c7',
                     bgcolor: '#f0f9ff',
                     '&:hover': { bgcolor: '#e0f2fe' },
                   }}
                   onClick={() => handleConvertToRegistration(enq)}
                 >
-                  <RegistrationIcon fontSize="small" />
+                  <RegistrationIcon sx={{ fontSize: '1rem' }} />
                 </IconButton>
               </Tooltip>
             )}
             {canAdmit && !isConverted && (
               <Tooltip title="Convert to Admission (FR-3.2)">
-                <IconButton size="small" color="success" onClick={() => handleConvertToAdmission(enq)}>
-                  <ConvertIcon fontSize="small" />
+                <IconButton
+                  size="small"
+                  color="success"
+                  sx={{ width: 28, height: 28 }}
+                  onClick={() => handleConvertToAdmission(enq)}
+                >
+                  <ConvertIcon sx={{ fontSize: '1rem' }} />
                 </IconButton>
               </Tooltip>
             )}
@@ -423,31 +449,36 @@ export const EnquiriesPage = () => {
   ];
 
   return (
-    <Box sx={{ pb: 4 }}>
-      <Box sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1.5 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ mb: 1.5, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.35rem' }, lineHeight: 1.2 }}>
             Student Enquiries & Leads
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.82rem' }, mt: 0.25 }}>
             Manage admission leads, follow-up calls, and lead conversions
           </Typography>
         </Box>
         <Button
           variant="outlined"
           color="primary"
-          startIcon={<FeeStructureIcon />}
+          startIcon={<FeeStructureIcon sx={{ fontSize: '16px !important' }} />}
           onClick={() => {
             setFeeProspectusClassId(selectedClass || '');
             setFeeProspectusOpen(true);
           }}
           sx={{
+            height: 32,
+            minHeight: 32,
+            px: 1.5,
+            py: 0,
             textTransform: 'none',
-            fontWeight: 700,
-            borderRadius: 2,
-            px: 2,
-            py: 0.8,
-            alignSelf: { xs: 'flex-start', sm: 'center' }
+            fontWeight: 600,
+            fontSize: '12px',
+            borderRadius: '6px',
+            borderWidth: '1.5px',
+            alignSelf: { xs: 'flex-start', sm: 'center' },
+            '&:hover': { borderWidth: '1.5px' },
           }}
         >
           Class Fee Structure
@@ -455,10 +486,10 @@ export const EnquiriesPage = () => {
       </Box>
 
       {/* Filter Toolbar */}
-      <Paper sx={{ p: { xs: 1.25, sm: 2 }, mb: { xs: 1.5, sm: 2.5 }, borderRadius: 2 }}>
-        <Grid container spacing={{ xs: 1.25, sm: 2 }} alignItems="flex-end">
+      <Paper sx={{ p: 1.5, mb: 1.5, borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <Grid container spacing={1.5} alignItems="center">
           <Grid item xs={12} sm={6} md={4}>
-            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+            <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <Box sx={{ flex: 1 }}>
                 <AppInput
                   label="Search Enquiries"
@@ -470,18 +501,18 @@ export const EnquiriesPage = () => {
               <Button
                 variant="contained"
                 type="submit"
-                startIcon={<SearchIcon />}
+                startIcon={<SearchIcon sx={{ fontSize: '16px !important' }} />}
                 sx={{
-                  height: 30,
-                  minHeight: 30,
-                  minWidth: 90,
+                  height: 32,
+                  minHeight: 32,
+                  minWidth: 84,
                   px: 1.5,
+                  py: 0,
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '12px',
                   flexShrink: 0,
-                  borderRadius: 1,
-                  mt: '1px',
+                  borderRadius: '6px',
                 }}
               >
                 Search
@@ -522,6 +553,7 @@ export const EnquiriesPage = () => {
         onPaginationModelChange={setPaginationModel}
         onAddClick={() => setAddModalOpen(true)}
         addLabel="Record New Enquiry"
+        tableStyle={{ minWidth: '1050px' }}
       />
 
       {/* New Enquiry Modal */}
