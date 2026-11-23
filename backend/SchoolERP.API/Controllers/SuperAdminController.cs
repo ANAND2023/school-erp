@@ -2100,6 +2100,196 @@ namespace SchoolERP.API.Controllers
         }
 
         // ==========================================
+        // 10.7 DYNAMIC CERTIFICATE BUILDERS (BONAFIDE, BIRTH, AGE, CHARACTER, RET)
+        // ==========================================
+        private static string NormalizeCertificateGatewayType(string? type)
+        {
+            var t = (type ?? "bonafide").Trim().ToLowerInvariant();
+            return t switch
+            {
+                "birth" => "BIRTH_CERTIFICATE",
+                "age" => "AGE_CERTIFICATE",
+                "character" => "CHARACTER_CERTIFICATE",
+                "ret" => "RET_CERTIFICATE",
+                _ => "BONAFIDE_CERTIFICATE"
+            };
+        }
+
+        [HttpGet("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetBonafideCertificateConfig([FromQuery] long? schoolId)
+        {
+            return await GetCertificateConfig("bonafide", schoolId);
+        }
+
+        [HttpPost("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveBonafideCertificateConfig(
+            [FromQuery] long? schoolId,
+            [FromBody] BonafideCertificateConfigDto request)
+        {
+            return await SaveCertificateConfig("bonafide", schoolId, request);
+        }
+
+        [HttpDelete("bonafide-certificate-config")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetBonafideCertificateConfig([FromQuery] long schoolId)
+        {
+            return await ResetCertificateConfig("bonafide", schoolId);
+        }
+
+        [HttpGet("certificate-config/{type}")]
+        public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetCertificateConfig(
+            string type,
+            [FromQuery] long? schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string gwType = NormalizeCertificateGatewayType(type);
+            string schoolName = "Platform Default (All Schools)";
+            if (schoolId.HasValue)
+            {
+                var s = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(x => x.Id == schoolId.Value);
+                if (s != null) schoolName = s.Name;
+            }
+
+            var schoolConfig = await _context.TenantGatewayConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == gwType);
+
+            bool isOverride = schoolConfig != null && schoolId.HasValue;
+
+            if (schoolConfig == null && schoolId.HasValue)
+            {
+                schoolConfig = await _context.TenantGatewayConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == gwType);
+            }
+
+            if (schoolConfig != null && !string.IsNullOrWhiteSpace(schoolConfig.CredentialsEncrypted))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<BonafideCertificateConfigDto>(
+                        schoolConfig.CredentialsEncrypted,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        parsed.SchoolId = schoolId;
+                        parsed.SchoolName = schoolName;
+                        parsed.IsSchoolOverride = isOverride;
+                        parsed.CertificateType = (type ?? "bonafide").Trim().ToLowerInvariant();
+                        var defaultSecs = BonafideCertificateConfigDto.GetDefaultSections();
+                        if (parsed.Sections == null || parsed.Sections.Count == 0)
+                        {
+                            parsed.Sections = defaultSecs;
+                        }
+                        else
+                        {
+                            foreach (var ds in defaultSecs)
+                            {
+                                if (!parsed.Sections.Any(s => s.Key == ds.Key))
+                                {
+                                    parsed.Sections.Add(ds);
+                                }
+                            }
+                        }
+                        return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(parsed));
+                    }
+                }
+                catch { }
+            }
+
+            var defaultConfig = BonafideCertificateConfigDto.GetDefaultConfigForType(type);
+            defaultConfig.SchoolId = schoolId;
+            defaultConfig.SchoolName = schoolName;
+            defaultConfig.IsSchoolOverride = false;
+
+            return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(defaultConfig));
+        }
+
+        [HttpPost("certificate-config/{type}")]
+        public async Task<ActionResult<ApiResponse<bool>>> SaveCertificateConfig(
+            string type,
+            [FromQuery] long? schoolId,
+            [FromBody] BonafideCertificateConfigDto request)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string gwType = NormalizeCertificateGatewayType(type);
+            request.CertificateType = (type ?? "bonafide").Trim().ToLowerInvariant();
+
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == gwType);
+
+            var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false });
+
+            if (existing != null)
+            {
+                existing.Provider = $"{gwType}_BUILDER";
+                existing.CredentialsEncrypted = json;
+                existing.IsActive = true;
+                existing.IsTenantOverride = schoolId.HasValue;
+                existing.ModifiedBy = _currentUserService.UserId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.TenantGatewayConfigs.Add(new TenantGatewayConfig
+                {
+                    SchoolId = schoolId,
+                    GatewayType = gwType,
+                    Provider = $"{gwType}_BUILDER",
+                    CredentialsEncrypted = json,
+                    IsActive = true,
+                    IsTenantOverride = schoolId.HasValue,
+                    CreatedBy = _currentUserService.UserId ?? 1,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            await LogAuditAsync(
+                schoolId,
+                $"{gwType}_CONFIG_UPDATED",
+                "TenantGatewayConfig",
+                schoolId.HasValue ? $"School #{schoolId}" : "Global Default",
+                null,
+                new { schoolId, IsOverride = schoolId.HasValue, request.PrimaryColor, request.CertificateTitle });
+
+            return Ok(ApiResponse<bool>.Ok(true, $"{request.CertificateTitle} template layout saved successfully."));
+        }
+
+        [HttpDelete("certificate-config/{type}")]
+        public async Task<ActionResult<ApiResponse<bool>>> ResetCertificateConfig(
+            string type,
+            [FromQuery] long schoolId)
+        {
+            if (!IsSuperAdmin())
+                return Forbid();
+
+            string gwType = NormalizeCertificateGatewayType(type);
+            var existing = await _context.TenantGatewayConfigs
+                .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == gwType);
+
+            if (existing != null)
+            {
+                _context.TenantGatewayConfigs.Remove(existing);
+                await _context.SaveChangesAsync();
+
+                await LogAuditAsync(
+                    schoolId,
+                    $"{gwType}_RESET",
+                    "TenantGatewayConfig",
+                    $"School #{schoolId}",
+                    null,
+                    new { schoolId, Action = "Reset to Default" });
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, "Certificate template reset to platform default."));
+        }
+
+        // ==========================================
         // 11. GLOBAL AUDIT TRAIL
         // ==========================================
         [HttpGet("audit-logs")]

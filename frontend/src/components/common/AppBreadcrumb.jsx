@@ -382,6 +382,46 @@ export const routeBreadcrumbMap = {
     subtitle: 'Issue formal school leaving certificates, record withdrawal reasons, and print certificates',
     code: 'Module 8',
   },
+  '/certificates/bonafide': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-verified',
+    modulePath: '/certificates/bonafide',
+    title: 'Bonafide Certificate',
+    subtitle: 'Generate, preview, and print officially verified bonafide certificates with dynamic letterhead and formatting',
+    code: 'Certificates',
+  },
+  '/certificates/birth': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-calendar',
+    modulePath: '/certificates/birth',
+    title: 'Date of Birth (DOB) Certificate',
+    subtitle: 'Issue certified date of birth verification extracted from official school admission register',
+    code: 'Certificates',
+  },
+  '/certificates/age': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-clock',
+    modulePath: '/certificates/age',
+    title: 'Certificate of Age',
+    subtitle: 'Generate verified age certificates calculated as on date from official school records',
+    code: 'Certificates',
+  },
+  '/certificates/character': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-star',
+    modulePath: '/certificates/character',
+    title: 'Character & Conduct Certificate',
+    subtitle: 'Issue moral conduct and character verification certificates for students and alumni',
+    code: 'Certificates',
+  },
+  '/certificates/ret': {
+    module: 'Certificates',
+    moduleIcon: 'pi pi-file',
+    modulePath: '/certificates/ret',
+    title: 'RET Certificate',
+    subtitle: 'Issue verified record of education, examination results, and institutional retention certificate',
+    code: 'Certificates',
+  },
 
   // Central Reports
   '/reports': {

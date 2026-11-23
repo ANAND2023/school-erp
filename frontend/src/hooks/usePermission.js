@@ -56,6 +56,14 @@ export const usePermission = () => {
       );
     }
 
+    if (!perm && targetKey === 'certificates') {
+      perm = permissions.find((p) =>
+        ['students', 'transfercertificates', 'promotion'].includes(
+          p.menu?.trim().toLowerCase()
+        )
+      );
+    }
+
     if (!perm && (targetKey === 'feediscountmaster' || targetKey === 'feediscount')) {
       perm = permissions.find((p) =>
         ['feestructure', 'feeconcessions', 'feecollection'].includes(

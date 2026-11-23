@@ -214,4 +214,35 @@ export const superAdminApi = {
     const res = await apiClient.delete('/superadmin/inventory-slip-config', { params: { schoolId } });
     return res.data;
   },
+
+  // 14. Dynamic Certificate Designer (Bonafide, Birth, Age, Character, RET)
+  getCertificateConfig: async (type = 'bonafide', schoolId = null) => {
+    const res = await apiClient.get(`/superadmin/certificate-config/${type}`, { params: { schoolId } });
+    return res.data;
+  },
+
+  saveCertificateConfig: async (type = 'bonafide', payload, schoolId = null) => {
+    const res = await apiClient.post(`/superadmin/certificate-config/${type}`, payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetCertificateConfig: async (type = 'bonafide', schoolId) => {
+    const res = await apiClient.delete(`/superadmin/certificate-config/${type}`, { params: { schoolId } });
+    return res.data;
+  },
+
+  getBonafideCertificateConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/certificate-config/bonafide', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveBonafideCertificateConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/certificate-config/bonafide', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetBonafideCertificateConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/certificate-config/bonafide', { params: { schoolId } });
+    return res.data;
+  },
 };
