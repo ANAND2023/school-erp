@@ -143,6 +143,10 @@ const navItems = [
     icon: 'pi pi-verified',
     children: [
       { title: 'Bonafide Certificate', path: '/certificates/bonafide', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'Birth Certificate', path: '/certificates/birth', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'Age Certificate', path: '/certificates/age', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'Character Certificate', path: '/certificates/character', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'RET Certificate', path: '/certificates/ret', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
       { title: 'Transfer Certificate (TC)', path: '/tc', menuKey: 'TransferCertificates' },
     ],
   },

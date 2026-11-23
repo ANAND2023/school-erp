@@ -680,7 +680,39 @@ export const AppRoutes = () => {
           path="certificates/bonafide"
           element={
             <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
-              <BonafideCertificatesPage />
+              <BonafideCertificatesPage defaultType="bonafide" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="certificates/birth"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <BonafideCertificatesPage defaultType="birth" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="certificates/age"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <BonafideCertificatesPage defaultType="age" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="certificates/character"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <BonafideCertificatesPage defaultType="character" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="certificates/ret"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <BonafideCertificatesPage defaultType="ret" />
             </ProtectedRoute>
           }
         />
@@ -800,6 +832,7 @@ export const AppRoutes = () => {
         <Route path="registration-slip-designer" element={<RegistrationSlipDesignerPage />} />
         <Route path="fee-slip-designer" element={<FeeSlipDesignerPage />} />
         <Route path="admission-slip-designer" element={<AdmissionSlipDesignerPage />} />
+        <Route path="certificate-designer" element={<BonafideCertificateDesignerPage />} />
         <Route path="bonafide-certificate-designer" element={<BonafideCertificateDesignerPage />} />
         <Route path="inventory-slip-designer" element={<InventoryStoreSetupPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />

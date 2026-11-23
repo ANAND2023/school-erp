@@ -1049,6 +1049,13 @@ namespace SchoolERP.API.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetBonafideCertificateConfig()
         {
+            return await GetCertificateConfig("bonafide");
+        }
+
+        [HttpGet("certificate-config/{type}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<BonafideCertificateConfigDto>>> GetCertificateConfig(string type)
+        {
             var branchId = _currentUserService.BranchId;
             long? schoolId = null;
 
@@ -1060,19 +1067,28 @@ namespace SchoolERP.API.Controllers
                     .FirstOrDefaultAsync();
             }
 
+            string gwType = (type ?? "bonafide").Trim().ToLowerInvariant() switch
+            {
+                "birth" => "BIRTH_CERTIFICATE",
+                "age" => "AGE_CERTIFICATE",
+                "character" => "CHARACTER_CERTIFICATE",
+                "ret" => "RET_CERTIFICATE",
+                _ => "BONAFIDE_CERTIFICATE"
+            };
+
             TenantGatewayConfig? config = null;
             if (schoolId.HasValue)
             {
                 config = await _context.TenantGatewayConfigs
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == "BONAFIDE_CERTIFICATE" && g.IsActive);
+                    .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.GatewayType == gwType && g.IsActive);
             }
 
             if (config == null)
             {
                 config = await _context.TenantGatewayConfigs
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "BONAFIDE_CERTIFICATE" && g.IsActive);
+                    .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == gwType && g.IsActive);
             }
 
             if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
@@ -1084,6 +1100,7 @@ namespace SchoolERP.API.Controllers
                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (parsed != null)
                     {
+                        parsed.CertificateType = (type ?? "bonafide").Trim().ToLowerInvariant();
                         var defaultSecs = BonafideCertificateConfigDto.GetDefaultSections();
                         if (parsed.Sections == null || parsed.Sections.Count == 0)
                         {
@@ -1105,7 +1122,7 @@ namespace SchoolERP.API.Controllers
                 catch { }
             }
 
-            return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(new BonafideCertificateConfigDto()));
+            return Ok(ApiResponse<BonafideCertificateConfigDto>.Ok(BonafideCertificateConfigDto.GetDefaultConfigForType(type)));
         }
     }
 }

@@ -7,6 +7,7 @@ namespace SchoolERP.Application.DTOs
         public long? SchoolId { get; set; }
         public string SchoolName { get; set; } = string.Empty;
         public bool IsSchoolOverride { get; set; } = false;
+        public string CertificateType { get; set; } = "bonafide"; // "bonafide", "birth", "age", "character", "ret"
 
         // Styling & Palettes
         public string PrimaryColor { get; set; } = "#1e3a8a";      // Royal Navy / Academic Navy
@@ -135,6 +136,117 @@ namespace SchoolERP.Application.DTOs
                 new BonafideCertificateSectionItemDto { Key = "signatures", Title = "Official Signatures & School Seal", Visible = true, Order = 7 },
                 new BonafideCertificateSectionItemDto { Key = "footer", Title = "System Footer Verification Note", Visible = true, Order = 8 }
             };
+        }
+
+        public static BonafideCertificateConfigDto GetDefaultConfigForType(string? type)
+        {
+            var normalized = (type ?? "bonafide").Trim().ToLowerInvariant();
+            var config = new BonafideCertificateConfigDto
+            {
+                CertificateType = normalized
+            };
+
+            switch (normalized)
+            {
+                case "birth":
+                    config.CertificateTitle = "DATE OF BIRTH CERTIFICATE";
+                    config.CertificateSubtitle = "EXTRACT FROM SCHOOL ADMISSION REGISTER";
+                    config.PrimaryColor = "#0f766e";
+                    config.BorderColor = "#0f766e";
+                    config.TitleBgColor = "#0f766e";
+                    config.RefPrefix = "DPS/DOB";
+                    config.WatermarkText = "DOB CERTIFICATE";
+                    config.BodyTemplateText =
+                        "This is to certify that according to the official Admission & General Register of this institution, {StudentName}, Son / Daughter of Mr. {FatherName} and Mrs. {MotherName}, was admitted to this institution in Class {Class} on {AdmissionDate} with Admission No: {AdmissionNo} (Roll No: {RollNo}).";
+                    config.DobSentenceText =
+                        "As recorded in the official school register at the time of admission, his/her Date of Birth is {DOB} (in words: {DOBWords}).";
+                    config.ConductSentenceText =
+                        "This certificate is true and correct according to the official records maintained in our institution.";
+                    config.PurposeSentenceText =
+                        "This Date of Birth certificate is issued upon the request of the parent/guardian for {Purpose} purpose only.";
+                    config.DefaultPurpose = "official verification";
+                    break;
+
+                case "age":
+                    config.CertificateTitle = "CERTIFICATE OF AGE";
+                    config.CertificateSubtitle = "OFFICIAL AGE PROOF AS PER INSTITUTIONAL RECORDS";
+                    config.PrimaryColor = "#1e3a8a";
+                    config.BorderColor = "#1e3a8a";
+                    config.TitleBgColor = "#1e3a8a";
+                    config.RefPrefix = "DPS/AGE";
+                    config.WatermarkText = "AGE PROOF";
+                    config.BodyTemplateText =
+                        "This is to certify that as per the Admission Register of this institution, {StudentName}, Son / Daughter of Mr. {FatherName} and Mrs. {MotherName}, studying in Class {Class} (Section {Section}), Admission No {AdmissionNo}, Roll No {RollNo}, was born on {DOB} (in words: {DOBWords}).";
+                    config.DobSentenceText =
+                        "His/Her age calculated as on date of issue is approximately {CalculatedAge} (approx. {AgeYears} Years and {AgeMonths} Months).";
+                    config.ConductSentenceText =
+                        "This age record is certified to be in complete accordance with the school admission register.";
+                    config.PurposeSentenceText =
+                        "This Age Certificate is issued upon specific request of the parent/guardian for {Purpose} purpose.";
+                    config.DefaultPurpose = "age verification / sports eligibility";
+                    break;
+
+                case "character":
+                    config.CertificateTitle = "CHARACTER & CONDUCT CERTIFICATE";
+                    config.CertificateSubtitle = "TO WHOMSOEVER IT MAY CONCERN";
+                    config.PrimaryColor = "#881337";
+                    config.BorderColor = "#881337";
+                    config.TitleBgColor = "#881337";
+                    config.RefPrefix = "DPS/CC";
+                    config.WatermarkText = "CHARACTER";
+                    config.BodyTemplateText =
+                        "This is to certify that {StudentName}, Son / Daughter of Mr. {FatherName} and Mrs. {MotherName}, is/was a bonafide student of this institution studying in Class {Class} (Section {Section}), Roll No {RollNo}, Admission No {AdmissionNo}, for the Academic Session {AcademicYear}.";
+                    config.DobSentenceText =
+                        "As per the official school records, his/her Date of Birth is {DOB}.";
+                    config.ConductSentenceText =
+                        "During his/her tenure in this institution, he/she has displayed exemplary moral character, obedience, and disciplined conduct. To the best of our knowledge and belief, he/she bears an unblemished moral character.";
+                    config.PurposeSentenceText =
+                        "We wish him/her all success and good fortune in all his/her future endeavors.";
+                    config.DefaultPurpose = "higher education / admission";
+                    break;
+
+                case "ret":
+                    config.CertificateTitle = "RET CERTIFICATE";
+                    config.CertificateSubtitle = "RECORD OF EDUCATION & RETENTION VERIFICATION";
+                    config.PrimaryColor = "#581c87";
+                    config.BorderColor = "#581c87";
+                    config.TitleBgColor = "#581c87";
+                    config.RefPrefix = "DPS/RET";
+                    config.WatermarkText = "RET VERIFIED";
+                    config.BodyTemplateText =
+                        "This is to certify that {StudentName}, Son / Daughter of Mr. {FatherName} and Mrs. {MotherName}, Admission No {AdmissionNo}, Roll No {RollNo}, is an enrolled student of this institution in Class {Class} for the Academic Session {AcademicYear}.";
+                    config.DobSentenceText =
+                        "His/Her Date of Birth recorded in the institutional register is {DOB}.";
+                    config.ConductSentenceText =
+                        "As per institutional examination and academic registers, his/her continuous retention, academic record, and performance (RET) have been duly verified and authenticated.";
+                    config.PurposeSentenceText =
+                        "This certificate is officially issued on authorized request for {Purpose} purpose only.";
+                    config.DefaultPurpose = "educational record verification / scholarship";
+                    break;
+
+                case "bonafide":
+                default:
+                    config.CertificateType = "bonafide";
+                    config.CertificateTitle = "BONAFIDE CERTIFICATE";
+                    config.CertificateSubtitle = "TO WHOMSOEVER IT MAY CONCERN";
+                    config.PrimaryColor = "#1e3a8a";
+                    config.BorderColor = "#1e3a8a";
+                    config.TitleBgColor = "#1e3a8a";
+                    config.RefPrefix = "DPS/BC";
+                    config.WatermarkText = "BONAFIDE";
+                    config.BodyTemplateText =
+                        "This is to certify that {StudentName}, Son / Daughter of Mr. {FatherName} and Mrs. {MotherName}, is a bonafide student of this institution studying in Class {Class} (Section {Section}), Roll No {RollNo}, Admission No {AdmissionNo}, for the Academic Session {AcademicYear}.";
+                    config.DobSentenceText =
+                        "As per the official school records, his/her Date of Birth is {DOB} (in words: {DOBWords}).";
+                    config.ConductSentenceText =
+                        "To the best of our knowledge, he/she bears a good moral character and conduct during his/her tenure in this institution.";
+                    config.PurposeSentenceText =
+                        "This certificate is issued upon the request of the parent/guardian for {Purpose} purpose only.";
+                    config.DefaultPurpose = "official verification";
+                    break;
+            }
+
+            return config;
         }
 
         public static List<BonafideDraggableElementDto> GetDefaultDraggableElements()

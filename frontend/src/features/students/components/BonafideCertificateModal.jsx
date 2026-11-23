@@ -19,7 +19,7 @@ const PURPOSE_OPTIONS = [
   { label: 'General Official Verification', value: 'General Official Verification' },
 ];
 
-export const BonafideCertificateModal = ({ open, onClose, studentId, studentData }) => {
+export const BonafideCertificateModal = ({ open, onClose, studentId, studentData, certificateType = 'bonafide' }) => {
   const printRef = useRef(null);
   const [config, setConfig] = useState(null);
   const [purpose, setPurpose] = useState('Passport Application');
@@ -31,9 +31,11 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
   useEffect(() => {
     if (!open) return;
 
-    // Load Dynamic Configuration
+    const typeKey = certificateType || 'bonafide';
+
+    // Load Dynamic Configuration for this specific certificate type
     apiClient
-      .get('/students/bonafide-certificate-config')
+      .get(`/students/certificate-config/${typeKey}`)
       .then((res) => {
         if (res.data?.success && res.data.data) {
           setConfig(res.data.data);
@@ -46,7 +48,7 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
         }
       })
       .catch((err) => {
-        console.error('Failed to load bonafide certificate config:', err);
+        console.error('Failed to load certificate config:', err);
       });
 
     // Set default Issue Date (Today in dd-MMM-yyyy)
@@ -55,14 +57,47 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
     const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
     setIssueDate(formattedDate);
 
-    // Set Default Ref No
+    // Set Default Ref No according to certificate type
     const adm = studentData?.admissionNo || studentId || '001';
-    setRefNo(`DPS/BC/${today.getFullYear()}/${adm}`);
-  }, [open, studentId, studentData]);
+    const prefix =
+      typeKey === 'birth'
+        ? 'DPS/DOB'
+        : typeKey === 'age'
+        ? 'DPS/AGE'
+        : typeKey === 'character'
+        ? 'DPS/CC'
+        : typeKey === 'ret'
+        ? 'DPS/RET'
+        : 'DPS/BC';
+    setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
+  }, [open, studentId, studentData, certificateType]);
 
   if (!open) return null;
 
   const currentPurpose = customPurpose.trim() || purpose || 'official verification';
+
+  // Calculate age helper
+  const calculateAge = (dobStr) => {
+    if (!dobStr) return { ageText: 'N/A', years: 'N/A', months: 'N/A' };
+    try {
+      const birth = new Date(dobStr);
+      if (isNaN(birth.getTime())) return { ageText: 'N/A', years: 'N/A', months: 'N/A' };
+      const today = new Date();
+      let years = today.getFullYear() - birth.getFullYear();
+      let months = today.getMonth() - birth.getMonth();
+      if (months < 0 || (months === 0 && today.getDate() < birth.getDate())) {
+        years--;
+        months = (months + 12) % 12;
+      }
+      return {
+        ageText: `${years} Years and ${months} Months`,
+        years: `${years}`,
+        months: `${months}`,
+      };
+    } catch {
+      return { ageText: 'N/A', years: 'N/A', months: 'N/A' };
+    }
+  };
 
   // Format DOB in words helper
   const getDobWords = (dateStr) => {
@@ -92,6 +127,11 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
     const dob = studentData?.dob ? new Date(studentData.dob).toLocaleDateString('en-GB') : 'N/A';
     const dobWords = getDobWords(studentData?.dob);
     const gender = studentData?.gender || 'N/A';
+    const ageInfo = calculateAge(studentData?.dob);
+    const admDate = studentData?.admissionDate
+      ? new Date(studentData.admissionDate).toLocaleDateString('en-GB')
+      : 'At time of admission';
+    const asOnDate = issueDate || new Date().toLocaleDateString('en-GB');
 
     return template
       .replace(/{StudentName}/g, `<strong>${sName.toUpperCase()}</strong>`)
@@ -105,6 +145,12 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       .replace(/{DOB}/g, `<strong>${dob}</strong>`)
       .replace(/{DOBWords}/g, `<strong>${dobWords}</strong>`)
       .replace(/{Gender}/g, `<strong>${gender}</strong>`)
+      .replace(/{AdmissionDate}/g, `<strong>${admDate}</strong>`)
+      .replace(/{CalculatedAge}/g, `<strong>${ageInfo.ageText}</strong>`)
+      .replace(/{AgeYears}/g, `<strong>${ageInfo.years}</strong>`)
+      .replace(/{AgeMonths}/g, `<strong>${ageInfo.months}</strong>`)
+      .replace(/{AsOnDate}/g, `<strong>${asOnDate}</strong>`)
+      .replace(/{ConductRating}/g, `<strong>Exemplary</strong>`)
       .replace(/{Purpose}/g, `<strong>${currentPurpose}</strong>`);
   };
 

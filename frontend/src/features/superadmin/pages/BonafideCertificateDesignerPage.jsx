@@ -22,6 +22,14 @@ const PRESET_PALETTES = [
   { name: 'Teal Elegance', primary: '#0f766e', secondary: '#f0fdfa', accent: '#115e59', border: '#0f766e' },
 ];
 
+const CERT_TYPES = [
+  { id: 'bonafide', label: 'Bonafide Certificate', shortLabel: 'Bonafide', icon: 'pi pi-file', badge: 'DPS/BC', color: '#1e3a8a' },
+  { id: 'birth', label: 'Date of Birth Certificate', shortLabel: 'Birth / DOB', icon: 'pi pi-id-card', badge: 'DPS/DOB', color: '#065f46' },
+  { id: 'age', label: 'Certificate of Age', shortLabel: 'Age Verification', icon: 'pi pi-calendar', badge: 'DPS/AGE', color: '#b45309' },
+  { id: 'character', label: 'Character Certificate', shortLabel: 'Conduct & Character', icon: 'pi pi-star', badge: 'DPS/CC', color: '#831843' },
+  { id: 'ret', label: 'RET Certificate', shortLabel: 'Record of Education', icon: 'pi pi-book', badge: 'DPS/RET', color: '#581c87' },
+];
+
 const FONT_OPTIONS = [
   { label: 'Inter (Modern & Clean)', value: 'Inter, sans-serif' },
   { label: 'Poppins (Geometric & Friendly)', value: 'Poppins, sans-serif' },
@@ -61,6 +69,7 @@ const DEFAULT_ELEMENTS = [
 const SAMPLE_STUDENT = {
   studentName: 'AARAV SHARMA',
   admissionNo: 'DPS-2024-0412',
+  admissionDate: '05-Apr-2024',
   rollNo: '24',
   className: 'Class X',
   sectionName: 'A',
@@ -75,8 +84,13 @@ const SAMPLE_STUDENT = {
   address: 'H-402, Green Avenue, Civil Lines, Jaipur (Rajasthan)',
   photoUrl: '/dvslogo1.jpeg',
   purpose: 'Passport Application',
-  refNo: 'DPS/BC/2026/0412',
+  refNo: 'DPS/CERT/2026/0412',
   issueDate: '23-Nov-2026',
+  calculatedAge: '16 Years 3 Months',
+  ageYears: '16',
+  ageMonths: '3',
+  asOnDate: '23-Nov-2026',
+  conductRating: 'Exemplary',
 };
 
 export const BonafideCertificateDesignerPage = () => {
@@ -87,6 +101,7 @@ export const BonafideCertificateDesignerPage = () => {
   const [saving, setSaving] = useState(false);
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState(null);
+  const [selectedCertType, setSelectedCertType] = useState('bonafide');
   const [activeTab, setActiveTab] = useState('colors'); // 'colors' | 'letterhead' | 'dragdrop' | 'statement' | 'header' | 'elements' | 'layout' | 'signatures'
 
   // Drag and Drop State
@@ -210,8 +225,8 @@ export const BonafideCertificateDesignerPage = () => {
   }, []);
 
   useEffect(() => {
-    loadTemplate(selectedSchoolId);
-  }, [selectedSchoolId]);
+    loadTemplate(selectedSchoolId, selectedCertType);
+  }, [selectedSchoolId, selectedCertType]);
 
   const loadSchools = async () => {
     try {
@@ -225,10 +240,10 @@ export const BonafideCertificateDesignerPage = () => {
     }
   };
 
-  const loadTemplate = async (schoolId) => {
+  const loadTemplate = async (schoolId, certType = selectedCertType) => {
     try {
       setLoading(true);
-      const res = await superAdminApi.getBonafideCertificateConfig(schoolId);
+      const res = await superAdminApi.getCertificateConfig(certType, schoolId);
       if (res?.success && res.data) {
         setConfig((prev) => ({
           ...prev,
@@ -238,7 +253,7 @@ export const BonafideCertificateDesignerPage = () => {
           headerSubtitleCustom: res.data.headerSubtitleCustom || '',
           headerAddressCustom: res.data.headerAddressCustom || '',
           headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || '#1e3a8a',
-          certificateTitle: res.data.certificateTitle || 'BONAFIDE CERTIFICATE',
+          certificateTitle: res.data.certificateTitle || `${certType.toUpperCase()} CERTIFICATE`,
           titleBgColor: res.data.titleBgColor || res.data.primaryColor || '#1e3a8a',
           titleTextColor: res.data.titleTextColor || '#ffffff',
           bodyTextColor: res.data.bodyTextColor || '#1e293b',
@@ -250,7 +265,7 @@ export const BonafideCertificateDesignerPage = () => {
       toastRef.current?.show({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to load bonafide certificate configuration',
+        detail: `Failed to load ${certType} certificate configuration`,
         life: 4000,
       });
     } finally {
@@ -261,17 +276,19 @@ export const BonafideCertificateDesignerPage = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const res = await superAdminApi.saveBonafideCertificateConfig(config, selectedSchoolId);
+      const currentMeta = CERT_TYPES.find((c) => c.id === selectedCertType) || CERT_TYPES[0];
+      const payload = { ...config, certificateType: selectedCertType };
+      const res = await superAdminApi.saveCertificateConfig(selectedCertType, payload, selectedSchoolId);
       if (res?.success) {
         toastRef.current?.show({
           severity: 'success',
           summary: 'Saved Successfully',
           detail: selectedSchoolId
-            ? `Custom bonafide certificate saved for school #${selectedSchoolId}`
-            : 'Platform default bonafide certificate template updated',
+            ? `Custom ${currentMeta.label} saved for school #${selectedSchoolId}`
+            : `Platform default ${currentMeta.label} template updated`,
           life: 3000,
         });
-        loadTemplate(selectedSchoolId);
+        loadTemplate(selectedSchoolId, selectedCertType);
       } else {
         toastRef.current?.show({
           severity: 'error',
@@ -303,21 +320,22 @@ export const BonafideCertificateDesignerPage = () => {
       return;
     }
 
-    if (!window.confirm('Are you sure you want to remove school custom overrides and inherit platform default?')) {
+    const currentMeta = CERT_TYPES.find((c) => c.id === selectedCertType) || CERT_TYPES[0];
+    if (!window.confirm(`Are you sure you want to remove school custom overrides for ${currentMeta.label} and inherit platform default?`)) {
       return;
     }
 
     try {
       setSaving(true);
-      const res = await superAdminApi.resetBonafideCertificateConfig(selectedSchoolId);
+      const res = await superAdminApi.resetCertificateConfig(selectedCertType, selectedSchoolId);
       if (res?.success) {
         toastRef.current?.show({
           severity: 'success',
           summary: 'Reset Successful',
-          detail: 'School bonafide certificate reset to platform default',
+          detail: `School ${currentMeta.label} reset to platform default`,
           life: 3000,
         });
-        loadTemplate(selectedSchoolId);
+        loadTemplate(selectedSchoolId, selectedCertType);
       }
     } catch (err) {
       toastRef.current?.show({
@@ -333,7 +351,8 @@ export const BonafideCertificateDesignerPage = () => {
 
   const handlePrintTest = () => {
     if (previewRef.current) {
-      printElement(previewRef.current, 'Bonafide_Certificate_Sample');
+      const currentMeta = CERT_TYPES.find((c) => c.id === selectedCertType) || CERT_TYPES[0];
+      printElement(previewRef.current, `${currentMeta.id.toUpperCase()}_Certificate_Sample`);
     }
   };
 
@@ -458,6 +477,7 @@ export const BonafideCertificateDesignerPage = () => {
   };
 
   const selectedElement = config.elements?.find((el) => el.id === selectedElementId);
+  const activeCertMeta = CERT_TYPES.find((c) => c.id === selectedCertType) || CERT_TYPES[0];
 
   // Replace placeholders for the live preview
   const formatStatement = (template) => {
@@ -470,9 +490,15 @@ export const BonafideCertificateDesignerPage = () => {
       .replace(/{Section}/g, `<strong>${SAMPLE_STUDENT.sectionName}</strong>`)
       .replace(/{RollNo}/g, `<strong>${SAMPLE_STUDENT.rollNo}</strong>`)
       .replace(/{AdmissionNo}/g, `<strong>${SAMPLE_STUDENT.admissionNo}</strong>`)
+      .replace(/{AdmissionDate}/g, `<strong>${SAMPLE_STUDENT.admissionDate}</strong>`)
       .replace(/{AcademicYear}/g, `<strong>${SAMPLE_STUDENT.academicYear}</strong>`)
       .replace(/{DOB}/g, `<strong>${SAMPLE_STUDENT.dob}</strong>`)
       .replace(/{DOBWords}/g, `<strong>${SAMPLE_STUDENT.dobWords}</strong>`)
+      .replace(/{CalculatedAge}/g, `<strong>${SAMPLE_STUDENT.calculatedAge}</strong>`)
+      .replace(/{AgeYears}/g, `<strong>${SAMPLE_STUDENT.ageYears}</strong>`)
+      .replace(/{AgeMonths}/g, `<strong>${SAMPLE_STUDENT.ageMonths}</strong>`)
+      .replace(/{AsOnDate}/g, `<strong>${SAMPLE_STUDENT.asOnDate}</strong>`)
+      .replace(/{ConductRating}/g, `<strong>${SAMPLE_STUDENT.conductRating}</strong>`)
       .replace(/{Gender}/g, `<strong>${SAMPLE_STUDENT.gender}</strong>`)
       .replace(/{Purpose}/g, `<strong>${SAMPLE_STUDENT.purpose}</strong>`);
   };
@@ -831,19 +857,52 @@ export const BonafideCertificateDesignerPage = () => {
 
       {/* Header Bar */}
       <Card className="mb-4 shadow-1 border-none">
+        {/* Certificate Type Switcher Ribbon */}
+        <div className="flex gap-2 align-items-center mb-3 overflow-x-auto pb-2 border-bottom-1 surface-border">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex align-items-center gap-1">
+            <i className="pi pi-verified text-blue-600"></i> Certificate:
+          </span>
+          {CERT_TYPES.map((ct) => {
+            const isSelected = selectedCertType === ct.id;
+            return (
+              <button
+                key={ct.id}
+                type="button"
+                onClick={() => setSelectedCertType(ct.id)}
+                className={`px-3 py-2 border-1 border-round font-semibold text-xs flex align-items-center gap-2 cursor-pointer transition-all ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-2'
+                    : 'surface-card text-slate-700 border-slate-300 hover:surface-100 hover:border-blue-400'
+                }`}
+              >
+                <i className={ct.icon}></i>
+                <span>{ct.label}</span>
+                <span
+                  className={`px-1.5 py-0.5 border-round ${
+                    isSelected ? 'bg-blue-700 text-blue-100' : 'bg-slate-100 text-slate-500'
+                  }`}
+                  style={{ fontSize: '10px' }}
+                >
+                  {ct.badge}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-column md:flex-row justify-content-between align-items-start md:align-items-center gap-3">
           <div>
             <div className="flex align-items-center gap-2 mb-1">
               <i className="pi pi-verified text-2xl text-blue-600"></i>
-              <h1 className="text-2xl font-bold text-slate-800 m-0">Bonafide Certificate Designer</h1>
-              <Tag value="Dynamic" severity="info" className="text-xs px-2" />
+              <h1 className="text-2xl font-bold text-slate-800 m-0">{activeCertMeta.label} Designer</h1>
+              <Tag value={activeCertMeta.shortLabel} severity="info" className="text-xs px-2" />
               {config.useLetterhead && <Tag value="Letterhead Mode" severity="success" className="text-xs px-2" />}
               {config.layoutMode === 'drag' && (
                 <Tag value="Draggable Canvas" severity="help" className="text-xs px-2" />
               )}
             </div>
             <p className="text-sm text-slate-500 m-0">
-              Customize text areas with drag-and-drop positioning, upload custom school letterhead backgrounds, or use digital templates.
+              Customize text areas with drag-and-drop positioning, upload custom school letterhead backgrounds, or use digital templates for {activeCertMeta.label}.
             </p>
           </div>
 
@@ -1361,9 +1420,15 @@ export const BonafideCertificateDesignerPage = () => {
                   <code className="bg-white px-1 border-round font-bold">{'{Section}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{RollNo}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{AdmissionNo}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{AdmissionDate}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{AcademicYear}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{DOB}'}</code>,{' '}
-                  <code className="bg-white px-1 border-round font-bold">{'{DOBWords}'}</code>, and{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{DOBWords}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{CalculatedAge}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{AgeYears}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{AgeMonths}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{AsOnDate}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{ConductRating}'}</code>, and{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{Purpose}'}</code>.
                 </div>
 
@@ -1373,7 +1438,7 @@ export const BonafideCertificateDesignerPage = () => {
                     value={config.certificateTitle}
                     onChange={(e) => setConfig({ ...config, certificateTitle: e.target.value })}
                     className="w-full p-inputtext-sm"
-                    placeholder="e.g. BONAFIDE CERTIFICATE"
+                    placeholder="e.g. CERTIFICATE"
                   />
                 </div>
 
@@ -1736,7 +1801,7 @@ export const BonafideCertificateDesignerPage = () => {
                               zIndex: 0,
                             }}
                           >
-                            {config.watermarkText || 'BONAFIDE'}
+                            {config.watermarkText || activeCertMeta.shortLabel.toUpperCase()}
                           </div>
                         )}
 
