@@ -476,8 +476,10 @@ namespace SchoolERP.API.Controllers
                 .Take(limit)
                 .Select(e => new
                 {
+                    Id = e.StudentId,
                     StudentId = e.StudentId,
                     FullName = e.Student!.FullName,
+                    StudentName = e.Student.FullName,
                     AdmissionNo = e.Student.AdmissionNo,
                     RollNo = e.RollNo,
                     ClassId = e.ClassId,
