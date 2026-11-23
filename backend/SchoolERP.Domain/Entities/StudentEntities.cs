@@ -153,4 +153,17 @@ namespace SchoolERP.Domain.Entities
         public virtual Student? Student { get; set; }
         public virtual AcademicYear? AcademicYear { get; set; }
     }
+
+    public class StudentAuditLog : BaseEntity
+    {
+        public long StudentId { get; set; }
+        public long BranchId { get; set; }
+        public long ChangedByUserId { get; set; }
+        public string ChangedByUserName { get; set; } = string.Empty;
+        public DateTime ChangedOn { get; set; } = DateTime.UtcNow;
+        public string Remarks { get; set; } = string.Empty;
+        public string ChangesJson { get; set; } = string.Empty;
+
+        public virtual Student? Student { get; set; }
+    }
 }

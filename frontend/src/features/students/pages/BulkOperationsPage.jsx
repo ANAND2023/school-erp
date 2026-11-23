@@ -334,6 +334,7 @@ export const BulkOperationsPage = () => {
                     Pincode: newData.pincode,
                     EmergencyContact: newData.emergencyContact,
                     Status: currentEnrollment?.status || 1,
+                    Remarks: 'Bulk update via Bulk Operations',
                     Guardians: updatedGuardians
                 };
 

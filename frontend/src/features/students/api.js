@@ -20,6 +20,7 @@ export const studentApi = {
   addDocument: (id, data) => apiClient.post(`/students/${id}/documents`, data),
   deleteDocument: (id, docId) => apiClient.delete(`/students/${id}/documents/${docId}`),
   getSectionHistory: (id) => apiClient.get(`/students/${id}/section-history`),
+  getAuditLogs: (id) => apiClient.get(`/students/${id}/audit-logs`),
 };
 
 export const gatePassApi = {

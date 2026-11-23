@@ -136,6 +136,7 @@ export default function StudentProfilePage() {
   const docVideoRef = useRef(null);
   const docStreamRef = useRef(null);
   const [editFormData, setEditFormData] = useState(null);
+  const [remarksError, setRemarksError] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Fetch student details
@@ -178,11 +179,20 @@ export default function StudentProfilePage() {
   });
   const classes = classesRes?.data?.data || [];
 
+  // Fetch Student Profile Audit Logs
+  const { data: auditLogsRes } = useQuery({
+    queryKey: ['student-audit-logs', id],
+    queryFn: () => studentApi.getAuditLogs(id),
+    enabled: !!id,
+  });
+  const auditLogs = auditLogsRes?.data?.data || [];
+
   // Update Student Mutation
   const updateMutation = useMutation({
     mutationFn: (data) => studentApi.updateStudent(id, data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(['student-detail', id]);
+      queryClient.invalidateQueries(['student-audit-logs', id]);
       setIsEditOpen(false);
       setSnackbar({
         open: true,
@@ -297,7 +307,9 @@ export default function StudentProfilePage() {
       guardianRelation: otherGuardian?.relation || 'Guardian',
       guardianOccupation: otherGuardian?.occupation || '',
       guardianAnnualIncome: otherGuardian?.annualIncome || '',
+      remarks: '',
     });
+    setRemarksError('');
     setEditModalTab(0);
     setIsEditOpen(true);
   };
@@ -311,6 +323,17 @@ export default function StudentProfilePage() {
   const handleSaveEdit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!editFormData) return;
+
+    if (!editFormData.remarks?.trim()) {
+      setRemarksError('Remarks / Reason for update is mandatory.');
+      setSnackbar({
+        open: true,
+        message: 'Reason for update / Remarks is mandatory before saving.',
+        severity: 'error',
+      });
+      return;
+    }
+    setRemarksError('');
 
     if (!editFormData.firstName?.trim()) {
       setSnackbar({ open: true, message: 'Student First Name is required.', severity: 'warning' });
@@ -391,6 +414,7 @@ export default function StudentProfilePage() {
       fatherPhotoUrl: editFormData.fatherPhotoUrl || null,
       motherPhotoUrl: editFormData.motherPhotoUrl || null,
       guardianPhotoUrl: editFormData.guardianPhotoUrl || null,
+      remarks: editFormData.remarks.trim(),
       guardians: guardiansPayload,
     };
 
@@ -817,6 +841,7 @@ export default function StudentProfilePage() {
           <Tab icon={<SchoolIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Enrollments (${student.enrollmentHistory.length})`} />
           <Tab icon={<FolderSharedIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Documents (${student.documents.length})`} />
           <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Section History (${student.sectionHistories.length})`} />
+          <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Audit Log (${auditLogs.length})`} />
         </Tabs>
       </Card>
 
@@ -1292,6 +1317,155 @@ export default function StudentProfilePage() {
             ) : (
               <Alert severity="info" variant="outlined">
                 No section change records for this student.
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 6. Profile Change Audit Trail */}
+      {activeTab === 5 && (
+        <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="h6" fontWeight={700} color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HistoryIcon color="primary" /> Profile Modification Audit Trail
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Permanent history of every profile modification: what was changed (old vs new), who changed it, timestamp, and mandatory remarks
+                </Typography>
+              </Box>
+              <Chip
+                label={`${auditLogs.length} Modification Records`}
+                color="primary"
+                variant="outlined"
+                size="small"
+                sx={{ fontWeight: 700 }}
+              />
+            </Box>
+
+            {auditLogs && auditLogs.length > 0 ? (
+              <Stack spacing={2.5}>
+                {auditLogs.map((log) => {
+                  let changeList = [];
+                  try {
+                    changeList = JSON.parse(log.changesJson || '[]');
+                  } catch (e) {
+                    changeList = [];
+                  }
+
+                  return (
+                    <Card
+                      key={log.id}
+                      variant="outlined"
+                      sx={{
+                        borderRadius: 2,
+                        borderColor: 'divider',
+                        overflow: 'hidden',
+                        bgcolor: 'background.paper',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                      }}
+                    >
+                      {/* Log Header */}
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          px: 2,
+                          bgcolor: 'grey.50',
+                          borderBottom: '1px solid',
+                          borderColor: 'divider',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 1,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Chip
+                            label={dayjs(log.changedOn).format('DD MMM YYYY, hh:mm A')}
+                            size="small"
+                            color="info"
+                            sx={{ fontWeight: 700, fontSize: '0.78rem' }}
+                          />
+                          <Typography variant="body2">
+                            Modified by: <b>{log.changedByUserName || 'Staff / Admin'}</b>
+                          </Typography>
+                        </Box>
+                        {log.remarks && (
+                          <Chip
+                            label={`Remark: ${log.remarks}`}
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                            sx={{ fontWeight: 600, maxWidth: '100%' }}
+                          />
+                        )}
+                      </Box>
+
+                      {/* Changed Fields Table */}
+                      <Box sx={{ p: 2 }}>
+                        {changeList && changeList.length > 0 ? (
+                          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
+                            <Table size="small">
+                              <TableHead sx={{ bgcolor: 'grey.100' }}>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 700, width: '25%' }}>Field Name</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, width: '35%', color: 'error.main' }}>Previous Value (Pehle)</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, width: '5%', textAlign: 'center' }}>➔</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, width: '35%', color: 'success.main' }}>New Value (Ab)</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {changeList.map((item, idx) => (
+                                  <TableRow key={idx} hover>
+                                    <TableCell sx={{ fontWeight: 600 }}>
+                                      {item.label || item.field}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={item.oldValue ? String(item.oldValue) : '— (Empty)'}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'error.lighter',
+                                          color: 'error.dark',
+                                          fontWeight: 600,
+                                          fontSize: '0.75rem',
+                                          textDecoration: 'line-through',
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell sx={{ textAlign: 'center', color: 'text.secondary' }}>➔</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={item.newValue ? String(item.newValue) : '— (Empty)'}
+                                        size="small"
+                                        color="success"
+                                        sx={{
+                                          fontWeight: 700,
+                                          fontSize: '0.75rem',
+                                        }}
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                            Profile metadata re-saved with remarks: "{log.remarks}"
+                          </Typography>
+                        )}
+                      </Box>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Alert severity="info" variant="outlined" sx={{ mt: 1 }}>
+                No profile modifications recorded for this student yet. Any future changes will automatically appear here with before/after comparison, editor username, timestamp, and mandatory remarks.
               </Alert>
             )}
           </CardContent>
@@ -1979,6 +2153,42 @@ export default function StudentProfilePage() {
                 </Grid>
               </Stack>
             )}
+
+            {/* Mandatory Reason for Change / Remarks */}
+            <Box
+              sx={{
+                mt: 3,
+                p: 2,
+                borderRadius: 2,
+                bgcolor: remarksError ? 'error.lighter' : 'grey.50',
+                border: '1.5px solid',
+                borderColor: remarksError ? 'error.main' : 'divider',
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                fontWeight={700}
+                color={remarksError ? 'error.main' : 'primary.main'}
+                sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                <HistoryIcon fontSize="small" />
+                Reason for Update / Remarks <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                placeholder="Mandatory: Specify why this student profile is being modified (e.g. Corrected Admission Number, Changed Address, Updated Mobile)..."
+                value={editFormData.remarks || ''}
+                onChange={(e) => {
+                  setEditFormData({ ...editFormData, remarks: e.target.value });
+                  if (e.target.value.trim()) setRemarksError('');
+                }}
+                error={Boolean(remarksError)}
+                helperText={remarksError || 'Required: Every profile update is recorded in the Audit Log with editor username and timestamp.'}
+                size="small"
+              />
+            </Box>
           </form>
         )}
       </AppModal>

@@ -780,6 +780,12 @@ namespace SchoolERP.API.Controllers
         {
             var branchId = _currentUserService.BranchId;
             var yearId = _currentUserService.AcademicYearId;
+
+            if (string.IsNullOrWhiteSpace(request.Remarks))
+            {
+                return BadRequest(ApiResponse.Fail("Remarks / Reason for change is mandatory. Please provide remarks explaining what changed and why."));
+            }
+
             var student = await _context.Students
                 .Include(s => s.Guardians)
                 .Include(s => s.Enrollments)
@@ -787,6 +793,59 @@ namespace SchoolERP.API.Controllers
                 .FirstOrDefaultAsync(s => s.Id == id && s.BranchId == branchId);
 
             if (student == null) return NotFound(ApiResponse.Fail("Student not found."));
+
+            // Track changes before mutating entity
+            var changes = new List<object>();
+            void RecordChange(string field, string label, string? oldVal, string? newVal)
+            {
+                var o = (oldVal ?? "").Trim();
+                var n = (newVal ?? "").Trim();
+                if (!string.Equals(o, n, StringComparison.OrdinalIgnoreCase))
+                {
+                    changes.Add(new { field, label, oldValue = o, newValue = n });
+                }
+            }
+
+            var currentEnrollment = student.Enrollments.FirstOrDefault(e => e.AcademicYearId == yearId);
+            long oldClassId = currentEnrollment?.ClassId ?? 0;
+            long oldSectionId = currentEnrollment?.SectionId ?? 0;
+            int? oldRollNo = currentEnrollment?.RollNo;
+
+            RecordChange("FirstName", "First Name", student.FirstName, request.FirstName);
+            RecordChange("LastName", "Last Name", student.LastName, request.LastName);
+            RecordChange("DateOfBirth", "Date of Birth", student.DateOfBirth.ToString("yyyy-MM-dd"), request.DateOfBirth.ToString("yyyy-MM-dd"));
+            RecordChange("Gender", "Gender", student.Gender, request.Gender);
+            RecordChange("CategoryId", "Category ID", student.CategoryId?.ToString(), request.CategoryId?.ToString());
+            RecordChange("ReligionId", "Religion ID", student.ReligionId?.ToString(), request.ReligionId?.ToString());
+            RecordChange("BloodGroup", "Blood Group", student.BloodGroup, request.BloodGroup);
+            RecordChange("AadhaarNo", "Aadhaar No", student.AadhaarNo, request.AadhaarNo);
+            RecordChange("Address", "Address", student.Address, request.Address);
+            RecordChange("City", "City", student.City, request.City);
+            RecordChange("State", "State", student.State, request.State);
+            RecordChange("Pincode", "Pincode", student.Pincode, request.Pincode);
+            RecordChange("EmergencyContact", "Emergency Contact", student.EmergencyContact, request.EmergencyContact);
+            RecordChange("Status", "Status", student.Status.ToString(), request.Status.ToString());
+
+            if (!string.IsNullOrWhiteSpace(request.AdmissionNo))
+            {
+                RecordChange("AdmissionNo", "Admission Number", student.AdmissionNo, request.AdmissionNo.Trim());
+            }
+            if (request.AdmissionDate.HasValue)
+            {
+                RecordChange("AdmissionDate", "Admission Date", student.AdmissionDate.ToString("yyyy-MM-dd"), request.AdmissionDate.Value.ToString("yyyy-MM-dd"));
+            }
+            if (request.ClassId.HasValue && request.ClassId.Value > 0)
+            {
+                RecordChange("ClassId", "Class ID", oldClassId > 0 ? oldClassId.ToString() : null, request.ClassId.Value.ToString());
+            }
+            if (request.SectionId.HasValue && request.SectionId.Value > 0)
+            {
+                RecordChange("SectionId", "Section ID", oldSectionId > 0 ? oldSectionId.ToString() : null, request.SectionId.Value.ToString());
+            }
+            if (request.RollNo.HasValue)
+            {
+                RecordChange("RollNo", "Roll No", oldRollNo?.ToString(), request.RollNo.Value.ToString());
+            }
 
             student.FirstName = request.FirstName.Trim().ToUpper();
             student.LastName = request.LastName?.Trim().ToUpper() ?? "";
@@ -942,8 +1001,66 @@ namespace SchoolERP.API.Controllers
             UpsertPhotoDoc("Mother Photo", request.MotherPhotoUrl);
             UpsertPhotoDoc("Guardian Photo", request.GuardianPhotoUrl);
 
+            // Record Student Audit Log if any changes occurred
+            if (changes.Any())
+            {
+                var auditLog = new StudentAuditLog
+                {
+                    StudentId = student.Id,
+                    BranchId = student.BranchId,
+                    ChangedByUserId = _currentUserService.UserId ?? 0,
+                    ChangedByUserName = _currentUserService.Username ?? "Admin",
+                    ChangedOn = DateTime.UtcNow,
+                    Remarks = request.Remarks.Trim(),
+                    ChangesJson = System.Text.Json.JsonSerializer.Serialize(changes),
+                    CreatedBy = _currentUserService.UserId ?? 0,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                };
+                _context.StudentAuditLogs.Add(auditLog);
+
+                _context.AuditLogs.Add(new AuditLog
+                {
+                    UserId = _currentUserService.UserId,
+                    Username = _currentUserService.Username,
+                    Action = "Update",
+                    Module = "Students",
+                    EntityName = "Student",
+                    RecordId = student.Id.ToString(),
+                    OldValues = $"Remarks: {request.Remarks.Trim()}",
+                    NewValues = System.Text.Json.JsonSerializer.Serialize(changes),
+                    BranchId = student.BranchId,
+                    CreatedBy = _currentUserService.UserId ?? 0,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
             await _context.SaveChangesAsync();
             return Ok(ApiResponse.Ok("Student profile updated successfully."));
+        }
+
+        [HttpGet("{id}/audit-logs")]
+        [HasPermission("Students", "View")]
+        public async Task<ActionResult<ApiResponse<List<StudentAuditLogDto>>>> GetStudentAuditLogs(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var logs = await _context.StudentAuditLogs
+                .Where(l => l.StudentId == id)
+                .OrderByDescending(l => l.ChangedOn)
+                .Select(l => new StudentAuditLogDto
+                {
+                    Id = l.Id,
+                    StudentId = l.StudentId,
+                    ChangedByUserId = l.ChangedByUserId,
+                    ChangedByUserName = l.ChangedByUserName,
+                    ChangedOn = l.ChangedOn,
+                    Remarks = l.Remarks,
+                    ChangesJson = l.ChangesJson
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<List<StudentAuditLogDto>>.Ok(logs));
         }
 
         [HttpPost("{id}/documents")]

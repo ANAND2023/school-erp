@@ -265,7 +265,19 @@ namespace SchoolERP.Application.DTOs
         public long? SectionId { get; set; }
         public int? RollNo { get; set; }
         public StudentStatus Status { get; set; } = StudentStatus.Active;
+        public string? Remarks { get; set; }
         public List<StudentGuardianDto> Guardians { get; set; } = new List<StudentGuardianDto>();
+    }
+
+    public class StudentAuditLogDto
+    {
+        public long Id { get; set; }
+        public long StudentId { get; set; }
+        public long ChangedByUserId { get; set; }
+        public string ChangedByUserName { get; set; } = string.Empty;
+        public DateTime ChangedOn { get; set; }
+        public string Remarks { get; set; } = string.Empty;
+        public string ChangesJson { get; set; } = string.Empty;
     }
 
     public class CreateStudentDocumentDto
