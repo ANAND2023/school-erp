@@ -388,4 +388,60 @@ namespace SchoolERP.Application.DTOs
         public string GuardianMobile { get; set; } = string.Empty;
         public string? PhotoUrl { get; set; }
     }
+
+    public class StudentCertificateDto
+    {
+        public long Id { get; set; }
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public string? AcademicYearName { get; set; }
+        public long StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string AdmissionNo { get; set; } = string.Empty;
+        public string? PhotoUrl { get; set; }
+        public string? Gender { get; set; }
+        public DateTime? Dob { get; set; }
+        public long? ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public long? SectionId { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+        public int? RollNo { get; set; }
+        public string? FatherName { get; set; }
+        public string? MotherName { get; set; }
+        public string? FatherMobile { get; set; }
+        public string? EmergencyContact { get; set; }
+
+        public string CertificateType { get; set; } = "bonafide";
+        public string CertificateNo { get; set; } = string.Empty;
+        public DateTime IssueDate { get; set; }
+        public string Purpose { get; set; } = string.Empty;
+        public string? IssuedBy { get; set; }
+        public string Status { get; set; } = "Issued";
+        public string? Remarks { get; set; }
+        public string? OptionsJson { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class CreateStudentCertificateDto
+    {
+        public long StudentId { get; set; }
+        public string CertificateType { get; set; } = "bonafide";
+        public string? CertificateNo { get; set; }
+        public DateTime? IssueDate { get; set; }
+        public string? Purpose { get; set; }
+        public string? IssuedBy { get; set; }
+        public string? Remarks { get; set; }
+        public string? OptionsJson { get; set; }
+    }
+
+    public class StudentCertificateStatsDto
+    {
+        public int TotalIssued { get; set; }
+        public int IssuedToday { get; set; }
+        public int BonafideCount { get; set; }
+        public int DobCount { get; set; }
+        public int AgeCount { get; set; }
+        public int CharacterCount { get; set; }
+        public int RetCount { get; set; }
+    }
 }

@@ -243,29 +243,39 @@ export const calculateAge = (dobStr) => {
   }
 };
 
-export const BonafideCertificateModal = ({
-  open,
-  onClose,
-  studentId,
-  studentData,
-  certificateType = 'bonafide',
-  initialRefNo,
-  initialPurpose,
-  initialDate,
-  initialPrintWithLetterhead,
-  onPrinted,
-}) => {
+export const BonafideCertificateModal = (props) => {
+  const {
+    open,
+    onClose,
+    studentId,
+    studentData: directStudentData,
+    student: altStudent,
+    certificateType = 'bonafide',
+    initialRefNo,
+    initialPurpose,
+    initialDate,
+    initialPrintWithLetterhead,
+    customOptions,
+    onPrinted,
+  } = props;
+
+  const studentData = directStudentData || altStudent;
+  const resolvedRefNo = initialRefNo || customOptions?.refNo;
+  const resolvedPurpose = initialPurpose || customOptions?.purpose;
+  const resolvedDate = initialDate || customOptions?.issueDate;
+  const resolvedLetterhead = initialPrintWithLetterhead !== undefined ? initialPrintWithLetterhead : customOptions?.printWithLetterhead;
+
   const printRef = useRef(null);
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
 
   const [config, setConfig] = useState(null);
-  const [purpose, setPurpose] = useState(initialPurpose || defaultTemplate.defaultPurpose);
+  const [purpose, setPurpose] = useState(resolvedPurpose || defaultTemplate.defaultPurpose);
   const [customPurpose, setCustomPurpose] = useState('');
-  const [refNo, setRefNo] = useState(initialRefNo || '');
-  const [issueDate, setIssueDate] = useState(initialDate || '');
+  const [refNo, setRefNo] = useState(resolvedRefNo || '');
+  const [issueDate, setIssueDate] = useState(resolvedDate || '');
   const [printWithLetterhead, setPrintWithLetterhead] = useState(
-    initialPrintWithLetterhead !== undefined ? initialPrintWithLetterhead : true
+    resolvedLetterhead !== undefined ? resolvedLetterhead : true
   );
 
   useEffect(() => {
@@ -309,10 +319,16 @@ export const BonafideCertificateModal = ({
       setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
     }
 
-    if (initialPurpose) {
-      setPurpose(initialPurpose);
+    if (resolvedPurpose) {
+      setPurpose(resolvedPurpose);
     }
-  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose, initialRefNo, initialPurpose, initialDate, initialPrintWithLetterhead]);
+    if (resolvedRefNo) {
+      setRefNo(resolvedRefNo);
+    }
+    if (resolvedDate) {
+      setIssueDate(resolvedDate);
+    }
+  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose, resolvedRefNo, resolvedPurpose, resolvedDate, resolvedLetterhead]);
 
   if (!open) return null;
 

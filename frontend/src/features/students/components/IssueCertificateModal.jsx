@@ -6,7 +6,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Avatar } from 'primereact/avatar';
 import { Tag } from 'primereact/tag';
-import { studentApi } from '../api';
+import { studentApi, certificateApi } from '../api';
 import apiClient from '../../../api/client';
 import { DEFAULT_CERT_TEMPLATES, dateToWords } from './BonafideCertificateModal';
 
@@ -81,22 +81,40 @@ export const IssueCertificateModal = ({
   const loadStudents = async () => {
     try {
       setSearching(true);
-      const res = await studentApi.getStudents({
+      const res = await certificateApi.searchStudents({
+        query: studentSearchText.trim() || undefined,
         classId: selectedClassId || undefined,
         sectionId: selectedSectionId || undefined,
-        search: studentSearchText.trim() || undefined,
-        limit: 25,
+        limit: 30,
       });
 
-      if (res?.data?.data) {
-        const items = res.data.data.items || res.data.data || [];
-        setStudentsList(items);
+      if (res?.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setStudentsList(res.data.data);
       } else {
-        setStudentsList([]);
+        // Fallback to studentApi
+        const fRes = await studentApi.getStudents({
+          classId: selectedClassId || undefined,
+          sectionId: selectedSectionId || undefined,
+          search: studentSearchText.trim() || undefined,
+          limit: 25,
+        });
+        const items = fRes?.data?.data?.items || fRes?.data?.data || [];
+        setStudentsList(items);
       }
     } catch (err) {
       console.error('Failed to search students for certificate:', err);
-      setStudentsList([]);
+      try {
+        const fRes = await studentApi.getStudents({
+          classId: selectedClassId || undefined,
+          sectionId: selectedSectionId || undefined,
+          search: studentSearchText.trim() || undefined,
+          limit: 25,
+        });
+        const items = fRes?.data?.data?.items || fRes?.data?.data || [];
+        setStudentsList(items);
+      } catch {
+        setStudentsList([]);
+      }
     } finally {
       setSearching(false);
     }
