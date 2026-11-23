@@ -243,17 +243,30 @@ export const calculateAge = (dobStr) => {
   }
 };
 
-export const BonafideCertificateModal = ({ open, onClose, studentId, studentData, certificateType = 'bonafide' }) => {
+export const BonafideCertificateModal = ({
+  open,
+  onClose,
+  studentId,
+  studentData,
+  certificateType = 'bonafide',
+  initialRefNo,
+  initialPurpose,
+  initialDate,
+  initialPrintWithLetterhead,
+  onPrinted,
+}) => {
   const printRef = useRef(null);
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
 
   const [config, setConfig] = useState(null);
-  const [purpose, setPurpose] = useState(defaultTemplate.defaultPurpose);
+  const [purpose, setPurpose] = useState(initialPurpose || defaultTemplate.defaultPurpose);
   const [customPurpose, setCustomPurpose] = useState('');
-  const [refNo, setRefNo] = useState('');
-  const [issueDate, setIssueDate] = useState('');
-  const [printWithLetterhead, setPrintWithLetterhead] = useState(true);
+  const [refNo, setRefNo] = useState(initialRefNo || '');
+  const [issueDate, setIssueDate] = useState(initialDate || '');
+  const [printWithLetterhead, setPrintWithLetterhead] = useState(
+    initialPrintWithLetterhead !== undefined ? initialPrintWithLetterhead : true
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -264,10 +277,10 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       .then((res) => {
         if (res.data?.success && res.data.data) {
           setConfig(res.data.data);
-          if (res.data.data.defaultPurpose) {
+          if (!initialPurpose && res.data.data.defaultPurpose) {
             setPurpose(res.data.data.defaultPurpose);
           }
-          if (res.data.data.useLetterhead !== undefined) {
+          if (initialPrintWithLetterhead === undefined && res.data.data.useLetterhead !== undefined) {
             setPrintWithLetterhead(res.data.data.useLetterhead);
           }
         }
@@ -276,17 +289,30 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
         console.error('Failed to load certificate config:', err);
       });
 
-    // Set default Issue Date (Today in dd-MMM-yyyy)
-    const today = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
-    setIssueDate(formattedDate);
+    // Set default Issue Date (Today in dd-MMM-yyyy) if not passed
+    if (initialDate) {
+      setIssueDate(initialDate);
+    } else {
+      const today = new Date();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
+      setIssueDate(formattedDate);
+    }
 
-    // Set Default Ref No according to certificate type statutory prefix
-    const adm = studentData?.admissionNo || studentId || '001';
-    const prefix = defaultTemplate.refPrefix || 'DPS/BC';
-    setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
-  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose]);
+    // Set Default Ref No according to certificate type statutory prefix if not passed
+    if (initialRefNo) {
+      setRefNo(initialRefNo);
+    } else {
+      const today = new Date();
+      const adm = studentData?.admissionNo || studentId || '001';
+      const prefix = defaultTemplate.refPrefix || 'DPS/BC';
+      setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
+    }
+
+    if (initialPurpose) {
+      setPurpose(initialPurpose);
+    }
+  }, [open, studentId, studentData, typeKey, defaultTemplate.refPrefix, defaultTemplate.defaultPurpose, initialRefNo, initialPurpose, initialDate, initialPrintWithLetterhead]);
 
   if (!open) return null;
 
@@ -357,6 +383,20 @@ export const BonafideCertificateModal = ({ open, onClose, studentId, studentData
       };
       const docName = `${typeLabels[typeKey] || 'Certificate'}_${sName.replace(/\s+/g, '_')}`;
       printElement(printRef.current, docName);
+      if (typeof onPrinted === 'function') {
+        onPrinted({
+          studentId: studentData?.id || studentId,
+          studentName: sName,
+          admissionNo: admNo,
+          className: cls,
+          sectionName: sec,
+          certificateType: typeKey,
+          refNo: refNo,
+          issueDate: issueDate,
+          purpose: currentPurpose,
+          printedAt: new Date().toISOString(),
+        });
+      }
     }
   };
 
