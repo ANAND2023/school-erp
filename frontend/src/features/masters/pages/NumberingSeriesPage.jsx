@@ -115,6 +115,8 @@ const getModuleIcon = (type) => {
       return <DocumentIcon sx={{ color: '#581c87' }} />;
     case 'GatePass':
       return <GatePassIcon sx={{ color: '#0369a1' }} />;
+    case 'AwrRegister':
+      return <DocumentIcon sx={{ color: '#0d9488' }} />;
     default:
       return <TagIcon />;
   }
@@ -128,6 +130,7 @@ const getCategory = (moduleType) => {
       'AgeCertificate',
       'CharacterCertificate',
       'RetCertificate',
+      'AwrRegister',
     ].includes(moduleType)
   ) {
     return 'Certificates';
@@ -265,7 +268,7 @@ export const NumberingSeriesPage = () => {
       {/* Info Alert */}
       <Alert severity="info" sx={{ mb: 2.5, borderRadius: 2 }}>
         <Typography variant="body2">
-          <strong>Auto-Increment Logic:</strong> When a new <strong>Bonafide, DOB, Age, Character, or RET Certificate</strong> (as well as Admissions, Receipts, Enquiries, TCs, and Gate Passes) is issued, the system automatically formats the reference number according to your custom prefix, year format, and digits, and increments the counter safely.
+          <strong>Auto-Increment Logic:</strong> When a new <strong>Bonafide, DOB, Age, Character, or RET Certificate, or AWR Register Folio</strong> (as well as Admissions, Receipts, Enquiries, TCs, and Gate Passes) is issued, the system automatically formats the reference number according to your custom prefix, year format, and digits, and increments the counter safely.
         </Typography>
       </Alert>
 
@@ -274,7 +277,7 @@ export const NumberingSeriesPage = () => {
         <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', py: 0.5 }}>
           {[
             { id: 'All', label: 'All Documents', count: seriesList.length },
-            { id: 'Certificates', label: 'Student Certificates', count: certCount },
+            { id: 'Certificates', label: 'Student Certificates & Registers', count: certCount },
             { id: 'Core', label: 'Core Institutional', count: coreCount },
             { id: 'GatePass', label: 'Gate Passes', count: gateCount },
           ].map((cat) => {

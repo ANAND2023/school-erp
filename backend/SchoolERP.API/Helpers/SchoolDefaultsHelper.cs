@@ -385,7 +385,8 @@ namespace SchoolERP.API.Helpers
                 ("AgeCertificate", "DPS/AGE", false, true, "YYYY", "/", 4, 1),
                 ("CharacterCertificate", "DPS/CC", false, true, "YYYY", "/", 4, 1),
                 ("RetCertificate", "DPS/RET", false, true, "YYYY", "/", 4, 1),
-                ("GatePass", "GP", false, true, "YYYY", "/", 4, 1)
+                ("GatePass", "GP", false, true, "YYYY", "/", 4, 1),
+                ("AwrRegister", "DPS/AWR", false, true, "YYYY", "/", 4, 1)
             };
 
             var toAdd = new List<NumberingSeries>();

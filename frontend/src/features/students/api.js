@@ -24,6 +24,7 @@ export const studentApi = {
   getAdmissionSummary: (params) => apiClient.get('/students/admission-summary', { params }),
   getAwrReport: (params) => apiClient.get('/students/awr-report', { params }),
   getAwrConfig: () => apiClient.get('/students/awr-config'),
+  getAwrNextNumber: () => apiClient.get('/students/awr-next-number'),
 };
 
 export const gatePassApi = {

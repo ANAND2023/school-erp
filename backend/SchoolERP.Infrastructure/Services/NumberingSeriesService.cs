@@ -31,7 +31,8 @@ namespace SchoolERP.Infrastructure.Services
             ("AgeCertificate", "Certificate of Age Ref No", "DPS/AGE", false, true, "YYYY", "/", 4, 1),
             ("CharacterCertificate", "Character Certificate Ref No", "DPS/CC", false, true, "YYYY", "/", 4, 1),
             ("RetCertificate", "Record of Education & Retention (RET) Certificate Ref No", "DPS/RET", false, true, "YYYY", "/", 4, 1),
-            ("GatePass", "Student Gate Pass No", "GP", false, true, "YYYY", "/", 4, 1)
+            ("GatePass", "Student Gate Pass No", "GP", false, true, "YYYY", "/", 4, 1),
+            ("AwrRegister", "AWR Register / Folio Ref No", "DPS/AWR", false, true, "YYYY", "/", 4, 1)
         };
 
         public async Task<List<NumberingSeriesDto>> GetSeriesListAsync(long branchId)
