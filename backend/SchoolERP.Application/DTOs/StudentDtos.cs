@@ -79,6 +79,7 @@ namespace SchoolERP.Application.DTOs
         public string? LastName { get; set; }
         public string Gender { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; }
+        public DateTime? AdmissionDate { get; set; }
         public long ClassId { get; set; }
         public string ClassName { get; set; } = string.Empty;
         public long SectionId { get; set; }
@@ -356,5 +357,35 @@ namespace SchoolERP.Application.DTOs
         public int ReturnedToday { get; set; }
         public int CancelledToday { get; set; }
         public int TotalAll { get; set; }
+    }
+
+    public class AdmissionSummaryDto
+    {
+        public int TotalAllTime { get; set; }
+        public int TotalSession { get; set; }
+        public int BoysCount { get; set; }
+        public int GirlsCount { get; set; }
+        public List<ClassAdmissionStatDto> ClassWise { get; set; } = new List<ClassAdmissionStatDto>();
+        public List<RecentAdmissionItemDto> RecentAdmissions { get; set; } = new List<RecentAdmissionItemDto>();
+    }
+
+    public class ClassAdmissionStatDto
+    {
+        public long ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+    public class RecentAdmissionItemDto
+    {
+        public long Id { get; set; }
+        public string AdmissionNo { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public DateTime? AdmissionDate { get; set; }
+        public string Gender { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
+        public string SectionName { get; set; } = string.Empty;
+        public string GuardianMobile { get; set; } = string.Empty;
+        public string? PhotoUrl { get; set; }
     }
 }

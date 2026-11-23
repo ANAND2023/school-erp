@@ -150,6 +150,7 @@ namespace SchoolERP.API.Controllers
                     LastName = e.Student.LastName,
                     Gender = e.Student.Gender,
                     DateOfBirth = e.Student.DateOfBirth,
+                    AdmissionDate = e.Student.AdmissionDate,
                     ClassId = e.ClassId,
                     ClassName = e.Class != null ? e.Class.Name : "",
                     SectionId = e.SectionId,
@@ -167,6 +168,75 @@ namespace SchoolERP.API.Controllers
             return Ok(ApiResponse<PagedResult<StudentListDto>>.Ok(
                 new PagedResult<StudentListDto>(items, totalCount, pageNo, pageSize)
             ));
+        }
+
+        [HttpGet("admission-summary")]
+        [HasPermission("Students", "View")]
+        public async Task<ActionResult<ApiResponse<AdmissionSummaryDto>>> GetAdmissionSummary([FromQuery] long? academicYearId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = academicYearId ?? _currentUserService.AcademicYearId;
+
+            var totalAllTime = await _context.Students.CountAsync(s => s.BranchId == branchId && s.IsActive);
+
+            var query = _context.StudentEnrollments
+                .Include(e => e.Student)
+                .Include(e => e.Class)
+                .Include(e => e.Section)
+                .Where(e => e.Student!.BranchId == branchId && e.Status == StudentStatus.Active);
+
+            if (yearId > 0)
+            {
+                query = query.Where(e => e.AcademicYearId == yearId);
+            }
+
+            var totalSession = await query.CountAsync();
+
+            var boysCount = await query.CountAsync(e => e.Student!.Gender.ToLower() == "male");
+            var girlsCount = await query.CountAsync(e => e.Student!.Gender.ToLower() == "female");
+
+            var classWise = await query
+                .GroupBy(e => new { e.ClassId, ClassName = e.Class != null ? e.Class.Name : "Unknown" })
+                .Select(g => new ClassAdmissionStatDto
+                {
+                    ClassId = g.Key.ClassId,
+                    ClassName = g.Key.ClassName,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            var recentAdmissions = await _context.Students
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Class)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Section)
+                .Include(s => s.Guardians)
+                .Where(s => s.BranchId == branchId && s.IsActive)
+                .OrderByDescending(s => s.Id)
+                .Take(10)
+                .Select(s => new RecentAdmissionItemDto
+                {
+                    Id = s.Id,
+                    AdmissionNo = s.AdmissionNo,
+                    FullName = s.FullName,
+                    AdmissionDate = s.AdmissionDate,
+                    Gender = s.Gender,
+                    ClassName = s.Enrollments.OrderByDescending(e => e.Id).Select(e => e.Class!.Name).FirstOrDefault() ?? "",
+                    SectionName = s.Enrollments.OrderByDescending(e => e.Id).Select(e => e.Section!.Name).FirstOrDefault() ?? "",
+                    GuardianMobile = s.Guardians.Where(g => g.IsPrimary).Select(g => g.Mobile).FirstOrDefault() ?? s.Guardians.Select(g => g.Mobile).FirstOrDefault() ?? "",
+                    PhotoUrl = s.PhotoUrl
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<AdmissionSummaryDto>.Ok(new AdmissionSummaryDto
+            {
+                TotalAllTime = totalAllTime,
+                TotalSession = totalSession,
+                BoysCount = boysCount,
+                GirlsCount = girlsCount,
+                ClassWise = classWise,
+                RecentAdmissions = recentAdmissions
+            }));
         }
 
         [HttpGet("{id}")]

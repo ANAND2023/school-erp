@@ -31,6 +31,7 @@ import { NumberingSeriesPage } from '../features/masters/pages/NumberingSeriesPa
 // Module 3: Students, Enquiries & Admissions
 import { EnquiriesPage } from '../features/students/pages/EnquiriesPage';
 import { AdmissionFormPage } from '../features/students/pages/AdmissionFormPage';
+import { AdmissionRecordsPage } from '../features/students/pages/AdmissionRecordsPage';
 import { RegistrationFormBuilderPage } from '../features/registrations/pages/RegistrationFormBuilderPage';
 import { RegistrationSlipGeneratorPage } from '../features/registrations/pages/RegistrationSlipGeneratorPage';
 import { RegistrationSlipsListPage } from '../features/registrations/pages/RegistrationSlipsListPage';
@@ -357,10 +358,26 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="admissions/records"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+              <AdmissionRecordsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admission/records"
+          element={
+            <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
+              <AdmissionRecordsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admissions"
           element={
             <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
-              <AdmissionFormPage />
+              <AdmissionRecordsPage />
             </ProtectedRoute>
           }
         />
@@ -368,7 +385,7 @@ export const AppRoutes = () => {
           path="admission"
           element={
             <ProtectedRoute requiredMenu={['Admissions', 'Students']}>
-              <AdmissionFormPage />
+              <AdmissionRecordsPage />
             </ProtectedRoute>
           }
         />
