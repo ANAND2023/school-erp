@@ -126,17 +126,6 @@ export const AdmissionRecordsPage = () => {
         }
     };
 
-    const handleClassChipClick = (classId) => {
-        if (selectedClassId === classId) {
-            setSelectedClassId(null);
-            setSelectedSectionId(null);
-        } else {
-            setSelectedClassId(classId);
-            setSelectedSectionId(null);
-        }
-        setLazyParams(prev => ({ ...prev, first: 0, page: 0 }));
-    };
-
     const resetFilters = () => {
         setSelectedClassId(null);
         setSelectedSectionId(null);
@@ -171,6 +160,27 @@ export const AdmissionRecordsPage = () => {
         toast.current?.show({ severity: 'success', summary: 'Exported', detail: 'Admission register exported to Excel.' });
     };
 
+    // Class dropdown options with student counts
+    const classDropdownOptions = useMemo(() => {
+        const countMap = {};
+        (summary.classWise || []).forEach(c => {
+            countMap[c.classId] = c.count;
+        });
+
+        const list = classes.map(cls => {
+            const count = countMap[cls.id] || 0;
+            return {
+                id: cls.id,
+                label: count > 0 ? `${cls.name} (${count})` : cls.name,
+                name: cls.name,
+                count: count
+            };
+        });
+
+        // Sort so classes with enrolled students appear nicely, keeping display order
+        return list;
+    }, [classes, summary.classWise]);
+
     const activeClass = classes.find(c => c.id === selectedClassId);
     const sections = activeClass?.sections || [];
 
@@ -178,34 +188,37 @@ export const AdmissionRecordsPage = () => {
         <div className="p-3">
             <Toast ref={toast} />
 
-            {/* Header Toolbar */}
-            <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 bg-white border-round shadow-1 border-left-3 border-blue-600">
+            {/* Header Toolbar (Compact) */}
+            <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-white border-round shadow-1 border-left-3 border-blue-600">
                 <div>
-                    <h2 className="text-xl font-bold m-0 text-900 flex align-items-center gap-2">
-                        <i className="pi pi-id-card text-blue-600 text-2xl" />
+                    <h2 className="text-lg font-bold m-0 text-900 flex align-items-center gap-2">
+                        <i className="pi pi-id-card text-blue-600 text-xl" />
                         Admission Records & Register
                     </h2>
-                    <p className="text-sm text-600 m-0 mt-1">
-                        View total admissions, session-wise enrollments, class distribution, and admission records
-                    </p>
+                    <span className="text-xs text-600">
+                        Total Admissions: <b>{summary.totalAllTime || totalRecords}</b> | Current Session: <b>{summary.totalSession || totalRecords}</b>
+                    </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button 
                         label="New Admission" 
                         icon="pi pi-user-plus" 
+                        size="small"
                         severity="primary" 
                         onClick={() => navigate('/admissions/new')} 
                     />
                     <Button 
                         label="Bulk Excel Admission" 
                         icon="pi pi-file-excel" 
+                        size="small"
                         severity="info" 
                         outlined 
                         onClick={() => navigate('/students/bulk-operations')} 
                     />
                     <Button 
-                        label="Export Register" 
+                        label="Export Excel" 
                         icon="pi pi-download" 
+                        size="small"
                         severity="secondary" 
                         outlined 
                         onClick={exportToExcel} 
@@ -213,123 +226,72 @@ export const AdmissionRecordsPage = () => {
                 </div>
             </div>
 
-            {/* 4 Summary Metric Cards */}
-            <div className="grid mb-4">
+            {/* 4 Compact Metric Cards (Slim & Low Height) */}
+            <div className="grid grid-nogutter gap-2 mb-3">
                 {/* Total All-Time Admissions */}
-                <div className="col-12 sm:col-6 lg:col-3">
-                    <Card className="shadow-1 border-round h-full border-top-3 border-blue-500 surface-0">
-                        <div className="flex justify-content-between align-items-center">
-                            <div>
-                                <span className="block text-500 font-medium mb-1 text-xs uppercase tracking-wider">Total Admissions</span>
-                                <div className="text-900 font-bold text-3xl">{summary.totalAllTime || totalRecords}</div>
-                                <span className="text-xs text-blue-600 font-semibold mt-1 inline-block">All-Time Admitted Students</span>
-                            </div>
-                            <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '48px', height: '48px' }}>
-                                <i className="pi pi-users text-blue-600 text-xl" />
-                            </div>
+                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-blue-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Total Admissions</span>
+                        <div className="flex align-items-baseline gap-1">
+                            <span className="text-xl font-bold text-900">{summary.totalAllTime || totalRecords}</span>
+                            <span className="text-xs text-500">all-time</span>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '34px', height: '34px' }}>
+                        <i className="pi pi-users text-blue-600 text-sm" />
+                    </div>
                 </div>
 
                 {/* Session Admissions */}
-                <div className="col-12 sm:col-6 lg:col-3">
-                    <Card className="shadow-1 border-round h-full border-top-3 border-green-500 surface-0">
-                        <div className="flex justify-content-between align-items-center">
-                            <div>
-                                <span className="block text-500 font-medium mb-1 text-xs uppercase tracking-wider">Session Enrollments</span>
-                                <div className="text-900 font-bold text-3xl text-green-700">{summary.totalSession || totalRecords}</div>
-                                <span className="text-xs text-green-600 font-semibold mt-1 inline-block">Active In Selected Session</span>
-                            </div>
-                            <div className="flex align-items-center justify-content-center bg-green-100 border-round" style={{ width: '48px', height: '48px' }}>
-                                <i className="pi pi-calendar-plus text-green-600 text-xl" />
-                            </div>
+                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-green-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Session Enrollments</span>
+                        <div className="flex align-items-baseline gap-1">
+                            <span className="text-xl font-bold text-green-700">{summary.totalSession || totalRecords}</span>
+                            <span className="text-xs text-green-600">in session</span>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-green-100 border-round" style={{ width: '34px', height: '34px' }}>
+                        <i className="pi pi-calendar-plus text-green-600 text-sm" />
+                    </div>
                 </div>
 
                 {/* Boys vs Girls */}
-                <div className="col-12 sm:col-6 lg:col-3">
-                    <Card className="shadow-1 border-round h-full border-top-3 border-cyan-500 surface-0">
-                        <div className="flex justify-content-between align-items-center">
-                            <div>
-                                <span className="block text-500 font-medium mb-1 text-xs uppercase tracking-wider">Gender Ratio</span>
-                                <div className="text-900 font-bold text-2xl flex align-items-center gap-2">
-                                    <span className="text-blue-700">{summary.boysCount} Boys</span>
-                                    <span className="text-300">/</span>
-                                    <span className="text-pink-600">{summary.girlsCount} Girls</span>
-                                </div>
-                                <span className="text-xs text-500 mt-1 inline-block">Student Gender Breakdown</span>
-                            </div>
-                            <div className="flex align-items-center justify-content-center bg-cyan-100 border-round" style={{ width: '48px', height: '48px' }}>
-                                <i className="pi pi-chart-pie text-cyan-600 text-xl" />
-                            </div>
+                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-pink-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Gender Ratio</span>
+                        <div className="text-base font-bold text-900">
+                            <span className="text-blue-700">{summary.boysCount} Boys</span>
+                            <span className="text-300 mx-1">/</span>
+                            <span className="text-pink-600">{summary.girlsCount} Girls</span>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-pink-100 border-round" style={{ width: '34px', height: '34px' }}>
+                        <i className="pi pi-chart-pie text-pink-600 text-sm" />
+                    </div>
                 </div>
 
                 {/* Active Classes */}
-                <div className="col-12 sm:col-6 lg:col-3">
-                    <Card className="shadow-1 border-round h-full border-top-3 border-orange-500 surface-0">
-                        <div className="flex justify-content-between align-items-center">
-                            <div>
-                                <span className="block text-500 font-medium mb-1 text-xs uppercase tracking-wider">Enrolled Classes</span>
-                                <div className="text-900 font-bold text-3xl text-orange-600">{summary.classWise?.length || classes.length}</div>
-                                <span className="text-xs text-orange-500 font-semibold mt-1 inline-block">Classes with Active Students</span>
-                            </div>
-                            <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '48px', height: '48px' }}>
-                                <i className="pi pi-sitemap text-orange-600 text-xl" />
-                            </div>
+                <div className="col flex-1 surface-0 border-round p-2 px-3 shadow-1 border-left-3 border-orange-500 flex align-items-center justify-content-between" style={{ minHeight: '60px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '11px' }}>Enrolled Classes</span>
+                        <div className="flex align-items-baseline gap-1">
+                            <span className="text-xl font-bold text-orange-600">{summary.classWise?.length || classes.length}</span>
+                            <span className="text-xs text-orange-500">classes</span>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '34px', height: '34px' }}>
+                        <i className="pi pi-sitemap text-orange-600 text-sm" />
+                    </div>
                 </div>
             </div>
 
-            {/* Class-Wise Quick Filter Chips */}
-            {summary.classWise && summary.classWise.length > 0 && (
-                <div className="mb-4 p-3 bg-white border-round shadow-1">
-                    <div className="flex align-items-center justify-content-between mb-2">
-                        <span className="font-bold text-sm text-700 flex align-items-center gap-1">
-                            <i className="pi pi-filter text-xs" /> Filter by Class:
-                        </span>
-                        {selectedClassId && (
-                            <Button 
-                                label="Clear Class Filter" 
-                                icon="pi pi-times" 
-                                text 
-                                size="small" 
-                                onClick={() => { setSelectedClassId(null); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
-                            />
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <div 
-                            onClick={() => { setSelectedClassId(null); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }}
-                            className={`cursor-pointer px-3 py-1 border-round text-xs font-bold transition-colors select-none ${selectedClassId === null ? 'bg-blue-600 text-white shadow-2' : 'bg-gray-100 text-700 hover:bg-gray-200'}`}
-                        >
-                            All Classes ({summary.totalSession || summary.totalAllTime})
-                        </div>
-                        {summary.classWise.map((c) => (
-                            <div 
-                                key={c.classId}
-                                onClick={() => handleClassChipClick(c.classId)}
-                                className={`cursor-pointer px-3 py-1 border-round text-xs font-bold transition-colors select-none flex align-items-center gap-1 ${selectedClassId === c.classId ? 'bg-blue-600 text-white shadow-2' : 'bg-gray-100 text-700 hover:bg-gray-200'}`}
-                            >
-                                <span>{c.className}</span>
-                                <span className={`px-1 border-round text-2xs ${selectedClassId === c.classId ? 'bg-blue-800 text-white' : 'bg-white text-blue-700'}`}>
-                                    {c.count}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             {/* Main Admission Register Card */}
-            <Card className="shadow-1 border-round surface-0">
-                {/* Search & Secondary Filter Toolbar */}
-                <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 surface-50 border-round border-1 border-200">
+            <Card className="shadow-1 border-round surface-0 p-2">
+                {/* Unified Filter Toolbar with Dropdowns */}
+                <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 surface-50 border-round border-1 border-200">
                     <div className="flex flex-wrap align-items-center gap-3">
-                        {/* Academic Session */}
+                        {/* Academic Session Dropdown */}
                         <div style={{ width: '13rem' }}>
                             <span className="block text-xs font-bold text-600 mb-1">Academic Session:</span>
                             <Dropdown 
@@ -343,13 +305,13 @@ export const AdmissionRecordsPage = () => {
                             />
                         </div>
 
-                        {/* Class Dropdown */}
-                        <div style={{ width: '12rem' }}>
-                            <span className="block text-xs font-bold text-600 mb-1">Class:</span>
+                        {/* Class Dropdown (Enhanced with Student Counts) */}
+                        <div style={{ width: '14rem' }}>
+                            <span className="block text-xs font-bold text-600 mb-1">Filter by Class:</span>
                             <Dropdown 
                                 value={selectedClassId} 
-                                options={classes} 
-                                optionLabel="name" 
+                                options={classDropdownOptions} 
+                                optionLabel="label" 
                                 optionValue="id" 
                                 onChange={(e) => { setSelectedClassId(e.value); setSelectedSectionId(null); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
                                 placeholder="All Classes" 
@@ -374,9 +336,12 @@ export const AdmissionRecordsPage = () => {
                             />
                         </div>
 
-                        <div className="pt-3">
-                            <Button label="Reset" icon="pi pi-refresh" text size="small" onClick={resetFilters} />
-                        </div>
+                        {/* Reset Filters */}
+                        {(selectedClassId || selectedSectionId || searchQuery) && (
+                            <div className="pt-3">
+                                <Button label="Reset" icon="pi pi-refresh" text size="small" onClick={resetFilters} />
+                            </div>
+                        )}
                     </div>
 
                     {/* Search box */}
@@ -389,10 +354,14 @@ export const AdmissionRecordsPage = () => {
                                 onKeyDown={onSearchTrigger}
                                 placeholder="Search Name, Adm No, Mobile..." 
                                 className="p-inputtext-sm" 
-                                style={{ width: '260px' }}
+                                style={{ width: '250px' }}
                             />
                         </span>
-                        <Button icon="pi pi-search" onClick={() => { setLazyParams(p => ({ ...p, first: 0, page: 0 })); fetchStudents(); }} />
+                        <Button 
+                            icon="pi pi-search" 
+                            size="small"
+                            onClick={() => { setLazyParams(p => ({ ...p, first: 0, page: 0 })); fetchStudents(); }} 
+                        />
                     </div>
                 </div>
 
