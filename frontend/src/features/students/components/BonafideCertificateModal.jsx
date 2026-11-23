@@ -327,6 +327,16 @@ export const BonafideCertificateModal = (props) => {
       const adm = studentData?.admissionNo || studentId || '001';
       const prefix = defaultTemplate.refPrefix || 'DPS/BC';
       setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
+
+      // Attempt to load live peek from Numbering Series configured in /masters/numbering
+      apiClient
+        .get(`/student-certificates/next-number/${typeKey}`)
+        .then((res) => {
+          if (res.data?.success && res.data.data) {
+            setRefNo(res.data.data);
+          }
+        })
+        .catch(() => {});
     }
 
     if (resolvedPurpose) {

@@ -22,13 +22,16 @@ namespace SchoolERP.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
+        private readonly INumberingSeriesService _numberingService;
 
         public StudentGatePassController(
             ApplicationDbContext context,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            INumberingSeriesService numberingService)
         {
             _context = context;
             _currentUserService = currentUserService;
+            _numberingService = numberingService;
         }
 
         // =========================================================================
@@ -271,10 +274,11 @@ namespace SchoolERP.API.Controllers
             string gatePassNo = dto.GatePassNo?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(gatePassNo))
             {
-                var today = DateTime.UtcNow.Date;
-                var todayCount = await _context.StudentGatePasses
-                    .CountAsync(g => g.BranchId == branchId && g.PassDate >= today);
-                gatePassNo = $"GP-{DateTime.UtcNow:yyyyMMdd}-{(todayCount + 1):D4}";
+                var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+                var branchCode = branch?.Code ?? "MAIN";
+                var currentAY = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.BranchId == branchId && ay.IsCurrent);
+                var ayName = currentAY?.Name ?? DateTime.UtcNow.Year.ToString();
+                gatePassNo = await _numberingService.GetNextNumberAsync(branchId, "GatePass", branchCode, ayName);
             }
 
             var entity = new StudentGatePass

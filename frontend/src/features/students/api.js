@@ -44,6 +44,7 @@ export const certificateApi = {
   deleteCertificate: (id) => apiClient.delete(`/student-certificates/${id}`),
   getStats: (params) => apiClient.get('/student-certificates/stats', { params }),
   searchStudents: (params) => apiClient.get('/student-certificates/search-students', { params }),
+  getNextNumber: (type) => apiClient.get(`/student-certificates/next-number/${type}`),
 };
 
 

@@ -22,13 +22,16 @@ namespace SchoolERP.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
+        private readonly INumberingSeriesService _numberingService;
 
         public StudentCertificateController(
             ApplicationDbContext context,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            INumberingSeriesService numberingService)
         {
             _context = context;
             _currentUserService = currentUserService;
+            _numberingService = numberingService;
         }
 
         private static string NormalizeType(string? t)
@@ -55,6 +58,40 @@ namespace SchoolERP.API.Controllers
                 "ret" => "DPS/RET",
                 _ => "DPS/BC"
             };
+        }
+
+        private static string GetModuleType(string type)
+        {
+            return NormalizeType(type) switch
+            {
+                "birth" => "BirthCertificate",
+                "age" => "AgeCertificate",
+                "character" => "CharacterCertificate",
+                "ret" => "RetCertificate",
+                _ => "BonafideCertificate"
+            };
+        }
+
+        // =========================================================================
+        // NEXT NUMBER FOR CERTIFICATE SERIES
+        // =========================================================================
+        [HttpGet("next-number/{type}")]
+        [HasPermission("Students", "View")]
+        public async Task<ActionResult<ApiResponse<string>>> GetNextCertificateNumber(string type)
+        {
+            var branchId = _currentUserService.BranchId;
+            var moduleType = GetModuleType(type);
+
+            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+            var branchCode = branch?.Code ?? "MAIN";
+
+            var currentAY = await _context.AcademicYears
+                .Where(ay => ay.BranchId == branchId && ay.IsCurrent)
+                .FirstOrDefaultAsync();
+            var ayName = currentAY?.Name ?? DateTime.UtcNow.Year.ToString();
+
+            var nextNo = await _numberingService.PeekNextNumberAsync(branchId, moduleType, branchCode, ayName);
+            return Ok(ApiResponse<string>.Ok(nextNo));
         }
 
         // =========================================================================
@@ -328,21 +365,26 @@ namespace SchoolERP.API.Controllers
             }
 
             var certType = NormalizeType(dto.CertificateType);
-            var prefix = GetRefPrefix(certType);
+            var moduleType = GetModuleType(certType);
 
-            // Generate Ref No if not supplied
+            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+            var branchCode = branch?.Code ?? "MAIN";
+
+            var currentAY = await _context.AcademicYears
+                .Where(ay => ay.BranchId == branchId && ay.IsCurrent)
+                .FirstOrDefaultAsync();
+            var ayName = currentAY?.Name ?? DateTime.UtcNow.Year.ToString();
+
+            // Generate Ref No via Numbering Series configured in /masters/numbering
             var certNo = dto.CertificateNo;
             if (string.IsNullOrWhiteSpace(certNo))
             {
-                var currentYear = DateTime.UtcNow.Year;
-                var count = await _context.StudentCertificates
-                    .CountAsync(c => c.BranchId == branchId && c.CertificateType == certType && c.IssueDate.Year == currentYear);
-
-                var cleanAdm = !string.IsNullOrWhiteSpace(student.AdmissionNo)
-                    ? student.AdmissionNo.Replace("/", "").Trim()
-                    : (student.Id).ToString("D4");
-
-                certNo = $"{prefix}/{currentYear}/{(count + 1):D4}/{cleanAdm}";
+                certNo = await _numberingService.GetNextNumberAsync(branchId, moduleType, branchCode, ayName);
+            }
+            else
+            {
+                // Advance / synchronize sequence counter in NumberingSeries
+                await _numberingService.GetNextNumberAsync(branchId, moduleType, branchCode, ayName);
             }
 
             var entity = new StudentCertificate
