@@ -11,6 +11,7 @@ import { Toast } from 'primereact/toast';
 import { Slider } from 'primereact/slider';
 import { superAdminApi } from '../api/superAdminApi';
 import { printElement } from '../../../utils/printUtils';
+import { DEFAULT_CERT_TEMPLATES } from '../../students/components/BonafideCertificateModal';
 
 const PRESET_PALETTES = [
   { name: 'Royal Navy', primary: '#1e3a8a', secondary: '#eff6ff', accent: '#172554', border: '#1e3a8a' },
@@ -24,7 +25,7 @@ const PRESET_PALETTES = [
 
 const CERT_TYPES = [
   { id: 'bonafide', label: 'Bonafide Certificate', shortLabel: 'Bonafide', icon: 'pi pi-file', badge: 'DPS/BC', color: '#1e3a8a' },
-  { id: 'birth', label: 'Date of Birth Certificate', shortLabel: 'Birth / DOB', icon: 'pi pi-id-card', badge: 'DPS/DOB', color: '#065f46' },
+  { id: 'birth', label: 'Date of Birth Certificate', shortLabel: 'Birth / DOB', icon: 'pi pi-id-card', badge: 'DPS/DOB', color: '#0f766e' },
   { id: 'age', label: 'Certificate of Age', shortLabel: 'Age Verification', icon: 'pi pi-calendar', badge: 'DPS/AGE', color: '#b45309' },
   { id: 'character', label: 'Character Certificate', shortLabel: 'Conduct & Character', icon: 'pi pi-star', badge: 'DPS/CC', color: '#831843' },
   { id: 'ret', label: 'RET Certificate', shortLabel: 'Record of Education', icon: 'pi pi-book', badge: 'DPS/RET', color: '#581c87' },
@@ -86,9 +87,10 @@ const SAMPLE_STUDENT = {
   purpose: 'Passport Application',
   refNo: 'DPS/CERT/2026/0412',
   issueDate: '23-Nov-2026',
-  calculatedAge: '16 Years 3 Months',
+  calculatedAge: '16 Years, 3 Months, 9 Days',
   ageYears: '16',
   ageMonths: '3',
+  ageDays: '9',
   asOnDate: '23-Nov-2026',
   conductRating: 'Exemplary',
 };
@@ -243,20 +245,34 @@ export const BonafideCertificateDesignerPage = () => {
   const loadTemplate = async (schoolId, certType = selectedCertType) => {
     try {
       setLoading(true);
+      const defaultTemplate = DEFAULT_CERT_TEMPLATES[certType] || DEFAULT_CERT_TEMPLATES.bonafide;
       const res = await superAdminApi.getCertificateConfig(certType, schoolId);
       if (res?.success && res.data) {
         setConfig((prev) => ({
           ...prev,
+          ...defaultTemplate,
           ...res.data,
           elements: res.data.elements && res.data.elements.length > 0 ? res.data.elements : DEFAULT_ELEMENTS,
           headerSchoolNameCustom: res.data.headerSchoolNameCustom || '',
           headerSubtitleCustom: res.data.headerSubtitleCustom || '',
           headerAddressCustom: res.data.headerAddressCustom || '',
-          headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || '#1e3a8a',
-          certificateTitle: res.data.certificateTitle || `${certType.toUpperCase()} CERTIFICATE`,
-          titleBgColor: res.data.titleBgColor || res.data.primaryColor || '#1e3a8a',
+          headerSchoolNameColor: res.data.headerSchoolNameColor || res.data.primaryColor || defaultTemplate.primaryColor,
+          certificateTitle: res.data.certificateTitle || defaultTemplate.certificateTitle,
+          certificateSubtitle: res.data.certificateSubtitle || defaultTemplate.certificateSubtitle,
+          refPrefix: res.data.refPrefix || defaultTemplate.refPrefix,
+          titleBgColor: res.data.titleBgColor || res.data.primaryColor || defaultTemplate.titleBgColor,
           titleTextColor: res.data.titleTextColor || '#ffffff',
           bodyTextColor: res.data.bodyTextColor || '#1e293b',
+          bodyTemplateText: res.data.bodyTemplateText || defaultTemplate.bodyTemplateText,
+          dobSentenceText: res.data.dobSentenceText || defaultTemplate.dobSentenceText,
+          conductSentenceText: res.data.conductSentenceText || defaultTemplate.conductSentenceText,
+          purposeSentenceText: res.data.purposeSentenceText || defaultTemplate.purposeSentenceText,
+          defaultPurpose: res.data.defaultPurpose || defaultTemplate.defaultPurpose,
+          watermarkText: res.data.watermarkText || defaultTemplate.watermarkText,
+          footerText: res.data.footerText || defaultTemplate.footerText,
+          primaryColor: res.data.primaryColor || defaultTemplate.primaryColor,
+          secondaryColor: res.data.secondaryColor || defaultTemplate.secondaryColor,
+          borderColor: res.data.borderColor || defaultTemplate.borderColor,
           letterheadBgImage: res.data.letterheadBgImage || '',
           letterheadTopMargin: res.data.letterheadTopMargin || 140,
         }));
@@ -497,6 +513,7 @@ export const BonafideCertificateDesignerPage = () => {
       .replace(/{CalculatedAge}/g, `<strong>${SAMPLE_STUDENT.calculatedAge}</strong>`)
       .replace(/{AgeYears}/g, `<strong>${SAMPLE_STUDENT.ageYears}</strong>`)
       .replace(/{AgeMonths}/g, `<strong>${SAMPLE_STUDENT.ageMonths}</strong>`)
+      .replace(/{AgeDays}/g, `<strong>${SAMPLE_STUDENT.ageDays}</strong>`)
       .replace(/{AsOnDate}/g, `<strong>${SAMPLE_STUDENT.asOnDate}</strong>`)
       .replace(/{ConductRating}/g, `<strong>${SAMPLE_STUDENT.conductRating}</strong>`)
       .replace(/{Gender}/g, `<strong>${SAMPLE_STUDENT.gender}</strong>`)
@@ -696,6 +713,218 @@ export const BonafideCertificateDesignerPage = () => {
 
       case 'details_table':
         if (!config.showDetailsTable) return null;
+
+        // 1. DATE OF BIRTH CERTIFICATE TABLE
+        if (selectedCertType === 'birth') {
+          return (
+            <div
+              className="p-2 border-1 surface-border border-round"
+              style={{ backgroundColor: config.secondaryColor }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: config.primaryColor,
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Statutory Birth Record (Admission Register Extract)
+              </div>
+              <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Admission / Scholar No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionNo}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Date of Admission:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionDate}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Date of Birth (Figures):</td>
+                    <td style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>{SAMPLE_STUDENT.dob}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Class Admitted:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.className} (Sec: {SAMPLE_STUDENT.sectionName})</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Date of Birth (in Words):</td>
+                    <td colSpan="3" style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>
+                      {SAMPLE_STUDENT.dobWords}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Father's Full Name:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.fatherName}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Mother's Full Name:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.motherName}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Record Source:</td>
+                    <td colSpan="3" style={{ padding: '4px', fontWeight: 600, color: '#334155' }}>
+                      General Admission Register (Vol. I / G.R. No: {SAMPLE_STUDENT.admissionNo}) • Duly Verified & Authentic
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        // 2. CERTIFICATE OF AGE TABLE
+        if (selectedCertType === 'age') {
+          return (
+            <div
+              className="p-2 border-1 surface-border border-round"
+              style={{ backgroundColor: config.secondaryColor }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: config.primaryColor,
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Age Computation & Verification Record
+              </div>
+              <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Admission No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionNo}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Roll No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.rollNo}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Class & Section:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.className} - {SAMPLE_STUDENT.sectionName}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Academic Session:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.academicYear}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Date of Birth (Figures):</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.dob}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Verified Age on {SAMPLE_STUDENT.asOnDate}:</td>
+                    <td style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>{SAMPLE_STUDENT.calculatedAge}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Date of Birth (Words):</td>
+                    <td colSpan="3" style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>
+                      {SAMPLE_STUDENT.dobWords}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        // 3. CHARACTER & CONDUCT CERTIFICATE TABLE
+        if (selectedCertType === 'character') {
+          return (
+            <div
+              className="p-2 border-1 surface-border border-round"
+              style={{ backgroundColor: config.secondaryColor }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: config.primaryColor,
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Conduct, Character & Institutional Record
+              </div>
+              <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Admission No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionNo}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Roll No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.rollNo}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Class & Section:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.className} - {SAMPLE_STUDENT.sectionName}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Academic Session:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.academicYear}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Moral Character & Conduct:</td>
+                    <td style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>Exemplary / Very Good</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Institutional Discipline:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>Obedient & Punctual</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Co-Curricular / Sports:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>Active & Dedicated</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Outstanding Dues:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, color: '#16a34a' }}>Nil (Cleared)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        // 4. RET (RECORD OF EDUCATION & RETENTION) TABLE
+        if (selectedCertType === 'ret') {
+          return (
+            <div
+              className="p-2 border-1 surface-border border-round"
+              style={{ backgroundColor: config.secondaryColor }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: config.primaryColor,
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Education & Continuous Retention Record
+              </div>
+              <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Admission No:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionNo}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569', width: '25%' }}>Date of Admission:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, width: '25%' }}>{SAMPLE_STUDENT.admissionDate}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Current Class & Section:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.className} - {SAMPLE_STUDENT.sectionName}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Academic Session:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>{SAMPLE_STUDENT.academicYear}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Retention Status:</td>
+                    <td style={{ padding: '4px', fontWeight: 800, color: config.primaryColor }}>Retained on Roll (Regular Student)</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Attendance Record:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>Regular & Satisfactory</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Promotion / Continuation:</td>
+                    <td style={{ padding: '4px', fontWeight: 700 }}>Qualified & Continuing</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: '#475569' }}>Disciplinary Record:</td>
+                    <td style={{ padding: '4px', fontWeight: 700, color: '#16a34a' }}>Clean / Unblemished</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        // 5. STANDARD BONAFIDE CERTIFICATE TABLE
         return (
           <div
             className="p-2 border-1 surface-border border-round"
@@ -1411,6 +1640,50 @@ export const BonafideCertificateDesignerPage = () => {
             {/* TAB 3: Statement & Content */}
             {activeTab === 'statement' && (
               <div className="flex flex-column gap-3">
+                <div className="flex justify-content-between align-items-center p-2 surface-50 border-round border-1 surface-border">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">
+                      <i className="pi pi-verified text-blue-600 mr-1"></i> Standard {activeCertMeta.label} Template
+                    </span>
+                    <small className="text-slate-500">
+                      Ref Prefix: <strong>{activeCertMeta.badge}</strong> • Statutory school wording
+                    </small>
+                  </div>
+                  <Button
+                    label={`Apply ${activeCertMeta.shortLabel} Defaults`}
+                    icon="pi pi-refresh"
+                    size="small"
+                    severity="info"
+                    outlined
+                    onClick={() => {
+                      const defTpl = DEFAULT_CERT_TEMPLATES[selectedCertType] || DEFAULT_CERT_TEMPLATES.bonafide;
+                      setConfig((prev) => ({
+                        ...prev,
+                        certificateTitle: defTpl.certificateTitle,
+                        certificateSubtitle: defTpl.certificateSubtitle,
+                        refPrefix: defTpl.refPrefix,
+                        bodyTemplateText: defTpl.bodyTemplateText,
+                        dobSentenceText: defTpl.dobSentenceText,
+                        conductSentenceText: defTpl.conductSentenceText,
+                        purposeSentenceText: defTpl.purposeSentenceText,
+                        defaultPurpose: defTpl.defaultPurpose,
+                        watermarkText: defTpl.watermarkText,
+                        footerText: defTpl.footerText,
+                        primaryColor: defTpl.primaryColor,
+                        secondaryColor: defTpl.secondaryColor,
+                        borderColor: defTpl.borderColor,
+                        titleBgColor: defTpl.titleBgColor,
+                      }));
+                      toastRef.current?.show({
+                        severity: 'info',
+                        summary: 'Statutory Defaults Applied',
+                        detail: `Loaded standard format, tables, and wording for ${activeCertMeta.label}.`,
+                        life: 3000,
+                      });
+                    }}
+                  />
+                </div>
+
                 <div className="p-3 border-round bg-blue-50 text-blue-900 text-xs line-height-3">
                   <strong>Smart Tags:</strong>{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{StudentName}'}</code>,{' '}
@@ -1427,6 +1700,7 @@ export const BonafideCertificateDesignerPage = () => {
                   <code className="bg-white px-1 border-round font-bold">{'{CalculatedAge}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{AgeYears}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{AgeMonths}'}</code>,{' '}
+                  <code className="bg-white px-1 border-round font-bold">{'{AgeDays}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{AsOnDate}'}</code>,{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{ConductRating}'}</code>, and{' '}
                   <code className="bg-white px-1 border-round font-bold">{'{Purpose}'}</code>.

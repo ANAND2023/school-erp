@@ -21,6 +21,8 @@ export const studentApi = {
   deleteDocument: (id, docId) => apiClient.delete(`/students/${id}/documents/${docId}`),
   getSectionHistory: (id) => apiClient.get(`/students/${id}/section-history`),
   getAuditLogs: (id) => apiClient.get(`/students/${id}/audit-logs`),
+  getAwrReport: (params) => apiClient.get('/students/awr-report', { params }),
+  getAwrConfig: () => apiClient.get('/students/awr-config'),
 };
 
 export const gatePassApi = {

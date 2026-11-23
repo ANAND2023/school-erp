@@ -43,6 +43,7 @@ import IdCardDesignPage from '../features/students/pages/IdCardDesignPage';
 import IdCardPrintPage from '../features/students/pages/IdCardPrintPage';
 import StudentGatePassPage from '../features/students/pages/StudentGatePassPage';
 import BonafideCertificatesPage from '../features/students/pages/BonafideCertificatesPage';
+import StudentAwrReportPage from '../features/students/pages/StudentAwrReportPage';
 
 // Module 4: Staff & HR
 import StaffDirectoryPage from '../features/staff/pages/StaffDirectoryPage';
@@ -113,6 +114,7 @@ import { RegistrationSlipDesignerPage } from '../features/superadmin/pages/Regis
 import { FeeSlipDesignerPage } from '../features/superadmin/pages/FeeSlipDesignerPage';
 import { AdmissionSlipDesignerPage } from '../features/superadmin/pages/AdmissionSlipDesignerPage';
 import { BonafideCertificateDesignerPage } from '../features/superadmin/pages/BonafideCertificateDesignerPage';
+import { AwrReportDesignerPage } from '../features/superadmin/pages/AwrReportDesignerPage';
 import { useAuthStore } from '../store/authStore';
 import { usePermission } from '../hooks/usePermission';
 
@@ -716,6 +718,22 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="students/awr-report"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <StudentAwrReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="awr-report"
+          element={
+            <ProtectedRoute requiredMenu={['Students', 'TransferCertificates', 'Promotion']}>
+              <StudentAwrReportPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Central Reports Hub */}
         <Route
@@ -834,6 +852,8 @@ export const AppRoutes = () => {
         <Route path="admission-slip-designer" element={<AdmissionSlipDesignerPage />} />
         <Route path="certificate-designer" element={<BonafideCertificateDesignerPage />} />
         <Route path="bonafide-certificate-designer" element={<BonafideCertificateDesignerPage />} />
+        <Route path="awr-designer" element={<AwrReportDesignerPage />} />
+        <Route path="awr-report-designer" element={<AwrReportDesignerPage />} />
         <Route path="inventory-slip-designer" element={<InventoryStoreSetupPage />} />
         <Route path="audit-logs" element={<GlobalAuditLogsPage />} />
         <Route path="error-logs" element={<SystemErrorLogsPage />} />

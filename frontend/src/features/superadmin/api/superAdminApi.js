@@ -245,4 +245,20 @@ export const superAdminApi = {
     const res = await apiClient.delete('/superadmin/certificate-config/bonafide', { params: { schoolId } });
     return res.data;
   },
+
+  // 15. Dynamic AWR Report Designer (Admission & Withdrawal Register)
+  getAwrConfig: async (schoolId = null) => {
+    const res = await apiClient.get('/superadmin/awr-config', { params: { schoolId } });
+    return res.data;
+  },
+
+  saveAwrConfig: async (payload, schoolId = null) => {
+    const res = await apiClient.post('/superadmin/awr-config', payload, { params: { schoolId } });
+    return res.data;
+  },
+
+  resetAwrConfig: async (schoolId) => {
+    const res = await apiClient.delete('/superadmin/awr-config', { params: { schoolId } });
+    return res.data;
+  },
 };

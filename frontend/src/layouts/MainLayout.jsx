@@ -67,6 +67,7 @@ const navItems = [
       { title: 'ID Card Settings', path: '/students/id-card-design', menuKey: 'IDCardSettings' },
       { title: 'Print ID Cards', path: '/students/id-card-print', menuKey: 'PrintIDCards' },
       { title: 'Student Gate Pass', path: '/students/gate-pass', menuKey: 'Students' },
+      { title: 'Student AWR Report', path: '/students/awr-report', menuKey: 'Students' },
     ],
   },
   {
@@ -147,6 +148,7 @@ const navItems = [
       { title: 'Age Certificate', path: '/certificates/age', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
       { title: 'Character Certificate', path: '/certificates/character', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
       { title: 'RET Certificate', path: '/certificates/ret', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
+      { title: 'AWR Register / Report', path: '/students/awr-report', menuKey: ['Students', 'TransferCertificates', 'Promotion'] },
       { title: 'Transfer Certificate (TC)', path: '/tc', menuKey: 'TransferCertificates' },
     ],
   },

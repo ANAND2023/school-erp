@@ -34,9 +34,9 @@ const CERT_META = {
     title: 'Certificate of Age',
     subtitle: 'Generate verified age certificates showing student exact calculated age as of reference date from institutional records.',
     icon: 'pi pi-clock',
-    colorClass: 'text-indigo-700 bg-indigo-100',
+    colorClass: 'text-amber-700 bg-amber-100',
     buttonLabel: 'Issue Age Cert',
-    themeColor: '#1e3a8a',
+    themeColor: '#b45309',
   },
   character: {
     title: 'Character & Conduct Certificate',
