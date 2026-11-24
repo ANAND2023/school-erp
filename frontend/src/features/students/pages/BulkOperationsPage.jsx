@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Card } from 'primereact/card';
 import { AppButton as Button } from '../../../components/common/AppButton';
 import { FileUpload } from 'primereact/fileupload';
 import { Toast } from 'primereact/toast';
@@ -552,8 +551,11 @@ export const BulkOperationsPage = () => {
                     placeholder="Adm No"
                     className="w-full p-inputtext-sm font-semibold" 
                     style={{ 
-                        minHeight: '34px', 
-                        fontSize: '13px',
+                        height: '28px',
+                        minHeight: '28px', 
+                        fontSize: '11.5px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
                         backgroundColor: isDirty ? '#fefce8' : '#eff6ff',
                         borderColor: isDirty ? '#f59e0b' : '#bfdbfe',
                         color: isDirty ? '#92400e' : '#1e40af'
@@ -588,8 +590,11 @@ export const BulkOperationsPage = () => {
                     placeholder={placeholder}
                     className="w-full p-inputtext-sm" 
                     style={{ 
-                        minHeight: '34px', 
-                        fontSize: '13px',
+                        height: '28px',
+                        minHeight: '28px', 
+                        fontSize: '11.5px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
                         backgroundColor: isDirty ? '#fefce8' : '#ffffff',
                         borderColor: isDirty ? '#f59e0b' : '#cbd5e1',
                         color: isDirty ? '#92400e' : '#1e293b',
@@ -624,8 +629,11 @@ export const BulkOperationsPage = () => {
                     onChange={(e) => onCellChange(rowData.id, field, e.target.value)} 
                     className="w-full p-inputtext-sm" 
                     style={{ 
-                        minHeight: '34px', 
-                        fontSize: '13px',
+                        height: '28px',
+                        minHeight: '28px', 
+                        fontSize: '11.5px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
                         backgroundColor: isDirty ? '#fefce8' : '#ffffff',
                         borderColor: isDirty ? '#f59e0b' : '#cbd5e1'
                     }} 
@@ -658,8 +666,10 @@ export const BulkOperationsPage = () => {
                 onChange={(e) => onCellChange(rowData.id, 'gender', e.value)} 
                 className="w-full p-inputtext-sm" 
                 style={{ 
-                    minHeight: '34px', 
-                    fontSize: '13px',
+                    height: '28px',
+                    minHeight: '28px', 
+                    fontSize: '11.5px',
+                    borderRadius: '4px',
                     backgroundColor: isDirty ? '#fefce8' : '#ffffff',
                     borderColor: isDirty ? '#f59e0b' : '#cbd5e1'
                 }} 
@@ -677,8 +687,10 @@ export const BulkOperationsPage = () => {
                 className="w-full p-inputtext-sm" 
                 placeholder="Select" 
                 style={{ 
-                    minHeight: '34px', 
-                    fontSize: '13px',
+                    height: '28px',
+                    minHeight: '28px', 
+                    fontSize: '11.5px',
+                    borderRadius: '4px',
                     backgroundColor: isDirty ? '#fefce8' : '#ffffff',
                     borderColor: isDirty ? '#f59e0b' : '#cbd5e1'
                 }} 
@@ -716,52 +728,83 @@ export const BulkOperationsPage = () => {
     };
 
     return (
-        <div className="p-3">
+        <div className="pb-3 px-2 sm:px-3 pt-1">
             <Toast ref={toast} />
             
-            <TabView>
+            <TabView className="app-bulk-tabs">
                 <TabPanel header="UI Bulk Edit Students">
-                    <Card>
+                    <div className="surface-card border-round-lg shadow-1 p-2.5 sm:p-3 border-1 surface-border">
                         {/* Filter Bar */}
-                        <div className="flex flex-wrap gap-3 mb-4 align-items-center p-3 surface-100 border-round">
-                            <div style={{ width: '14rem' }}>
-                                <AppSelect 
-                                    label="Class"
-                                    value={selectedClassId} 
-                                    options={classes} 
-                                    optionLabel="name" 
-                                    optionValue="id" 
-                                    onChange={(e) => { setSelectedClassId(e.value); setSelectedSectionId(null); }} 
-                                    placeholder="Select Class" 
+                        <div className="flex flex-wrap align-items-center justify-content-between gap-2 p-2 sm:p-2.5 surface-50 border-1 border-200 border-round-lg mb-2">
+                            <div className="flex flex-wrap align-items-center gap-2">
+                                <div style={{ width: '160px' }}>
+                                    <AppSelect 
+                                        label="Class"
+                                        value={selectedClassId} 
+                                        options={classes} 
+                                        optionLabel="name" 
+                                        optionValue="id" 
+                                        onChange={(e) => { setSelectedClassId(e.value); setSelectedSectionId(null); }} 
+                                        placeholder="Select Class" 
+                                    />
+                                </div>
+                                <div style={{ width: '160px' }}>
+                                    <AppSelect 
+                                        label="Section (Optional)"
+                                        value={selectedSectionId} 
+                                        options={sections} 
+                                        optionLabel="name" 
+                                        optionValue="id" 
+                                        onChange={(e) => setSelectedSectionId(e.value)} 
+                                        placeholder="All Sections" 
+                                    />
+                                </div>
+                                <Button 
+                                    label="Load Students" 
+                                    icon="pi pi-search" 
+                                    onClick={fetchStudentsForEdit} 
+                                    loading={loadingStudents} 
+                                    className="p-button-sm"
+                                    style={{ height: '32px', minHeight: '32px', fontSize: '12px', fontWeight: 600, borderRadius: '6px' }}
                                 />
                             </div>
-                            <div style={{ width: '14rem' }}>
-                                <AppSelect 
-                                    label="Section (Optional)"
-                                    value={selectedSectionId} 
-                                    options={sections} 
-                                    optionLabel="name" 
-                                    optionValue="id" 
-                                    onChange={(e) => setSelectedSectionId(e.value)} 
-                                    placeholder="All Sections" 
-                                />
-                            </div>
-                            <Button label="Load Students" icon="pi pi-search" onClick={fetchStudentsForEdit} loading={loadingStudents} />
+
+                            {/* Top Search & Count (only if students loaded) */}
+                            {editStudents.length > 0 && (
+                                <div className="flex align-items-center gap-2">
+                                    <span className="p-input-icon-left">
+                                        <i className="pi pi-search text-400" style={{ fontSize: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                                        <InputText 
+                                            value={searchTerm} 
+                                            onChange={(e) => setSearchTerm(e.target.value)} 
+                                            placeholder="Search in table..." 
+                                            className="p-inputtext-sm" 
+                                            style={{ width: '170px', height: '32px', fontSize: '11.5px', borderRadius: '6px' }}
+                                        />
+                                    </span>
+                                    <div className="flex align-items-center gap-1.5 px-2.5 py-1 bg-white border-1 border-300 border-round text-xs font-semibold text-700" style={{ height: '32px' }}>
+                                        <span className="text-500">Students:</span>
+                                        <b className="text-primary">{editStudents.length}</b>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Interactive Grid & Mass Operations */}
                         {editStudents.length > 0 && (
-                            <div className="card p-fluid">
-                                {/* Action & Toolbar */}
-                                <div className="flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 surface-50 border-1 border-200 border-round shadow-1">
+                            <div>
+                                {/* Action & Toolbar - clean inline row without p-fluid */}
+                                <div className="flex flex-wrap align-items-center justify-content-between gap-2 mb-2 p-2 surface-50 border-1 border-200 border-round-lg shadow-xs">
+                                    {/* Left: Save / Reset / Remarks / Unsaved Badge */}
                                     <div className="flex flex-wrap align-items-center gap-2">
                                         <Button 
-                                            label={`Save All Changes (${dirtyCount})`} 
+                                            label={`Save Changes (${dirtyCount})`} 
                                             icon="pi pi-check" 
                                             onClick={saveAllChanges} 
                                             severity="success" 
                                             disabled={dirtyCount === 0} 
-                                            className="font-bold"
+                                            className="font-bold p-button-sm"
+                                            style={{ height: '30px', minHeight: '30px', fontSize: '11.5px', borderRadius: '6px' }}
                                         />
                                         {dirtyCount > 0 && (
                                             <Button 
@@ -770,85 +813,75 @@ export const BulkOperationsPage = () => {
                                                 onClick={resetAllChanges} 
                                                 severity="secondary" 
                                                 outlined 
+                                                className="p-button-sm"
+                                                style={{ height: '30px', minHeight: '30px', fontSize: '11.5px', borderRadius: '6px' }}
                                             />
                                         )}
-                                        <div className="flex align-items-center gap-2 ml-2">
-                                            <span className="text-xs font-bold text-600 uppercase">Remarks:</span>
+                                        <div className="flex align-items-center gap-1.5 ml-1">
+                                            <span className="text-xs font-bold text-600 uppercase" style={{ fontSize: '11px', letterSpacing: '0.3px' }}>Remarks:</span>
                                             <InputText 
                                                 value={bulkRemarks} 
                                                 onChange={(e) => setBulkRemarks(e.target.value)} 
                                                 placeholder="Reason for change (required)" 
                                                 className="p-inputtext-sm"
-                                                style={{ width: '220px', fontSize: '13px' }}
+                                                style={{ width: '190px', height: '28px', fontSize: '11.5px', borderRadius: '4px' }}
                                             />
                                         </div>
-                                        <div className="ml-2 flex align-items-center gap-2">
-                                            <span className="text-xs text-500 font-semibold">Total: <b>{editStudents.length}</b></span>
-                                            {dirtyCount > 0 && (
-                                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 border-round font-bold text-xs">
-                                                    {dirtyCount} unsaved
-                                                </span>
-                                            )}
-                                        </div>
+                                        {dirtyCount > 0 && (
+                                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 border-1 border-yellow-300 border-round font-bold text-xs">
+                                                {dirtyCount} unsaved
+                                            </span>
+                                        )}
                                     </div>
                                     
-                                    <div className="flex flex-wrap align-items-center gap-2">
-                                        <span className="p-input-icon-left">
-                                            <i className="pi pi-search" />
-                                            <InputText 
-                                                value={searchTerm} 
-                                                onChange={(e) => setSearchTerm(e.target.value)} 
-                                                placeholder="Filter in table..." 
-                                                className="p-inputtext-sm" 
-                                                style={{ width: '150px', fontSize: '13px' }}
-                                            />
+                                    {/* Right: Apply to Selected */}
+                                    <div className="flex flex-wrap align-items-center gap-1.5 bg-white px-2 py-1 border-1 border-300 border-round-md shadow-xs">
+                                        <span className="font-semibold text-xs text-700 whitespace-nowrap" style={{ fontSize: '11px' }}>
+                                            Apply to Selected (<b>{selectedStudents?.length || 0}</b>):
                                         </span>
-                                        
-                                        <div className="flex align-items-center gap-2 border-left-1 border-300 pl-2">
-                                            <span className="font-semibold text-xs text-700">Apply to Selected ({selectedStudents?.length || 0}):</span>
+                                        <Dropdown 
+                                            value={massApplyField} 
+                                            options={massFields} 
+                                            onChange={(e) => setMassApplyField(e.value)} 
+                                            placeholder="Select Field"
+                                            className="p-inputtext-sm" 
+                                            style={{ width: '120px', height: '28px', fontSize: '11.5px' }}
+                                        />
+                                        {massApplyField === 'gender' ? (
                                             <Dropdown 
-                                                value={massApplyField} 
-                                                options={massFields} 
-                                                onChange={(e) => setMassApplyField(e.value)} 
-                                                placeholder="Select Field"
+                                                value={massApplyValue} 
+                                                options={genderOptions} 
+                                                onChange={(e) => setMassApplyValue(e.value)} 
+                                                placeholder="Select" 
                                                 className="p-inputtext-sm" 
-                                                style={{ width: '130px', fontSize: '13px' }}
+                                                style={{ width: '105px', height: '28px', fontSize: '11.5px' }}
                                             />
-                                            {massApplyField === 'gender' ? (
-                                                <Dropdown 
-                                                    value={massApplyValue} 
-                                                    options={genderOptions} 
-                                                    onChange={(e) => setMassApplyValue(e.value)} 
-                                                    placeholder="Select" 
-                                                    className="p-inputtext-sm" 
-                                                    style={{ width: '110px', fontSize: '13px' }}
-                                                />
-                                            ) : massApplyField === 'bloodGroup' ? (
-                                                <Dropdown 
-                                                    value={massApplyValue} 
-                                                    options={bloodGroupOptions} 
-                                                    onChange={(e) => setMassApplyValue(e.value)} 
-                                                    placeholder="Select" 
-                                                    className="p-inputtext-sm" 
-                                                    style={{ width: '110px', fontSize: '13px' }}
-                                                />
-                                            ) : (
-                                                <InputText 
-                                                    value={massApplyValue} 
-                                                    onChange={(e) => setMassApplyValue(e.target.value)} 
-                                                    placeholder="Value..." 
-                                                    className="p-inputtext-sm" 
-                                                    style={{ width: '120px', fontSize: '13px' }}
-                                                />
-                                            )}
-                                            <Button 
-                                                label="Apply" 
-                                                icon="pi pi-copy" 
-                                                onClick={applyMassChange} 
-                                                disabled={!selectedStudents || selectedStudents.length === 0} 
-                                                className="p-button-sm"
+                                        ) : massApplyField === 'bloodGroup' ? (
+                                            <Dropdown 
+                                                value={massApplyValue} 
+                                                options={bloodGroupOptions} 
+                                                onChange={(e) => setMassApplyValue(e.value)} 
+                                                placeholder="Select" 
+                                                className="p-inputtext-sm" 
+                                                style={{ width: '105px', height: '28px', fontSize: '11.5px' }}
                                             />
-                                        </div>
+                                        ) : (
+                                            <InputText 
+                                                value={massApplyValue} 
+                                                onChange={(e) => setMassApplyValue(e.target.value)} 
+                                                placeholder="Value..." 
+                                                className="p-inputtext-sm" 
+                                                style={{ width: '110px', height: '28px', fontSize: '11.5px' }}
+                                            />
+                                        )}
+                                        <Button 
+                                            label="Apply" 
+                                            icon="pi pi-copy" 
+                                            onClick={applyMassChange} 
+                                            disabled={!selectedStudents || selectedStudents.length === 0} 
+                                            className="p-button-sm"
+                                            style={{ height: '28px', minHeight: '28px', fontSize: '11.5px', padding: '0 10px', borderRadius: '4px' }}
+                                        />
                                     </div>
                                 </div>
 
@@ -862,45 +895,65 @@ export const BulkOperationsPage = () => {
                                     stripedRows 
                                     scrollable 
                                     scrollHeight="620px" 
-                                    className="p-datatable-sm" 
-                                    emptyMessage="No students found"
+                                    className="p-datatable-sm app-bulk-table" 
+                                    emptyMessage="No students found matching current filters"
                                     responsiveLayout="scroll"
                                 >
-                                    <Column selectionMode="multiple" headerStyle={{ width: '3rem', minWidth: '3rem' }} frozen></Column>
-                                    <Column header="#" body={renderIndexCell} headerStyle={{ width: '3.5rem', minWidth: '3.5rem', textAlign: 'center' }} style={{ textAlign: 'center' }} frozen></Column>
-                                    <Column field="admissionNo" header="Adm No *" body={renderAdmNoCell} headerStyle={{ minWidth: '160px', width: '160px' }} frozen></Column>
-                                    <Column field="firstName" header="First Name *" body={(data) => renderTextCell(data, 'firstName', 'First Name')} headerStyle={{ minWidth: '150px', width: '150px' }} frozen></Column>
-                                    <Column field="lastName" header="Last Name" body={(data) => renderTextCell(data, 'lastName', 'Last Name')} headerStyle={{ minWidth: '150px', width: '150px' }}></Column>
-                                    <Column field="rollNo" header="Roll No" body={(data) => renderTextCell(data, 'rollNo', 'Roll No', true)} headerStyle={{ minWidth: '95px', width: '95px' }}></Column>
-                                    <Column field="className" header="Class" body={renderClassBadge} headerStyle={{ minWidth: '110px', width: '110px' }}></Column>
-                                    <Column field="gender" header="Gender" body={renderGenderCell} headerStyle={{ minWidth: '120px', width: '120px' }}></Column>
-                                    <Column field="dateOfBirth" header="DOB" body={(data) => renderDateCell(data, 'dateOfBirth')} headerStyle={{ minWidth: '150px', width: '150px' }}></Column>
-                                    <Column field="bloodGroup" header="Blood" body={renderBloodGroupCell} headerStyle={{ minWidth: '110px', width: '110px' }}></Column>
-                                    <Column field="aadhaarNo" header="Aadhaar" body={(data) => renderTextCell(data, 'aadhaarNo', 'Aadhaar')} headerStyle={{ minWidth: '150px', width: '150px' }}></Column>
-                                    <Column field="address" header="Address" body={(data) => renderTextCell(data, 'address', 'Address')} headerStyle={{ minWidth: '200px', width: '200px' }}></Column>
-                                    <Column field="city" header="City" body={(data) => renderTextCell(data, 'city', 'City')} headerStyle={{ minWidth: '130px', width: '130px' }}></Column>
-                                    <Column field="state" header="State" body={(data) => renderTextCell(data, 'state', 'State')} headerStyle={{ minWidth: '130px', width: '130px' }}></Column>
-                                    <Column field="pincode" header="Pincode" body={(data) => renderTextCell(data, 'pincode', 'Pincode')} headerStyle={{ minWidth: '110px', width: '110px' }}></Column>
-                                    <Column field="emergencyContact" header="Emerg. Contact" body={(data) => renderTextCell(data, 'emergencyContact', 'Emerg. Contact')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
-                                    <Column field="fatherName" header="Father Name" body={(data) => renderTextCell(data, 'fatherName', 'Father Name')} headerStyle={{ minWidth: '150px', width: '150px' }}></Column>
-                                    <Column field="fatherMobile" header="Father Mobile" body={(data) => renderTextCell(data, 'fatherMobile', 'Mobile')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
-                                    <Column field="motherName" header="Mother Name" body={(data) => renderTextCell(data, 'motherName', 'Mother Name')} headerStyle={{ minWidth: '150px', width: '150px' }}></Column>
-                                    <Column field="motherMobile" header="Mother Mobile" body={(data) => renderTextCell(data, 'motherMobile', 'Mobile')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column selectionMode="multiple" headerStyle={{ width: '2.8rem', minWidth: '2.8rem' }} frozen></Column>
+                                    <Column header="#" body={renderIndexCell} headerStyle={{ width: '3rem', minWidth: '3rem', textAlign: 'center' }} style={{ textAlign: 'center' }} frozen></Column>
+                                    <Column field="admissionNo" header="Adm No *" body={renderAdmNoCell} headerStyle={{ minWidth: '145px', width: '145px' }} frozen></Column>
+                                    <Column field="firstName" header="First Name *" body={(data) => renderTextCell(data, 'firstName', 'First Name')} headerStyle={{ minWidth: '140px', width: '140px' }} frozen></Column>
+                                    <Column field="lastName" header="Last Name" body={(data) => renderTextCell(data, 'lastName', 'Last Name')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column field="rollNo" header="Roll No" body={(data) => renderTextCell(data, 'rollNo', 'Roll No', true)} headerStyle={{ minWidth: '85px', width: '85px' }}></Column>
+                                    <Column field="className" header="Class" body={renderClassBadge} headerStyle={{ minWidth: '105px', width: '105px' }}></Column>
+                                    <Column field="gender" header="Gender" body={renderGenderCell} headerStyle={{ minWidth: '115px', width: '115px' }}></Column>
+                                    <Column field="dateOfBirth" header="DOB" body={(data) => renderDateCell(data, 'dateOfBirth')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column field="bloodGroup" header="Blood" body={renderBloodGroupCell} headerStyle={{ minWidth: '105px', width: '105px' }}></Column>
+                                    <Column field="aadhaarNo" header="Aadhaar" body={(data) => renderTextCell(data, 'aadhaarNo', 'Aadhaar')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column field="address" header="Address" body={(data) => renderTextCell(data, 'address', 'Address')} headerStyle={{ minWidth: '180px', width: '180px' }}></Column>
+                                    <Column field="city" header="City" body={(data) => renderTextCell(data, 'city', 'City')} headerStyle={{ minWidth: '120px', width: '120px' }}></Column>
+                                    <Column field="state" header="State" body={(data) => renderTextCell(data, 'state', 'State')} headerStyle={{ minWidth: '120px', width: '120px' }}></Column>
+                                    <Column field="pincode" header="Pincode" body={(data) => renderTextCell(data, 'pincode', 'Pincode')} headerStyle={{ minWidth: '105px', width: '105px' }}></Column>
+                                    <Column field="emergencyContact" header="Emerg. Contact" body={(data) => renderTextCell(data, 'emergencyContact', 'Emerg. Contact')} headerStyle={{ minWidth: '130px', width: '130px' }}></Column>
+                                    <Column field="fatherName" header="Father Name" body={(data) => renderTextCell(data, 'fatherName', 'Father Name')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column field="fatherMobile" header="Father Mobile" body={(data) => renderTextCell(data, 'fatherMobile', 'Mobile')} headerStyle={{ minWidth: '130px', width: '130px' }}></Column>
+                                    <Column field="motherName" header="Mother Name" body={(data) => renderTextCell(data, 'motherName', 'Mother Name')} headerStyle={{ minWidth: '140px', width: '140px' }}></Column>
+                                    <Column field="motherMobile" header="Mother Mobile" body={(data) => renderTextCell(data, 'motherMobile', 'Mobile')} headerStyle={{ minWidth: '130px', width: '130px' }}></Column>
                                 </DataTable>
                             </div>
                         )}
-                    </Card>
+                    </div>
                 </TabPanel>
 
                 <TabPanel header="Bulk Admission (Excel Upload)">
-                    <Card>
-                        <p className="mb-4 text-700">Download the Excel template, fill in the comprehensive student admission data, and upload it back here. The system will process rows sequentially.</p>
-                        <Button label="Download Admission Template" icon="pi pi-download" severity="info" onClick={downloadAdmitTemplate} className="mb-4" />
-                        
-                        <div className="card mt-2">
-                            <FileUpload name="admissions" accept=".xlsx, .xls" maxFileSize={5000000} customUpload uploadHandler={handleAdmitUpload} emptyTemplate={<p className="m-0">Drag and drop the filled admission Excel file here.</p>} chooseLabel="Select Filled Excel" uploadLabel="Start Bulk Admission" />
+                    <div className="surface-card border-round-lg shadow-1 p-3 border-1 surface-border">
+                        <div className="flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom-1 surface-border">
+                            <div>
+                                <h3 className="text-base font-bold text-800 m-0">Bulk Student Admission via Excel</h3>
+                                <p className="text-xs text-500 m-0 mt-1">Download the pre-formatted Excel template, fill student & guardian data, and upload for automated sequential processing.</p>
+                            </div>
+                            <Button 
+                                label="Download Template" 
+                                icon="pi pi-download" 
+                                severity="info" 
+                                onClick={downloadAdmitTemplate} 
+                                style={{ height: '32px', fontSize: '12px', borderRadius: '6px' }}
+                            />
                         </div>
-                    </Card>
+                        
+                        <div className="border-round p-3 surface-50 border-1 border-dashed surface-border">
+                            <FileUpload 
+                                name="admissions" 
+                                accept=".xlsx, .xls" 
+                                maxFileSize={5000000} 
+                                customUpload 
+                                uploadHandler={handleAdmitUpload} 
+                                emptyTemplate={<p className="m-0 text-sm text-500 text-center py-4">Drag and drop the filled admission Excel file here, or click to browse.</p>} 
+                                chooseLabel="Select Filled Excel" 
+                                uploadLabel="Start Bulk Admission" 
+                            />
+                        </div>
+                    </div>
                 </TabPanel>
             </TabView>
 

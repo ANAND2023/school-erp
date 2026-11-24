@@ -148,6 +148,14 @@ export const routeBreadcrumbMap = {
     subtitle: 'Issue, track student campus departures, and verify security gate clearances',
     code: 'Module 3',
   },
+  '/students/bulk-operations': {
+    module: 'Students & Admission',
+    moduleIcon: 'pi pi-user-plus',
+    modulePath: '/students/bulk-operations',
+    title: 'Bulk Student Operations',
+    subtitle: 'Interactive UI bulk student editor, inline field modifications, and bulk admission upload',
+    code: 'Module 3',
+  },
   '/students/fee-structure': {
     module: 'Students & Admission',
     moduleIcon: 'pi pi-user-plus',
