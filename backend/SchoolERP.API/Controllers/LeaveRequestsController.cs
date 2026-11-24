@@ -193,14 +193,18 @@ namespace SchoolERP.API.Controllers
 
                     if (leave.ApplicantType.Equals("Employee", StringComparison.OrdinalIgnoreCase) && leave.EmployeeId.HasValue)
                     {
+                        var targetAttStatus = leave.LeaveType == LeaveType.Casual ? AttendanceStatus.CasualLeave
+                                            : leave.LeaveType == LeaveType.Medical ? AttendanceStatus.SickLeave
+                                            : AttendanceStatus.Leave;
+
                         var staffAtt = await _context.StaffAttendances
                             .FirstOrDefaultAsync(a => a.BranchId == branchId &&
                                                       a.EmployeeId == leave.EmployeeId.Value &&
                                                       a.AttendanceDate.Date == cur);
                         if (staffAtt != null)
                         {
-                            staffAtt.Status = AttendanceStatus.Leave;
-                            staffAtt.Remarks = $"Leave approved: {leave.Reason}";
+                            staffAtt.Status = targetAttStatus;
+                            staffAtt.Remarks = $"{leave.LeaveType} approved: {leave.Reason}";
                             staffAtt.MarkedBy = currentUserId;
                         }
                         else
@@ -210,8 +214,8 @@ namespace SchoolERP.API.Controllers
                                 BranchId = branchId,
                                 EmployeeId = leave.EmployeeId.Value,
                                 AttendanceDate = cur,
-                                Status = AttendanceStatus.Leave,
-                                Remarks = $"Leave approved: {leave.Reason}",
+                                Status = targetAttStatus,
+                                Remarks = $"{leave.LeaveType} approved: {leave.Reason}",
                                 MarkedBy = currentUserId,
                                 IsActive = true
                             });
@@ -262,6 +266,334 @@ namespace SchoolERP.API.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse.Ok($"Leave application {request.Status.ToString().ToLower()} successfully."));
+        }
+
+        // =========================================================================
+        // Category-wise Staff Leave Policies (CL / SL Master)
+        // =========================================================================
+
+        [HttpGet("policies")]
+        [HasPermission("LeaveManagement", "View")]
+        public async Task<ActionResult<ApiResponse<List<StaffLeavePolicyDto>>>> GetLeavePolicies()
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+
+            var policies = await _context.StaffLeavePolicies
+                .Include(p => p.Department)
+                .Where(p => p.BranchId == branchId && p.AcademicYearId == yearId && p.IsActive)
+                .OrderBy(p => p.CategoryName)
+                .ToListAsync();
+
+            // Auto seed default policies if none exist
+            if (policies.Count == 0)
+            {
+                var defaults = new List<StaffLeavePolicy>
+                {
+                    new StaffLeavePolicy
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = yearId,
+                        CategoryName = "Teaching Staff / Academics",
+                        CasualLeaveDays = 12,
+                        SickLeaveDays = 10,
+                        EarnedLeaveDays = 0,
+                        Description = "Standard annual leave policy for Teachers and Academic Faculty",
+                        CreatedBy = _currentUserService.UserId ?? 1,
+                        CreatedOn = DateTime.UtcNow,
+                        IsActive = true
+                    },
+                    new StaffLeavePolicy
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = yearId,
+                        CategoryName = "Non-Teaching / Administration",
+                        CasualLeaveDays = 15,
+                        SickLeaveDays = 12,
+                        EarnedLeaveDays = 0,
+                        Description = "Annual leave policy for Administrative & Accounts staff",
+                        CreatedBy = _currentUserService.UserId ?? 1,
+                        CreatedOn = DateTime.UtcNow,
+                        IsActive = true
+                    },
+                    new StaffLeavePolicy
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = yearId,
+                        CategoryName = "Support / Transport Staff",
+                        CasualLeaveDays = 10,
+                        SickLeaveDays = 8,
+                        EarnedLeaveDays = 0,
+                        Description = "Annual leave policy for Drivers, Conductors and Support Staff",
+                        CreatedBy = _currentUserService.UserId ?? 1,
+                        CreatedOn = DateTime.UtcNow,
+                        IsActive = true
+                    }
+                };
+
+                _context.StaffLeavePolicies.AddRange(defaults);
+                await _context.SaveChangesAsync();
+                policies = defaults;
+            }
+
+            var list = policies.Select(p => new StaffLeavePolicyDto
+            {
+                Id = p.Id,
+                BranchId = p.BranchId,
+                AcademicYearId = p.AcademicYearId,
+                DepartmentId = p.DepartmentId,
+                DepartmentName = p.Department?.Name,
+                CategoryName = p.CategoryName,
+                CasualLeaveDays = p.CasualLeaveDays,
+                SickLeaveDays = p.SickLeaveDays,
+                EarnedLeaveDays = p.EarnedLeaveDays,
+                Description = p.Description
+            }).ToList();
+
+            return Ok(ApiResponse<List<StaffLeavePolicyDto>>.Ok(list));
+        }
+
+        [HttpPost("policies")]
+        [HasPermission("LeaveManagement", "Add")]
+        public async Task<ActionResult<ApiResponse<StaffLeavePolicyDto>>> SaveLeavePolicy([FromBody] CreateStaffLeavePolicyDto dto)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+            var userId = _currentUserService.UserId ?? 1;
+
+            if (string.IsNullOrWhiteSpace(dto.CategoryName))
+                return BadRequest(ApiResponse<StaffLeavePolicyDto>.Fail("Category name is required"));
+
+            // Check if policy already exists for this department or name
+            var existing = await _context.StaffLeavePolicies
+                .FirstOrDefaultAsync(p => p.BranchId == branchId && p.AcademicYearId == yearId && p.IsActive &&
+                    ((dto.DepartmentId.HasValue && p.DepartmentId == dto.DepartmentId.Value) ||
+                     p.CategoryName.ToLower() == dto.CategoryName.Trim().ToLower()));
+
+            if (existing != null)
+            {
+                existing.CategoryName = dto.CategoryName.Trim();
+                existing.DepartmentId = dto.DepartmentId;
+                existing.CasualLeaveDays = dto.CasualLeaveDays;
+                existing.SickLeaveDays = dto.SickLeaveDays;
+                existing.EarnedLeaveDays = dto.EarnedLeaveDays;
+                existing.Description = dto.Description;
+                existing.ModifiedBy = userId;
+                existing.ModifiedOn = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<StaffLeavePolicyDto>.Ok(new StaffLeavePolicyDto
+                {
+                    Id = existing.Id,
+                    BranchId = existing.BranchId,
+                    AcademicYearId = existing.AcademicYearId,
+                    DepartmentId = existing.DepartmentId,
+                    CategoryName = existing.CategoryName,
+                    CasualLeaveDays = existing.CasualLeaveDays,
+                    SickLeaveDays = existing.SickLeaveDays,
+                    EarnedLeaveDays = existing.EarnedLeaveDays,
+                    Description = existing.Description
+                }, "Staff leave policy updated successfully."));
+            }
+
+            var entity = new StaffLeavePolicy
+            {
+                BranchId = branchId,
+                AcademicYearId = yearId,
+                DepartmentId = dto.DepartmentId,
+                CategoryName = dto.CategoryName.Trim(),
+                CasualLeaveDays = dto.CasualLeaveDays,
+                SickLeaveDays = dto.SickLeaveDays,
+                EarnedLeaveDays = dto.EarnedLeaveDays,
+                Description = dto.Description,
+                CreatedBy = userId,
+                CreatedOn = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.StaffLeavePolicies.Add(entity);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<StaffLeavePolicyDto>.Ok(new StaffLeavePolicyDto
+            {
+                Id = entity.Id,
+                BranchId = entity.BranchId,
+                AcademicYearId = entity.AcademicYearId,
+                DepartmentId = entity.DepartmentId,
+                CategoryName = entity.CategoryName,
+                CasualLeaveDays = entity.CasualLeaveDays,
+                SickLeaveDays = entity.SickLeaveDays,
+                EarnedLeaveDays = entity.EarnedLeaveDays,
+                Description = entity.Description
+            }, "Staff leave policy created successfully."));
+        }
+
+        [HttpDelete("policies/{id}")]
+        [HasPermission("LeaveManagement", "Delete")]
+        public async Task<ActionResult<ApiResponse>> DeleteLeavePolicy(long id)
+        {
+            var branchId = _currentUserService.BranchId;
+            var policy = await _context.StaffLeavePolicies.FirstOrDefaultAsync(p => p.Id == id && p.BranchId == branchId);
+            if (policy == null) return NotFound(ApiResponse.Fail("Leave policy not found"));
+
+            policy.IsActive = false;
+            policy.ModifiedBy = _currentUserService.UserId;
+            policy.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Leave policy removed successfully."));
+        }
+
+        // =========================================================================
+        // Staff Leave Balances & Quota Ledger
+        // =========================================================================
+
+        [HttpGet("staff-balances")]
+        [HasPermission("LeaveManagement", "View")]
+        public async Task<ActionResult<ApiResponse<List<StaffLeaveBalanceDto>>>> GetStaffLeaveBalances([FromQuery] long? departmentId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+
+            // Fetch active academic year dates
+            var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId && ay.BranchId == branchId);
+            var yearStart = academicYear?.StartDate ?? new DateTime(DateTime.UtcNow.Year, 4, 1);
+            var yearEnd = academicYear?.EndDate ?? new DateTime(DateTime.UtcNow.Year + 1, 3, 31, 23, 59, 59);
+
+            // Fetch all active employees
+            var empQuery = _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Designation)
+                .Where(e => e.BranchId == branchId && e.Status == EmployeeStatus.Active && e.IsActive);
+
+            if (departmentId.HasValue && departmentId.Value > 0)
+                empQuery = empQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+            var employees = await empQuery.OrderBy(e => e.FirstName).ToListAsync();
+
+            // Fetch category policies
+            var policies = await _context.StaffLeavePolicies
+                .Where(p => p.BranchId == branchId && p.AcademicYearId == yearId && p.IsActive)
+                .ToListAsync();
+
+            // Fetch custom staff allocations
+            var allocations = await _context.StaffLeaveAllocations
+                .Where(a => a.BranchId == branchId && a.AcademicYearId == yearId && a.IsActive)
+                .ToListAsync();
+
+            // Fetch approved leave requests in current academic year
+            var approvedLeaves = await _context.LeaveRequests
+                .Where(r => r.BranchId == branchId && r.ApplicantType == "Employee" &&
+                            r.Status == LeaveStatus.Approved &&
+                            r.FromDate >= yearStart && r.FromDate <= yearEnd &&
+                            r.IsActive)
+                .ToListAsync();
+
+            // Fetch daily staff attendance marked directly as CL or SL
+            var clSlAttendances = await _context.StaffAttendances
+                .Where(a => a.BranchId == branchId &&
+                            a.AttendanceDate >= yearStart && a.AttendanceDate <= yearEnd &&
+                            (a.Status == AttendanceStatus.CasualLeave || a.Status == AttendanceStatus.SickLeave) &&
+                            a.IsActive)
+                .ToListAsync();
+
+            var balances = new List<StaffLeaveBalanceDto>();
+
+            foreach (var emp in employees)
+            {
+                // Check if individual allocation exists
+                var customAlloc = allocations.FirstOrDefault(a => a.EmployeeId == emp.Id);
+
+                // Otherwise find policy matching DepartmentId or matching Category
+                var matchingPolicy = policies.FirstOrDefault(p => p.DepartmentId.HasValue && p.DepartmentId.Value == emp.DepartmentId)
+                                  ?? policies.FirstOrDefault(p => p.DepartmentId == null)
+                                  ?? policies.FirstOrDefault();
+
+                decimal allocCL = customAlloc?.CasualLeaveDays ?? matchingPolicy?.CasualLeaveDays ?? 12m;
+                decimal allocSL = customAlloc?.SickLeaveDays ?? matchingPolicy?.SickLeaveDays ?? 10m;
+                decimal allocEL = customAlloc?.EarnedLeaveDays ?? matchingPolicy?.EarnedLeaveDays ?? 0m;
+                string categoryName = customAlloc != null ? "Individual Quota" : (matchingPolicy?.CategoryName ?? "General Staff");
+
+                // Calculate used CL
+                var empApprovedCL = approvedLeaves.Where(r => r.EmployeeId == emp.Id && r.LeaveType == LeaveType.Casual).Sum(r => r.TotalDays);
+                var directAttCL = clSlAttendances.Count(a => a.EmployeeId == emp.Id && a.Status == AttendanceStatus.CasualLeave);
+                decimal usedCL = Math.Max(empApprovedCL, directAttCL); // avoid double counting if leave created attendance
+
+                // Calculate used SL
+                var empApprovedSL = approvedLeaves.Where(r => r.EmployeeId == emp.Id && r.LeaveType == LeaveType.Medical).Sum(r => r.TotalDays);
+                var directAttSL = clSlAttendances.Count(a => a.EmployeeId == emp.Id && a.Status == AttendanceStatus.SickLeave);
+                decimal usedSL = Math.Max(empApprovedSL, directAttSL);
+
+                // Calculate used EL
+                var empApprovedEL = approvedLeaves.Where(r => r.EmployeeId == emp.Id && r.LeaveType == LeaveType.Earned).Sum(r => r.TotalDays);
+                decimal usedEL = empApprovedEL;
+
+                balances.Add(new StaffLeaveBalanceDto
+                {
+                    EmployeeId = emp.Id,
+                    EmployeeCode = emp.EmployeeCode,
+                    EmployeeName = emp.FullName,
+                    Department = emp.Department?.Name,
+                    Designation = emp.Designation?.Name,
+                    CategoryName = categoryName,
+                    AllocatedCL = allocCL,
+                    UsedCL = usedCL,
+                    AvailableCL = Math.Max(0, allocCL - usedCL),
+                    AllocatedSL = allocSL,
+                    UsedSL = usedSL,
+                    AvailableSL = Math.Max(0, allocSL - usedSL),
+                    AllocatedEL = allocEL,
+                    UsedEL = usedEL,
+                    AvailableEL = Math.Max(0, allocEL - usedEL),
+                    TotalAllocated = allocCL + allocSL + allocEL,
+                    TotalUsed = usedCL + usedSL + usedEL,
+                    TotalAvailable = Math.Max(0, allocCL - usedCL) + Math.Max(0, allocSL - usedSL) + Math.Max(0, allocEL - usedEL)
+                });
+            }
+
+            return Ok(ApiResponse<List<StaffLeaveBalanceDto>>.Ok(balances));
+        }
+
+        [HttpPost("allocate-staff")]
+        [HasPermission("LeaveManagement", "Add")]
+        public async Task<ActionResult<ApiResponse>> SetStaffAllocation([FromBody] SetStaffLeaveAllocationDto dto)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = _currentUserService.AcademicYearId;
+            var userId = _currentUserService.UserId ?? 1;
+
+            var existing = await _context.StaffLeaveAllocations
+                .FirstOrDefaultAsync(a => a.BranchId == branchId && a.AcademicYearId == yearId && a.EmployeeId == dto.EmployeeId && a.IsActive);
+
+            if (existing != null)
+            {
+                existing.CasualLeaveDays = dto.CasualLeaveDays;
+                existing.SickLeaveDays = dto.SickLeaveDays;
+                existing.EarnedLeaveDays = dto.EarnedLeaveDays;
+                existing.Remarks = dto.Remarks;
+                existing.ModifiedBy = userId;
+                existing.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.StaffLeaveAllocations.Add(new StaffLeaveAllocation
+                {
+                    BranchId = branchId,
+                    AcademicYearId = yearId,
+                    EmployeeId = dto.EmployeeId,
+                    CasualLeaveDays = dto.CasualLeaveDays,
+                    SickLeaveDays = dto.SickLeaveDays,
+                    EarnedLeaveDays = dto.EarnedLeaveDays,
+                    Remarks = dto.Remarks,
+                    CreatedBy = userId,
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse.Ok("Staff individual leave quota updated successfully."));
         }
     }
 }

@@ -65,6 +65,8 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<Employee> Employees => Set<Employee>();
         public DbSet<TeacherAllocation> TeacherAllocations => Set<TeacherAllocation>();
         public DbSet<StaffPayroll> StaffPayrolls => Set<StaffPayroll>();
+        public DbSet<StaffLeavePolicy> StaffLeavePolicies => Set<StaffLeavePolicy>();
+        public DbSet<StaffLeaveAllocation> StaffLeaveAllocations => Set<StaffLeaveAllocation>();
 
         public DbSet<FeeHead> FeeHeads => Set<FeeHead>();
         public DbSet<FeeGroup> FeeGroups => Set<FeeGroup>();

@@ -114,4 +114,37 @@ namespace SchoolERP.Domain.Entities
         public virtual AcademicYear? AcademicYear { get; set; }
         public virtual Employee? Employee { get; set; }
     }
+
+    public class StaffLeavePolicy : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long? DepartmentId { get; set; } // null = All Departments / Default
+        public string CategoryName { get; set; } = string.Empty; // e.g. "Teaching Staff", "Admin Staff", "Support Staff"
+        public decimal CasualLeaveDays { get; set; } = 12; // CL quota per year
+        public decimal SickLeaveDays { get; set; } = 10;   // SL quota per year
+        public decimal EarnedLeaveDays { get; set; } = 0;  // EL quota per year
+        public string? Description { get; set; }
+
+        // Navigation
+        public virtual Branch? Branch { get; set; }
+        public virtual AcademicYear? AcademicYear { get; set; }
+        public virtual SimpleMaster? Department { get; set; }
+    }
+
+    public class StaffLeaveAllocation : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long EmployeeId { get; set; }
+        public decimal CasualLeaveDays { get; set; } = 12; // Custom CL quota
+        public decimal SickLeaveDays { get; set; } = 10;   // Custom SL quota
+        public decimal EarnedLeaveDays { get; set; } = 0;  // Custom EL quota
+        public string? Remarks { get; set; }
+
+        // Navigation
+        public virtual Branch? Branch { get; set; }
+        public virtual AcademicYear? AcademicYear { get; set; }
+        public virtual Employee? Employee { get; set; }
+    }
 }

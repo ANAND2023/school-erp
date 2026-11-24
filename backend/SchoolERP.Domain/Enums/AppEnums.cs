@@ -110,7 +110,9 @@ namespace SchoolERP.Domain.Enums
         Absent = 2,
         Leave = 3,
         HalfDay = 4,
-        Late = 5
+        Late = 5,
+        CasualLeave = 6, // CL (Casual Leave)
+        SickLeave = 7    // SL (Sick / Medical Leave)
     }
 
     public enum LeaveType

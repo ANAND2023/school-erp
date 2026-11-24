@@ -305,7 +305,7 @@ namespace SchoolERP.API.Controllers
 
                 decimal present = empAtts.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
                 decimal halfDay = empAtts.Count(a => a.Status == AttendanceStatus.HalfDay);
-                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave);
+                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave || a.Status == AttendanceStatus.CasualLeave || a.Status == AttendanceStatus.SickLeave);
                 decimal absent = empAtts.Count(a => a.Status == AttendanceStatus.Absent);
 
                 decimal paidDays;
@@ -467,7 +467,7 @@ namespace SchoolERP.API.Controllers
                 var empAtts = allAttendances.Where(a => a.EmployeeId == emp.Id).ToList();
                 decimal present = empAtts.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
                 decimal halfDay = empAtts.Count(a => a.Status == AttendanceStatus.HalfDay);
-                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave);
+                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave || a.Status == AttendanceStatus.CasualLeave || a.Status == AttendanceStatus.SickLeave);
                 decimal absent = empAtts.Count(a => a.Status == AttendanceStatus.Absent);
 
                 if (mode == "StrictAttendance")

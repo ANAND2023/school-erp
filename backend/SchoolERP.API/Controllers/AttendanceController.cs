@@ -711,6 +711,8 @@ namespace SchoolERP.API.Controllers
                 decimal present = 0;
                 decimal absent = 0;
                 decimal leave = 0;
+                decimal clCount = 0;
+                decimal slCount = 0;
                 decimal halfDay = 0;
                 decimal workingDays = 0;
 
@@ -745,6 +747,16 @@ namespace SchoolERP.API.Controllers
                                 dailyStatus[d] = "A";
                                 absent++;
                                 break;
+                            case AttendanceStatus.CasualLeave:
+                                dailyStatus[d] = "CL";
+                                clCount++;
+                                leave++;
+                                break;
+                            case AttendanceStatus.SickLeave:
+                                dailyStatus[d] = "SL";
+                                slCount++;
+                                leave++;
+                                break;
                             case AttendanceStatus.Leave:
                                 dailyStatus[d] = "L";
                                 leave++;
@@ -765,7 +777,7 @@ namespace SchoolERP.API.Controllers
                     }
                 }
 
-                decimal effectivePresent = present + (halfDay * 0.5m);
+                decimal effectivePresent = present + clCount + slCount + (halfDay * 0.5m);
                 decimal percentage = workingDays > 0 ? Math.Round((effectivePresent / workingDays) * 100, 2) : 0;
 
                 rows.Add(new StaffMonthlyRegisterRowDto
@@ -778,6 +790,8 @@ namespace SchoolERP.API.Controllers
                     TotalPresent = present,
                     TotalAbsent = absent,
                     TotalLeave = leave,
+                    TotalCL = clCount,
+                    TotalSL = slCount,
                     TotalHalfDay = halfDay,
                     TotalWorkingDays = workingDays,
                     AttendancePercentage = percentage

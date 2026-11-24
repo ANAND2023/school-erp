@@ -137,7 +137,7 @@ const StaffAttendancePage = () => {
       acc[row.status] = (acc[row.status] || 0) + 1;
       return acc;
     },
-    { 1: 0, 2: 0, 3: 0, 4: 0 }
+    { 1: 0, 2: 0, 3: 0, 4: 0, 6: 0, 7: 0 }
   );
 
   return (
@@ -231,10 +231,12 @@ const StaffAttendancePage = () => {
 
       {/* Summary Counter Bar */}
       {staffRows.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip label={`Total Staff: ${staffRows.length}`} color="default" variant="outlined" sx={{ fontWeight: 700 }} />
           <Chip label={`Present: ${counts[1]}`} color="success" sx={{ fontWeight: 700 }} />
           <Chip label={`Absent: ${counts[2]}`} color="error" sx={{ fontWeight: 700 }} />
+          <Chip label={`CL: ${counts[6]}`} sx={{ fontWeight: 700, bgcolor: '#ccfbf1', color: '#0f766e' }} />
+          <Chip label={`SL: ${counts[7]}`} sx={{ fontWeight: 700, bgcolor: '#f3e8ff', color: '#7e22ce' }} />
           <Chip label={`Leave: ${counts[3]}`} color="info" sx={{ fontWeight: 700 }} />
           <Chip label={`Half Day: ${counts[4]}`} color="warning" sx={{ fontWeight: 700 }} />
 
@@ -267,14 +269,14 @@ const StaffAttendancePage = () => {
           <Table size="small">
             <TableHead sx={{ bgcolor: '#f4f6f8' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>Employee Code</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 110 }}>Employee Code</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Employee Name</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Designation</TableCell>
-                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 360 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>In Time</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>Out Time</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 180 }}>Remarks</TableCell>
+                <TableCell sx={{ fontWeight: 700, textAlign: 'center', width: 440 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 110 }}>In Time</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 110 }}>Out Time</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Remarks</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -283,7 +285,20 @@ const StaffAttendancePage = () => {
                   key={row.employeeId}
                   hover
                   sx={{
-                    bgcolor: row.status === 2 ? '#fff8f8' : index % 2 === 0 ? '#fff' : '#fafafa',
+                    bgcolor:
+                      row.status === 2
+                        ? '#fff8f8'
+                        : row.status === 6
+                        ? '#f0fdfa'
+                        : row.status === 7
+                        ? '#faf5ff'
+                        : row.status === 3
+                        ? '#f0f9ff'
+                        : row.status === 4
+                        ? '#fffbeb'
+                        : index % 2 === 0
+                        ? '#fff'
+                        : '#fafafa',
                   }}
                 >
                   <TableCell sx={{ fontWeight: 600 }}>{row.employeeCode}</TableCell>
@@ -296,27 +311,43 @@ const StaffAttendancePage = () => {
                       row
                       value={row.status}
                       onChange={(e) => handleRowChange(row.employeeId, 'status', Number(e.target.value))}
-                      sx={{ justifyContent: 'center' }}
+                      sx={{ justifyContent: 'center', flexWrap: 'nowrap', gap: 0.5 }}
                     >
                       <FormControlLabel
                         value={1}
-                        control={<Radio size="small" color="success" />}
-                        label={<Typography variant="body2" sx={{ color: 'success.main', fontWeight: row.status === 1 ? 700 : 400 }}>Present</Typography>}
+                        control={<Radio size="small" color="success" sx={{ p: 0.5 }} />}
+                        label={<Typography variant="body2" sx={{ color: 'success.main', fontWeight: row.status === 1 ? 700 : 400, fontSize: '0.8rem' }}>Present</Typography>}
+                        sx={{ m: 0 }}
                       />
                       <FormControlLabel
                         value={2}
-                        control={<Radio size="small" color="error" />}
-                        label={<Typography variant="body2" sx={{ color: 'error.main', fontWeight: row.status === 2 ? 700 : 400 }}>Absent</Typography>}
+                        control={<Radio size="small" color="error" sx={{ p: 0.5 }} />}
+                        label={<Typography variant="body2" sx={{ color: 'error.main', fontWeight: row.status === 2 ? 700 : 400, fontSize: '0.8rem' }}>Absent</Typography>}
+                        sx={{ m: 0 }}
+                      />
+                      <FormControlLabel
+                        value={6}
+                        control={<Radio size="small" sx={{ p: 0.5, color: '#0d9488', '&.Mui-checked': { color: '#0f766e' } }} />}
+                        label={<Typography variant="body2" sx={{ color: '#0f766e', fontWeight: row.status === 6 ? 700 : 500, fontSize: '0.8rem' }}>CL</Typography>}
+                        sx={{ m: 0 }}
+                      />
+                      <FormControlLabel
+                        value={7}
+                        control={<Radio size="small" sx={{ p: 0.5, color: '#9333ea', '&.Mui-checked': { color: '#7e22ce' } }} />}
+                        label={<Typography variant="body2" sx={{ color: '#7e22ce', fontWeight: row.status === 7 ? 700 : 500, fontSize: '0.8rem' }}>SL</Typography>}
+                        sx={{ m: 0 }}
                       />
                       <FormControlLabel
                         value={3}
-                        control={<Radio size="small" color="info" />}
-                        label={<Typography variant="body2" sx={{ color: 'info.main', fontWeight: row.status === 3 ? 700 : 400 }}>Leave</Typography>}
+                        control={<Radio size="small" color="info" sx={{ p: 0.5 }} />}
+                        label={<Typography variant="body2" sx={{ color: 'info.main', fontWeight: row.status === 3 ? 700 : 400, fontSize: '0.8rem' }}>Leave</Typography>}
+                        sx={{ m: 0 }}
                       />
                       <FormControlLabel
                         value={4}
-                        control={<Radio size="small" color="warning" />}
-                        label={<Typography variant="body2" sx={{ color: 'warning.main', fontWeight: row.status === 4 ? 700 : 400 }}>Half Day</Typography>}
+                        control={<Radio size="small" color="warning" sx={{ p: 0.5 }} />}
+                        label={<Typography variant="body2" sx={{ color: 'warning.main', fontWeight: row.status === 4 ? 700 : 400, fontSize: '0.8rem' }}>Half Day</Typography>}
+                        sx={{ m: 0 }}
                       />
                     </RadioGroup>
                   </TableCell>
@@ -327,7 +358,7 @@ const StaffAttendancePage = () => {
                       type="time"
                       value={row.inTime}
                       onChange={(e) => handleRowChange(row.employeeId, 'inTime', e.target.value)}
-                      disabled={row.status === 2 || row.status === 3}
+                      disabled={row.status === 2 || row.status === 3 || row.status === 6 || row.status === 7}
                     />
                   </TableCell>
 

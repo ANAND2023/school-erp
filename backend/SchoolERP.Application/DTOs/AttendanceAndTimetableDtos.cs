@@ -157,6 +157,8 @@ namespace SchoolERP.Application.DTOs
         public decimal TotalPresent { get; set; }
         public decimal TotalAbsent { get; set; }
         public decimal TotalLeave { get; set; }
+        public decimal TotalCL { get; set; }
+        public decimal TotalSL { get; set; }
         public decimal TotalHalfDay { get; set; }
         public decimal TotalWorkingDays { get; set; }
         public decimal AttendancePercentage { get; set; }
@@ -211,6 +213,74 @@ namespace SchoolERP.Application.DTOs
     {
         public LeaveStatus Status { get; set; } // Approved or Rejected
         public string? ActionRemarks { get; set; }
+    }
+
+    // --- 4.1 Staff Leave Policy & Quota DTOs ---
+    public class StaffLeavePolicyDto
+    {
+        public long Id { get; set; }
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long? DepartmentId { get; set; }
+        public string? DepartmentName { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public decimal CasualLeaveDays { get; set; }
+        public decimal SickLeaveDays { get; set; }
+        public decimal EarnedLeaveDays { get; set; }
+        public string? Description { get; set; }
+    }
+
+    public class CreateStaffLeavePolicyDto
+    {
+        public long? DepartmentId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public decimal CasualLeaveDays { get; set; } = 12;
+        public decimal SickLeaveDays { get; set; } = 10;
+        public decimal EarnedLeaveDays { get; set; } = 0;
+        public string? Description { get; set; }
+    }
+
+    public class UpdateStaffLeavePolicyDto : CreateStaffLeavePolicyDto
+    {
+    }
+
+    public class StaffLeaveBalanceDto
+    {
+        public long EmployeeId { get; set; }
+        public string EmployeeCode { get; set; } = string.Empty;
+        public string EmployeeName { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public string? Designation { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+
+        // Casual Leave (CL)
+        public decimal AllocatedCL { get; set; }
+        public decimal UsedCL { get; set; }
+        public decimal AvailableCL { get; set; }
+
+        // Sick Leave (SL)
+        public decimal AllocatedSL { get; set; }
+        public decimal UsedSL { get; set; }
+        public decimal AvailableSL { get; set; }
+
+        // Earned Leave (EL)
+        public decimal AllocatedEL { get; set; }
+        public decimal UsedEL { get; set; }
+        public decimal AvailableEL { get; set; }
+
+        // Totals
+        public decimal TotalAllocated { get; set; }
+        public decimal TotalUsed { get; set; }
+        public decimal TotalAvailable { get; set; }
+    }
+
+    public class SetStaffLeaveAllocationDto
+    {
+        public long EmployeeId { get; set; }
+        public decimal CasualLeaveDays { get; set; }
+        public decimal SickLeaveDays { get; set; }
+        public decimal EarnedLeaveDays { get; set; }
+        public string? Remarks { get; set; }
     }
 
     // --- 5. Period Master DTOs ---
