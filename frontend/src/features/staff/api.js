@@ -20,6 +20,7 @@ export const staffApi = {
 export const payrollApi = {
   getPayrolls: (params) => apiClient.get('/payroll', { params }),
   getSummary: (params) => apiClient.get('/payroll/summary', { params }),
+  getAttendanceStatus: (params) => apiClient.get('/payroll/attendance-status', { params }),
   getPayroll: (id) => apiClient.get(`/payroll/${id}`),
   generateMonthlyPayroll: (data) => apiClient.post('/payroll/generate-monthly', data),
   createPayroll: (data) => apiClient.post('/payroll', data),

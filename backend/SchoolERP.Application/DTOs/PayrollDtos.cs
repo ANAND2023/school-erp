@@ -77,6 +77,40 @@ namespace SchoolERP.Application.DTOs
         public long? DepartmentId { get; set; }
         public decimal DefaultWorkingDays { get; set; } = 30;
         public bool AutoCalculateAttendance { get; set; } = true;
+        public string AttendanceMode { get; set; } = "StrictAttendance"; // "StrictAttendance", "DeductExplicitAbsents", "FullFixedSalary"
+    }
+
+    public class MonthlyAttendanceStatusDto
+    {
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public string MonthName { get; set; } = string.Empty;
+        public int CalendarDays { get; set; }
+        public int SundaysCount { get; set; }
+        public int HolidaysCount { get; set; }
+        public int WorkingDays { get; set; }
+        public int MarkedDatesCount { get; set; }
+        public int TotalEmployees { get; set; }
+        public bool HasAttendanceRecords { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public List<EmployeeAttendancePreviewDto> StaffPreview { get; set; } = new();
+    }
+
+    public class EmployeeAttendancePreviewDto
+    {
+        public long EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public string EmployeeCode { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public decimal BasicSalary { get; set; }
+        public decimal PresentDays { get; set; }
+        public decimal AbsentDays { get; set; }
+        public decimal LeaveDays { get; set; }
+        public decimal HalfDays { get; set; }
+        public decimal PaidDays { get; set; }
+        public decimal LOPDays { get; set; }
+        public decimal EstimatedLOPDeduction { get; set; }
+        public decimal EstimatedNetSalary { get; set; }
     }
 
     public class CreatePayrollDto

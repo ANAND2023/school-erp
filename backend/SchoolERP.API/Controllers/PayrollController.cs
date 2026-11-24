@@ -235,6 +235,136 @@ namespace SchoolERP.API.Controllers
             return Ok(ApiResponse<PayrollDetailDto>.Ok(detail));
         }
 
+        [HttpGet("attendance-status")]
+        public async Task<ActionResult<ApiResponse<MonthlyAttendanceStatusDto>>> GetAttendanceStatus(
+            [FromQuery] int? month,
+            [FromQuery] int? year,
+            [FromQuery] long? departmentId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var targetMonth = month ?? DateTime.UtcNow.Month;
+            var targetYear = year ?? DateTime.UtcNow.Year;
+
+            if (targetMonth < 1 || targetMonth > 12)
+                return BadRequest(ApiResponse<MonthlyAttendanceStatusDto>.Fail("Invalid month. Must be between 1 and 12"));
+
+            var daysInMonth = DateTime.DaysInMonth(targetYear, targetMonth);
+            var monthStart = new DateTime(targetYear, targetMonth, 1);
+            var monthEnd = new DateTime(targetYear, targetMonth, daysInMonth, 23, 59, 59);
+            var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(targetMonth) + " " + targetYear;
+
+            // Fetch Holidays
+            var holidays = await _context.Holidays
+                .Where(h => h.BranchId == branchId &&
+                            h.HolidayDate >= monthStart &&
+                            h.HolidayDate <= monthEnd &&
+                            h.IsActive)
+                .ToListAsync();
+
+            var holidayDates = holidays.Select(h => h.HolidayDate.Date).Distinct().ToList();
+
+            int sundaysCount = 0;
+            for (int day = 1; day <= daysInMonth; day++)
+            {
+                var dt = new DateTime(targetYear, targetMonth, day);
+                if (dt.DayOfWeek == DayOfWeek.Sunday)
+                    sundaysCount++;
+            }
+
+            int nonSundayHolidays = holidayDates.Count(d => d.DayOfWeek != DayOfWeek.Sunday);
+            int workingDays = Math.Max(0, daysInMonth - sundaysCount - nonSundayHolidays);
+
+            // Fetch Employees
+            var empQuery = _context.Employees
+                .Include(e => e.Department)
+                .Where(e => e.BranchId == branchId && e.Status == EmployeeStatus.Active && e.IsActive);
+
+            if (departmentId.HasValue && departmentId.Value > 0)
+                empQuery = empQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+            var employees = await empQuery.OrderBy(e => e.FirstName).ToListAsync();
+
+            // Fetch Staff Attendance records for month
+            var attendances = await _context.StaffAttendances
+                .Where(a => a.BranchId == branchId &&
+                            a.AttendanceDate >= monthStart &&
+                            a.AttendanceDate <= monthEnd &&
+                            a.IsActive)
+                .ToListAsync();
+
+            var markedDates = attendances.Select(a => a.AttendanceDate.Date).Distinct().ToList();
+            int markedDatesCount = markedDates.Count;
+            bool hasAttendanceRecords = markedDatesCount > 0;
+
+            var previews = new List<EmployeeAttendancePreviewDto>();
+
+            foreach (var emp in employees)
+            {
+                decimal basic = emp.SalaryBasic.HasValue && emp.SalaryBasic.Value > 0 ? emp.SalaryBasic.Value : 0m;
+                var empAtts = attendances.Where(a => a.EmployeeId == emp.Id).ToList();
+
+                decimal present = empAtts.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
+                decimal halfDay = empAtts.Count(a => a.Status == AttendanceStatus.HalfDay);
+                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave);
+                decimal absent = empAtts.Count(a => a.Status == AttendanceStatus.Absent);
+
+                decimal paidDays;
+                decimal lopDays;
+
+                if (hasAttendanceRecords)
+                {
+                    paidDays = present + (halfDay * 0.5m) + leave + sundaysCount + nonSundayHolidays;
+                    paidDays = Math.Min(daysInMonth, paidDays);
+                    lopDays = Math.Max(0, daysInMonth - paidDays);
+                }
+                else
+                {
+                    paidDays = 0;
+                    lopDays = daysInMonth;
+                }
+
+                decimal lopDeduction = daysInMonth > 0 ? Math.Round((basic / daysInMonth) * lopDays, 2) : 0;
+                decimal netSalary = Math.Max(0, basic - lopDeduction);
+
+                previews.Add(new EmployeeAttendancePreviewDto
+                {
+                    EmployeeId = emp.Id,
+                    EmployeeName = emp.FullName,
+                    EmployeeCode = emp.EmployeeCode,
+                    Department = emp.Department?.Name,
+                    BasicSalary = basic,
+                    PresentDays = present,
+                    AbsentDays = absent,
+                    LeaveDays = leave,
+                    HalfDays = halfDay,
+                    PaidDays = paidDays,
+                    LOPDays = lopDays,
+                    EstimatedLOPDeduction = lopDeduction,
+                    EstimatedNetSalary = netSalary
+                });
+            }
+
+            var result = new MonthlyAttendanceStatusDto
+            {
+                Month = targetMonth,
+                Year = targetYear,
+                MonthName = monthName,
+                CalendarDays = daysInMonth,
+                SundaysCount = sundaysCount,
+                HolidaysCount = nonSundayHolidays,
+                WorkingDays = workingDays,
+                MarkedDatesCount = markedDatesCount,
+                TotalEmployees = employees.Count,
+                HasAttendanceRecords = hasAttendanceRecords,
+                Message = hasAttendanceRecords
+                    ? $"{markedDatesCount} working day(s) marked out of {workingDays} working days."
+                    : $"No attendance records found for {monthName}. Daily staff attendance has not been marked yet.",
+                StaffPreview = previews
+            };
+
+            return Ok(ApiResponse<MonthlyAttendanceStatusDto>.Ok(result));
+        }
+
         [HttpPost("generate-monthly")]
         public async Task<ActionResult<ApiResponse<object>>> GenerateMonthlyPayroll([FromBody] GenerateMonthlyPayrollDto dto)
         {
@@ -268,10 +398,54 @@ namespace SchoolERP.API.Controllers
             if (employees.Count == 0)
                 return BadRequest(ApiResponse<object>.Fail("No active employees found to generate payroll."));
 
-            int sequence = await _context.StaffPayrolls.CountAsync(p => p.BranchId == branchId && p.PayrollYear == year && p.PayrollMonth == dto.Month) + 1;
-
             var monthStart = new DateTime(year, dto.Month, 1);
             var monthEnd = new DateTime(year, dto.Month, daysInMonth, 23, 59, 59);
+
+            // Fetch Holidays
+            var holidays = await _context.Holidays
+                .Where(h => h.BranchId == branchId &&
+                            h.HolidayDate >= monthStart &&
+                            h.HolidayDate <= monthEnd &&
+                            h.IsActive)
+                .ToListAsync();
+
+            var holidayDates = holidays.Select(h => h.HolidayDate.Date).Distinct().ToList();
+
+            int sundaysCount = 0;
+            for (int day = 1; day <= daysInMonth; day++)
+            {
+                var dt = new DateTime(year, dto.Month, day);
+                if (dt.DayOfWeek == DayOfWeek.Sunday)
+                    sundaysCount++;
+            }
+
+            int nonSundayHolidays = holidayDates.Count(d => d.DayOfWeek != DayOfWeek.Sunday);
+
+            // Fetch all staff attendance records for the month
+            var allAttendances = await _context.StaffAttendances
+                .Where(a => a.BranchId == branchId &&
+                            a.AttendanceDate >= monthStart &&
+                            a.AttendanceDate <= monthEnd &&
+                            a.IsActive)
+                .ToListAsync();
+
+            var markedDates = allAttendances.Select(a => a.AttendanceDate.Date).Distinct().ToList();
+            int markedDatesCount = markedDates.Count;
+
+            // Mode detection
+            var mode = !string.IsNullOrWhiteSpace(dto.AttendanceMode)
+                ? dto.AttendanceMode
+                : (dto.AutoCalculateAttendance ? "StrictAttendance" : "FullFixedSalary");
+
+            // CRITICAL VALIDATION: If Strict Attendance mode was chosen, but NO attendance was marked for this month:
+            if (mode == "StrictAttendance" && markedDatesCount == 0)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    $"No attendance records found for {monthName} (0 days marked). " +
+                    $"Please mark daily staff attendance first in the Attendance Register, or select 'Full Fixed Monthly Salary' mode to disburse standard salary."));
+            }
+
+            int sequence = await _context.StaffPayrolls.CountAsync(p => p.BranchId == branchId && p.PayrollYear == year && p.PayrollMonth == dto.Month) + 1;
 
             int updatedCount = 0;
             int newCount = 0;
@@ -290,25 +464,35 @@ namespace SchoolERP.API.Controllers
                 decimal unpaidLeaves = 0;
                 decimal paidLeaves = 0;
 
-                // Auto calculate from StaffAttendance if available
-                if (dto.AutoCalculateAttendance)
-                {
-                    var attendanceRecords = await _context.StaffAttendances
-                        .Where(a => a.BranchId == branchId && a.EmployeeId == emp.Id &&
-                                    a.AttendanceDate >= monthStart && a.AttendanceDate <= monthEnd && a.IsActive)
-                        .ToListAsync();
+                var empAtts = allAttendances.Where(a => a.EmployeeId == emp.Id).ToList();
+                decimal present = empAtts.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
+                decimal halfDay = empAtts.Count(a => a.Status == AttendanceStatus.HalfDay);
+                decimal leave = empAtts.Count(a => a.Status == AttendanceStatus.Leave);
+                decimal absent = empAtts.Count(a => a.Status == AttendanceStatus.Absent);
 
-                    if (attendanceRecords.Count > 0)
-                    {
-                        var absents = attendanceRecords.Count(a => a.Status == AttendanceStatus.Absent);
-                        var leaves = attendanceRecords.Count(a => a.Status == AttendanceStatus.Leave);
-                        unpaidLeaves = absents;
-                        paidLeaves = leaves;
-                        presentDays = Math.Max(0, daysInMonth - absents);
-                    }
+                if (mode == "StrictAttendance")
+                {
+                    // Paid days = Present days + HalfDay * 0.5 + Approved Leave + Sundays + Holidays
+                    decimal paidDays = present + (halfDay * 0.5m) + leave + sundaysCount + nonSundayHolidays;
+                    paidDays = Math.Min(daysInMonth, paidDays);
+                    unpaidLeaves = Math.Max(0, daysInMonth - paidDays);
+                    paidLeaves = leave;
+                    presentDays = paidDays;
+                }
+                else if (mode == "DeductExplicitAbsents")
+                {
+                    unpaidLeaves = absent + (halfDay * 0.5m);
+                    presentDays = Math.Max(0, daysInMonth - unpaidLeaves);
+                    paidLeaves = leave;
+                }
+                else // "FullFixedSalary"
+                {
+                    presentDays = daysInMonth;
+                    unpaidLeaves = 0;
+                    paidLeaves = 0;
                 }
 
-                // Loss of Pay calculation (only if staff was absent during the month)
+                // Loss of Pay calculation
                 decimal leaveDeduction = 0;
                 if (unpaidLeaves > 0 && daysInMonth > 0)
                 {

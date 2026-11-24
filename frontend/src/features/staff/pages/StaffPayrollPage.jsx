@@ -27,6 +27,7 @@ import {
   AccountBalanceWallet as WalletIcon,
   PeopleAlt as PeopleIcon,
   PendingActions as PendingIcon,
+  EventAvailable as AttendanceIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataGrid } from '../../../components/DataGrid';
@@ -562,6 +563,25 @@ export const StaffPayrollPage = () => {
               Bulk Pay ({selectedRowIds.length})
             </Button>
           )}
+
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<AttendanceIcon sx={{ fontSize: '16px !important' }} />}
+            onClick={() => window.open('/attendance/staff', '_blank')}
+            sx={{
+              height: 32,
+              minHeight: 32,
+              px: 1.5,
+              py: 0,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '12px',
+              borderRadius: '6px',
+            }}
+          >
+            Staff Attendance
+          </Button>
 
           <Button
             variant="contained"
