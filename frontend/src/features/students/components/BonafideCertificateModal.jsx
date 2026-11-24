@@ -6,6 +6,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputSwitch } from 'primereact/inputswitch';
 import apiClient from '../../../api/client';
 import { printElement } from '../../../utils/printUtils';
+import { useThemeStore } from '../../../store/themeStore';
 
 const PURPOSE_OPTIONS = [
   { label: 'Passport Application', value: 'Passport Application' },
@@ -269,6 +270,8 @@ export const BonafideCertificateModal = (props) => {
   const containerRef = useRef(null);
   const typeKey = certificateType || 'bonafide';
   const defaultTemplate = DEFAULT_CERT_TEMPLATES[typeKey] || DEFAULT_CERT_TEMPLATES.bonafide;
+  const { currentColorHex } = useThemeStore();
+  const themeColor = currentColorHex || '#0284c7';
 
   const [config, setConfig] = useState(null);
   const [purpose, setPurpose] = useState(resolvedPurpose || defaultTemplate.defaultPurpose);
@@ -324,6 +327,16 @@ export const BonafideCertificateModal = (props) => {
       const adm = studentData?.admissionNo || studentId || '001';
       const prefix = defaultTemplate.refPrefix || 'DPS/BC';
       setRefNo(`${prefix}/${today.getFullYear()}/${adm}`);
+
+      // Attempt to load live peek from Numbering Series configured in /masters/numbering
+      apiClient
+        .get(`/student-certificates/next-number/${typeKey}`)
+        .then((res) => {
+          if (res.data?.success && res.data.data) {
+            setRefNo(res.data.data);
+          }
+        })
+        .catch(() => {});
     }
 
     if (resolvedPurpose) {
@@ -1012,7 +1025,7 @@ export const BonafideCertificateModal = (props) => {
       maskStyle={{ zIndex: 3000 }}
       header={
         <div className="flex align-items-center gap-2">
-          <i className="pi pi-verified text-xl text-blue-600"></i>
+          <i className="pi pi-verified text-xl" style={{ color: themeColor }}></i>
           <span className="font-bold text-lg">
             Issue {defaultTemplate.certificateTitle} ({defaultTemplate.refPrefix})
           </span>
@@ -1027,7 +1040,7 @@ export const BonafideCertificateModal = (props) => {
           <Button
             label={`Print ${defaultTemplate.shortTitle || defaultTemplate.certificateTitle}`}
             icon="pi pi-print"
-            severity="primary"
+            style={{ backgroundColor: themeColor, borderColor: themeColor }}
             onClick={handlePrint}
           />
         </div>
@@ -1076,9 +1089,10 @@ export const BonafideCertificateModal = (props) => {
           {/* Quick Colour Themes Bar */}
           <div className="flex align-items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-slate-700 flex align-items-center gap-1">
-              <i className="pi pi-palette text-blue-600"></i> Certificate Colour:
+              <i className="pi pi-palette" style={{ color: themeColor }}></i> Certificate Colour:
             </span>
             {[
+              { name: 'Active ERP Theme', primary: themeColor, secondary: `${themeColor}12`, border: themeColor, text: '#1e293b' },
               { name: 'Teal Elegance', primary: '#0f766e', secondary: '#f0fdfa', border: '#0f766e', text: '#1e293b' },
               { name: 'Amber Gold', primary: '#b45309', secondary: '#fffbeb', border: '#b45309', text: '#1e293b' },
               { name: 'Regal Maroon', primary: '#831843', secondary: '#fdf2f8', border: '#831843', text: '#1e293b' },

@@ -1355,11 +1355,11 @@ namespace SchoolERP.API.Controllers
             var branchId = _currentUserService.BranchId;
             var branch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId);
             var schoolId = branch?.SchoolId;
-            var config = await GetAwrConfigInternalAsync(schoolId);
+            var config = await GetAwrConfigInternalAsync(schoolId, branchId);
             return Ok(ApiResponse<AwrReportConfigDto>.Ok(config));
         }
 
-        private async Task<AwrReportConfigDto> GetAwrConfigInternalAsync(long? schoolId)
+        private async Task<AwrReportConfigDto> GetAwrConfigInternalAsync(long? schoolId, long? branchId = null)
         {
             TenantGatewayConfig? config = null;
             if (schoolId.HasValue)
@@ -1376,6 +1376,8 @@ namespace SchoolERP.API.Controllers
                     .FirstOrDefaultAsync(g => g.SchoolId == null && g.GatewayType == "AWR_REPORT_CONFIG" && g.IsActive);
             }
 
+            AwrReportConfigDto resultConfig = AwrReportConfigDto.GetDefaultConfig();
+
             if (config != null && !string.IsNullOrWhiteSpace(config.CredentialsEncrypted))
             {
                 try
@@ -1385,13 +1387,41 @@ namespace SchoolERP.API.Controllers
                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (parsed != null)
                     {
-                        return parsed;
+                        resultConfig = parsed;
                     }
                 }
                 catch { }
             }
 
-            return AwrReportConfigDto.GetDefaultConfig();
+            if (branchId.HasValue)
+            {
+                var numSeries = await _context.NumberingSeries
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(ns => ns.BranchId == branchId.Value && ns.ModuleType == "AwrRegister");
+                if (numSeries != null && !string.IsNullOrWhiteSpace(numSeries.Prefix))
+                {
+                    resultConfig.RefPrefix = numSeries.Prefix.Trim();
+                }
+            }
+
+            return resultConfig;
+        }
+
+        [HttpGet("awr-next-number")]
+        [HasPermission("Students", "View")]
+        public async Task<ActionResult<ApiResponse<string>>> GetAwrNextNumber()
+        {
+            var branchId = _currentUserService.BranchId;
+            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+            var branchCode = branch?.Code ?? "MAIN";
+
+            var currentAY = await _context.AcademicYears
+                .Where(ay => ay.BranchId == branchId && ay.IsCurrent)
+                .FirstOrDefaultAsync();
+            var ayName = currentAY?.Name ?? DateTime.UtcNow.Year.ToString();
+
+            var nextNo = await _numberingService.PeekNextNumberAsync(branchId, "AwrRegister", branchCode, ayName);
+            return Ok(ApiResponse<string>.Ok(nextNo));
         }
 
         [HttpGet("awr-report")]

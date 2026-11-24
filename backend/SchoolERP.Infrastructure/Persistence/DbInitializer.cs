@@ -557,7 +557,14 @@ namespace SchoolERP.Infrastructure.Persistence
                     ("FeeReceipt", "RCP", false, true, "YYYYYY", "/", 6, 1),
                     ("Enquiry", "ENQ", false, true, "YYYYYY", "/", 4, 1),
                     ("TransferCertificate", "TC", false, true, "YYYY-YY", "/", 4, 1),
-                    ("Staff", "EMP", false, false, "None", "/", 4, 1)
+                    ("Staff", "EMP", false, false, "None", "/", 4, 1),
+                    ("BonafideCertificate", "DPS/BC", false, true, "YYYY", "/", 4, 1),
+                    ("BirthCertificate", "DPS/DOB", false, true, "YYYY", "/", 4, 1),
+                    ("AgeCertificate", "DPS/AGE", false, true, "YYYY", "/", 4, 1),
+                    ("CharacterCertificate", "DPS/CC", false, true, "YYYY", "/", 4, 1),
+                    ("RetCertificate", "DPS/RET", false, true, "YYYY", "/", 4, 1),
+                    ("GatePass", "GP", false, true, "YYYY", "/", 4, 1),
+                    ("AwrRegister", "DPS/AWR", false, true, "YYYY", "/", 4, 1)
                 };
 
                 foreach (var def in defaultSeriesConfigs)

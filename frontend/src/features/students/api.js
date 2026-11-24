@@ -24,6 +24,7 @@ export const studentApi = {
   getAdmissionSummary: (params) => apiClient.get('/students/admission-summary', { params }),
   getAwrReport: (params) => apiClient.get('/students/awr-report', { params }),
   getAwrConfig: () => apiClient.get('/students/awr-config'),
+  getAwrNextNumber: () => apiClient.get('/students/awr-next-number'),
 };
 
 export const gatePassApi = {
@@ -44,6 +45,7 @@ export const certificateApi = {
   deleteCertificate: (id) => apiClient.delete(`/student-certificates/${id}`),
   getStats: (params) => apiClient.get('/student-certificates/stats', { params }),
   searchStudents: (params) => apiClient.get('/student-certificates/search-students', { params }),
+  getNextNumber: (type) => apiClient.get(`/student-certificates/next-number/${type}`),
 };
 
 

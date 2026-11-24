@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { studentApi } from '../api';
 import { classesApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 import { AwrStudentFolioModal } from '../components/AwrStudentFolioModal';
 import { printElement } from '../../../utils/printUtils';
 
@@ -20,6 +21,11 @@ export const StudentAwrReportPage = () => {
   const toastRef = useRef(null);
   const ledgerPrintRef = useRef(null);
   const { currentAcademicYearId } = useAcademicYear();
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || '#0f766e';
+  const themeDarker = shadeColor(themeColor, -20);
+  const themeLighterBg = isDarkMode ? 'rgba(255,255,255,0.04)' : `${themeColor}0d`;
+  const themeBorder = isDarkMode ? 'rgba(255,255,255,0.12)' : `${themeColor}30`;
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
@@ -27,6 +33,7 @@ export const StudentAwrReportPage = () => {
     students: [],
     config: null,
   });
+  const [nextAwrNumber, setNextAwrNumber] = useState('');
 
   // Filter States
   const [classes, setClasses] = useState([]);
@@ -42,6 +49,14 @@ export const StudentAwrReportPage = () => {
 
   useEffect(() => {
     loadClasses();
+    studentApi
+      .getAwrNextNumber()
+      .then((res) => {
+        if (res.data?.success && res.data.data) {
+          setNextAwrNumber(res.data.data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -194,19 +209,52 @@ export const StudentAwrReportPage = () => {
   };
 
   return (
-    <div className="p-3 surface-ground min-h-screen">
+    <div className="p-2 sm:p-3 surface-ground min-h-screen">
       <Toast ref={toastRef} />
 
       {/* Header Banner */}
-      <Card className="mb-3 shadow-1 border-none">
-        <div className="flex flex-column md:flex-row justify-content-between align-items-start md:align-items-center gap-3">
+      <Card
+        className="mb-2.5 shadow-1 border-none py-1"
+        style={{
+          background: isDarkMode ? '#1e293b' : '#ffffff',
+          borderRadius: '8px',
+        }}
+      >
+        <div className="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center gap-2 p-1">
           <div>
-            <div className="flex align-items-center gap-2 mb-1">
-              <i className="pi pi-table text-2xl text-emerald-600"></i>
-              <h1 className="text-2xl font-bold text-slate-800 m-0">Student AWR Report Management</h1>
-              <Tag value="Statutory Register" severity="success" className="text-xs px-2" />
+            <div className="flex align-items-center gap-2 mb-1 flex-wrap">
+              <i className="pi pi-table text-xl" style={{ color: themeColor }}></i>
+              <h1
+                className="text-lg sm:text-xl font-bold m-0"
+                style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+              >
+                Student AWR Report Management
+              </h1>
+              <span
+                className="text-xs px-2 py-0.5 border-round font-semibold"
+                style={{
+                  backgroundColor: `${themeColor}18`,
+                  color: themeColor,
+                  border: `1px solid ${themeColor}35`,
+                }}
+              >
+                Statutory Register: {data.config?.refPrefix || 'DPS/AWR'}
+              </span>
+              {nextAwrNumber && (
+                <span
+                  className="text-xs px-2 py-0.5 border-round font-mono hidden md:inline-block"
+                  style={{
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
+                    color: isDarkMode ? '#cbd5e1' : '#475569',
+                    border: '1px solid #cbd5e1',
+                  }}
+                  title="Next auto-generated AWR series reference number"
+                >
+                  Next Ref: <strong>{nextAwrNumber}</strong>
+                </span>
+              )}
             </div>
-            <p className="text-sm text-slate-500 m-0">
+            <p className="text-xs text-slate-500 m-0">
               Admission and Withdrawal Register (A.W.R.) — Official general register ledger, admission records, and student folio extracts.
             </p>
           </div>
@@ -220,6 +268,7 @@ export const StudentAwrReportPage = () => {
               size="small"
               onClick={() => navigate('/superadmin/awr-designer')}
               title="Configure AWR register template layout and letterhead"
+              style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
             />
             <Button
               label="Export CSV"
@@ -229,84 +278,161 @@ export const StudentAwrReportPage = () => {
               size="small"
               onClick={exportCsv}
               disabled={loading || data.students.length === 0}
+              style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
             />
             <Button
               label="Print Full Register"
               icon="pi pi-print"
-              severity="success"
               size="small"
               onClick={handlePrintFullLedger}
               disabled={loading || data.students.length === 0}
+              style={{
+                backgroundColor: themeColor,
+                borderColor: themeColor,
+                color: '#ffffff',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                padding: '0.45rem 1rem',
+                boxShadow: `0 3px 10px ${themeColor}35`,
+              }}
             />
           </div>
         </div>
       </Card>
 
-      {/* KPI Summary Cards */}
-      <div className="grid mb-3">
+      {/* KPI Summary Cards (compact scaling matching Gate Pass / Certificate Register) */}
+      <div className="grid mb-2">
         <div className="col-12 sm:col-6 md:col-3">
-          <Card className="shadow-1 border-none border-left-3 border-emerald-500 surface-card">
-            <div className="flex justify-content-between align-items-center">
+          <Card
+            className="shadow-1 border-none"
+            style={{
+              backgroundColor: themeLighterBg,
+              border: `1px solid ${themeBorder}`,
+              borderRadius: '8px',
+            }}
+          >
+            <div className="flex justify-content-between align-items-center p-1">
               <div>
-                <span className="block text-500 font-medium text-xs mb-1">TOTAL IN REGISTER</span>
-                <div className="text-900 font-bold text-2xl">{data.summary.totalRegistered}</div>
+                <span
+                  className="block font-bold text-xs mb-1"
+                  style={{ color: themeColor, fontSize: '0.68rem', letterSpacing: '0.5px' }}
+                >
+                  TOTAL IN REGISTER
+                </span>
+                <div
+                  className="font-bold"
+                  style={{ fontSize: '1.45rem', lineHeight: 1.2, color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+                >
+                  {data.summary.totalRegistered}
+                </div>
               </div>
               <div
-                className="flex align-items-center justify-content-center bg-emerald-100 border-round"
-                style={{ width: '2.5rem', height: '2.5rem' }}
+                className="flex align-items-center justify-content-center border-round"
+                style={{ width: '38px', height: '38px', backgroundColor: themeColor }}
               >
-                <i className="pi pi-id-card text-emerald-700 text-lg"></i>
+                <i className="pi pi-id-card text-white" style={{ fontSize: '18px' }}></i>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="col-12 sm:col-6 md:col-3">
-          <Card className="shadow-1 border-none border-left-3 border-blue-500 surface-card">
-            <div className="flex justify-content-between align-items-center">
+          <Card
+            className="shadow-1 border-none"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(2, 132, 199, 0.08)' : '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '8px',
+            }}
+          >
+            <div className="flex justify-content-between align-items-center p-1">
               <div>
-                <span className="block text-500 font-medium text-xs mb-1">ACTIVE ON ROLL</span>
-                <div className="text-900 font-bold text-2xl">{data.summary.activeOnRoll}</div>
+                <span
+                  className="block font-bold text-xs mb-1 text-sky-700"
+                  style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
+                >
+                  ACTIVE ON ROLL
+                </span>
+                <div
+                  className="font-bold text-sky-900"
+                  style={{ fontSize: '1.45rem', lineHeight: 1.2 }}
+                >
+                  {data.summary.activeOnRoll}
+                </div>
               </div>
               <div
-                className="flex align-items-center justify-content-center bg-blue-100 border-round"
-                style={{ width: '2.5rem', height: '2.5rem' }}
+                className="flex align-items-center justify-content-center bg-sky-600 border-round"
+                style={{ width: '38px', height: '38px' }}
               >
-                <i className="pi pi-users text-blue-700 text-lg"></i>
+                <i className="pi pi-users text-white" style={{ fontSize: '18px' }}></i>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="col-12 sm:col-6 md:col-3">
-          <Card className="shadow-1 border-none border-left-3 border-rose-500 surface-card">
-            <div className="flex justify-content-between align-items-center">
+          <Card
+            className="shadow-1 border-none"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(225, 29, 72, 0.08)' : '#fff1f2',
+              border: '1px solid #fecdd3',
+              borderRadius: '8px',
+            }}
+          >
+            <div className="flex justify-content-between align-items-center p-1">
               <div>
-                <span className="block text-500 font-medium text-xs mb-1">WITHDRAWN / TC ISSUED</span>
-                <div className="text-900 font-bold text-2xl">{data.summary.totalWithdrawn}</div>
+                <span
+                  className="block font-bold text-xs mb-1 text-rose-700"
+                  style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
+                >
+                  WITHDRAWN / TC ISSUED
+                </span>
+                <div
+                  className="font-bold text-rose-900"
+                  style={{ fontSize: '1.45rem', lineHeight: 1.2 }}
+                >
+                  {data.summary.totalWithdrawn}
+                </div>
               </div>
               <div
-                className="flex align-items-center justify-content-center bg-rose-100 border-round"
-                style={{ width: '2.5rem', height: '2.5rem' }}
+                className="flex align-items-center justify-content-center bg-rose-600 border-round"
+                style={{ width: '38px', height: '38px' }}
               >
-                <i className="pi pi-user-minus text-rose-700 text-lg"></i>
+                <i className="pi pi-user-minus text-white" style={{ fontSize: '18px' }}></i>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="col-12 sm:col-6 md:col-3">
-          <Card className="shadow-1 border-none border-left-3 border-amber-500 surface-card">
-            <div className="flex justify-content-between align-items-center">
+          <Card
+            className="shadow-1 border-none"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(217, 119, 6, 0.08)' : '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: '8px',
+            }}
+          >
+            <div className="flex justify-content-between align-items-center p-1">
               <div>
-                <span className="block text-500 font-medium text-xs mb-1">NEW ADMISSIONS (SESSION)</span>
-                <div className="text-900 font-bold text-2xl">{data.summary.newAdmissionsThisYear}</div>
+                <span
+                  className="block font-bold text-xs mb-1 text-amber-700"
+                  style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
+                >
+                  NEW ADMISSIONS (SESSION)
+                </span>
+                <div
+                  className="font-bold text-amber-900"
+                  style={{ fontSize: '1.45rem', lineHeight: 1.2 }}
+                >
+                  {data.summary.newAdmissionsThisYear}
+                </div>
               </div>
               <div
-                className="flex align-items-center justify-content-center bg-amber-100 border-round"
-                style={{ width: '2.5rem', height: '2.5rem' }}
+                className="flex align-items-center justify-content-center bg-amber-600 border-round"
+                style={{ width: '38px', height: '38px' }}
               >
-                <i className="pi pi-user-plus text-amber-700 text-lg"></i>
+                <i className="pi pi-user-plus text-white" style={{ fontSize: '18px' }}></i>
               </div>
             </div>
           </Card>
@@ -314,10 +440,10 @@ export const StudentAwrReportPage = () => {
       </div>
 
       {/* Filter Ribbon */}
-      <Card className="mb-3 shadow-1 border-none">
+      <Card className="mb-2.5 shadow-1 border-none py-1">
         <form onSubmit={handleSearchSubmit} className="flex flex-wrap align-items-center gap-2">
           {/* Class Filter */}
-          <div className="w-12rem">
+          <div className="w-10rem sm:w-11rem">
             <Dropdown
               value={selectedClassId}
               options={classes.map((c) => ({ label: `Class ${c.name}`, value: c.id }))}
@@ -329,7 +455,7 @@ export const StudentAwrReportPage = () => {
           </div>
 
           {/* Section Filter */}
-          <div className="w-10rem">
+          <div className="w-9rem sm:w-10rem">
             <Dropdown
               value={selectedSectionId}
               options={sections.map((s) => ({ label: `Sec ${s.name}`, value: s.id }))}
@@ -342,7 +468,7 @@ export const StudentAwrReportPage = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="w-12rem">
+          <div className="w-11rem sm:w-12rem">
             <Dropdown
               value={statusFilter}
               options={[
@@ -356,19 +482,32 @@ export const StudentAwrReportPage = () => {
           </div>
 
           {/* Search Box */}
-          <div className="flex-1 min-w-15rem">
+          <div className="flex-1 min-w-12rem">
             <span className="p-input-icon-left w-full">
               <i className="pi pi-search" />
               <InputText
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by Scholar No, Student Name, Father Name, Mobile..."
+                placeholder="Search by Scholar No, Student Name, Father..."
                 className="w-full p-inputtext-sm"
               />
             </span>
           </div>
 
-          <Button type="submit" label="Filter" icon="pi pi-filter" size="small" severity="primary" />
+          <Button
+            type="submit"
+            label="Filter"
+            icon="pi pi-filter"
+            size="small"
+            style={{
+              backgroundColor: themeColor,
+              borderColor: themeColor,
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              padding: '0.45rem 1rem',
+            }}
+          />
           <Button
             type="button"
             icon="pi pi-refresh"
@@ -377,6 +516,7 @@ export const StudentAwrReportPage = () => {
             outlined
             onClick={handleClearFilters}
             title="Reset Filters"
+            style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
           />
         </form>
       </Card>
@@ -403,7 +543,7 @@ export const StudentAwrReportPage = () => {
             style={{ width: '120px' }}
             body={(row) => (
               <div>
-                <span className="font-bold text-emerald-800">{row.admissionNo}</span>
+                <span className="font-bold" style={{ color: themeColor }}>{row.admissionNo}</span>
                 <div className="text-2xs text-slate-500" style={{ fontSize: '10px' }}>
                   {row.admissionDateFormatted}
                 </div>
@@ -424,7 +564,14 @@ export const StudentAwrReportPage = () => {
                   label={!row.photoUrl ? (row.firstName?.[0] || 'S') : undefined}
                   shape="circle"
                   size="normal"
-                  className="bg-emerald-100 text-emerald-800 font-bold flex-shrink-0"
+                  className="font-bold flex-shrink-0"
+                  style={{
+                    backgroundColor: `${themeColor}20`,
+                    color: themeColor,
+                    width: '32px',
+                    height: '32px',
+                    fontSize: '13px',
+                  }}
                 />
                 <div>
                   <div className="font-bold text-slate-800">{row.studentName}</div>
@@ -476,7 +623,7 @@ export const StudentAwrReportPage = () => {
                 </div>
                 <div>
                   Current:{' '}
-                  <span className="font-bold text-emerald-700">
+                  <span className="font-bold" style={{ color: themeColor }}>
                     {row.currentClass} {row.currentSection ? `(${row.currentSection})` : ''}
                   </span>
                 </div>
@@ -539,11 +686,17 @@ export const StudentAwrReportPage = () => {
                   label="AWR Folio"
                   icon="pi pi-id-card"
                   size="small"
-                  severity="success"
                   outlined
                   onClick={() => {
                     setSelectedStudent(row);
                     setShowFolioModal(true);
+                  }}
+                  style={{
+                    color: themeColor,
+                    borderColor: themeColor,
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    padding: '0.35rem 0.75rem',
                   }}
                   title="View and print official AWR Folio Sheet for this student"
                 />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
   Stack,
   Alert,
   CircularProgress,
+  InputAdornment,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -27,10 +28,18 @@ import {
   Badge as StaffIcon,
   AssignmentTurnedIn as TcIcon,
   FormatListNumbered as SequenceIcon,
+  Verified as VerifiedIcon,
+  CalendarMonth as CalendarIcon,
+  AccessTime as TimeIcon,
+  WorkspacePremium as AwardIcon,
+  Description as DocumentIcon,
+  DirectionsWalk as GatePassIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { numberingSeriesApi } from '../api';
 import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 
 // Helper to compute sample preview on frontend in real-time
 const calculatePreview = (item, branchCode = '', ayName = '2026-27') => {
@@ -94,18 +103,56 @@ const getModuleIcon = (type) => {
       return <TcIcon sx={{ color: '#7c3aed' }} />;
     case 'Staff':
       return <StaffIcon sx={{ color: '#0284c7' }} />;
+    case 'BonafideCertificate':
+      return <VerifiedIcon sx={{ color: '#0284c7' }} />;
+    case 'BirthCertificate':
+      return <CalendarIcon sx={{ color: '#0f766e' }} />;
+    case 'AgeCertificate':
+      return <TimeIcon sx={{ color: '#b45309' }} />;
+    case 'CharacterCertificate':
+      return <AwardIcon sx={{ color: '#831843' }} />;
+    case 'RetCertificate':
+      return <DocumentIcon sx={{ color: '#581c87' }} />;
+    case 'GatePass':
+      return <GatePassIcon sx={{ color: '#0369a1' }} />;
+    case 'AwrRegister':
+      return <DocumentIcon sx={{ color: '#0d9488' }} />;
     default:
       return <TagIcon />;
   }
 };
 
+const getCategory = (moduleType) => {
+  if (
+    [
+      'BonafideCertificate',
+      'BirthCertificate',
+      'AgeCertificate',
+      'CharacterCertificate',
+      'RetCertificate',
+      'AwrRegister',
+    ].includes(moduleType)
+  ) {
+    return 'Certificates';
+  }
+  if (moduleType === 'GatePass') {
+    return 'GatePass';
+  }
+  return 'Core';
+};
+
 export const NumberingSeriesPage = () => {
   const { showSnackbar } = useUiStore();
   const { hasPermission } = usePermission();
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || '#3b82f6';
+  const themeDarker = shadeColor(themeColor, -20);
 
   const [seriesList, setSeriesList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchSeries = async () => {
     try {
@@ -125,14 +172,14 @@ export const NumberingSeriesPage = () => {
     fetchSeries();
   }, []);
 
-  const handleChange = (index, field, value) => {
+  const handleChange = (realIndex, field, value) => {
     setSeriesList((prev) => {
       const next = [...prev];
-      next[index] = {
-        ...next[index],
+      next[realIndex] = {
+        ...next[realIndex],
         [field]: value,
       };
-      next[index].samplePreview = calculatePreview(next[index]);
+      next[realIndex].samplePreview = calculatePreview(next[realIndex]);
       return next;
     });
   };
@@ -162,47 +209,148 @@ export const NumberingSeriesPage = () => {
     }
   };
 
+  // Filtered series list
+  const filteredList = useMemo(() => {
+    return seriesList
+      .map((item, originalIndex) => ({ ...item, originalIndex }))
+      .filter((item) => {
+        const matchesCategory =
+          activeCategory === 'All' || getCategory(item.moduleType) === activeCategory;
+        const matchesSearch =
+          !searchTerm.trim() ||
+          item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.moduleType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.prefix?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+  }, [seriesList, activeCategory, searchTerm]);
+
+  const certCount = seriesList.filter((s) => getCategory(s.moduleType) === 'Certificates').length;
+  const coreCount = seriesList.filter((s) => getCategory(s.moduleType) === 'Core').length;
+  const gateCount = seriesList.filter((s) => getCategory(s.moduleType) === 'GatePass').length;
+
   return (
-    <Box>
+    <Box sx={{ p: { xs: 1, sm: 2 } }}>
       {/* Header */}
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
         <div>
           <Stack direction="row" spacing={1.5} alignItems="center">
-            <SequenceIcon color="primary" sx={{ fontSize: 28 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            <SequenceIcon sx={{ color: themeColor, fontSize: 32 }} />
+            <Typography variant="h5" sx={{ fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
               Numbering Series & Prefix Settings
             </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Configure auto-increment series, custom prefixes, year format, and starting sequence numbers for all school documents.
+          <Typography variant="body2" color={isDarkMode ? '#94a3b8' : '#64748b'} sx={{ mt: 0.5 }}>
+            Configure auto-increment series, custom prefixes, year format, and starting sequence numbers for all school documents & certificates.
           </Typography>
         </div>
         <Button
           variant="contained"
-          color="primary"
           startIcon={<SaveIcon />}
           onClick={handleSaveAll}
           disabled={saving || loading}
-          sx={{ fontWeight: 700, px: 3, py: 1 }}
+          sx={{
+            fontWeight: 700,
+            px: 3,
+            py: 1,
+            borderRadius: 2,
+            bgcolor: themeColor,
+            boxShadow: `0 4px 12px ${themeColor}40`,
+            '&:hover': {
+              bgcolor: themeDarker,
+            },
+          }}
         >
           {saving ? 'Saving Settings...' : 'Save All Numbering Formats'}
         </Button>
       </Box>
 
       {/* Info Alert */}
-      <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+      <Alert severity="info" sx={{ mb: 2.5, borderRadius: 2 }}>
         <Typography variant="body2">
-          <strong>Auto-Increment Logic:</strong> When a new Admission, Fee Receipt, Enquiry, or TC is generated, the system will automatically format the number according to your custom series and increment the counter safely.
+          <strong>Auto-Increment Logic:</strong> When a new <strong>Bonafide, DOB, Age, Character, or RET Certificate, or AWR Register Folio</strong> (as well as Admissions, Receipts, Enquiries, TCs, and Gate Passes) is issued, the system automatically formats the reference number according to your custom prefix, year format, and digits, and increments the counter safely.
         </Typography>
       </Alert>
+
+      {/* Filter Tabs & Search Bar */}
+      <Paper sx={{ p: 1.5, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', py: 0.5 }}>
+          {[
+            { id: 'All', label: 'All Documents', count: seriesList.length },
+            { id: 'Certificates', label: 'Student Certificates & Registers', count: certCount },
+            { id: 'Core', label: 'Core Institutional', count: coreCount },
+            { id: 'GatePass', label: 'Gate Passes', count: gateCount },
+          ].map((cat) => {
+            const isSelected = activeCategory === cat.id;
+            return (
+              <Button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                variant={isSelected ? 'contained' : 'outlined'}
+                size="small"
+                sx={{
+                  borderRadius: 1.5,
+                  px: 1.5,
+                  py: 0.5,
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  bgcolor: isSelected ? themeColor : 'transparent',
+                  borderColor: isSelected ? themeColor : '#cbd5e1',
+                  color: isSelected ? '#ffffff' : '#475569',
+                  boxShadow: isSelected ? `0 2px 8px ${themeColor}35` : 'none',
+                  '&:hover': {
+                    bgcolor: isSelected ? themeDarker : '#f1f5f9',
+                    borderColor: isSelected ? themeDarker : themeColor,
+                  },
+                }}
+              >
+                {cat.label} ({cat.count})
+              </Button>
+            );
+          })}
+        </Stack>
+
+        <TextField
+          size="small"
+          placeholder="Filter format or prefix..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: '#94a3b8', fontSize: 18 }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ width: { xs: '100%', sm: 260 } }}
+        />
+      </Paper>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
+      ) : filteredList.length === 0 ? (
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+          <Typography variant="subtitle1" fontWeight={700} color="text.secondary">
+            No numbering series match your filter criteria
+          </Typography>
+          <Button
+            size="small"
+            sx={{ mt: 1.5, color: themeColor }}
+            onClick={() => {
+              setActiveCategory('All');
+              setSearchTerm('');
+            }}
+          >
+            Clear Filters
+          </Button>
+        </Paper>
       ) : (
         <Grid container spacing={3}>
-          {seriesList.map((item, index) => {
+          {filteredList.map((item) => {
+            const index = item.originalIndex;
             const preview = item.samplePreview || calculatePreview(item);
 
             return (

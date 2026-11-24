@@ -5,9 +5,12 @@ import { InputSwitch } from 'primereact/inputswitch';
 import { Tag } from 'primereact/tag';
 import apiClient from '../../../api/client';
 import { printElement } from '../../../utils/printUtils';
+import { useThemeStore, shadeColor } from '../../../store/themeStore';
 
 export const AwrStudentFolioModal = ({ open, onClose, student, config: passedConfig }) => {
   const printRef = useRef(null);
+  const { currentColorHex, isDarkMode } = useThemeStore();
+  const themeColor = currentColorHex || '#0f766e';
   const [config, setConfig] = useState(passedConfig || null);
   const [printWithLetterhead, setPrintWithLetterhead] = useState(true);
 
@@ -73,7 +76,7 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
       header={
         <div className="flex align-items-center justify-content-between w-full pr-4">
           <div className="flex align-items-center gap-2">
-            <i className="pi pi-id-card text-emerald-600 text-xl"></i>
+            <i className="pi pi-id-card text-xl" style={{ color: themeColor }}></i>
             <div>
               <div className="font-bold text-slate-800 text-base">
                 AWR Folio Extract — {student.studentName}
@@ -97,9 +100,14 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
             <Button
               label="Print Folio"
               icon="pi pi-print"
-              severity="success"
               size="small"
               onClick={handlePrint}
+              style={{
+                backgroundColor: themeColor,
+                borderColor: themeColor,
+                color: '#ffffff',
+                fontWeight: 700,
+              }}
             />
           </div>
         </div>

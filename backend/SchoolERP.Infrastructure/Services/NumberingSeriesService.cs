@@ -25,7 +25,14 @@ namespace SchoolERP.Infrastructure.Services
             ("FeeReceipt", "Fee Payment Receipt No", "RCP", false, true, "YYYYYY", "/", 6, 1),
             ("Enquiry", "Student Enquiry No", "ENQ", false, true, "YYYYYY", "/", 4, 1),
             ("TransferCertificate", "Transfer Certificate (TC) No", "TC", false, true, "YYYY-YY", "/", 4, 1),
-            ("Staff", "Staff / Employee Code", "EMP", false, false, "None", "/", 4, 1)
+            ("Staff", "Staff / Employee Code", "EMP", false, false, "None", "/", 4, 1),
+            ("BonafideCertificate", "Bonafide Certificate Ref No", "DPS/BC", false, true, "YYYY", "/", 4, 1),
+            ("BirthCertificate", "Date of Birth (DOB) Certificate Ref No", "DPS/DOB", false, true, "YYYY", "/", 4, 1),
+            ("AgeCertificate", "Certificate of Age Ref No", "DPS/AGE", false, true, "YYYY", "/", 4, 1),
+            ("CharacterCertificate", "Character Certificate Ref No", "DPS/CC", false, true, "YYYY", "/", 4, 1),
+            ("RetCertificate", "Record of Education & Retention (RET) Certificate Ref No", "DPS/RET", false, true, "YYYY", "/", 4, 1),
+            ("GatePass", "Student Gate Pass No", "GP", false, true, "YYYY", "/", 4, 1),
+            ("AwrRegister", "AWR Register / Folio Ref No", "DPS/AWR", false, true, "YYYY", "/", 4, 1)
         };
 
         public async Task<List<NumberingSeriesDto>> GetSeriesListAsync(long branchId)
@@ -223,6 +230,54 @@ namespace SchoolERP.Infrastructure.Services
                 StartNumber = series.StartNumber,
                 CurrentSequence = series.CurrentSequence,
                 Suffix = series.Suffix
+            };
+
+            return FormatNumber(dto, branchCode, academicYearName, nextSeq);
+        }
+
+        public async Task<string> PeekNextNumberAsync(long branchId, string moduleType, string? branchCode = null, string? academicYearName = null)
+        {
+            if (string.IsNullOrWhiteSpace(branchCode))
+            {
+                var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
+                branchCode = branch?.Code ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(academicYearName))
+            {
+                var currentAY = await _context.AcademicYears
+                    .Where(ay => ay.BranchId == branchId && ay.IsCurrent)
+                    .FirstOrDefaultAsync();
+                academicYearName = currentAY?.Name ?? DateTime.UtcNow.Year.ToString();
+            }
+
+            var series = await _context.NumberingSeries
+                .FirstOrDefaultAsync(ns => ns.BranchId == branchId && ns.ModuleType == moduleType && ns.IsActive);
+
+            var def = DefaultConfigs.FirstOrDefault(d => d.ModuleType == moduleType);
+            var prefix = series?.Prefix ?? def.DefaultPrefix ?? string.Empty;
+            var includeBranch = series?.IncludeBranchCode ?? def.IncludeBranch;
+            var includeAy = series?.IncludeAcademicYear ?? def.IncludeAY;
+            var yearFormat = series?.YearFormat ?? def.YearFormat ?? "YYYY";
+            var separator = series?.Separator ?? def.Separator ?? "/";
+            var digits = series?.Digits > 0 ? series.Digits : (def.Digits > 0 ? def.Digits : 4);
+            var startNumber = series?.StartNumber > 0 ? series.StartNumber : (def.StartNum > 0 ? def.StartNum : 1);
+            var currentSeq = series?.CurrentSequence ?? 0;
+            var suffix = series?.Suffix;
+
+            var nextSeq = Math.Max(startNumber, currentSeq + 1);
+
+            var dto = new NumberingSeriesDto
+            {
+                Prefix = prefix,
+                IncludeBranchCode = includeBranch,
+                IncludeAcademicYear = includeAy,
+                YearFormat = yearFormat,
+                Separator = separator,
+                Digits = digits,
+                StartNumber = startNumber,
+                CurrentSequence = currentSeq,
+                Suffix = suffix
             };
 
             return FormatNumber(dto, branchCode, academicYearName, nextSeq);
