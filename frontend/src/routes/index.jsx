@@ -51,6 +51,7 @@ import StaffDirectoryPage from '../features/staff/pages/StaffDirectoryPage';
 import EmployeeFormPage from '../features/staff/pages/EmployeeFormPage';
 import EmployeeProfilePage from '../features/staff/pages/EmployeeProfilePage';
 import TeacherAllocationPage from '../features/staff/pages/TeacherAllocationPage';
+import StaffPayrollPage from '../features/staff/pages/StaffPayrollPage';
 
 // Module 5: Fees Management
 import FeeStructurePage from '../features/fees/pages/FeeStructurePage';
@@ -508,6 +509,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="TeacherAllocation">
               <TeacherAllocationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="staff/payroll"
+          element={
+            <ProtectedRoute requiredMenu="Staff">
+              <StaffPayrollPage />
             </ProtectedRoute>
           }
         />

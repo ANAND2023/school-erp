@@ -16,3 +16,15 @@ export const staffApi = {
   saveSubjectTeacher: (data) => apiClient.post('/teacher-allocations/subject-teachers', data),
   getMyAllocations: () => apiClient.get('/teacher-allocations/my-allocations'),
 };
+
+export const payrollApi = {
+  getPayrolls: (params) => apiClient.get('/payroll', { params }),
+  getSummary: (params) => apiClient.get('/payroll/summary', { params }),
+  getPayroll: (id) => apiClient.get(`/payroll/${id}`),
+  generateMonthlyPayroll: (data) => apiClient.post('/payroll/generate-monthly', data),
+  createPayroll: (data) => apiClient.post('/payroll', data),
+  updatePayroll: (id, data) => apiClient.put(`/payroll/${id}`, data),
+  recordPayment: (id, data) => apiClient.post(`/payroll/${id}/pay`, data),
+  bulkPay: (data) => apiClient.post('/payroll/bulk-pay', data),
+  deletePayroll: (id) => apiClient.delete(`/payroll/${id}`),
+};

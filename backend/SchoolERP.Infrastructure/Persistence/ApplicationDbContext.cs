@@ -64,6 +64,7 @@ namespace SchoolERP.Infrastructure.Persistence
 
         public DbSet<Employee> Employees => Set<Employee>();
         public DbSet<TeacherAllocation> TeacherAllocations => Set<TeacherAllocation>();
+        public DbSet<StaffPayroll> StaffPayrolls => Set<StaffPayroll>();
 
         public DbSet<FeeHead> FeeHeads => Set<FeeHead>();
         public DbSet<FeeGroup> FeeGroups => Set<FeeGroup>();
@@ -189,6 +190,19 @@ namespace SchoolERP.Infrastructure.Persistence
             modelBuilder.Entity<TeacherAllocation>(entity =>
             {
                 entity.HasIndex(a => new { a.BranchId, a.AcademicYearId, a.ClassId, a.SectionId, a.SubjectId, a.IsClassTeacher });
+            });
+
+            // Staff Payroll configuration
+            modelBuilder.Entity<StaffPayroll>(entity =>
+            {
+                entity.ToTable("staff_payrolls");
+                entity.HasIndex(p => new { p.BranchId, p.EmployeeId, p.PayrollMonth, p.PayrollYear }).IsUnique();
+                entity.HasIndex(p => new { p.BranchId, p.SalarySlipNo }).IsUnique();
+                entity.Property(p => p.SalarySlipNo).HasMaxLength(60).IsRequired();
+                entity.Property(p => p.MonthName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.PaymentStatus).HasMaxLength(30).IsRequired();
+                entity.Property(p => p.PaymentMode).HasMaxLength(50);
+                entity.Property(p => p.TransactionReference).HasMaxLength(150);
             });
 
             // Decimal precision for monetary fields (BR-5.5)

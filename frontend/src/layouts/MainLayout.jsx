@@ -86,6 +86,7 @@ const navItems = [
     children: [
       { title: 'Staff Directory', path: '/staff', menuKey: 'Staff' },
       { title: 'Teacher Allocation', path: '/staff/allocation', menuKey: 'TeacherAllocation' },
+      { title: 'Staff Payroll & Salary', path: '/staff/payroll', menuKey: 'Staff' },
     ],
   },
   {

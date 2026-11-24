@@ -230,6 +230,14 @@ export const routeBreadcrumbMap = {
     subtitle: 'Allocate class teachers, subject specialists, and weekly workload distribution',
     code: 'Module 4',
   },
+  '/staff/payroll': {
+    module: 'Staff & HR',
+    moduleIcon: 'pi pi-users',
+    modulePath: '/staff/payroll',
+    title: 'Staff Payroll & Salary Slips',
+    subtitle: 'Manage monthly salary processing, allowances, statutory deductions, disbursements, and printable payslips',
+    code: 'Module 4',
+  },
 
   // Module 5: Fees Management
   '/fees/structure': {

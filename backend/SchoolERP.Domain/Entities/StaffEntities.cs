@@ -64,4 +64,54 @@ namespace SchoolERP.Domain.Entities
         public virtual Section? Section { get; set; }
         public virtual Subject? Subject { get; set; }
     }
+
+    public class StaffPayroll : BaseEntity
+    {
+        public long BranchId { get; set; }
+        public long AcademicYearId { get; set; }
+        public long EmployeeId { get; set; }
+        public string SalarySlipNo { get; set; } = string.Empty;
+        public int PayrollMonth { get; set; } // 1 to 12
+        public int PayrollYear { get; set; }
+        public string MonthName { get; set; } = string.Empty; // e.g. "November 2026"
+
+        // Working Days & Attendance
+        public int TotalWorkingDays { get; set; } = 30;
+        public decimal PresentDays { get; set; } = 30;
+        public decimal PaidLeaves { get; set; } = 0;
+        public decimal UnpaidLeaves { get; set; } = 0; // LOP days
+
+        // Allowances & Earnings
+        public decimal BasicSalary { get; set; }
+        public decimal Da { get; set; }
+        public decimal Hra { get; set; }
+        public decimal Conveyance { get; set; }
+        public decimal MedicalAllowance { get; set; }
+        public decimal SpecialAllowance { get; set; }
+        public decimal GrossSalary { get; set; }
+
+        // Deductions
+        public decimal PfDeduction { get; set; }
+        public decimal EsiDeduction { get; set; }
+        public decimal ProfessionalTax { get; set; }
+        public decimal TdsDeduction { get; set; }
+        public decimal LoanDeduction { get; set; }
+        public decimal LeaveDeduction { get; set; } // Loss of Pay amount
+        public decimal TotalDeductions { get; set; }
+
+        // Net Salary
+        public decimal NetSalary { get; set; }
+
+        // Payment status & details
+        public string PaymentStatus { get; set; } = "Pending"; // "Pending", "Paid", "Partial"
+        public DateTime? PaymentDate { get; set; }
+        public string? PaymentMode { get; set; } // "Bank Transfer", "NEFT/RTGS", "Cheque", "Cash", "UPI"
+        public string? TransactionReference { get; set; }
+        public string? Remarks { get; set; }
+
+        // Navigation
+        public virtual Branch? Branch { get; set; }
+        public virtual AcademicYear? AcademicYear { get; set; }
+        public virtual Employee? Employee { get; set; }
+    }
 }
