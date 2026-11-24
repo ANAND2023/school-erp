@@ -268,36 +268,23 @@ namespace SchoolERP.API.Controllers
             if (employees.Count == 0)
                 return BadRequest(ApiResponse<object>.Fail("No active employees found to generate payroll."));
 
-            // Check existing payrolls for this month & year
-            var existingPayrolls = await _context.StaffPayrolls
-                .Where(p => p.BranchId == branchId && p.PayrollMonth == dto.Month && p.PayrollYear == year && p.IsActive)
-                .Select(p => p.EmployeeId)
-                .ToListAsync();
-
-            var existingSet = new HashSet<long>(existingPayrolls);
-            var employeesToProcess = employees.Where(e => !existingSet.Contains(e.Id)).ToList();
-
-            if (employeesToProcess.Count == 0)
-                return Ok(ApiResponse<object>.Ok(new { generated = 0, message = $"All active staff already have payroll generated for {monthName}." }));
-
-            var newPayrolls = new List<StaffPayroll>();
-            int sequence = existingPayrolls.Count + 1;
+            int sequence = await _context.StaffPayrolls.CountAsync(p => p.BranchId == branchId && p.PayrollYear == year && p.PayrollMonth == dto.Month) + 1;
 
             var monthStart = new DateTime(year, dto.Month, 1);
             var monthEnd = new DateTime(year, dto.Month, daysInMonth, 23, 59, 59);
 
-            foreach (var emp in employeesToProcess)
-            {
-                var slipNo = $"PAY/{year}/{dto.Month:D2}/{sequence:D4}";
-                sequence++;
+            int updatedCount = 0;
+            int newCount = 0;
 
-                // Base Salary calculation
-                var basic = emp.SalaryBasic.HasValue && emp.SalaryBasic.Value > 0 ? emp.SalaryBasic.Value : 25000.00m;
-                var da = Math.Round(basic * 0.10m, 2); // 10% DA
-                var hra = Math.Round(basic * 0.20m, 2); // 20% HRA
-                var conveyance = 1600.00m;
-                var medical = 1250.00m;
-                var special = 1500.00m;
+            foreach (var emp in employees)
+            {
+                // Simple School Fixed Monthly Salary (from Staff Profile)
+                decimal basic = emp.SalaryBasic.HasValue && emp.SalaryBasic.Value > 0 ? emp.SalaryBasic.Value : 0m;
+                decimal da = 0m;
+                decimal hra = 0m;
+                decimal conveyance = 0m;
+                decimal medical = 0m;
+                decimal special = 0m;
 
                 decimal presentDays = daysInMonth;
                 decimal unpaidLeaves = 0;
@@ -321,73 +308,109 @@ namespace SchoolERP.API.Controllers
                     }
                 }
 
-                // Loss of Pay calculation
+                // Loss of Pay calculation (only if staff was absent during the month)
                 decimal leaveDeduction = 0;
-                if (unpaidLeaves > 0)
+                if (unpaidLeaves > 0 && daysInMonth > 0)
                 {
                     leaveDeduction = Math.Round((basic / daysInMonth) * unpaidLeaves, 2);
                 }
 
-                // Deductions
-                var pf = Math.Round(basic * 0.12m, 2); // 12% PF
-                var grossEstimated = basic + da + hra + conveyance + medical + special;
-                var esi = grossEstimated <= 21000 ? Math.Round(grossEstimated * 0.0075m, 2) : 0m;
-                var profTax = 200.00m; // Standard PT
-                var tds = 0.00m;
-                var loanDeduction = 0.00m;
+                // Deductions (0 by default in schools - no auto corporate DA/HRA/PF/PT)
+                decimal pf = 0m;
+                decimal esi = 0m;
+                decimal profTax = 0m;
+                decimal tds = 0m;
+                decimal loanDeduction = 0m;
 
-                var gross = basic + da + hra + conveyance + medical + special;
-                var totalDeductions = pf + esi + profTax + tds + loanDeduction + leaveDeduction;
-                var net = Math.Max(0, gross - totalDeductions);
+                decimal gross = basic;
+                decimal totalDeductions = leaveDeduction;
+                decimal net = Math.Max(0, gross - totalDeductions);
 
-                var record = new StaffPayroll
+                var existing = await _context.StaffPayrolls
+                    .FirstOrDefaultAsync(p => p.BranchId == branchId && p.EmployeeId == emp.Id && p.PayrollMonth == dto.Month && p.PayrollYear == year && p.IsActive);
+
+                if (existing != null)
                 {
-                    BranchId = branchId,
-                    AcademicYearId = academicYearId,
-                    EmployeeId = emp.Id,
-                    SalarySlipNo = slipNo,
-                    PayrollMonth = dto.Month,
-                    PayrollYear = year,
-                    MonthName = monthName,
-                    TotalWorkingDays = daysInMonth,
-                    PresentDays = presentDays,
-                    PaidLeaves = paidLeaves,
-                    UnpaidLeaves = unpaidLeaves,
+                    existing.BasicSalary = basic;
+                    existing.Da = da;
+                    existing.Hra = hra;
+                    existing.Conveyance = conveyance;
+                    existing.MedicalAllowance = medical;
+                    existing.SpecialAllowance = special;
+                    existing.GrossSalary = gross;
 
-                    BasicSalary = basic,
-                    Da = da,
-                    Hra = hra,
-                    Conveyance = conveyance,
-                    MedicalAllowance = medical,
-                    SpecialAllowance = special,
-                    GrossSalary = gross,
+                    existing.PfDeduction = pf;
+                    existing.EsiDeduction = esi;
+                    existing.ProfessionalTax = profTax;
+                    existing.TdsDeduction = tds;
+                    existing.LoanDeduction = loanDeduction;
+                    existing.LeaveDeduction = leaveDeduction;
+                    existing.TotalDeductions = totalDeductions;
+                    existing.NetSalary = net;
 
-                    PfDeduction = pf,
-                    EsiDeduction = esi,
-                    ProfessionalTax = profTax,
-                    TdsDeduction = tds,
-                    LoanDeduction = loanDeduction,
-                    LeaveDeduction = leaveDeduction,
-                    TotalDeductions = totalDeductions,
+                    existing.TotalWorkingDays = daysInMonth;
+                    existing.PresentDays = presentDays;
+                    existing.PaidLeaves = paidLeaves;
+                    existing.UnpaidLeaves = unpaidLeaves;
+                    existing.ModifiedBy = userId;
+                    existing.ModifiedOn = DateTime.UtcNow;
 
-                    NetSalary = net,
-                    PaymentStatus = "Pending",
-                    CreatedBy = userId,
-                    CreatedOn = DateTime.UtcNow,
-                    IsActive = true
-                };
+                    updatedCount++;
+                }
+                else
+                {
+                    var slipNo = $"PAY/{year}/{dto.Month:D2}/{sequence:D4}";
+                    sequence++;
 
-                newPayrolls.Add(record);
+                    var record = new StaffPayroll
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = academicYearId,
+                        EmployeeId = emp.Id,
+                        SalarySlipNo = slipNo,
+                        PayrollMonth = dto.Month,
+                        PayrollYear = year,
+                        MonthName = monthName,
+                        TotalWorkingDays = daysInMonth,
+                        PresentDays = presentDays,
+                        PaidLeaves = paidLeaves,
+                        UnpaidLeaves = unpaidLeaves,
+
+                        BasicSalary = basic,
+                        Da = da,
+                        Hra = hra,
+                        Conveyance = conveyance,
+                        MedicalAllowance = medical,
+                        SpecialAllowance = special,
+                        GrossSalary = gross,
+
+                        PfDeduction = pf,
+                        EsiDeduction = esi,
+                        ProfessionalTax = profTax,
+                        TdsDeduction = tds,
+                        LoanDeduction = loanDeduction,
+                        LeaveDeduction = leaveDeduction,
+                        TotalDeductions = totalDeductions,
+
+                        NetSalary = net,
+                        PaymentStatus = "Pending",
+                        CreatedBy = userId,
+                        CreatedOn = DateTime.UtcNow,
+                        IsActive = true
+                    };
+
+                    await _context.StaffPayrolls.AddAsync(record);
+                    newCount++;
+                }
             }
 
-            await _context.StaffPayrolls.AddRangeAsync(newPayrolls);
             await _context.SaveChangesAsync();
 
             return Ok(ApiResponse<object>.Ok(new
             {
-                generated = newPayrolls.Count,
+                generated = newCount + updatedCount,
                 month = monthName,
-                message = $"Successfully generated {newPayrolls.Count} salary slips for {monthName}."
+                message = $"Successfully processed {newCount + updatedCount} salary slips for {monthName}."
             }));
         }
 

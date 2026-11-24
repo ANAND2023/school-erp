@@ -150,12 +150,12 @@ export const EditPayrollModal = ({ visible, onHide, payroll, onSubmit, loading }
           <div className="col-12 sm:col-6 p-1">
             <div className="border-1 border-blue-200 border-round p-3 surface-0">
               <div className="font-bold text-xs uppercase text-blue-700 mb-2 flex justify-content-between">
-                <span>Earnings Allowances</span>
+                <span>Monthly Earnings</span>
                 <span>Gross: ₹{grossSalary.toFixed(2)}</span>
               </div>
               <div className="flex flex-column gap-2">
                 <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Basic Salary</label>
+                  <label className="text-xs font-medium text-600 block mb-1">Monthly Salary (Basic) *</label>
                   <InputNumber
                     value={formData.basicSalary}
                     onValueChange={(e) => handleChange('basicSalary', e.value)}
@@ -166,51 +166,7 @@ export const EditPayrollModal = ({ visible, onHide, payroll, onSubmit, loading }
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Dearness Allowance (DA)</label>
-                  <InputNumber
-                    value={formData.da}
-                    onValueChange={(e) => handleChange('da', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">House Rent (HRA)</label>
-                  <InputNumber
-                    value={formData.hra}
-                    onValueChange={(e) => handleChange('hra', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Conveyance Allowance</label>
-                  <InputNumber
-                    value={formData.conveyance}
-                    onValueChange={(e) => handleChange('conveyance', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Medical Allowance</label>
-                  <InputNumber
-                    value={formData.medicalAllowance}
-                    onValueChange={(e) => handleChange('medicalAllowance', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Special / Other Allowance</label>
+                  <label className="text-xs font-medium text-600 block mb-1">Additional Allowance / Bonus</label>
                   <InputNumber
                     value={formData.specialAllowance}
                     onValueChange={(e) => handleChange('specialAllowance', e.value)}
@@ -228,15 +184,15 @@ export const EditPayrollModal = ({ visible, onHide, payroll, onSubmit, loading }
           <div className="col-12 sm:col-6 p-1">
             <div className="border-1 border-orange-200 border-round p-3 surface-0">
               <div className="font-bold text-xs uppercase text-orange-700 mb-2 flex justify-content-between">
-                <span>Deductions</span>
+                <span>Monthly Deductions</span>
                 <span>Total: ₹{totalDeductions.toFixed(2)}</span>
               </div>
               <div className="flex flex-column gap-2">
                 <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Provident Fund (PF)</label>
+                  <label className="text-xs font-medium text-600 block mb-1">Absent / Loss of Pay (LOP)</label>
                   <InputNumber
-                    value={formData.pfDeduction}
-                    onValueChange={(e) => handleChange('pfDeduction', e.value)}
+                    value={formData.leaveDeduction}
+                    onValueChange={(e) => handleChange('leaveDeduction', e.value)}
                     mode="currency"
                     currency="INR"
                     locale="en-IN"
@@ -244,40 +200,7 @@ export const EditPayrollModal = ({ visible, onHide, payroll, onSubmit, loading }
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-600 block mb-1">ESI Deduction</label>
-                  <InputNumber
-                    value={formData.esiDeduction}
-                    onValueChange={(e) => handleChange('esiDeduction', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Professional Tax (PT)</label>
-                  <InputNumber
-                    value={formData.professionalTax}
-                    onValueChange={(e) => handleChange('professionalTax', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">TDS / Income Tax</label>
-                  <InputNumber
-                    value={formData.tdsDeduction}
-                    onValueChange={(e) => handleChange('tdsDeduction', e.value)}
-                    mode="currency"
-                    currency="INR"
-                    locale="en-IN"
-                    className="p-inputtext-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Loan / Advance Deduction</label>
+                  <label className="text-xs font-medium text-600 block mb-1">Advance / Loan Deduction</label>
                   <InputNumber
                     value={formData.loanDeduction}
                     onValueChange={(e) => handleChange('loanDeduction', e.value)}
@@ -288,10 +211,10 @@ export const EditPayrollModal = ({ visible, onHide, payroll, onSubmit, loading }
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-600 block mb-1">Loss of Pay (Leave) Deduction</label>
+                  <label className="text-xs font-medium text-600 block mb-1">Other Deductions (Tax / PF)</label>
                   <InputNumber
-                    value={formData.leaveDeduction}
-                    onValueChange={(e) => handleChange('leaveDeduction', e.value)}
+                    value={formData.tdsDeduction}
+                    onValueChange={(e) => handleChange('tdsDeduction', e.value)}
                     mode="currency"
                     currency="INR"
                     locale="en-IN"

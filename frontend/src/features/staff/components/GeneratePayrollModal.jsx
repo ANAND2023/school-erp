@@ -58,7 +58,7 @@ export const GeneratePayrollModal = ({ visible, onHide, onGenerate, loading, dep
       <form onSubmit={handleSubmit} className="p-fluid flex flex-column gap-3 pt-2">
         <div className="surface-100 border-round p-3 text-xs text-700">
           <i className="pi pi-info-circle text-primary mr-1" />
-          This will generate salary slips for all active employees/teachers using their designated base salary, standard allowances (HRA 20%, DA 10%, Conveyance, Medical), statutory deductions (PF 12%, ESI, PT), and attendance data.
+          This will generate salary slips for all active employees and teachers using their designated monthly salary, calculating present days and any loss of pay (LOP) deductions from daily attendance records.
         </div>
 
         <div className="grid m-0">

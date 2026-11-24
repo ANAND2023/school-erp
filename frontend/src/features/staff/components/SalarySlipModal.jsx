@@ -317,28 +317,28 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
             </div>
             <div className="col-12 sm:col-3 p-1 detail-item">
               <span className="lbl text-500 font-bold uppercase text-xs">Designation</span>
-              <span className="val font-semibold text-900 text-sm">{payroll.designation || 'Staff Member'}</span>
+              <span className="val font-semibold text-900 text-sm">{payroll.designation || '-'}</span>
             </div>
             <div className="col-12 sm:col-3 p-1 detail-item">
               <span className="lbl text-500 font-bold uppercase text-xs">Department</span>
-              <span className="val font-semibold text-900 text-sm">{payroll.department || 'Academics'}</span>
+              <span className="val font-semibold text-900 text-sm">{payroll.department || '-'}</span>
             </div>
 
             <div className="col-12 sm:col-3 p-1 detail-item mt-1">
               <span className="lbl text-500 font-bold uppercase text-xs">Bank Name</span>
-              <span className="val font-medium text-800 text-xs">{payroll.bankName || 'State Bank of India'}</span>
+              <span className="val font-medium text-800 text-xs">{payroll.bankName || '-'}</span>
             </div>
             <div className="col-12 sm:col-3 p-1 detail-item mt-1">
               <span className="lbl text-500 font-bold uppercase text-xs">Account No</span>
-              <span className="val font-medium text-800 text-xs">{payroll.accountNo ? `••••${payroll.accountNo.slice(-4)}` : 'N/A'}</span>
+              <span className="val font-medium text-800 text-xs">{payroll.accountNo ? `••••${payroll.accountNo.slice(-4)}` : '-'}</span>
             </div>
             <div className="col-12 sm:col-3 p-1 detail-item mt-1">
               <span className="lbl text-500 font-bold uppercase text-xs">IFSC Code</span>
-              <span className="val font-medium text-800 text-xs">{payroll.ifscCode || 'SBIN0001234'}</span>
+              <span className="val font-medium text-800 text-xs">{payroll.ifscCode || '-'}</span>
             </div>
             <div className="col-12 sm:col-3 p-1 detail-item mt-1">
               <span className="lbl text-500 font-bold uppercase text-xs">PAN / Aadhaar</span>
-              <span className="val font-medium text-800 text-xs">{payroll.panNo || 'ABCDE1234F'}</span>
+              <span className="val font-medium text-800 text-xs">{payroll.panNo || payroll.aadhaarNo || '-'}</span>
             </div>
 
             <div className="col-12 sm:col-3 p-1 detail-item mt-1">
@@ -369,29 +369,39 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               </div>
               <div className="p-2 flex flex-column gap-1.5 text-xs">
                 <div className="flex justify-content-between">
-                  <span className="text-700">Basic Salary</span>
+                  <span className="text-700">Monthly Salary (Basic)</span>
                   <span className="font-semibold text-900">₹{payroll.basicSalary?.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Dearness Allowance (DA)</span>
-                  <span className="font-semibold text-900">₹{(payroll.da || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">House Rent Allowance (HRA)</span>
-                  <span className="font-semibold text-900">₹{(payroll.hra || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Conveyance Allowance</span>
-                  <span className="font-semibold text-900">₹{(payroll.conveyance || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Medical Allowance</span>
-                  <span className="font-semibold text-900">₹{(payroll.medicalAllowance || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Special Allowance</span>
-                  <span className="font-semibold text-900">₹{(payroll.specialAllowance || 0).toFixed(2)}</span>
-                </div>
+                {payroll.specialAllowance > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Additional Allowance / Bonus</span>
+                    <span className="font-semibold text-900">₹{payroll.specialAllowance.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.da > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Dearness Allowance (DA)</span>
+                    <span className="font-semibold text-900">₹{payroll.da.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.hra > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">House Rent Allowance (HRA)</span>
+                    <span className="font-semibold text-900">₹{payroll.hra.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.conveyance > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Conveyance Allowance</span>
+                    <span className="font-semibold text-900">₹{payroll.conveyance.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.medicalAllowance > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Medical Allowance</span>
+                    <span className="font-semibold text-900">₹{payroll.medicalAllowance.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               <div className="bg-blue-50 p-2 font-bold text-xs uppercase border-top-1 border-300 flex justify-content-between text-blue-900">
                 <span>Gross Earnings (A)</span>
@@ -406,34 +416,51 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
                 <span>Amount (₹)</span>
               </div>
               <div className="p-2 flex flex-column gap-1.5 text-xs">
-                <div className="flex justify-content-between">
-                  <span className="text-700">Provident Fund (PF)</span>
-                  <span className="font-semibold text-900">₹{(payroll.pfDeduction || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Employee State Insurance (ESI)</span>
-                  <span className="font-semibold text-900">₹{(payroll.esiDeduction || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Professional Tax (PT)</span>
-                  <span className="font-semibold text-900">₹{(payroll.professionalTax || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">TDS / Income Tax</span>
-                  <span className="font-semibold text-900">₹{(payroll.tdsDeduction || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Advance / Loan Deduction</span>
-                  <span className="font-semibold text-900">₹{(payroll.loanDeduction || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-content-between">
-                  <span className="text-700">Loss of Pay (LOP) Deduction</span>
-                  <span className="font-semibold text-red-600">₹{(payroll.leaveDeduction || 0).toFixed(2)}</span>
-                </div>
+                {payroll.leaveDeduction > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Absent / Loss of Pay (LOP)</span>
+                    <span className="font-semibold text-red-600">₹{payroll.leaveDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.loanDeduction > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Advance / Loan Deduction</span>
+                    <span className="font-semibold text-900">₹{payroll.loanDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.pfDeduction > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Provident Fund (PF)</span>
+                    <span className="font-semibold text-900">₹{payroll.pfDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.esiDeduction > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Employee State Insurance (ESI)</span>
+                    <span className="font-semibold text-900">₹{payroll.esiDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.professionalTax > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">Professional Tax (PT)</span>
+                    <span className="font-semibold text-900">₹{payroll.professionalTax.toFixed(2)}</span>
+                  </div>
+                )}
+                {payroll.tdsDeduction > 0 && (
+                  <div className="flex justify-content-between">
+                    <span className="text-700">TDS / Income Tax</span>
+                    <span className="font-semibold text-900">₹{payroll.tdsDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+                {(!payroll.totalDeductions || payroll.totalDeductions === 0) && (
+                  <div className="text-500 italic py-1 text-center">
+                    Nil (No Deductions Applied)
+                  </div>
+                )}
               </div>
               <div className="bg-orange-50 p-2 font-bold text-xs uppercase border-top-1 border-300 flex justify-content-between text-orange-900">
                 <span>Total Deductions (B)</span>
-                <span>₹{payroll.totalDeductions?.toFixed(2)}</span>
+                <span>₹{(payroll.totalDeductions || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -445,7 +472,7 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
                 Net Take-Home Salary (A - B)
               </div>
               <div className="net-words text-xs text-green-900 font-medium italic mt-1">
-                Rupees {netWords} Only
+                {netWords}
               </div>
             </div>
             <div className="net-right text-2xl font-extrabold text-green-800">

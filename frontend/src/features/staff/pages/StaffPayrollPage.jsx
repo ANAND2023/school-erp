@@ -326,16 +326,9 @@ export const StaffPayrollPage = () => {
     },
     {
       field: 'basicSalary',
-      headerName: 'Basic (₹)',
-      width: 100,
-      minWidth: 100,
-      renderCell: (params) => `₹${params.value?.toLocaleString('en-IN')}`,
-    },
-    {
-      field: 'grossSalary',
-      headerName: 'Gross (₹)',
-      width: 110,
-      minWidth: 110,
+      headerName: 'Monthly Salary (₹)',
+      width: 135,
+      minWidth: 135,
       renderCell: (params) => (
         <span style={{ fontWeight: 600, color: '#1e40af' }}>
           ₹{params.value?.toLocaleString('en-IN')}
@@ -345,21 +338,21 @@ export const StaffPayrollPage = () => {
     {
       field: 'totalDeductions',
       headerName: 'Deductions (₹)',
-      width: 115,
-      minWidth: 115,
+      width: 120,
+      minWidth: 120,
       renderCell: (params) => (
-        <span style={{ fontWeight: 600, color: '#b91c1c' }}>
-          ₹{params.value?.toLocaleString('en-IN')}
+        <span style={{ fontWeight: 600, color: params.value > 0 ? '#b91c1c' : '#64748b' }}>
+          ₹{(params.value || 0).toLocaleString('en-IN')}
         </span>
       ),
     },
     {
       field: 'netSalary',
       headerName: 'Net Payable (₹)',
-      width: 130,
-      minWidth: 130,
+      width: 135,
+      minWidth: 135,
       renderCell: (params) => (
-        <span style={{ fontWeight: 800, color: '#15803d', fontSize: '12.5px' }}>
+        <span style={{ fontWeight: 800, color: '#15803d', fontSize: '13px' }}>
           ₹{params.value?.toLocaleString('en-IN')}
         </span>
       ),
