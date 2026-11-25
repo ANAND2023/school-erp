@@ -469,30 +469,17 @@ export default function FeeCollectionPage() {
   // Paid months are NEVER added to selectedDues
   // NOTE: Optional dues are CHECKED BY DEFAULT unless explicitly unchecked by cashier
   useEffect(() => {
-    setSelectedDues((prev) => {
+    setSelectedDues(() => {
       const next = {};
       visiblePayMonths.forEach((m) => {
         m.items.forEach((item) => {
           if (item.balanceAmount > 0) {
-            if (!item.isOptional) {
-              // Mandatory: always included
+            const isExplicitlyDeselected = item.isOptional && Boolean(deselectedOptionalDueIds[item.dueId]);
+            if (!isExplicitlyDeselected) {
               next[item.dueId] = {
-                amountToPay: prev[item.dueId]?.amountToPay !== undefined
-                  ? Math.min(Number(prev[item.dueId].amountToPay), Number(item.balanceAmount))
-                  : item.balanceAmount,
+                amountToPay: item.balanceAmount,
                 fineToPay: item.fineAmount || 0,
               };
-            } else {
-              // Optional: by default checked! (unless cashier explicitly unchecked it)
-              const isExplicitlyDeselected = Boolean(deselectedOptionalDueIds[item.dueId]);
-              if (!isExplicitlyDeselected) {
-                next[item.dueId] = {
-                  amountToPay: prev[item.dueId]?.amountToPay !== undefined
-                    ? Math.min(Number(prev[item.dueId].amountToPay), Number(item.balanceAmount))
-                    : item.balanceAmount,
-                  fineToPay: item.fineAmount || 0,
-                };
-              }
             }
           }
         });
@@ -640,7 +627,23 @@ export default function FeeCollectionPage() {
   };
 
   const handlePartialAmountChange = (dueId, value) => {
-    const val = value === '' ? '' : parseFloat(value);
+    if (paymentModeError) setPaymentModeError('');
+    const targetItem = activeDueItems.find((d) => d.dueId === dueId);
+    const maxBalance = targetItem ? Number(targetItem.balanceAmount || 0) : 0;
+
+    let val = value;
+    if (val !== '' && val !== null && val !== undefined) {
+      let num = parseFloat(val);
+      if (isNaN(num) || num < 0) {
+        num = 0;
+        val = 0;
+      }
+      if (maxBalance > 0 && num > maxBalance) {
+        num = maxBalance;
+        val = maxBalance;
+      }
+    }
+
     setSelectedDues((prev) => {
       if (!prev[dueId]) return prev;
       const next = {
@@ -711,15 +714,43 @@ export default function FeeCollectionPage() {
 
   const handlePaymentFieldChange = (index, field, value) => {
     if (paymentModeError) setPaymentModeError('');
+    let val = value;
+
+    if (field === 'amount') {
+      if (val !== '' && val !== null && val !== undefined) {
+        let numVal = parseFloat(val);
+        if (isNaN(numVal) || numVal < 0) {
+          numVal = 0;
+          val = '0';
+        }
+
+        // In multi-mode payments, calculate remaining capacity
+        const otherSplitsTotal = paymentSplits.reduce(
+          (sum, item, idx) => (idx !== index ? sum + (Number(item.amount) || 0) : sum),
+          0
+        );
+        const maxAllowedForThisSplit = Math.max(0, netPayable - otherSplitsTotal);
+
+        // Strict restriction: cannot exceed total net payable amount
+        if (netPayable > 0 && numVal > maxAllowedForThisSplit) {
+          numVal = maxAllowedForThisSplit;
+          val = String(maxAllowedForThisSplit);
+          setPaymentModeError(
+            `Payment amount cannot exceed total payable amount (₹${netPayable.toLocaleString('en-IN')}). Capped to maximum payable.`
+          );
+        }
+      }
+    }
+
     const next = [...paymentSplits];
-    next[index][field] = value;
+    next[index][field] = val;
     setPaymentSplits(next);
 
     if (field === 'amount') {
       const newTotal = next.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
       const disc = Number(overallDiscount) || 0;
       const amountToSettle = newTotal + disc;
-      if (activeDueItems.length > 0 && amountToSettle <= maxTotalPayable && amountToSettle > 0) {
+      if (activeDueItems.length > 0) {
         setSelectedDues(distributeAmountToDues(amountToSettle, activeDueItems));
       }
     }
@@ -746,6 +777,9 @@ export default function FeeCollectionPage() {
       setOverallDiscount('');
       if (paymentSplits.length === 1) {
         setPaymentSplits([{ ...paymentSplits[0], amount: maxTotalPayable > 0 ? maxTotalPayable : '' }]);
+        if (activeDueItems.length > 0) {
+          setSelectedDues(distributeAmountToDues(maxTotalPayable, activeDueItems));
+        }
       }
       return;
     }
@@ -766,6 +800,9 @@ export default function FeeCollectionPage() {
     if (paymentSplits.length === 1) {
       const newNet = Math.max(0, maxTotalPayable - calculatedRupees);
       setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (maxTotalPayable > 0 && newNet === 0 ? 0 : '') }]);
+      if (activeDueItems.length > 0) {
+        setSelectedDues(distributeAmountToDues(newNet + calculatedRupees, activeDueItems));
+      }
     }
   };
 
@@ -776,6 +813,9 @@ export default function FeeCollectionPage() {
       setDiscountPercent('');
       if (paymentSplits.length === 1) {
         setPaymentSplits([{ ...paymentSplits[0], amount: maxTotalPayable > 0 ? maxTotalPayable : '' }]);
+        if (activeDueItems.length > 0) {
+          setSelectedDues(distributeAmountToDues(maxTotalPayable, activeDueItems));
+        }
       }
       return;
     }
@@ -805,6 +845,9 @@ export default function FeeCollectionPage() {
       const disc = Number(num) || 0;
       const newNet = Math.max(0, maxTotalPayable - disc);
       setPaymentSplits([{ ...paymentSplits[0], amount: newNet > 0 ? newNet : (maxTotalPayable > 0 && newNet === 0 ? 0 : '') }]);
+      if (activeDueItems.length > 0) {
+        setSelectedDues(distributeAmountToDues(newNet + disc, activeDueItems));
+      }
     }
   };
 
@@ -817,7 +860,8 @@ export default function FeeCollectionPage() {
       let fullAmount = 0;
       visiblePayMonths.forEach((m) => {
         m.items.forEach((item) => {
-          if (item.balanceAmount > 0 && (!item.isOptional || selectedDues[item.dueId])) {
+          const isDeselected = item.isOptional && Boolean(deselectedOptionalDueIds[item.dueId]);
+          if (item.balanceAmount > 0 && !isDeselected) {
             fullAmount += (Number(item.balanceAmount || 0) + Number(item.fineAmount || 0));
           }
         });
@@ -844,7 +888,7 @@ export default function FeeCollectionPage() {
     } else {
       setPaymentSplits([{ mode: 1, amount: '', transactionRef: '', bankName: '', chequeNo: '', chequeDate: '' }]);
     }
-  }, [selectedMonthIds, duesList, selectedDues]);
+  }, [selectedMonthIds, duesList, deselectedOptionalDueIds]);
 
   const handleConfirmCollection = () => {
     setErrorMsg('');
@@ -2092,6 +2136,7 @@ export default function FeeCollectionPage() {
                             label="Amount (₹)"
                             sx={{ flex: 1, ...noSpinnerSx }}
                             value={item.amount}
+                            inputProps={{ min: 0, max: netPayable }}
                             onChange={(e) => handlePaymentFieldChange(index, 'amount', e.target.value)}
                           />
 
