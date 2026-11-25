@@ -180,6 +180,12 @@ const navItems = [
     ],
   },
   {
+    title: 'Accounts & Reports',
+    menuKey: 'Accounts',
+    icon: 'pi pi-calculator',
+    path: '/accounts',
+  },
+  {
     title: 'Expenses',
       menuKey: 'Expenses',
       icon: 'pi pi-wallet',

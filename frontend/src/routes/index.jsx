@@ -84,6 +84,7 @@ import TransferCertificatePage from '../features/promotion/pages/TransferCertifi
 // Central Reports Hub
 import ReportsHubPage from '../features/reports/pages/ReportsHubPage';
 import { ExpensePage } from '../features/expense/pages/ExpensePage';
+import { AccountsHubPage } from '../features/accounts/pages/AccountsHubPage';
 
 // Module: Inventory Management
 import InventoryDashboardPage from '../features/inventory/pages/InventoryDashboardPage';
@@ -162,6 +163,8 @@ export const AppRoutes = () => {
         
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="portal" element={<StudentPortalDashboardPage />} />
+        <Route path="accounts" element={<AccountsHubPage />} />
+        <Route path="accounts/reports" element={<AccountsHubPage />} />
         <Route path="expense" element={<ProtectedRoute requiredMenu="Expenses"><ExpensePage /></ProtectedRoute>} />
         <Route path="communication" element={<CommunicationPage />} />
             <Route path="transport/vehicles" element={<ProtectedRoute requiredMenu="Vehicles"><TransportVehiclesPage /></ProtectedRoute>} />

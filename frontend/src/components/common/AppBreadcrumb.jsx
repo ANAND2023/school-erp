@@ -456,6 +456,22 @@ export const routeBreadcrumbMap = {
   },
 
   // Central Reports
+  '/accounts': {
+    module: 'Accounts & Finance',
+    moduleIcon: 'pi pi-calculator',
+    modulePath: '/accounts',
+    title: 'Accounts & Reports Hub',
+    subtitle: 'Daily cash book, fee collection logs, expense vouchers, salary disbursements, and profit & loss',
+    code: 'Accounts',
+  },
+  '/accounts/reports': {
+    module: 'Accounts & Finance',
+    moduleIcon: 'pi pi-calculator',
+    modulePath: '/accounts',
+    title: 'Accounts & Reports Hub',
+    subtitle: 'Daily cash book, fee collection logs, expense vouchers, salary disbursements, and profit & loss',
+    code: 'Accounts',
+  },
   '/reports': {
     module: 'Reports',
     moduleIcon: 'pi pi-chart-bar',
