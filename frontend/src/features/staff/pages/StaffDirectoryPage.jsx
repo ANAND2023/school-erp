@@ -42,6 +42,7 @@ import { simpleMasterApi } from '../../masters/api';
 import { DataGrid } from '../../../components/DataGrid';
 import { usePermission } from '../../../hooks/usePermission';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import { SlideActionCell } from '../../../components/common';
 import { Button as ActionButton } from 'primereact/button';
 
 export default function StaffDirectoryPage() {
@@ -424,15 +425,16 @@ export default function StaffDirectoryPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 140,
-      minWidth: 140,
+      width: 90,
+      minWidth: 90,
       sortable: false,
       frozen: true,
       alignFrozen: 'right',
-      headerStyle: { width: '140px', minWidth: '140px', textAlign: 'center' },
-      style: { width: '140px', minWidth: '140px', textAlign: 'center' },
+      headerStyle: { width: '90px', minWidth: '90px', textAlign: 'center' },
+      bodyStyle: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
+      style: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
       renderCell: (params) => (
-        <div className="flex align-items-center gap-1 justify-content-center" style={{ minWidth: '125px' }}>
+        <SlideActionCell label="Actions">
           <ActionButton
             icon="pi pi-eye"
             className="p-button-rounded p-button-text p-button-primary p-button-sm"
@@ -478,7 +480,7 @@ export default function StaffDirectoryPage() {
               }}
             />
           )}
-        </div>
+        </SlideActionCell>
       ),
     },
   ];

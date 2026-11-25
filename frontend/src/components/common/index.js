@@ -11,3 +11,4 @@ export { AppCard } from './AppCard';
 export { AppConfirmDialog } from './AppConfirmDialog';
 export { AppThemeSwitcher } from './AppThemeSwitcher';
 export { AppBreadcrumb } from './AppBreadcrumb';
+export { SlideActionCell } from './SlideActionCell';

@@ -31,7 +31,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataGrid } from '../../../components/DataGrid';
-import { AppInput, AppSelect } from '../../../components/common';
+import { AppInput, AppSelect, SlideActionCell } from '../../../components/common';
 import { payrollApi } from '../api';
 import { simpleMasterApi } from '../../masters/api';
 import { useUiStore } from '../../../store/uiStore';
@@ -399,34 +399,35 @@ export const StaffPayrollPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 175,
-      minWidth: 175,
+      width: 90,
+      minWidth: 90,
       sortable: false,
       frozen: true,
       alignFrozen: 'right',
-      headerStyle: { width: '175px', minWidth: '175px', textAlign: 'center' },
-      bodyStyle: { width: '175px', minWidth: '175px', textAlign: 'center' },
-      style: { width: '175px', minWidth: '175px', textAlign: 'center' },
+      headerStyle: { width: '90px', minWidth: '90px', textAlign: 'center' },
+      bodyStyle: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
+      style: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
       renderCell: (params) => {
         const slip = params.row;
         const isPaid = slip.paymentStatus === 'Paid';
 
         return (
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+          <SlideActionCell label="Actions">
             {/* View & Print Salary Slip */}
             <Tooltip title="View & Print Salary Slip">
               <IconButton
                 size="small"
                 color="info"
                 sx={{
-                  width: 28,
-                  height: 28,
+                  width: 30,
+                  height: 30,
                   bgcolor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
                   '&:hover': { bgcolor: '#e0f2fe' },
                 }}
                 onClick={() => handleViewSlip(slip)}
               >
-                <ReceiptLongIcon sx={{ fontSize: '1rem' }} />
+                <ReceiptLongIcon sx={{ fontSize: '1rem', color: '#0284c7' }} />
               </IconButton>
             </Tooltip>
 
@@ -438,9 +439,10 @@ export const StaffPayrollPage = () => {
                   color="success"
                   disabled={isPaid}
                   sx={{
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     bgcolor: isPaid ? '#f1f5f9' : '#f0fdf4',
+                    border: isPaid ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
                     '&:hover': { bgcolor: '#dcfce7' },
                   }}
                   onClick={() => {
@@ -448,7 +450,7 @@ export const StaffPayrollPage = () => {
                     setPayModalOpen(true);
                   }}
                 >
-                  <PayIcon sx={{ fontSize: '1rem' }} />
+                  <PayIcon sx={{ fontSize: '1rem', color: isPaid ? '#94a3b8' : '#16a34a' }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -461,9 +463,10 @@ export const StaffPayrollPage = () => {
                   color="primary"
                   disabled={isPaid}
                   sx={{
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     bgcolor: isPaid ? '#f1f5f9' : '#eff6ff',
+                    border: isPaid ? '1px solid #e2e8f0' : '1px solid #bfdbfe',
                     '&:hover': { bgcolor: '#dbeafe' },
                   }}
                   onClick={() => {
@@ -471,7 +474,7 @@ export const StaffPayrollPage = () => {
                     setEditModalOpen(true);
                   }}
                 >
-                  <EditIcon sx={{ fontSize: '1rem' }} />
+                  <EditIcon sx={{ fontSize: '1rem', color: isPaid ? '#94a3b8' : '#2563eb' }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -482,9 +485,10 @@ export const StaffPayrollPage = () => {
                 size="small"
                 color="success"
                 sx={{
-                  width: 28,
-                  height: 28,
+                  width: 30,
+                  height: 30,
                   bgcolor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
                   '&:hover': { bgcolor: '#dcfce7' },
                 }}
                 onClick={() => handleShareWhatsApp(slip)}
@@ -500,9 +504,10 @@ export const StaffPayrollPage = () => {
                   size="small"
                   color="error"
                   sx={{
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     bgcolor: '#fef2f2',
+                    border: '1px solid #fecaca',
                     '&:hover': { bgcolor: '#fee2e2' },
                   }}
                   onClick={() => {
@@ -511,11 +516,11 @@ export const StaffPayrollPage = () => {
                     }
                   }}
                 >
-                  <DeleteIcon sx={{ fontSize: '1rem' }} />
+                  <DeleteIcon sx={{ fontSize: '1rem', color: '#dc2626' }} />
                 </IconButton>
               </Tooltip>
             )}
-          </Box>
+          </SlideActionCell>
         );
       },
     },
