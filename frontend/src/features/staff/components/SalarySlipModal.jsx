@@ -3,17 +3,55 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { numberToIndianWords } from '../../fees/utils/numberToWords';
+import { useAuthStore } from '../../../store/authStore';
+
+// Circular School Emblem Fallback SVG
+const SchoolEmblem = ({ size = 60, primaryColor = '#1e3a8a', secondaryColor = '#eff6ff' }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="47" stroke={primaryColor} strokeWidth="3.5" fill={secondaryColor} />
+    <circle cx="50" cy="50" r="42" stroke="#b45309" strokeWidth="1.5" strokeDasharray="3 2" />
+    <circle cx="50" cy="46" r="28" fill={primaryColor} />
+    <polygon points="50,26 53,35 63,35 55,41 58,50 50,44 42,50 45,41 37,35 47,35" fill="#fef08a" />
+    <path d="M36 52 Q44 48 50 52 Q56 48 64 52 L64 64 Q56 60 50 64 Q44 60 36 64 Z" fill="#ffffff" stroke={primaryColor} strokeWidth="0.8" />
+    <line x1="50" y1="52" x2="50" y2="64" stroke={primaryColor} strokeWidth="1.2" />
+    <path d="M22 45 Q18 56 26 66 M78 45 Q82 56 74 66" stroke={primaryColor} strokeWidth="3" strokeLinecap="round" fill="none" />
+    <path d="M22 72 Q50 82 78 72 L74 80 Q50 90 26 80 Z" fill="#b45309" />
+    <text x="50" y="79" fill="#ffffff" fontSize="7" fontWeight="bold" textAnchor="middle" letterSpacing="0.8" fontFamily="Arial, sans-serif">
+      EDUCATION
+    </text>
+  </svg>
+);
 
 export const SalarySlipModal = ({ visible, onHide, payroll }) => {
   const printRef = useRef(null);
+  const user = useAuthStore((state) => state.user);
 
   if (!payroll) return null;
+
+  // Resolve School & Letterhead Details with robust fallback to logged-in user's school profile
+  const resolvedSchoolName = (payroll.schoolName && !payroll.schoolName.toLowerCase().includes('campus'))
+    ? payroll.schoolName
+    : (user?.schoolName || 'DELHI PUBLIC SCHOOL');
+
+  const resolvedCampusName = payroll.campusName || user?.branchName || 'Main Campus';
+
+  const resolvedSchoolAddress = payroll.schoolAddress || user?.schoolAddress || '123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001';
+
+  const resolvedSchoolContact = payroll.schoolContact || user?.schoolPhone || '9876543210';
+
+  const resolvedSchoolEmail = payroll.schoolEmail || user?.schoolEmail || 'info@dps.edu.in';
+
+  const resolvedAffiliationNo = payroll.affiliationNo || 'CBSE/2026/0912';
+
+  const resolvedLogoUrl = payroll.schoolLogoUrl || user?.schoolLogoUrl || null;
+
+  const resolvedWebsite = payroll.website || 'https://dps.edu.in';
 
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
 
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    const printWindow = window.open('', '_blank', 'width=950,height=750');
     if (!printWindow) {
       alert('Please allow popups to print salary slip');
       return;
@@ -27,15 +65,16 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
           <style>
             @page {
               size: A4 portrait;
-              margin: 12mm 15mm;
+              margin: 10mm 12mm;
             }
             body {
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-              color: #1e293b;
+              color: #0f172a;
               margin: 0;
               padding: 0;
               background: #fff;
-              font-size: 11.5px;
+              font-size: 11px;
+              line-height: 1.35;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
@@ -45,27 +84,52 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
             .slip-card {
               border: 1.5px solid #0f172a;
               border-radius: 6px;
-              padding: 18px 22px;
+              padding: 16px 20px;
               position: relative;
+              background: #ffffff;
             }
-            .school-header {
-              text-align: center;
+            .school-header-wrap {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 16px;
               border-bottom: 2px solid #0f172a;
-              padding-bottom: 12px;
+              padding-bottom: 10px;
               margin-bottom: 12px;
             }
+            .school-logo-box {
+              flex-shrink: 0;
+            }
+            .school-logo-img {
+              width: 58px;
+              height: 58px;
+              object-fit: contain;
+            }
+            .school-header-content {
+              text-align: center;
+              flex: 1;
+            }
             .school-title {
-              font-size: 20px;
-              font-weight: 800;
+              font-size: 21px;
+              font-weight: 900;
               color: #0f172a;
               letter-spacing: 0.5px;
-              margin: 0 0 3px 0;
+              margin: 0;
               text-transform: uppercase;
             }
-            .school-sub {
+            .school-campus-badge {
+              display: inline-block;
               font-size: 11px;
+              font-weight: 700;
+              color: #1e3a8a;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-top: 1px;
+            }
+            .school-sub {
+              font-size: 10.5px;
               color: #475569;
-              margin: 2px 0;
+              margin: 2px 0 0 0;
             }
             .slip-title-bar {
               background: #f1f5f9;
@@ -75,24 +139,29 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              margin-bottom: 14px;
-              font-weight: 700;
+              margin-bottom: 12px;
             }
             .slip-title-bar .title {
-              font-size: 13px;
+              font-size: 12.5px;
               color: #0f172a;
+              font-weight: 800;
               text-transform: uppercase;
               letter-spacing: 0.5px;
+            }
+            .slip-title-bar .slip-no {
+              font-size: 11.5px;
+              color: #334155;
+              font-weight: 600;
             }
             .details-grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
-              gap: 8px 14px;
+              gap: 8px 12px;
               background: #f8fafc;
               border: 1px solid #e2e8f0;
               border-radius: 4px;
               padding: 10px 14px;
-              margin-bottom: 14px;
+              margin-bottom: 12px;
             }
             .detail-item {
               display: flex;
@@ -102,7 +171,7 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               font-size: 9.5px;
               color: #64748b;
               text-transform: uppercase;
-              font-weight: 600;
+              font-weight: 700;
               margin-bottom: 1px;
             }
             .detail-item .val {
@@ -110,45 +179,87 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               font-weight: 600;
               color: #0f172a;
             }
-            .salary-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 14px;
-            }
-            .salary-table th {
-              background: #e2e8f0;
-              color: #0f172a;
-              font-size: 11px;
-              font-weight: 700;
-              text-transform: uppercase;
-              padding: 6px 10px;
+            .breakdown-container {
+              display: flex;
               border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              overflow: hidden;
+              margin-bottom: 12px;
             }
-            .salary-table td {
-              padding: 5px 10px;
-              border: 1px solid #e2e8f0;
+            .breakdown-column {
+              width: 50%;
+              display: flex;
+              flex-direction: column;
+            }
+            .breakdown-column.left {
+              border-right: 1px solid #cbd5e1;
+            }
+            .breakdown-header {
+              padding: 6px 10px;
+              font-weight: 700;
+              font-size: 11px;
+              text-transform: uppercase;
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 1px solid #cbd5e1;
+            }
+            .breakdown-header.earnings {
+              background: #eff6ff;
+              color: #1e40af;
+            }
+            .breakdown-header.deductions {
+              background: #fef2f2;
+              color: #991b1b;
+            }
+            .breakdown-rows {
+              padding: 8px 10px;
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+              flex: 1;
+            }
+            .breakdown-row {
+              display: flex;
+              justify-content: space-between;
               font-size: 11px;
             }
-            .salary-table .subtotal-row {
-              background: #f1f5f9;
-              font-weight: 700;
+            .breakdown-row .lbl {
+              color: #334155;
             }
-            .text-right {
-              text-align: right;
+            .breakdown-row .amt {
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .breakdown-total {
+              padding: 6px 10px;
+              font-weight: 800;
+              font-size: 11.5px;
+              text-transform: uppercase;
+              display: flex;
+              justify-content: space-between;
+              border-top: 1px solid #cbd5e1;
+            }
+            .breakdown-total.earnings {
+              background: #f0f9ff;
+              color: #0c4a6e;
+            }
+            .breakdown-total.deductions {
+              background: #fff7ed;
+              color: #9a3412;
             }
             .net-box {
               background: #ecfdf5;
               border: 1.5px solid #10b981;
               border-radius: 4px;
-              padding: 10px 14px;
+              padding: 8px 12px;
               display: flex;
               justify-content: space-between;
               align-items: center;
-              margin-bottom: 14px;
+              margin-bottom: 12px;
             }
             .net-left .net-lbl {
               font-size: 10px;
-              font-weight: 700;
+              font-weight: 800;
               color: #047857;
               text-transform: uppercase;
             }
@@ -160,7 +271,7 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               margin-top: 2px;
             }
             .net-right {
-              font-size: 18px;
+              font-size: 19px;
               font-weight: 800;
               color: #065f46;
             }
@@ -170,27 +281,27 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               background: #f8fafc;
               border: 1px dashed #cbd5e1;
               border-radius: 4px;
-              padding: 8px 12px;
-              margin-bottom: 24px;
+              padding: 6px 10px;
+              margin-bottom: 18px;
               font-size: 10.5px;
             }
             .signatures-box {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
               gap: 20px;
-              margin-top: 36px;
+              margin-top: 28px;
               text-align: center;
             }
             .sig-line {
-              border-top: 1px solid #475569;
-              padding-top: 6px;
+              border-top: 1px solid #64748b;
+              padding-top: 4px;
               font-weight: 600;
               font-size: 10.5px;
               color: #334155;
             }
             .footer-note {
-              margin-top: 24px;
-              padding-top: 8px;
+              margin-top: 16px;
+              padding-top: 6px;
               border-top: 1px solid #e2e8f0;
               text-align: center;
               font-size: 9.5px;
@@ -209,7 +320,7 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
-    }, 300);
+    }, 350);
   };
 
   const handleWhatsApp = () => {
@@ -220,7 +331,8 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
     }
     const cleanMobile = mobile.startsWith('91') ? mobile : `91${mobile}`;
     const text = encodeURIComponent(
-      `*SALARY SLIP - DELHI PUBLIC SCHOOL*\n` +
+      `*SALARY SLIP - ${resolvedSchoolName.toUpperCase()}*\n` +
+      `Campus: ${resolvedCampusName}\n` +
       `--------------------------------\n` +
       `Employee: *${payroll.employeeName}* (${payroll.employeeCode})\n` +
       `Designation: ${payroll.designation || 'Staff'}\n` +
@@ -278,187 +390,202 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
       modal
       contentClassName="p-3 surface-ground"
     >
-      <div className="bg-white p-4 border-round-lg shadow-2 border-1 surface-border" ref={printRef}>
+      <div className="bg-white p-3 border-round-lg shadow-2 border-1 surface-border" ref={printRef}>
         {/* Printable Card Container */}
         <div className="slip-card">
-          {/* Header */}
-          <div className="school-header text-center pb-2 mb-2 border-bottom-2 border-900">
-            <h1 className="school-title text-2xl font-extrabold text-900 m-0 uppercase letter-spacing-1">
-              {payroll.schoolName || 'DELHI PUBLIC SCHOOL'}
-            </h1>
-            <div className="school-sub text-xs text-600 mt-1">
-              {payroll.schoolAddress || '123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001'}
+          {/* School Letterhead Header */}
+          <div className="school-header-wrap">
+            <div className="school-logo-box">
+              {resolvedLogoUrl ? (
+                <img src={resolvedLogoUrl} alt="School Logo" className="school-logo-img" />
+              ) : (
+                <SchoolEmblem size={56} primaryColor="#1e3a8a" secondaryColor="#eff6ff" />
+              )}
             </div>
-            <div className="school-sub text-xs text-600">
-              Affiliation No: <b>{payroll.affiliationNo || 'CBSE/2026/0912'}</b> | Contact:{' '}
-              {payroll.schoolContact || '4564564564'} | Email: {payroll.schoolEmail || 'main@dps.edu.in'}
+            <div className="school-header-content">
+              <h1 className="school-title">
+                {resolvedSchoolName}
+              </h1>
+              {resolvedCampusName && (
+                <div className="school-campus-badge">
+                  ({resolvedCampusName})
+                </div>
+              )}
+              <div className="school-sub">
+                {resolvedSchoolAddress}
+              </div>
+              <div className="school-sub">
+                {resolvedAffiliationNo && <span>Affiliation No: <b>{resolvedAffiliationNo}</b> | </span>}
+                Contact: <b>{resolvedSchoolContact}</b> | Email: <b>{resolvedSchoolEmail}</b>
+                {resolvedWebsite && <span> | Web: <b>{resolvedWebsite}</b></span>}
+              </div>
             </div>
           </div>
 
           {/* Slip Title Bar */}
-          <div className="slip-title-bar surface-100 border-1 border-300 p-2 border-round flex justify-content-between align-items-center mb-3">
-            <span className="title font-bold text-sm uppercase text-900">
+          <div className="slip-title-bar">
+            <span className="title">
               SALARY SLIP FOR THE MONTH OF {payroll.monthName?.toUpperCase()}
             </span>
-            <span className="text-xs font-semibold text-700">
-              Slip No: <span className="font-bold text-900">{payroll.salarySlipNo}</span>
+            <span className="slip-no">
+              Slip No: <b style={{ color: '#0f172a' }}>{payroll.salarySlipNo}</b>
             </span>
           </div>
 
           {/* Employee Particulars Grid */}
-          <div className="details-grid surface-50 border-1 surface-border border-round p-3 mb-3 grid m-0">
-            <div className="col-12 sm:col-3 p-1 detail-item">
-              <span className="lbl text-500 font-bold uppercase text-xs">Employee ID / Code</span>
-              <span className="val font-semibold text-900 text-sm">{payroll.employeeCode}</span>
+          <div className="details-grid">
+            <div className="detail-item">
+              <span className="lbl">Employee ID / Code</span>
+              <span className="val" style={{ fontFamily: 'monospace', fontWeight: 800 }}>{payroll.employeeCode}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item">
-              <span className="lbl text-500 font-bold uppercase text-xs">Employee Name</span>
-              <span className="val font-bold text-primary text-sm">{payroll.employeeName}</span>
+            <div className="detail-item">
+              <span className="lbl">Employee Name</span>
+              <span className="val" style={{ color: '#1e40af', fontWeight: 700 }}>{payroll.employeeName}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item">
-              <span className="lbl text-500 font-bold uppercase text-xs">Designation</span>
-              <span className="val font-semibold text-900 text-sm">{payroll.designation || '-'}</span>
+            <div className="detail-item">
+              <span className="lbl">Designation</span>
+              <span className="val">{payroll.designation || '-'}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item">
-              <span className="lbl text-500 font-bold uppercase text-xs">Department</span>
-              <span className="val font-semibold text-900 text-sm">{payroll.department || '-'}</span>
-            </div>
-
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Bank Name</span>
-              <span className="val font-medium text-800 text-xs">{payroll.bankName || '-'}</span>
-            </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Account No</span>
-              <span className="val font-medium text-800 text-xs">{payroll.accountNo ? `••••${payroll.accountNo.slice(-4)}` : '-'}</span>
-            </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">IFSC Code</span>
-              <span className="val font-medium text-800 text-xs">{payroll.ifscCode || '-'}</span>
-            </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">PAN / Aadhaar</span>
-              <span className="val font-medium text-800 text-xs">{payroll.panNo || payroll.aadhaarNo || '-'}</span>
+            <div className="detail-item">
+              <span className="lbl">Department</span>
+              <span className="val">{payroll.department || '-'}</span>
             </div>
 
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Total Month Days</span>
-              <span className="val font-bold text-900 text-xs">{payroll.totalWorkingDays} Days</span>
+            <div className="detail-item">
+              <span className="lbl">Bank Name</span>
+              <span className="val">{payroll.bankName || '-'}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Present / Paid Days</span>
-              <span className="val font-bold text-green-700 text-xs">{payroll.presentDays} Days</span>
+            <div className="detail-item">
+              <span className="lbl">Account No</span>
+              <span className="val">{payroll.accountNo ? `••••${payroll.accountNo.slice(-4)}` : '-'}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Paid Leaves</span>
-              <span className="val font-semibold text-700 text-xs">{payroll.paidLeaves || 0} Days</span>
+            <div className="detail-item">
+              <span className="lbl">IFSC Code</span>
+              <span className="val">{payroll.ifscCode || '-'}</span>
             </div>
-            <div className="col-12 sm:col-3 p-1 detail-item mt-1">
-              <span className="lbl text-500 font-bold uppercase text-xs">Loss of Pay (LOP)</span>
-              <span className="val font-bold text-red-600 text-xs">{payroll.unpaidLeaves || 0} Days</span>
+            <div className="detail-item">
+              <span className="lbl">PAN / Aadhaar</span>
+              <span className="val">{payroll.panNo || payroll.aadhaarNo || '-'}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="lbl">Total Month Days</span>
+              <span className="val">{payroll.totalWorkingDays} Days</span>
+            </div>
+            <div className="detail-item">
+              <span className="lbl">Present / Paid Days</span>
+              <span className="val" style={{ color: '#15803d', fontWeight: 700 }}>{payroll.presentDays} Days</span>
+            </div>
+            <div className="detail-item">
+              <span className="lbl">Paid Leaves</span>
+              <span className="val">{payroll.paidLeaves || 0} Days</span>
+            </div>
+            <div className="detail-item">
+              <span className="lbl">Loss of Pay (LOP)</span>
+              <span className="val" style={{ color: '#dc2626', fontWeight: 700 }}>{payroll.unpaidLeaves || 0} Days</span>
             </div>
           </div>
 
-          {/* Earnings vs Deductions Table */}
-          <div className="grid m-0 mb-3 border-1 border-300 border-round overflow-hidden">
+          {/* Earnings vs Deductions Breakdown Columns */}
+          <div className="breakdown-container">
             {/* Earnings Column */}
-            <div className="col-12 sm:col-6 p-0 border-right-1 border-300">
-              <div className="bg-primary-50 p-2 font-bold text-xs uppercase text-primary border-bottom-1 border-300 flex justify-content-between">
+            <div className="breakdown-column left">
+              <div className="breakdown-header earnings">
                 <span>Earnings Particulars</span>
                 <span>Amount (₹)</span>
               </div>
-              <div className="p-2 flex flex-column gap-1.5 text-xs">
-                <div className="flex justify-content-between">
-                  <span className="text-700">Monthly Salary (Basic)</span>
-                  <span className="font-semibold text-900">₹{payroll.basicSalary?.toFixed(2)}</span>
+              <div className="breakdown-rows">
+                <div className="breakdown-row">
+                  <span className="lbl">Monthly Salary (Basic)</span>
+                  <span className="amt">₹{payroll.basicSalary?.toFixed(2)}</span>
                 </div>
                 {payroll.specialAllowance > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Additional Allowance / Bonus</span>
-                    <span className="font-semibold text-900">₹{payroll.specialAllowance.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Additional Allowance / Bonus</span>
+                    <span className="amt">₹{payroll.specialAllowance.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.da > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Dearness Allowance (DA)</span>
-                    <span className="font-semibold text-900">₹{payroll.da.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Dearness Allowance (DA)</span>
+                    <span className="amt">₹{payroll.da.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.hra > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">House Rent Allowance (HRA)</span>
-                    <span className="font-semibold text-900">₹{payroll.hra.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">House Rent Allowance (HRA)</span>
+                    <span className="amt">₹{payroll.hra.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.conveyance > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Conveyance Allowance</span>
-                    <span className="font-semibold text-900">₹{payroll.conveyance.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Conveyance Allowance</span>
+                    <span className="amt">₹{payroll.conveyance.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.medicalAllowance > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Medical Allowance</span>
-                    <span className="font-semibold text-900">₹{payroll.medicalAllowance.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Medical Allowance</span>
+                    <span className="amt">₹{payroll.medicalAllowance.toFixed(2)}</span>
                   </div>
                 )}
               </div>
-              <div className="bg-blue-50 p-2 font-bold text-xs uppercase border-top-1 border-300 flex justify-content-between text-blue-900">
+              <div className="breakdown-total earnings">
                 <span>Gross Earnings (A)</span>
                 <span>₹{payroll.grossSalary?.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Deductions Column */}
-            <div className="col-12 sm:col-6 p-0">
-              <div className="bg-red-50 p-2 font-bold text-xs uppercase text-red-800 border-bottom-1 border-300 flex justify-content-between">
+            <div className="breakdown-column">
+              <div className="breakdown-header deductions">
                 <span>Deductions Particulars</span>
                 <span>Amount (₹)</span>
               </div>
-              <div className="p-2 flex flex-column gap-1.5 text-xs">
+              <div className="breakdown-rows">
                 {payroll.leaveDeduction > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Absent / Loss of Pay (LOP)</span>
-                    <span className="font-semibold text-red-600">₹{payroll.leaveDeduction.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Absent / Loss of Pay (LOP)</span>
+                    <span className="amt" style={{ color: '#dc2626' }}>₹{payroll.leaveDeduction.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.loanDeduction > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Advance / Loan Deduction</span>
-                    <span className="font-semibold text-900">₹{payroll.loanDeduction.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Advance / Loan Deduction</span>
+                    <span className="amt">₹{payroll.loanDeduction.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.pfDeduction > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Provident Fund (PF)</span>
-                    <span className="font-semibold text-900">₹{payroll.pfDeduction.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Provident Fund (PF)</span>
+                    <span className="amt">₹{payroll.pfDeduction.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.esiDeduction > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Employee State Insurance (ESI)</span>
-                    <span className="font-semibold text-900">₹{payroll.esiDeduction.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Employee State Insurance (ESI)</span>
+                    <span className="amt">₹{payroll.esiDeduction.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.professionalTax > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">Professional Tax (PT)</span>
-                    <span className="font-semibold text-900">₹{payroll.professionalTax.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">Professional Tax (PT)</span>
+                    <span className="amt">₹{payroll.professionalTax.toFixed(2)}</span>
                   </div>
                 )}
                 {payroll.tdsDeduction > 0 && (
-                  <div className="flex justify-content-between">
-                    <span className="text-700">TDS / Income Tax</span>
-                    <span className="font-semibold text-900">₹{payroll.tdsDeduction.toFixed(2)}</span>
+                  <div className="breakdown-row">
+                    <span className="lbl">TDS / Income Tax</span>
+                    <span className="amt">₹{payroll.tdsDeduction.toFixed(2)}</span>
                   </div>
                 )}
                 {(!payroll.totalDeductions || payroll.totalDeductions === 0) && (
-                  <div className="text-500 italic py-1 text-center">
+                  <div style={{ color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '4px 0' }}>
                     Nil (No Deductions Applied)
                   </div>
                 )}
               </div>
-              <div className="bg-orange-50 p-2 font-bold text-xs uppercase border-top-1 border-300 flex justify-content-between text-orange-900">
+              <div className="breakdown-total deductions">
                 <span>Total Deductions (B)</span>
                 <span>₹{(payroll.totalDeductions || 0).toFixed(2)}</span>
               </div>
@@ -466,64 +593,63 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
           </div>
 
           {/* Net Salary Highlight Box */}
-          <div className="net-box bg-green-50 border-1 border-green-500 border-round p-3 flex justify-content-between align-items-center mb-3">
+          <div className="net-box">
             <div className="net-left">
-              <div className="net-lbl font-bold text-xs uppercase text-green-800">
+              <div className="net-lbl">
                 Net Take-Home Salary (A - B)
               </div>
-              <div className="net-words text-xs text-green-900 font-medium italic mt-1">
-                {netWords}
+              <div className="net-words">
+                Rupees {netWords} Only
               </div>
             </div>
-            <div className="net-right text-2xl font-extrabold text-green-800">
+            <div className="net-right">
               ₹{payroll.netSalary?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
           {/* Payment & Disbursement Info */}
-          <div className="payment-info-bar surface-100 border-1 border-dashed surface-border border-round p-2 flex justify-content-between text-xs text-700 mb-4">
+          <div className="payment-info-bar">
             <div>
               Status:{' '}
-              <span className={`font-bold ${payroll.paymentStatus === 'Paid' ? 'text-green-700' : 'text-orange-700'}`}>
+              <span style={{ fontWeight: 800, color: payroll.paymentStatus === 'Paid' ? '#15803d' : '#d97706' }}>
                 {payroll.paymentStatus?.toUpperCase() || 'PENDING'}
               </span>
             </div>
             <div>
-              Mode: <span className="font-bold text-900">{payroll.paymentMode || 'Direct Bank Transfer'}</span>
+              Mode: <b style={{ color: '#0f172a' }}>{payroll.paymentMode || 'Direct Bank Transfer'}</b>
             </div>
             <div>
               Payment Date:{' '}
-              <span className="font-bold text-900">
+              <b style={{ color: '#0f172a' }}>
                 {payroll.paymentDate ? new Date(payroll.paymentDate).toLocaleDateString('en-IN') : 'Not Yet Paid'}
-              </span>
+              </b>
             </div>
             <div>
-              Ref / UTR:{' '}
-              <span className="font-bold text-900">{payroll.transactionReference || 'N/A'}</span>
+              Ref / UTR: <b style={{ color: '#0f172a' }}>{payroll.transactionReference || 'N/A'}</b>
             </div>
           </div>
 
           {/* Signatures */}
-          <div className="signatures-box grid text-center mt-5 pt-3">
-            <div className="col-4">
-              <div className="sig-line border-top-1 border-500 pt-2 font-bold text-xs text-700">
+          <div className="signatures-box">
+            <div>
+              <div className="sig-line">
                 Employee Signature
               </div>
             </div>
-            <div className="col-4">
-              <div className="sig-line border-top-1 border-500 pt-2 font-bold text-xs text-700">
+            <div>
+              <div className="sig-line">
                 Accounts Officer / Cashier
               </div>
             </div>
-            <div className="col-4">
-              <div className="sig-line border-top-1 border-500 pt-2 font-bold text-xs text-700">
+            <div>
+              <div className="sig-line">
                 Principal / Authorized Signatory
               </div>
             </div>
           </div>
 
           {/* Footer Note */}
-          <div className="footer-note text-center text-xs text-400 mt-4 pt-2 border-top-1 surface-border">
+          <div className="footer-note">
             This is a computer-generated salary slip and does not require a physical stamp. • Powered by Digital Vidya Sarthi (DVS ERP)
           </div>
         </div>

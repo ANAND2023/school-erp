@@ -162,6 +162,7 @@ namespace SchoolERP.API.Controllers
                 .Include(p => p.Employee)
                     .ThenInclude(e => e!.Designation)
                 .Include(p => p.Branch)
+                    .ThenInclude(b => b!.School)
                 .FirstOrDefaultAsync(p => p.Id == id && p.BranchId == branchId && p.IsActive);
 
             if (payroll == null)
@@ -169,6 +170,36 @@ namespace SchoolERP.API.Controllers
 
             var emp = payroll.Employee;
             var branch = payroll.Branch;
+            var school = branch?.School;
+
+            // Formulate school letterhead details
+            var schoolName = !string.IsNullOrWhiteSpace(school?.Name)
+                ? school.Name
+                : (!string.IsNullOrWhiteSpace(branch?.Name) && !branch.Name.Equals("Main Campus", StringComparison.OrdinalIgnoreCase)
+                    ? branch.Name
+                    : "Delhi Public School");
+
+            var campusName = !string.IsNullOrWhiteSpace(branch?.Name) ? branch.Name : "Main Campus";
+
+            var addressParts = new List<string>();
+            var rawAddress = !string.IsNullOrWhiteSpace(school?.Address) ? school.Address : branch?.Address;
+            if (!string.IsNullOrWhiteSpace(rawAddress)) addressParts.Add(rawAddress);
+            var city = school?.City ?? branch?.City;
+            if (!string.IsNullOrWhiteSpace(city) && (rawAddress == null || !rawAddress.Contains(city))) addressParts.Add(city);
+            var state = school?.State ?? branch?.State;
+            if (!string.IsNullOrWhiteSpace(state) && (rawAddress == null || !rawAddress.Contains(state))) addressParts.Add(state);
+            var pincode = school?.Pincode ?? branch?.Pincode;
+            if (!string.IsNullOrWhiteSpace(pincode) && (rawAddress == null || !rawAddress.Contains(pincode))) addressParts.Add(pincode);
+
+            var fullAddress = addressParts.Count > 0
+                ? string.Join(", ", addressParts)
+                : "123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001";
+
+            var contactNo = !string.IsNullOrWhiteSpace(school?.ContactNumber) ? school.ContactNumber : (branch?.Phone ?? "4564564564");
+            var email = !string.IsNullOrWhiteSpace(school?.Email) ? school.Email : (branch?.Email ?? "info@dps.edu.in");
+            var affiliation = !string.IsNullOrWhiteSpace(school?.AffiliationNumber) ? school.AffiliationNumber : "CBSE/2026/0912";
+            var logo = branch?.LogoUrl ?? school?.LogoUrl;
+            var website = school?.Website ?? "https://dps.edu.in";
 
             var detail = new PayrollDetailDto
             {
@@ -224,12 +255,14 @@ namespace SchoolERP.API.Controllers
                 PhotoUrl = emp?.PhotoUrl,
 
                 // School letterhead
-                SchoolName = branch?.Name ?? "DELHI PUBLIC SCHOOL",
-                CampusName = "Main Campus",
-                SchoolAddress = branch?.Address ?? "Knowledge Park, Sector 4, New Delhi",
-                SchoolContact = branch?.Phone ?? "4564564564",
-                SchoolEmail = branch?.Email ?? "main@dps.edu.in",
-                AffiliationNo = "CBSE/2026/0912"
+                SchoolName = schoolName,
+                CampusName = campusName,
+                SchoolAddress = fullAddress,
+                SchoolContact = contactNo,
+                SchoolEmail = email,
+                AffiliationNo = affiliation,
+                SchoolLogoUrl = logo,
+                Website = website
             };
 
             return Ok(ApiResponse<PayrollDetailDto>.Ok(detail));

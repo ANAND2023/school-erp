@@ -100,10 +100,12 @@ namespace SchoolERP.Application.DTOs
         // School info for slip letterhead
         public string SchoolName { get; set; } = "DELHI PUBLIC SCHOOL";
         public string CampusName { get; set; } = "Main Campus";
-        public string SchoolAddress { get; set; } = "Knowledge Park, Sector 4, New Delhi";
+        public string SchoolAddress { get; set; } = "123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001";
         public string SchoolContact { get; set; } = "9876543210";
         public string SchoolEmail { get; set; } = "info@dps.edu.in";
         public string AffiliationNo { get; set; } = "CBSE/2026/0912";
+        public string? SchoolLogoUrl { get; set; }
+        public string? Website { get; set; }
     }
 
     public class GenerateMonthlyPayrollDto
