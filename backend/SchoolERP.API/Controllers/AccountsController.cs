@@ -50,13 +50,13 @@ namespace SchoolERP.API.Controllers
             var feeReceiptsQuery = _context.FeeReceipts
                 .Include(r => r.Payments)
                 .Where(r => r.BranchId == branchId &&
-                            r.Status == ReceiptStatus.Paid &&
+                            r.Status != ReceiptStatus.Cancelled &&
                             r.ReceiptDate >= start &&
                             r.ReceiptDate <= end);
 
             if (yearId > 0)
             {
-                feeReceiptsQuery = feeReceiptsQuery.Where(r => r.AcademicYearId == yearId);
+                feeReceiptsQuery = feeReceiptsQuery.Where(r => r.AcademicYearId == yearId || r.AcademicYearId == 0);
             }
 
             var feeReceipts = await feeReceiptsQuery.ToListAsync();
@@ -69,6 +69,7 @@ namespace SchoolERP.API.Controllers
             var cashCollections = feeReceipts.SelectMany(r => r.Payments)
                 .Where(p => p.PaymentMode == FeePaymentMode.Cash).Sum(p => p.Amount);
             var bankOnlineCollections = totalFeeCollected - cashCollections;
+            if (bankOnlineCollections < 0) bankOnlineCollections = 0;
 
             // 2. School Operating Expenses
             var expenseQuery = _context.Expenses
@@ -202,13 +203,13 @@ namespace SchoolERP.API.Controllers
                 .Include(r => r.Section)
                 .Include(r => r.Payments)
                 .Where(r => r.BranchId == branchId &&
-                            r.Status == ReceiptStatus.Paid &&
+                            r.Status != ReceiptStatus.Cancelled &&
                             r.ReceiptDate >= start &&
                             r.ReceiptDate <= end);
 
             if (yearId > 0)
             {
-                feeQuery = feeQuery.Where(r => r.AcademicYearId == yearId);
+                feeQuery = feeQuery.Where(r => r.AcademicYearId == yearId || r.AcademicYearId == 0);
             }
 
             var receipts = await feeQuery.ToListAsync();

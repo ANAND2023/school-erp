@@ -382,10 +382,10 @@ export const AccountsHubPage = () => {
         Date: formatDate(c.receiptDate),
         Student: c.studentName,
         AdmNo: c.admissionNo,
-        Class: `${c.className} ${c.sectionName}`,
-        Amount: c.amountPaid,
-        Mode: c.paymentMode,
-        Cashier: c.cashierName,
+        Class: c.classSection || `${c.className || ''} ${c.sectionName || ''}`.trim() || '—',
+        Amount: c.totalPaid ?? c.amountPaid ?? 0,
+        Mode: c.paymentModes || c.paymentMode || 'Cash',
+        Cashier: c.collectedBy || c.cashierName || 'Cashier',
       }));
     } else if (activeTab === 2) {
       filename = `Expenses_${startDate}_to_${endDate}.csv`;
@@ -492,10 +492,13 @@ export const AccountsHubPage = () => {
     const term = searchTerm.toLowerCase();
     return collections.filter(
       (c) =>
-        c.receiptNo.toLowerCase().includes(term) ||
-        c.studentName.toLowerCase().includes(term) ||
-        c.admissionNo.toLowerCase().includes(term) ||
-        (c.className && c.className.toLowerCase().includes(term))
+        (c.receiptNo && c.receiptNo.toLowerCase().includes(term)) ||
+        (c.studentName && c.studentName.toLowerCase().includes(term)) ||
+        (c.admissionNo && c.admissionNo.toLowerCase().includes(term)) ||
+        (c.className && c.className.toLowerCase().includes(term)) ||
+        (c.classSection && c.classSection.toLowerCase().includes(term)) ||
+        (c.collectedBy && c.collectedBy.toLowerCase().includes(term)) ||
+        (c.paymentModes && c.paymentModes.toLowerCase().includes(term))
     );
   }, [collections, searchTerm]);
 
@@ -1101,17 +1104,38 @@ export const AccountsHubPage = () => {
                               <TableCell sx={{ fontWeight: 600 }}>{col.studentName}</TableCell>
                               <TableCell>{col.admissionNo}</TableCell>
                               <TableCell>
-                                {col.className} {col.sectionName}
+                                {col.classSection || `${col.className || ''} ${col.sectionName || ''}`.trim() || '—'}
                               </TableCell>
                               <TableCell align="right" sx={{ fontWeight: 700, color: 'success.dark' }}>
-                                {formatCurrency(col.amountPaid)}
+                                {formatCurrency(col.totalPaid ?? col.amountPaid ?? 0)}
                               </TableCell>
                               <TableCell>
-                                <Chip size="small" label={col.paymentMode} sx={{ height: 22 }} />
+                                <Chip
+                                  size="small"
+                                  label={col.paymentModes || col.paymentMode || 'Cash'}
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{ height: 22, fontWeight: 600, fontSize: '0.72rem' }}
+                                />
                               </TableCell>
-                              <TableCell>{col.cashierName}</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                {col.collectedBy || col.cashierName || 'Cashier'}
+                              </TableCell>
                             </TableRow>
                           ))
+                        )}
+                        {filteredCollections.length > 0 && (
+                          <TableRow sx={{ bgcolor: 'action.hover', fontWeight: 800 }}>
+                            <TableCell colSpan={5} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                              TOTAL PERIOD COLLECTION ({filteredCollections.length} Receipts):
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 800, color: 'success.dark', fontSize: '0.95rem' }}>
+                              {formatCurrency(
+                                filteredCollections.reduce((sum, c) => sum + Number(c.totalPaid ?? c.amountPaid ?? 0), 0)
+                              )}
+                            </TableCell>
+                            <TableCell colSpan={2}></TableCell>
+                          </TableRow>
                         )}
                       </TableBody>
                     </Table>
