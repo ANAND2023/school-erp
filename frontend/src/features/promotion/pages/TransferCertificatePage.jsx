@@ -135,7 +135,7 @@ export const TransferCertificatePage = () => {
     if (!clearanceData?.canIssueTc && !tcForm.adminOverrideDues) {
       setAlert({
         type: 'error',
-        message: 'Student has pending fee dues! Clear dues or check Admin Override (FR-8.4).',
+        message: 'Student has pending fee dues! Clear dues or check Admin Override.',
       });
       return;
     }
@@ -191,15 +191,15 @@ export const TransferCertificatePage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Transfer Certificates (TC)
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Generate, print and track official school leaving certificates with clearance verification (Module 8: FR-8.4, FR-8.5)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Generate, print and track official school leaving certificates with clearance verification
           </Typography>
         </Box>
         <Button

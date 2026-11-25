@@ -434,14 +434,14 @@ export const LeaveManagementPage = () => {
   });
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={800} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Leave Management & Staff Quota
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Configure category-wise CL & SL quotas, process applications, and track staff leave balances
           </Typography>
         </Box>

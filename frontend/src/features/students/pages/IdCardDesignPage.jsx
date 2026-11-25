@@ -559,7 +559,7 @@ export const IdCardDesignPage = () => {
     };
 
     return (
-        <div className="p-3 h-screen flex flex-column overflow-hidden" style={{ maxHeight: '100vh' }}>
+        <div className="pb-3 flex flex-column overflow-hidden">
             <Toast ref={toast} />
             <div className="flex justify-content-between align-items-center mb-3 flex-none">
                 <div>

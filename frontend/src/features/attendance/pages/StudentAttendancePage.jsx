@@ -262,9 +262,9 @@ export const StudentAttendancePage = () => {
   const isReadOnly = isBlocked || (attendanceSheet && !attendanceSheet.isEditable);
 
   return (
-    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, pb: { xs: 10, md: 3 } }}>
+    <Box sx={{ pb: { xs: 10, md: 3 } }}>
       {/* 1. TOP HEADER CARD */}
-      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-3 border-round-lg shadow-1 border-1 surface-border mb-3">
+      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-2 bg-white px-3 py-2 border-round-lg shadow-1 border-1 surface-border mb-2">
         <div>
           <div className="flex align-items-center gap-2 flex-wrap">
             <h2 className="text-xl font-bold text-slate-800 m-0">Daily Student Attendance</h2>

@@ -45,7 +45,7 @@ import { AdmissionReportModal } from '../components/AdmissionReportModal';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { DataGrid } from '../../../components/DataGrid';
 import { usePermission } from '../../../hooks/usePermission';
-import { AppInput, AppSelect, AppButton } from '../../../components/common';
+import { AppInput, AppSelect, AppButton, SlideActionCell } from '../../../components/common';
 import { printWithTitle } from '../../../utils/printUtils';
 
 export default function StudentsPage() {
@@ -467,18 +467,25 @@ export default function StudentsPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 175,
+      width: 90,
+      minWidth: 90,
       sortable: false,
+      frozen: true,
+      alignFrozen: 'right',
+      headerStyle: { width: '90px', minWidth: '90px', textAlign: 'center' },
+      bodyStyle: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
+      style: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
       renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} alignItems="center">
+        <SlideActionCell label="Actions">
           <Tooltip title="Send WhatsApp" arrow>
             <IconButton
               size="small"
               sx={{
-                width: 26,
-                height: 26,
+                width: 28,
+                height: 28,
                 color: '#16a34a',
                 bgcolor: '#f0fdf4',
+                border: '1px solid #bbf7d0',
                 '&:hover': { bgcolor: '#dcfce7' },
                 borderRadius: '6px',
               }}
@@ -491,10 +498,11 @@ export default function StudentsPage() {
             <IconButton
               size="small"
               sx={{
-                width: 26,
-                height: 26,
+                width: 28,
+                height: 28,
                 color: '#2563eb',
                 bgcolor: '#eff6ff',
+                border: '1px solid #bfdbfe',
                 '&:hover': { bgcolor: '#dbeafe' },
                 borderRadius: '6px',
               }}
@@ -508,10 +516,11 @@ export default function StudentsPage() {
               <IconButton
                 size="small"
                 sx={{
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   color: '#7c3aed',
                   bgcolor: '#f5f3ff',
+                  border: '1px solid #ddd6fe',
                   '&:hover': { bgcolor: '#ede9fe' },
                   borderRadius: '6px',
                 }}
@@ -525,10 +534,11 @@ export default function StudentsPage() {
             <IconButton
               size="small"
               sx={{
-                width: 26,
-                height: 26,
+                width: 28,
+                height: 28,
                 color: '#0284c7',
                 bgcolor: '#f0f9ff',
+                border: '1px solid #bae6fd',
                 '&:hover': { bgcolor: '#e0f2fe' },
                 borderRadius: '6px',
               }}
@@ -542,10 +552,11 @@ export default function StudentsPage() {
               <IconButton
                 size="small"
                 sx={{
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   color: '#d97706',
                   bgcolor: '#fffbeb',
+                  border: '1px solid #fde68a',
                   '&:hover': { bgcolor: '#fef3c7' },
                   borderRadius: '6px',
                 }}
@@ -555,13 +566,13 @@ export default function StudentsPage() {
               </IconButton>
             </Tooltip>
           )}
-        </Stack>
+        </SlideActionCell>
       ),
     },
   ];
 
   return (
-    <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
       <Box
         sx={{
@@ -569,12 +580,12 @@ export default function StudentsPage() {
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
           justifyContent: 'space-between',
-          gap: { xs: 1.25, md: 1.5 },
-          mb: 1.5,
+          gap: { xs: 1, md: 1.5 },
+          mb: 1.25,
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0 }}>
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Student Directory
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
@@ -582,22 +593,18 @@ export default function StudentsPage() {
           </Typography>
         </Box>
 
-        <Box
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexWrap="wrap"
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, auto)' },
-            gap: 1,
             width: { xs: '100%', md: 'auto' },
-            py: 0.5,
             '& .p-button': {
-              width: '100%',
-              justifyContent: 'center',
-              py: '6px !important',
-              fontSize: '12px !important',
-            },
-            '& .p-button .p-button-label': {
-              whiteSpace: 'nowrap',
-              overflow: 'visible',
+              height: '32px !important',
+              py: '0 !important',
+              fontSize: '11.5px !important',
+              fontWeight: '600 !important',
             },
           }}
         >
@@ -639,15 +646,15 @@ export default function StudentsPage() {
               onClick={() => navigate('/admissions/new')}
             />
           )}
-        </Box>
+        </Stack>
       </Box>
 
       {/* Filter Toolbar (Single Row) */}
       <Paper
         variant="outlined"
         sx={{
-          p: '8px 12px',
-          mb: 2,
+          p: '6px 10px',
+          mb: 1.5,
           borderRadius: 2,
           bgcolor: 'background.paper',
           display: 'flex',

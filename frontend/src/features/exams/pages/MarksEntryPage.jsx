@@ -220,7 +220,7 @@ export const MarksEntryPage = () => {
         if (isNaN(val) || val < 0 || val > scheduleData.maxMarks) {
           setAlert({
             type: 'error',
-            message: `Marks for student ${r.fullName} must be between 0 and maximum marks (${scheduleData.maxMarks}). (BR-7.1)`,
+            message: `Marks for student ${r.fullName} must be between 0 and maximum marks (${scheduleData.maxMarks}).`,
           });
           return;
         }
@@ -255,21 +255,21 @@ export const MarksEntryPage = () => {
   const isLocked = scheduleData?.isLocked && !isSuperAdmin;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={{ xs: 1.25, sm: 2 }}
-        sx={{ mb: { xs: 2, sm: 3 } }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={800} color="primary.main" sx={{ fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+          <Typography variant="h6" fontWeight={800} color="primary.main" sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, lineHeight: 1.2 }}>
             Examination Marks Entry
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.74rem', sm: '0.85rem' }, mt: 0.25 }}>
-            Enter marks, absent (AB) and medical leave (ML) class-section-subject wise (Module 7: FR-7.2, BR-7.1)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Enter marks, absent (AB) and medical leave (ML) class-section-subject wise
           </Typography>
         </Box>
         <Button

@@ -163,48 +163,64 @@ export default function RollNumbersPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={2}
-        sx={{ mb: 3 }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
       >
         <Box>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/students')}
-            sx={{ mb: 1 }}
-          >
-            Back to Student Directory
-          </Button>
-          <Typography variant="h5" fontWeight={700} color="text.primary">
-            Bulk Roll Number Assignment (FR-3.7)
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Button
+              size="small"
+              startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+              onClick={() => navigate('/students')}
+              sx={{
+                px: 1,
+                py: 0.25,
+                fontSize: '11.5px',
+                fontWeight: 600,
+                color: '#64748b',
+                textTransform: 'none',
+                minWidth: 'auto',
+                '&:hover': { bgcolor: '#f1f5f9', color: '#1e293b' },
+              }}
+            >
+              Back to Student Directory
+            </Button>
+          </Stack>
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
+            Bulk Roll Number Assignment
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Assign or renumber student roll numbers by class and section alphabetically or manually
           </Typography>
         </Box>
 
         {studentList.length > 0 && (
-          <Stack direction="row" spacing={1.5}>
+          <Stack direction="row" spacing={1}>
             <Button
+              size="small"
               variant="outlined"
               color="secondary"
-              startIcon={<SortAlphaIcon />}
+              startIcon={<SortAlphaIcon sx={{ fontSize: 16 }} />}
               onClick={handleAutoAssignAlphabetical}
+              sx={{ height: 32, fontSize: '11.5px', fontWeight: 600, textTransform: 'none' }}
             >
               Assign Alphabetically
             </Button>
             <Button
+              size="small"
               variant="contained"
               color="primary"
-              startIcon={<SaveIcon />}
+              startIcon={<SaveIcon sx={{ fontSize: 16 }} />}
               onClick={handleSave}
               disabled={duplicates.length > 0}
               loading={assignMutation.isPending}
+              sx={{ height: 32, fontSize: '11.5px', fontWeight: 600, textTransform: 'none' }}
             >
               Save Roll Numbers
             </Button>
@@ -213,8 +229,8 @@ export default function RollNumbersPage() {
       </Stack>
 
       {/* Class & Section Selector Card */}
-      <Card sx={{ mb: 3, boxShadow: 1 }}>
-        <CardContent>
+      <Card sx={{ mb: 1.5, boxShadow: 1, borderRadius: 2 }}>
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={5}>
               <TextField
@@ -271,32 +287,32 @@ export default function RollNumbersPage() {
 
       {/* Alerts */}
       {successMsg && (
-        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 3 }}>
+        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 1.5 }}>
           {successMsg}
         </Alert>
       )}
 
       {errorMsg && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 1.5 }}>
           {errorMsg}
         </Alert>
       )}
 
       {duplicates.length > 0 && (
-        <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
+        <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 1.5 }}>
           Duplicate roll numbers detected: <b>{duplicates.join(', ')}</b>. Each student in the section must have a unique roll number.
         </Alert>
       )}
 
       {/* Student List Table */}
       {isLoadingStudents ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress size={28} />
         </Box>
       ) : studentList.length > 0 ? (
-        <Card sx={{ boxShadow: 2 }}>
-          <TableContainer component={Paper}>
-            <Table>
+        <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+            <Table size="small">
               <TableHead sx={{ bgcolor: '#f4f6f8' }}>
                 <TableRow>
                   <TableCell width={60}><b>#</b></TableCell>

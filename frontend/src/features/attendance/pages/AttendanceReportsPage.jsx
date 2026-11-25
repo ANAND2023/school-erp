@@ -184,7 +184,7 @@ const AttendanceReportsPage = () => {
     const wsData = [];
     
     // Header
-    const headerRow = ['Roll', 'Student Name', 'Work', '% (BR-6.2)'];
+    const headerRow = ['Roll', 'Student Name', 'Work', 'Attendance %'];
     for (let i = 1; i <= studentRegister.daysInMonth; i++) headerRow.push(i.toString());
     headerRow.push('P', 'A');
     wsData.push(headerRow);
@@ -333,15 +333,15 @@ const AttendanceReportsPage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Attendance Reports & Registers
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Daily absence alert list with guardian contacts and monthly attendance percentage registers (FR-6.3, BR-6.2)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Daily absence alert list with guardian contacts and monthly attendance percentage registers
           </Typography>
         </Box>
         {tabValue === 0 && absentees.length > 0 && (
@@ -655,7 +655,7 @@ const AttendanceReportsPage = () => {
                   <TableCell sx={{ fontWeight: 700, minWidth: 60 }}>Roll</TableCell>
                   <TableCell sx={{ fontWeight: 700, minWidth: 150 }}>Student Name</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>Work</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 70 }}>% (BR-6.2)</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 70 }}>Attendance %</TableCell>
                   {Array.from({ length: studentRegister.daysInMonth }, (_, i) => i + 1).map((d) => {
                     const isSun = studentRegister.sundayDays.includes(d);
                     const isHol = studentRegister.holidayDays.includes(d);

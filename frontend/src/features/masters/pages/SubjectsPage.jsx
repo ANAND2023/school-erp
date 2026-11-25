@@ -160,13 +160,13 @@ export const SubjectsPage = () => {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
           Subjects Master
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Define scholastic and co-scholastic course subjects (FR-2.5)
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+          Define scholastic and co-scholastic course subjects
         </Typography>
       </Box>
 

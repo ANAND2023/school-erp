@@ -48,6 +48,7 @@ import { classesApi } from '../../masters/api';
 import { useThemeStore, shadeColor } from '../../../store/themeStore';
 import CreateGatePassModal from '../components/CreateGatePassModal';
 import GatePassSlipModal from '../components/GatePassSlipModal';
+import { SlideActionCell } from '../../../components/common';
 
 export default function StudentGatePassPage() {
   const queryClient = useQueryClient();
@@ -196,12 +197,12 @@ export default function StudentGatePassPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ pb: 2 }}>
       {/* Top Banner Notice */}
       {bannerNotice && (
         <Alert
           severity={bannerNotice.type}
-          sx={{ mb: 2.5 }}
+          sx={{ mb: 1.5 }}
           onClose={() => setBannerNotice(null)}
         >
           {bannerNotice.text}
@@ -213,15 +214,15 @@ export default function StudentGatePassPage() {
         direction={{ xs: 'column', sm: 'row' }}
         alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
-        spacing={2}
-        sx={{ mb: 3 }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={800} color="#0f172a" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <BadgeIcon sx={{ color: themeColor, fontSize: 32 }} />
+          <Typography variant="h6" fontWeight={800} color="#0f172a" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1.15rem', sm: '1.25rem' }, lineHeight: 1.2, m: 0 }}>
+            <BadgeIcon sx={{ color: themeColor, fontSize: 24 }} />
             Student Gate Pass Management
           </Typography>
-          <Typography variant="body2" color="#64748b" sx={{ mt: 0.5 }}>
+          <Typography variant="caption" color="#64748b" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Issue student departure passes, verify security gate checkpoints, and print exit permits
           </Typography>
         </Box>
@@ -232,11 +233,13 @@ export default function StudentGatePassPage() {
           onClick={() => setCreateModalOpen(true)}
           sx={{
             fontWeight: 700,
-            px: 2.5,
-            py: 1,
+            px: 2,
+            height: 32,
+            fontSize: '11.5px',
+            textTransform: 'none',
             borderRadius: 2,
             bgcolor: themeColor,
-            boxShadow: `0 4px 12px ${themeColor}40`,
+            boxShadow: `0 2px 8px ${themeColor}30`,
             '&:hover': {
               bgcolor: themeDarker,
             },
@@ -247,21 +250,21 @@ export default function StudentGatePassPage() {
       </Stack>
 
       {/* Stats Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         <Grid item xs={6} sm={3}>
           <Card sx={{ bgcolor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="caption" fontWeight={700} color="#0369a1" textTransform="uppercase">
+                  <Typography variant="caption" fontWeight={700} color="#0369a1" textTransform="uppercase" sx={{ fontSize: '10.5px' }}>
                     Passes Today
                   </Typography>
-                  <Typography variant="h4" fontWeight={800} color="#0c4a6e" sx={{ mt: 0.5 }}>
+                  <Typography variant="h5" fontWeight={800} color="#0c4a6e" sx={{ mt: 0.25 }}>
                     {stats.totalToday}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#38bdf8', width: 44, height: 44 }}>
-                  <BadgeIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#38bdf8', width: 36, height: 36 }}>
+                  <BadgeIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -270,18 +273,18 @@ export default function StudentGatePassPage() {
 
         <Grid item xs={6} sm={3}>
           <Card sx={{ bgcolor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="caption" fontWeight={700} color="#b45309" textTransform="uppercase">
+                  <Typography variant="caption" fontWeight={700} color="#b45309" textTransform="uppercase" sx={{ fontSize: '10.5px' }}>
                     Currently Out
                   </Typography>
-                  <Typography variant="h4" fontWeight={800} color="#78350f" sx={{ mt: 0.5 }}>
+                  <Typography variant="h5" fontWeight={800} color="#78350f" sx={{ mt: 0.25 }}>
                     {stats.currentlyOut}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#fbbf24', width: 44, height: 44 }}>
-                  <ExitIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#fbbf24', width: 36, height: 36 }}>
+                  <ExitIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -290,18 +293,18 @@ export default function StudentGatePassPage() {
 
         <Grid item xs={6} sm={3}>
           <Card sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="caption" fontWeight={700} color="#15803d" textTransform="uppercase">
+                  <Typography variant="caption" fontWeight={700} color="#15803d" textTransform="uppercase" sx={{ fontSize: '10.5px' }}>
                     Returned Today
                   </Typography>
-                  <Typography variant="h4" fontWeight={800} color="#14532d" sx={{ mt: 0.5 }}>
+                  <Typography variant="h5" fontWeight={800} color="#14532d" sx={{ mt: 0.25 }}>
                     {stats.returnedToday}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#4ade80', width: 44, height: 44 }}>
-                  <ReturnedIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#4ade80', width: 36, height: 36 }}>
+                  <ReturnedIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -310,18 +313,18 @@ export default function StudentGatePassPage() {
 
         <Grid item xs={6} sm={3}>
           <Card sx={{ bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="caption" fontWeight={700} color="#b91c1c" textTransform="uppercase">
+                  <Typography variant="caption" fontWeight={700} color="#b91c1c" textTransform="uppercase" sx={{ fontSize: '10.5px' }}>
                     Cancelled Today
                   </Typography>
-                  <Typography variant="h4" fontWeight={800} color="#7f1d1d" sx={{ mt: 0.5 }}>
+                  <Typography variant="h5" fontWeight={800} color="#7f1d1d" sx={{ mt: 0.25 }}>
                     {stats.cancelledToday}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#f87171', width: 44, height: 44 }}>
-                  <CancelIcon sx={{ color: '#ffffff' }} />
+                <Avatar sx={{ bgcolor: '#f87171', width: 36, height: 36 }}>
+                  <CancelIcon sx={{ color: '#ffffff', fontSize: 20 }} />
                 </Avatar>
               </Stack>
             </CardContent>
@@ -330,8 +333,8 @@ export default function StudentGatePassPage() {
       </Grid>
 
       {/* Filter Toolbar Card */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <Card sx={{ mb: 1.5, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={3}>
               <TextField
@@ -460,7 +463,7 @@ export default function StudentGatePassPage() {
                 <TableCell sx={{ fontWeight: 800, color: '#334155' }}>Accompanying Person</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: '#334155' }}>Reason</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: '#334155' }}>Status</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 800, color: '#334155' }}>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#334155', width: 95, minWidth: 95 }}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -588,17 +591,17 @@ export default function StudentGatePassPage() {
                     <TableCell>{getStatusChip(row.status)}</TableCell>
 
                     {/* Column 7: Actions */}
-                    <TableCell align="center">
-                      <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+                    <TableCell align="center" sx={{ width: 95, minWidth: 95, overflow: 'visible' }}>
+                      <SlideActionCell label="Actions">
                         {/* Print / View Slip */}
                         <Tooltip title="View & Print Slip">
                           <IconButton
                             size="small"
                             color="primary"
                             onClick={() => handleOpenSlip(row)}
-                            sx={{ border: '1px solid #bae6fd', bgcolor: '#f0f9ff' }}
+                            sx={{ border: '1px solid #bae6fd', bgcolor: '#f0f9ff', width: 28, height: 28 }}
                           >
-                            <PrintIcon fontSize="small" />
+                            <PrintIcon sx={{ fontSize: 15 }} />
                           </IconButton>
                         </Tooltip>
 
@@ -610,7 +613,7 @@ export default function StudentGatePassPage() {
                               variant="outlined"
                               color="warning"
                               onClick={() => handleStatusChange(row.id, 'Departed')}
-                              sx={{ fontSize: '0.7rem', py: 0.3, px: 1, textTransform: 'none', fontWeight: 700 }}
+                              sx={{ fontSize: '0.7rem', height: 26, px: 0.8, textTransform: 'none', fontWeight: 700 }}
                             >
                               Depart
                             </Button>
@@ -625,7 +628,7 @@ export default function StudentGatePassPage() {
                               variant="outlined"
                               color="success"
                               onClick={() => handleStatusChange(row.id, 'Returned')}
-                              sx={{ fontSize: '0.7rem', py: 0.3, px: 1, textTransform: 'none', fontWeight: 700 }}
+                              sx={{ fontSize: '0.7rem', height: 26, px: 0.8, textTransform: 'none', fontWeight: 700 }}
                             >
                               Return
                             </Button>
@@ -643,12 +646,13 @@ export default function StudentGatePassPage() {
                                   cancelPassMutation.mutate(row.id);
                                 }
                               }}
+                              sx={{ border: '1px solid #fecaca', bgcolor: '#fef2f2', width: 28, height: 28 }}
                             >
-                              <CancelIcon fontSize="small" />
+                              <CancelIcon sx={{ fontSize: 15 }} />
                             </IconButton>
                           </Tooltip>
                         )}
-                      </Stack>
+                      </SlideActionCell>
                     </TableCell>
                   </TableRow>
                 ))

@@ -1256,7 +1256,7 @@ export default function FeeReportsPage() {
                               </Tooltip>
 
                               {can('FeeCollection', 'Delete') && r.status === 1 && (
-                                <Tooltip title="Cancel Receipt (FR-5.7)">
+                                <Tooltip title="Cancel Receipt">
                                   <IconButton size="small" color="error" onClick={() => handleOpenCancel(r)}>
                                     <CancelIcon fontSize="small" />
                                   </IconButton>
@@ -3433,7 +3433,7 @@ export default function FeeReportsPage() {
       <Dialog open={cancelModalOpen} onClose={() => setCancelModalOpen(false)} maxWidth="xs" fullWidth>
         <form onSubmit={handleConfirmCancel}>
           <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
-            Cancel Fee Receipt (FR-5.7)
+            Cancel Fee Receipt
           </DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" sx={{ mb: 2 }}>

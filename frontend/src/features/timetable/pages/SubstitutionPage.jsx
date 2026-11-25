@@ -185,7 +185,7 @@ const SubstitutionPage = () => {
         remarks: modalForm.remarks,
       };
       await createSubstitution(payload);
-      setAlert({ type: 'success', message: 'Substitution arranged successfully (FR-6.8)!' });
+      setAlert({ type: 'success', message: 'Substitution arranged successfully!' });
       setDialogOpen(false);
       loadSubstitutions();
     } catch (err) {
@@ -210,14 +210,14 @@ const SubstitutionPage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Teacher Substitutions (Proxy)
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Assign available teachers to cover classes when colleagues are absent or on leave (FR-6.8)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Assign available teachers to cover classes when colleagues are absent or on leave
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd} sx={{ px: 3 }}>

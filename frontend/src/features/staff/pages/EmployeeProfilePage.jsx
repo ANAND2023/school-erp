@@ -534,7 +534,7 @@ export default function EmployeeProfilePage() {
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight={700} color="primary">
-                  Teaching Responsibilities & Allocations (FR-4.3, FR-4.4)
+                  Teaching Responsibilities & Allocations
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Sections where this teacher is assigned as Class Teacher or Subject Teacher
@@ -595,7 +595,7 @@ export default function EmployeeProfilePage() {
         <Card sx={{ boxShadow: 1 }}>
           <CardContent>
             <Typography variant="h6" fontWeight={700} color="primary" gutterBottom>
-              ERP System Login Account (FR-4.2)
+              ERP System Login Account
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
@@ -620,7 +620,7 @@ export default function EmployeeProfilePage() {
                 </Grid>
 
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  When this staff member is relieved via the exit action, their system user login will be automatically deactivated (FR-4.5).
+                  When this staff member is relieved via the exit action, their system user login will be automatically deactivated.
                 </Alert>
               </Stack>
             ) : (
@@ -649,7 +649,7 @@ export default function EmployeeProfilePage() {
       >
         <form onSubmit={handleConfirmExit}>
           <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
-            Process Employee Relieving / Exit (FR-4.5)
+            Process Employee Relieving / Exit
           </DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" sx={{ mb: 2 }}>

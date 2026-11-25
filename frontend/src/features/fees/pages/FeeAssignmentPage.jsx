@@ -54,7 +54,7 @@ export default function FeeAssignmentPage() {
   const [concessionHeadId, setConcessionHeadId] = useState('');
   const [concessionType, setConcessionType] = useState(1); // 1 = Percentage, 2 = Fixed
   const [concessionValue, setConcessionValue] = useState('');
-  const [concessionReasonCategory, setConcessionReasonCategory] = useState('Sibling Concession (FR-3.4)');
+  const [concessionReasonCategory, setConcessionReasonCategory] = useState('Sibling Concession');
   const [concessionNotes, setConcessionNotes] = useState('');
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [concessionError, setConcessionError] = useState('');
@@ -199,7 +199,7 @@ export default function FeeAssignmentPage() {
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <AssignIcon color="primary" />
                 <Typography variant="h6" fontWeight={700}>
-                  1. Bulk Class Fee Assignment (FR-5.2)
+                  1. Bulk Class Fee Assignment
                 </Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
@@ -294,7 +294,7 @@ export default function FeeAssignmentPage() {
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <ConcessionIcon color="secondary" />
                 <Typography variant="h6" fontWeight={700}>
-                  2. Grant Fee Concession (FR-5.3)
+                  2. Grant Fee Concession
                 </Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
@@ -423,7 +423,7 @@ export default function FeeAssignmentPage() {
                       value={concessionReasonCategory}
                       onChange={(e) => setConcessionReasonCategory(e.target.value)}
                     >
-                      <MenuItem value="Sibling Concession (FR-3.4)">Sibling Concession (FR-3.4)</MenuItem>
+                      <MenuItem value="Sibling Concession">Sibling Concession</MenuItem>
                       <MenuItem value="Staff Ward Concession">Staff Ward Concession</MenuItem>
                       <MenuItem value="Merit Scholarship">Merit Scholarship</MenuItem>
                       <MenuItem value="RTE Quota">RTE Quota</MenuItem>

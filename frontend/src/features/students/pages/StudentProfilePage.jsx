@@ -1031,7 +1031,7 @@ export default function StudentProfilePage() {
           {/* Siblings */}
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" gutterBottom>
-              Detected Siblings in School (FR-3.4)
+              Detected Siblings in School
             </Typography>
             {student.siblings && student.siblings.length > 0 ? (
               <Grid container spacing={2}>
@@ -1074,7 +1074,7 @@ export default function StudentProfilePage() {
         <Card sx={{ boxShadow: 1 }}>
           <CardContent>
             <Typography variant="h6" fontWeight={700} color="primary" gutterBottom>
-              Enrollment History Across Academic Sessions (BR-3.3)
+              Enrollment History Across Academic Sessions
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Student master record is permanent; each year creates an active enrollment record.
@@ -1121,7 +1121,7 @@ export default function StudentProfilePage() {
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight={700} color="primary">
-                  Student Documents & Certificates (FR-3.3)
+                  Student Documents & Certificates
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Uploaded identity, birth certificate, and transfer documents
@@ -1275,7 +1275,7 @@ export default function StudentProfilePage() {
         <Card sx={{ boxShadow: 1 }}>
           <CardContent>
             <Typography variant="h6" fontWeight={700} color="primary" gutterBottom>
-              Section Change Audit Trail (FR-3.8)
+              Section Change Audit Trail
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Permanent record of section transfers with authorized reasons and timestamps

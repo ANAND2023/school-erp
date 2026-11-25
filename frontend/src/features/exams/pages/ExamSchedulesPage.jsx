@@ -861,7 +861,7 @@ export const ExamSchedulesPage = () => {
   const examTitleDropdownOptions = existingExamNames;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* ===================== TOP HEADER & WORKFLOW GUIDE ===================== */}
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
         <Box>

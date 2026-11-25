@@ -209,7 +209,7 @@ export const StudentAwrReportPage = () => {
   };
 
   return (
-    <div className="p-2 sm:p-3 surface-ground min-h-screen">
+    <div className="pb-3 surface-ground min-h-screen">
       <Toast ref={toastRef} />
 
       {/* Header Banner */}

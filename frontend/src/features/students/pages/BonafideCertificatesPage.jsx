@@ -314,12 +314,12 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
   };
 
   return (
-    <Box sx={{ p: { xs: 1.5, sm: 2.5 }, maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ pb: 2 }}>
       {/* Top Banner Notice */}
       {bannerNotice && (
         <Alert
           severity={bannerNotice.type}
-          sx={{ mb: 2 }}
+          sx={{ mb: 1.5 }}
           onClose={() => setBannerNotice(null)}
         >
           {bannerNotice.text}
@@ -331,7 +331,7 @@ export const BonafideCertificatesPage = ({ defaultType = 'bonafide' }) => {
         direction="row"
         spacing={1}
         sx={{
-          mb: 2.5,
+          mb: 1.5,
           overflowX: 'auto',
           pb: 0.5,
           borderBottom: '1px solid #e2e8f0',

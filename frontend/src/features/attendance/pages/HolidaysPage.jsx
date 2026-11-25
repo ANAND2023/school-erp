@@ -173,14 +173,14 @@ const HolidaysPage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Academic Holiday Calendar
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage school holidays and vacations. Dates marked here block attendance marking (FR-6.2).
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Manage school holidays and vacations. Dates marked here block attendance marking.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>

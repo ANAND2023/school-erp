@@ -197,7 +197,7 @@ export const IdCardPrintPage = () => {
         (printSide === 'both' && (frontConfig?.orientation === 'horizontal' || backConfig?.orientation === 'horizontal'));
 
     return (
-        <div className="p-3 print-wrapper">
+        <div className="pb-3 print-wrapper">
             <style>{`
                 @media print {
                     @page { size: ${isHorizontalMode ? 'A4 portrait' : 'A4 landscape'}; margin: 0; }

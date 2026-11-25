@@ -692,7 +692,7 @@ export default function StaffDirectoryPage() {
       >
         <form onSubmit={handleConfirmExit}>
           <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
-            Process Employee Relieving / Exit (FR-4.5)
+            Process Employee Relieving / Exit
           </DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" sx={{ mb: 2 }}>

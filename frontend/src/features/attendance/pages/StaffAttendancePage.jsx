@@ -141,15 +141,15 @@ const StaffAttendancePage = () => {
   );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Daily Staff Attendance
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Log employee attendance, duty hours, in/out timings and leave status (FR-6.4)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Log employee attendance, duty hours, in/out timings and leave status
           </Typography>
         </Box>
         <Button
@@ -172,8 +172,8 @@ const StaffAttendancePage = () => {
       )}
 
       {/* Filter / Selector Bar */}
-      <Card sx={{ mb: 3, boxShadow: 2 }}>
-        <CardContent sx={{ p: 2.5 }}>
+      <Card sx={{ mb: 1.5, boxShadow: 1, borderRadius: 2 }}>
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={4}>
               <AppDatePicker
@@ -231,7 +231,7 @@ const StaffAttendancePage = () => {
 
       {/* Summary Counter Bar */}
       {staffRows.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Paper sx={{ p: 1.5, mb: 1.5, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip label={`Total Staff: ${staffRows.length}`} color="default" variant="outlined" sx={{ fontWeight: 700 }} />
           <Chip label={`Present: ${counts[1]}`} color="success" sx={{ fontWeight: 700 }} />
           <Chip label={`Absent: ${counts[2]}`} color="error" sx={{ fontWeight: 700 }} />

@@ -2535,7 +2535,7 @@ export default function FeeStructurePage() {
               <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
                 <Box>
                   <Typography variant="h6" fontWeight={700} color="primary">
-                    Configure Late Fine Policy (FR-5.6)
+                    Configure Late Fine Policy
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Set automatic late fine (fixed amount or per-day rate) applicable after grace period

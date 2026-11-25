@@ -370,7 +370,7 @@ export default function EmployeeFormPage() {
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <WorkIcon color="primary" />
                 <Typography variant="h6" fontWeight={700}>
-                  2. Job & Position Details (FR-4.1)
+                  2. Job & Position Details
                 </Typography>
               </Stack>
               <Divider sx={{ mb: 2.5 }} />
@@ -576,7 +576,7 @@ export default function EmployeeFormPage() {
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                   <KeyIcon color="primary" />
                   <Typography variant="h6" fontWeight={700}>
-                    5. System User Login Credentials (FR-4.2)
+                    5. System User Login Credentials
                   </Typography>
                 </Stack>
                 <Divider sx={{ mb: 2 }} />
@@ -589,7 +589,7 @@ export default function EmployeeFormPage() {
                       color="primary"
                     />
                   }
-                  label={<b>Automatically create ERP login user account for this staff member (FR-4.2)</b>}
+                  label={<b>Automatically create ERP login user account for this staff member</b>}
                 />
 
                 {formData.autoCreateUser && (

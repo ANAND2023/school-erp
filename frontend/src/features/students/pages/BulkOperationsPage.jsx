@@ -190,7 +190,7 @@ export const BulkOperationsPage = () => {
                     const fatherMobile = row.FatherMobile?.toString().trim();
                     const motherMobile = row.MotherMobile?.toString().trim();
                     if (!fatherMobile && !motherMobile) {
-                        rowError = "At least one guardian with a valid mobile number is mandatory (BR-3.4).";
+                        rowError = "At least one guardian with a valid mobile number is mandatory.";
                     }
                 }
 

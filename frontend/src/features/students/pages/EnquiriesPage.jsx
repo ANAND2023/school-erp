@@ -431,7 +431,7 @@ export const EnquiriesPage = () => {
               </Tooltip>
             )}
             {canAdmit && !isConverted && (
-              <Tooltip title="Convert to Admission (FR-3.2)">
+              <Tooltip title="Convert to Admission">
                 <IconButton
                   size="small"
                   color="success"
@@ -560,7 +560,7 @@ export const EnquiriesPage = () => {
       <Modal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        title="Record New Student Enquiry (FR-3.1)"
+        title="Record New Student Enquiry"
         maxWidth="sm"
         formId="enquiry-form"
         submitLabel="Save Enquiry"

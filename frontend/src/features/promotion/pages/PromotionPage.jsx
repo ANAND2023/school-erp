@@ -282,27 +282,27 @@ export const PromotionPage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Student Promotion & Year-End Roll-over
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Promote, detain, or exit students batch-wise with fee dues carryover (Module 8: FR-8.1, BR-8.1)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Promote, detain, or exit students batch-wise with fee dues carryover
           </Typography>
         </Box>
       </Stack>
 
       {alert && (
-        <Alert severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
+        <Alert severity={alert.type} sx={{ mb: 1.5 }} onClose={() => setAlert(null)}>
           {alert.message}
         </Alert>
       )}
 
       {/* Tabs */}
-      <Tabs value={tabIndex} onChange={(e, val) => setTabIndex(val)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+      <Tabs value={tabIndex} onChange={(e, val) => setTabIndex(val)} sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <Tab icon={<PromoteIcon />} iconPosition="start" label="Batch Promotion" />
         <Tab icon={<HistoryIcon />} iconPosition="start" label="Promotion History & Rollback" />
       </Tabs>
@@ -434,7 +434,7 @@ export const PromotionPage = () => {
                 }
                 label={
                   <Typography variant="body2" fontWeight={600}>
-                    Carry forward unpaid fee dues to next academic year (FR-8.3)
+                    Carry forward unpaid fee dues to next academic year
                   </Typography>
                 }
               />
@@ -601,7 +601,7 @@ export const PromotionPage = () => {
                     </TableCell>
                     <TableCell align="right">
                       {!h.isRolledBack && (
-                        <Tooltip title="Rollback promotion before any new transactions in new year (FR-8.6)">
+                        <Tooltip title="Rollback promotion before any new transactions in new year">
                           <Button
                             size="small"
                             variant="outlined"

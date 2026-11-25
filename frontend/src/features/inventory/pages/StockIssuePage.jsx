@@ -442,7 +442,7 @@ const StockIssuePage = () => {
               <CardContent>
                  <Box sx={{ pb: 2, borderBottom: '1px dashed #ccc', mb: 2 }}>
                     <Typography variant="h6" fontWeight={800}>
-                      Payment Breakdown (FR-5.4)
+                      Payment Breakdown
                     </Typography>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
                       <Typography variant="body2" color="text.secondary">Total Payable:</Typography>

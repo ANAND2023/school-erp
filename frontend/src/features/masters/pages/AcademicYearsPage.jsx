@@ -137,13 +137,13 @@ export const AcademicYearsPage = () => {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
           Academic Years & Sessions
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Configure school sessions with date ranges and manage current active session (FR-2.2 & BR-2.1)
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+          Configure school sessions with date ranges and manage current active session
         </Typography>
       </Box>
 
@@ -197,7 +197,7 @@ export const AcademicYearsPage = () => {
                 onChange={(e) => setIsCurrent(e.target.checked)}
               />
             }
-            label="Mark as current active session (BR-2.1)"
+            label="Mark as current active session"
           />
         </Box>
       </Modal>

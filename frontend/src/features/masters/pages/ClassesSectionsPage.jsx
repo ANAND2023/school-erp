@@ -313,11 +313,11 @@ export const ClassesSectionsPage = () => {
   return (
     <Box>
       {/* Top Header Card */}
-      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-3 bg-white p-4 border-round-lg shadow-1 border-1 surface-border mb-3">
+      <div className="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-2 bg-white px-3 py-2 border-round-lg shadow-1 border-1 surface-border mb-2">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 m-0">Classes & Sections Master</h2>
+          <h2 className="text-base font-bold text-slate-800 m-0">Classes & Sections Master</h2>
           <p className="text-xs text-slate-500 m-0 mt-1">
-            Define grade levels with display ordering and classroom sections with maximum capacity (FR-2.4 & BR-2.3)
+            Define grade levels with display ordering and classroom sections with maximum capacity
           </p>
         </div>
         <div className="flex align-items-center gap-2">
@@ -692,7 +692,7 @@ export const ClassesSectionsPage = () => {
             fullWidth
             type="number"
             label="Student Capacity"
-            helperText="Section capacity cannot be exceeded without Principal override (BR-3.2)"
+            helperText="Section capacity cannot be exceeded without Principal override"
             value={sectionCapacity}
             onChange={(e) => setSectionCapacity(Number(e.target.value))}
             sx={{ mb: 2 }}

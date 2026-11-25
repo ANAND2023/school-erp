@@ -150,23 +150,23 @@ const TeacherTimetablePage = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ pb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Teacher Schedule & Timetable
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Personalized weekly class view for teaching faculty (FR-4.4, FR-6.6)
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
+            Personalized weekly class view for teaching faculty
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ px: 2.5 }}>
+        <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ px: 2.5, height: 32, fontSize: '11.5px', textTransform: 'none' }}>
           Download PDF
         </Button>
       </Box>
 
       {alert && (
-        <Alert  severity={alert.type} sx={{ mb: 3 }} onClose={() => setAlert(null)}>
+        <Alert severity={alert.type} sx={{ mb: 1.5 }} onClose={() => setAlert(null)}>
           {alert.message}
         </Alert>
       )}

@@ -186,7 +186,7 @@ export const AdmissionRecordsPage = () => {
     const sections = activeClass?.sections || [];
 
     return (
-        <div className="p-2">
+        <div className="pb-2">
             <Toast ref={toast} />
 
             {/* Header Toolbar (Compact) */}

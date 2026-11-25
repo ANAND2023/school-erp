@@ -448,7 +448,7 @@ export const RolesPage = () => {
             >
               <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                 <SecurityIcon fontSize="small" sx={{ mr: 1 }} />
-                Menu Permissions Matrix (FR-1.6)
+                Menu Permissions Matrix
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button size="small" variant="outlined" onClick={() => handleGlobalSelectAll(true)}>

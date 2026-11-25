@@ -137,27 +137,39 @@ export default function SectionChangePage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={2}
-        sx={{ mb: 3 }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
       >
         <Box>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/students')}
-            sx={{ mb: 1 }}
-          >
-            Back to Student Directory
-          </Button>
-          <Typography variant="h5" fontWeight={700} color="text.primary">
-            Student Section Transfer (FR-3.8)
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Button
+              size="small"
+              startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+              onClick={() => navigate('/students')}
+              sx={{
+                px: 1,
+                py: 0.25,
+                fontSize: '11.5px',
+                fontWeight: 600,
+                color: '#64748b',
+                textTransform: 'none',
+                minWidth: 'auto',
+                '&:hover': { bgcolor: '#f1f5f9', color: '#1e293b' },
+              }}
+            >
+              Back to Student Directory
+            </Button>
+          </Stack>
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
+            Student Section Transfer
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Transfer active students between sections within the same class with capacity validation and audit tracking
           </Typography>
         </Box>
@@ -165,29 +177,29 @@ export default function SectionChangePage() {
 
       {/* Alerts */}
       {successMsg && (
-        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 3 }}>
+        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 1.5 }}>
           {successMsg}
         </Alert>
       )}
 
       {errorMsg && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 1.5 }}>
           {errorMsg}
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Left Card: Selection & Transfer Form */}
         <Grid item xs={12} md={7}>
-          <Card sx={{ boxShadow: 2 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom color="primary">
+          <Card sx={{ boxShadow: 1, borderRadius: 2 }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom color="primary">
                 Section Change Request
               </Typography>
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 2 }} />
 
               <form onSubmit={handleSubmit}>
-                <Stack spacing={2.5}>
+                <Stack spacing={2}>
                   {/* Class Selection */}
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
@@ -272,7 +284,7 @@ export default function SectionChangePage() {
                     helperText={
                       availableTargetSections.length === 0 && classId
                         ? 'No alternative sections available for this class.'
-                        : 'Section capacity is enforced per BR-3.2'
+                        : 'Section maximum capacity limit is strictly enforced.'
                     }
                   >
                     <MenuItem value="">Choose Destination Section</MenuItem>
@@ -320,11 +332,11 @@ export default function SectionChangePage() {
                     type="submit"
                     variant="contained"
                     color="warning"
-                    size="large"
+                    size="medium"
                     startIcon={<SwapHorizIcon />}
                     disabled={!selectedStudentId || !targetSectionId}
                     loading={changeSectionMutation.isPending}
-                    sx={{ mt: 1 }}
+                    sx={{ mt: 0.5, height: 34, fontSize: '12px', fontWeight: 700 }}
                   >
                     Confirm Section Transfer
                   </Button>
@@ -337,9 +349,9 @@ export default function SectionChangePage() {
         {/* Right Card: Student Overview & Past Transfers */}
         <Grid item xs={12} md={5}>
           {currentStudent ? (
-            <Stack spacing={3}>
-              <Card sx={{ boxShadow: 2, bgcolor: '#fbfcfd' }}>
-                <CardContent sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              <Card sx={{ boxShadow: 1, borderRadius: 2, bgcolor: '#fbfcfd' }}>
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Typography variant="h6" fontWeight={700} gutterBottom color="text.primary">
                     Selected Student Information
                   </Typography>
