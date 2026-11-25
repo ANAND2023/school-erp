@@ -52,6 +52,8 @@ export const classSubjectApi = {
 
 export const simpleMasterApi = {
   getMasters: (type) => apiClient.get('/simplemasters', { params: { type } }),
+  getDepartments: () => apiClient.get('/simplemasters', { params: { type: 'Department' } }),
+  getDesignations: () => apiClient.get('/simplemasters', { params: { type: 'Designation' } }),
   createMaster: (data) => apiClient.post('/simplemasters', data),
   updateMaster: (id, data) => apiClient.put(`/simplemasters/${id}`, data),
   deleteMaster: (id) => apiClient.delete(`/simplemasters/${id}`),

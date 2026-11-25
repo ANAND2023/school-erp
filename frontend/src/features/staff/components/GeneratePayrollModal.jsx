@@ -32,6 +32,12 @@ export const GeneratePayrollModal = ({ visible, onHide, onGenerate, loading, dep
   const [statusLoading, setStatusLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  const parseDepartmentId = (val) => {
+    if (val === null || val === undefined || val === '' || val === 'null') return null;
+    const num = Number(val);
+    return isNaN(num) || num <= 0 ? null : num;
+  };
+
   // Fetch Attendance Status whenever month, year, or department changes and modal is visible
   useEffect(() => {
     if (visible && month && year) {
@@ -42,10 +48,11 @@ export const GeneratePayrollModal = ({ visible, onHide, onGenerate, loading, dep
   const fetchAttendanceStatus = async () => {
     setStatusLoading(true);
     try {
+      const cleanDeptId = parseDepartmentId(departmentId);
       const res = await payrollApi.getAttendanceStatus({
-        month,
-        year,
-        departmentId: departmentId || undefined,
+        month: Number(month),
+        year: Number(year),
+        departmentId: cleanDeptId || undefined,
       });
       const data = res.data?.data || res.data;
       setAttStatus(data);
@@ -66,10 +73,11 @@ export const GeneratePayrollModal = ({ visible, onHide, onGenerate, loading, dep
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cleanDeptId = parseDepartmentId(departmentId);
     onGenerate({
-      month,
-      year,
-      departmentId: departmentId || null,
+      month: Number(month),
+      year: Number(year),
+      departmentId: cleanDeptId,
       autoCalculateAttendance: attendanceMode !== 'FullFixedSalary',
       attendanceMode,
     });
@@ -77,7 +85,7 @@ export const GeneratePayrollModal = ({ visible, onHide, onGenerate, loading, dep
 
   const deptOptions = [
     { label: 'All Departments (All Staff & Teachers)', value: null },
-    ...departments.map((d) => ({ label: d.name, value: d.id })),
+    ...departments.map((d) => ({ label: d.name, value: Number(d.id) })),
   ];
 
   return (

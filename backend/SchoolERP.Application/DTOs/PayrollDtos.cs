@@ -1,8 +1,44 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SchoolERP.Application.DTOs
 {
+    public class NullableLongConverter : JsonConverter<long?>
+    {
+        public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+                return null;
+
+            if (reader.TokenType == JsonTokenType.Number)
+                return reader.GetInt64();
+
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                var str = reader.GetString();
+                if (string.IsNullOrWhiteSpace(str) || str.Equals("null", StringComparison.OrdinalIgnoreCase) || str.Equals("undefined", StringComparison.OrdinalIgnoreCase))
+                    return null;
+
+                if (long.TryParse(str, out var val))
+                    return val;
+
+                return null;
+            }
+
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
+        {
+            if (value.HasValue)
+                writer.WriteNumberValue(value.Value);
+            else
+                writer.WriteNullValue();
+        }
+    }
+
     public class PayrollListDto
     {
         public long Id { get; set; }
@@ -74,7 +110,10 @@ namespace SchoolERP.Application.DTOs
     {
         public int Month { get; set; } // 1-12
         public int Year { get; set; } // e.g. 2026
+
+        [JsonConverter(typeof(NullableLongConverter))]
         public long? DepartmentId { get; set; }
+
         public decimal DefaultWorkingDays { get; set; } = 30;
         public bool AutoCalculateAttendance { get; set; } = true;
         public string AttendanceMode { get; set; } = "StrictAttendance"; // "StrictAttendance", "DeductExplicitAbsents", "FullFixedSalary"
