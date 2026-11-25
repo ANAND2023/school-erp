@@ -536,6 +536,124 @@ namespace SchoolERP.API.Controllers
                 }
             });
         }
+
+        /// <summary>
+        /// Outstanding Fee Dues & Defaulters Detailed Report
+        /// Matches the Summary KPI totalPendingDues calculation exactly
+        /// </summary>
+        [HttpGet("pending-dues-report")]
+        public async Task<IActionResult> GetPendingDuesReport(
+            [FromQuery] long? academicYearId,
+            [FromQuery] long? classId,
+            [FromQuery] long? sectionId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = (academicYearId.HasValue && academicYearId.Value > 0)
+                ? academicYearId.Value
+                : _currentUserService.AcademicYearId;
+
+            // Fetch dues that have balance remaining (identical condition as KPI card)
+            var duesQuery = _context.StudentFeeDues
+                .Include(d => d.Student)
+                    .ThenInclude(s => s!.Guardians)
+                .Include(d => d.Student)
+                    .ThenInclude(s => s!.Enrollments)
+                        .ThenInclude(e => e.Section)
+                .Include(d => d.Student)
+                    .ThenInclude(s => s!.Enrollments)
+                        .ThenInclude(e => e.Class)
+                .Include(d => d.Class)
+                .Include(d => d.Installment)
+                .Where(d => d.BranchId == branchId &&
+                            d.Status != DueStatus.Paid &&
+                            d.BalanceAmount > 0);
+
+            if (yearId > 0)
+            {
+                duesQuery = duesQuery.Where(d => d.AcademicYearId == yearId);
+            }
+
+            if (classId.HasValue && classId.Value > 0)
+            {
+                duesQuery = duesQuery.Where(d => d.ClassId == classId.Value);
+            }
+
+            var allDues = await duesQuery.ToListAsync();
+
+            if (sectionId.HasValue && sectionId.Value > 0)
+            {
+                allDues = allDues.Where(d =>
+                {
+                    var enr = d.Student?.Enrollments.FirstOrDefault(e => e.AcademicYearId == yearId)
+                              ?? d.Student?.Enrollments.FirstOrDefault();
+                    return enr != null && enr.SectionId == sectionId.Value;
+                }).ToList();
+            }
+
+            // Group by Student
+            var grouped = allDues.GroupBy(d => d.StudentId).ToList();
+
+            var studentRows = new List<object>();
+            foreach (var g in grouped)
+            {
+                var first = g.First();
+                var student = first.Student;
+                if (student == null) continue;
+
+                var enrollment = student.Enrollments.FirstOrDefault(e => e.AcademicYearId == yearId)
+                                 ?? student.Enrollments.FirstOrDefault();
+
+                var guardian = student.Guardians.FirstOrDefault(grd => grd.IsPrimary)
+                               ?? student.Guardians.FirstOrDefault();
+
+                decimal totalDue = g.Sum(d => d.OriginalAmount - d.ConcessionAmount);
+                decimal totalPaid = g.Sum(d => d.PaidAmount);
+                decimal remainingDue = g.Sum(d => d.BalanceAmount);
+
+                var pendingMonths = g
+                    .Select(d => d.Installment?.Name)
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .Distinct()
+                    .ToList();
+
+                studentRows.Add(new
+                {
+                    studentId = g.Key,
+                    admissionNo = student.AdmissionNo ?? "—",
+                    studentName = student.FullName ?? "—",
+                    className = first.Class?.Name ?? (enrollment?.Class?.Name ?? "—"),
+                    sectionName = enrollment?.Section?.Name ?? "—",
+                    rollNo = enrollment?.RollNo,
+                    guardianName = guardian?.Name ?? "—",
+                    guardianMobile = guardian?.Mobile ?? "—",
+                    contactNumber = guardian?.Mobile ?? "—",
+                    totalDue,
+                    totalPaid,
+                    remainingDue,
+                    pendingMonths = string.Join(", ", pendingMonths),
+                    pendingMonthsCount = pendingMonths.Count
+                });
+            }
+
+            var sorted = studentRows.OrderByDescending(r => ((dynamic)r).remainingDue).ToList();
+
+            decimal totalRemainingAll = allDues.Sum(d => d.BalanceAmount);
+            decimal totalOriginalAll = allDues.Sum(d => d.OriginalAmount - d.ConcessionAmount);
+            decimal totalPaidAll = allDues.Sum(d => d.PaidAmount);
+
+            return Ok(new
+            {
+                success = true,
+                data = sorted,
+                summary = new
+                {
+                    totalStudentsWithDues = sorted.Count,
+                    totalRemainingDue = totalRemainingAll,
+                    totalOriginalDue = totalOriginalAll,
+                    totalPaidSoFar = totalPaidAll
+                }
+            });
+        }
     }
 
     public class DayBookEntryDto

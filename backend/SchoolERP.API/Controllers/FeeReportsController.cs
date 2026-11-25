@@ -114,7 +114,7 @@ namespace SchoolERP.API.Controllers
                 .Where(f => f.BranchId == branchId && f.AcademicYearId == yearId)
                 .ToListAsync();
 
-            // Query overdue dues (Installment.DueDate < today and BalanceAmount > 0)
+            // Query overdue dues (BalanceAmount > 0 and Status != Paid)
             var duesQuery = _context.StudentFeeDues
                 .Include(d => d.Student)
                     .ThenInclude(s => s!.Guardians)
@@ -123,7 +123,7 @@ namespace SchoolERP.API.Controllers
                 .Where(d => d.BranchId == branchId &&
                             d.AcademicYearId == yearId &&
                             d.BalanceAmount > 0 &&
-                            d.Installment!.DueDate < today);
+                            d.Status != DueStatus.Paid);
 
             if (classId.HasValue) duesQuery = duesQuery.Where(d => d.ClassId == classId.Value);
 

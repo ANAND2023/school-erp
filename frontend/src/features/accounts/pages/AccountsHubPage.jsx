@@ -330,7 +330,9 @@ export const AccountsHubPage = () => {
   const fetchDefaulters = async () => {
     setTabLoading(true);
     try {
-      const res = await accountsApi.getDefaulters({});
+      const res = await accountsApi.getDefaulters({
+        academicYearId: activeAcademicYearId || undefined,
+      });
       setDefaulters(res.data?.data || []);
     } catch (err) {
       console.error('Error fetching defaulters:', err);
@@ -437,15 +439,17 @@ export const AccountsHubPage = () => {
         Status: s.status,
       }));
     } else if (activeTab === 7) {
-      filename = `Defaulters_${startDate}_to_${endDate}.csv`;
-      rows = defaulters.map((d) => ({
+      filename = `Pending_Dues_Defaulters_${dayjs().format('YYYY-MM-DD')}.csv`;
+      rows = filteredDefaulters.map((d) => ({
         AdmNo: d.admissionNo,
         Student: d.studentName,
-        Class: `${d.className} ${d.sectionName}`,
+        Class: `${d.className} ${d.sectionName}`.trim(),
+        PendingMonths: d.pendingMonths || 'All Months',
         TotalDue: d.totalDue,
         TotalPaid: d.totalPaid,
         RemainingDue: d.remainingDue,
-        Contact: d.guardianMobile || d.contactNumber,
+        Guardian: d.guardianName || '—',
+        Contact: d.guardianMobile || d.contactNumber || '—',
       }));
     }
 
@@ -501,6 +505,22 @@ export const AccountsHubPage = () => {
         (c.paymentModes && c.paymentModes.toLowerCase().includes(term))
     );
   }, [collections, searchTerm]);
+
+  // Filtered Defaulters
+  const filteredDefaulters = useMemo(() => {
+    if (!searchTerm) return defaulters;
+    const term = searchTerm.toLowerCase();
+    return defaulters.filter(
+      (d) =>
+        (d.admissionNo && d.admissionNo.toLowerCase().includes(term)) ||
+        (d.studentName && d.studentName.toLowerCase().includes(term)) ||
+        (d.className && d.className.toLowerCase().includes(term)) ||
+        (d.sectionName && d.sectionName.toLowerCase().includes(term)) ||
+        (d.guardianMobile && d.guardianMobile.includes(term)) ||
+        (d.guardianName && d.guardianName.toLowerCase().includes(term)) ||
+        (d.pendingMonths && d.pendingMonths.toLowerCase().includes(term))
+    );
+  }, [defaulters, searchTerm]);
 
   return (
     <Box sx={{ pb: 3 }}>
@@ -1534,6 +1554,7 @@ export const AccountsHubPage = () => {
                           <TableCell sx={{ fontWeight: 700 }}>Adm No</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Student Name</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Class & Section</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Pending Months</TableCell>
                           <TableCell sx={{ fontWeight: 700 }} align="right">
                             Total Due (₹)
                           </TableCell>
@@ -1547,19 +1568,24 @@ export const AccountsHubPage = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {defaulters.length === 0 ? (
+                        {filteredDefaulters.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                            <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                               No fee dues / defaulters found for this academic session!
                             </TableCell>
                           </TableRow>
                         ) : (
-                          defaulters.map((d, idx) => (
+                          filteredDefaulters.map((d, idx) => (
                             <TableRow key={idx} hover>
                               <TableCell sx={{ fontWeight: 700 }}>{d.admissionNo}</TableCell>
                               <TableCell sx={{ fontWeight: 600 }}>{d.studentName}</TableCell>
                               <TableCell>
                                 {d.className} {d.sectionName}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', maxWidth: 220 }} noWrap title={d.pendingMonths}>
+                                  {d.pendingMonths || 'All Months'}
+                                </Typography>
                               </TableCell>
                               <TableCell align="right">{formatCurrency(d.totalDue)}</TableCell>
                               <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>
@@ -1568,9 +1594,30 @@ export const AccountsHubPage = () => {
                               <TableCell align="right" sx={{ color: 'error.main', fontWeight: 800 }}>
                                 {formatCurrency(d.remainingDue)}
                               </TableCell>
-                              <TableCell>{d.guardianMobile || d.contactNumber || '—'}</TableCell>
+                              <TableCell>
+                                {d.guardianName ? `${d.guardianName} (${d.guardianMobile || d.contactNumber || '—'})` : (d.guardianMobile || d.contactNumber || '—')}
+                              </TableCell>
                             </TableRow>
                           ))
+                        )}
+
+                        {/* Summary Total Row */}
+                        {filteredDefaulters.length > 0 && (
+                          <TableRow sx={{ bgcolor: 'action.hover', borderTop: '2px solid', borderColor: 'divider' }}>
+                            <TableCell colSpan={4} sx={{ fontWeight: 800 }}>
+                              TOTAL OUTSTANDING DUES ({filteredDefaulters.length} Students)
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 800 }}>
+                              {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.totalDue) || 0), 0))}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 800, color: 'success.main' }}>
+                              {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.totalPaid) || 0), 0))}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 900, color: 'error.main', fontSize: 14 }}>
+                              {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.remainingDue) || 0), 0))}
+                            </TableCell>
+                            <TableCell />
+                          </TableRow>
                         )}
                       </TableBody>
                     </Table>

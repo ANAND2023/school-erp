@@ -23,5 +23,5 @@ export const accountsApi = {
   getAdmissionReport: (params) => apiClient.get('/accounts/admission-report', { params }),
 
   // Outstanding Dues / Defaulters
-  getDefaulters: (params) => apiClient.get('/fees/reports/defaulters', { params }),
+  getDefaulters: (params) => apiClient.get('/accounts/pending-dues-report', { params }),
 };
