@@ -6,7 +6,7 @@ import { numberToIndianWords } from '../../fees/utils/numberToWords';
 import { useAuthStore } from '../../../store/authStore';
 
 // Circular School Emblem Fallback SVG
-const SchoolEmblem = ({ size = 60, primaryColor = '#1e3a8a', secondaryColor = '#eff6ff' }) => (
+const SchoolEmblem = ({ size = 56, primaryColor = '#1e3a8a', secondaryColor = '#eff6ff' }) => (
   <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="50" cy="50" r="47" stroke={primaryColor} strokeWidth="3.5" fill={secondaryColor} />
     <circle cx="50" cy="50" r="42" stroke="#b45309" strokeWidth="1.5" strokeDasharray="3 2" />
@@ -21,6 +21,246 @@ const SchoolEmblem = ({ size = 60, primaryColor = '#1e3a8a', secondaryColor = '#
     </text>
   </svg>
 );
+
+const SLIP_CSS = `
+  .slip-card {
+    border: 1.5px solid #0f172a;
+    border-radius: 6px;
+    padding: 16px 20px;
+    position: relative;
+    background: #ffffff;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .school-header-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .school-logo-box {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .school-logo-img {
+    width: 62px;
+    height: 62px;
+    max-width: 62px;
+    max-height: 62px;
+    object-fit: contain;
+    display: block;
+  }
+  .school-header-content {
+    text-align: center;
+    flex: 1;
+  }
+  .school-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+    margin: 0;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+  .school-campus-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e3a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+  }
+  .school-sub {
+    font-size: 10.5px;
+    color: #475569;
+    margin: 2px 0 0 0;
+  }
+  .slip-title-bar {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .slip-title-bar .title {
+    font-size: 12.5px;
+    color: #0f172a;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .slip-title-bar .slip-no {
+    font-size: 11.5px;
+    color: #334155;
+    font-weight: 600;
+  }
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .detail-item .lbl {
+    font-size: 9.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 1px;
+  }
+  .detail-item .val {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .breakdown-container {
+    display: flex;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .breakdown-column {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+  }
+  .breakdown-column.left {
+    border-right: 1px solid #cbd5e1;
+  }
+  .breakdown-header {
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #cbd5e1;
+  }
+  .breakdown-header.earnings {
+    background: #eff6ff;
+    color: #1e40af;
+  }
+  .breakdown-header.deductions {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+  .breakdown-rows {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .breakdown-row .lbl {
+    color: #334155;
+  }
+  .breakdown-row .amt {
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .breakdown-total {
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #cbd5e1;
+  }
+  .breakdown-total.earnings {
+    background: #f0f9ff;
+    color: #0c4a6e;
+  }
+  .breakdown-total.deductions {
+    background: #fff7ed;
+    color: #9a3412;
+  }
+  .net-box {
+    background: #ecfdf5;
+    border: 1.5px solid #10b981;
+    border-radius: 4px;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .net-left .net-lbl {
+    font-size: 10px;
+    font-weight: 800;
+    color: #047857;
+    text-transform: uppercase;
+  }
+  .net-left .net-words {
+    font-size: 11px;
+    font-weight: 600;
+    color: #065f46;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .net-right {
+    font-size: 19px;
+    font-weight: 800;
+    color: #065f46;
+  }
+  .payment-info-bar {
+    display: flex;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 18px;
+    font-size: 10.5px;
+  }
+  .signatures-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 28px;
+    text-align: center;
+  }
+  .sig-line {
+    border-top: 1px solid #64748b;
+    padding-top: 4px;
+    font-weight: 600;
+    font-size: 10.5px;
+    color: #334155;
+  }
+  .footer-note {
+    margin-top: 16px;
+    padding-top: 6px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    font-size: 9.5px;
+    color: #94a3b8;
+  }
+`;
 
 export const SalarySlipModal = ({ visible, onHide, payroll }) => {
   const printRef = useRef(null);
@@ -68,245 +308,17 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
               margin: 10mm 12mm;
             }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
               color: #0f172a;
               margin: 0;
               padding: 0;
               background: #fff;
-              font-size: 11px;
-              line-height: 1.35;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
             * {
               box-sizing: border-box;
             }
-            .slip-card {
-              border: 1.5px solid #0f172a;
-              border-radius: 6px;
-              padding: 16px 20px;
-              position: relative;
-              background: #ffffff;
-            }
-            .school-header-wrap {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 16px;
-              border-bottom: 2px solid #0f172a;
-              padding-bottom: 10px;
-              margin-bottom: 12px;
-            }
-            .school-logo-box {
-              flex-shrink: 0;
-            }
-            .school-logo-img {
-              width: 58px;
-              height: 58px;
-              object-fit: contain;
-            }
-            .school-header-content {
-              text-align: center;
-              flex: 1;
-            }
-            .school-title {
-              font-size: 21px;
-              font-weight: 900;
-              color: #0f172a;
-              letter-spacing: 0.5px;
-              margin: 0;
-              text-transform: uppercase;
-            }
-            .school-campus-badge {
-              display: inline-block;
-              font-size: 11px;
-              font-weight: 700;
-              color: #1e3a8a;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-top: 1px;
-            }
-            .school-sub {
-              font-size: 10.5px;
-              color: #475569;
-              margin: 2px 0 0 0;
-            }
-            .slip-title-bar {
-              background: #f1f5f9;
-              border: 1px solid #cbd5e1;
-              padding: 6px 12px;
-              border-radius: 4px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 12px;
-            }
-            .slip-title-bar .title {
-              font-size: 12.5px;
-              color: #0f172a;
-              font-weight: 800;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            .slip-title-bar .slip-no {
-              font-size: 11.5px;
-              color: #334155;
-              font-weight: 600;
-            }
-            .details-grid {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 8px 12px;
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 4px;
-              padding: 10px 14px;
-              margin-bottom: 12px;
-            }
-            .detail-item {
-              display: flex;
-              flex-direction: column;
-            }
-            .detail-item .lbl {
-              font-size: 9.5px;
-              color: #64748b;
-              text-transform: uppercase;
-              font-weight: 700;
-              margin-bottom: 1px;
-            }
-            .detail-item .val {
-              font-size: 11.5px;
-              font-weight: 600;
-              color: #0f172a;
-            }
-            .breakdown-container {
-              display: flex;
-              border: 1px solid #cbd5e1;
-              border-radius: 4px;
-              overflow: hidden;
-              margin-bottom: 12px;
-            }
-            .breakdown-column {
-              width: 50%;
-              display: flex;
-              flex-direction: column;
-            }
-            .breakdown-column.left {
-              border-right: 1px solid #cbd5e1;
-            }
-            .breakdown-header {
-              padding: 6px 10px;
-              font-weight: 700;
-              font-size: 11px;
-              text-transform: uppercase;
-              display: flex;
-              justify-content: space-between;
-              border-bottom: 1px solid #cbd5e1;
-            }
-            .breakdown-header.earnings {
-              background: #eff6ff;
-              color: #1e40af;
-            }
-            .breakdown-header.deductions {
-              background: #fef2f2;
-              color: #991b1b;
-            }
-            .breakdown-rows {
-              padding: 8px 10px;
-              display: flex;
-              flex-direction: column;
-              gap: 6px;
-              flex: 1;
-            }
-            .breakdown-row {
-              display: flex;
-              justify-content: space-between;
-              font-size: 11px;
-            }
-            .breakdown-row .lbl {
-              color: #334155;
-            }
-            .breakdown-row .amt {
-              font-weight: 600;
-              color: #0f172a;
-            }
-            .breakdown-total {
-              padding: 6px 10px;
-              font-weight: 800;
-              font-size: 11.5px;
-              text-transform: uppercase;
-              display: flex;
-              justify-content: space-between;
-              border-top: 1px solid #cbd5e1;
-            }
-            .breakdown-total.earnings {
-              background: #f0f9ff;
-              color: #0c4a6e;
-            }
-            .breakdown-total.deductions {
-              background: #fff7ed;
-              color: #9a3412;
-            }
-            .net-box {
-              background: #ecfdf5;
-              border: 1.5px solid #10b981;
-              border-radius: 4px;
-              padding: 8px 12px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 12px;
-            }
-            .net-left .net-lbl {
-              font-size: 10px;
-              font-weight: 800;
-              color: #047857;
-              text-transform: uppercase;
-            }
-            .net-left .net-words {
-              font-size: 11px;
-              font-weight: 600;
-              color: #065f46;
-              font-style: italic;
-              margin-top: 2px;
-            }
-            .net-right {
-              font-size: 19px;
-              font-weight: 800;
-              color: #065f46;
-            }
-            .payment-info-bar {
-              display: flex;
-              justify-content: space-between;
-              background: #f8fafc;
-              border: 1px dashed #cbd5e1;
-              border-radius: 4px;
-              padding: 6px 10px;
-              margin-bottom: 18px;
-              font-size: 10.5px;
-            }
-            .signatures-box {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 20px;
-              margin-top: 28px;
-              text-align: center;
-            }
-            .sig-line {
-              border-top: 1px solid #64748b;
-              padding-top: 4px;
-              font-weight: 600;
-              font-size: 10.5px;
-              color: #334155;
-            }
-            .footer-note {
-              margin-top: 16px;
-              padding-top: 6px;
-              border-top: 1px solid #e2e8f0;
-              text-align: center;
-              font-size: 9.5px;
-              color: #94a3b8;
-            }
+            ${SLIP_CSS}
           </style>
         </head>
         <body>
@@ -391,13 +403,20 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
       contentClassName="p-3 surface-ground"
     >
       <div className="bg-white p-3 border-round-lg shadow-2 border-1 surface-border" ref={printRef}>
+        <style>{SLIP_CSS}</style>
+
         {/* Printable Card Container */}
         <div className="slip-card">
           {/* School Letterhead Header */}
           <div className="school-header-wrap">
             <div className="school-logo-box">
               {resolvedLogoUrl ? (
-                <img src={resolvedLogoUrl} alt="School Logo" className="school-logo-img" />
+                <img
+                  src={resolvedLogoUrl}
+                  alt="School Logo"
+                  className="school-logo-img"
+                  style={{ width: '62px', height: '62px', maxWidth: '62px', maxHeight: '62px', objectFit: 'contain' }}
+                />
               ) : (
                 <SchoolEmblem size={56} primaryColor="#1e3a8a" secondaryColor="#eff6ff" />
               )}
