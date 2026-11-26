@@ -35,6 +35,41 @@ namespace SchoolERP.API.Controllers
             _numberingService = numberingService;
         }
 
+        [HttpGet("summary")]
+        [HasPermission("Enquiries", "View")]
+        public async Task<ActionResult<ApiResponse<EnquirySummaryDto>>> GetEnquirySummary(
+            [FromQuery] long? academicYearId,
+            [FromQuery] long? classId)
+        {
+            var branchId = _currentUserService.BranchId;
+            var yearId = academicYearId.HasValue && academicYearId.Value > 0
+                ? academicYearId.Value
+                : _currentUserService.AcademicYearId;
+
+            var query = _context.Enquiries
+                .Where(e => e.BranchId == branchId && e.AcademicYearId == yearId && e.IsActive);
+
+            if (classId.HasValue && classId.Value > 0)
+            {
+                query = query.Where(e => e.ClassId == classId.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            var openCount = await query.CountAsync(e => e.Status == EnquiryStatus.Open);
+            var followupCount = await query.CountAsync(e => e.Status == EnquiryStatus.FollowUp);
+            var convertedCount = await query.CountAsync(e => e.Status == EnquiryStatus.Converted);
+            var closedCount = await query.CountAsync(e => e.Status == EnquiryStatus.Closed);
+
+            return Ok(ApiResponse<EnquirySummaryDto>.Ok(new EnquirySummaryDto
+            {
+                Total = totalCount,
+                Open = openCount,
+                Followup = followupCount,
+                Converted = convertedCount,
+                Closed = closedCount
+            }));
+        }
+
         [HttpGet]
         [HasPermission("Enquiries", "View")]
         public async Task<ActionResult<ApiResponse<PagedResult<EnquiryDto>>>> GetEnquiries(

@@ -61,6 +61,8 @@ namespace SchoolERP.Application.DTOs
         public int Total { get; set; }
         public int Converted { get; set; }
         public int Open { get; set; }
+        public int Followup { get; set; }
+        public int Closed { get; set; }
     }
 
     public class RecentAdmissionDto

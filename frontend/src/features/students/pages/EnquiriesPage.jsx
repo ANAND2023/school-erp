@@ -19,6 +19,7 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Avatar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,8 +30,14 @@ import {
   WhatsApp as WhatsAppIcon,
   AccountBalanceWallet as FeeStructureIcon,
   AppRegistration as RegistrationIcon,
+  School as SchoolIcon,
+  ContactSupport as OpenIcon,
+  CheckCircle as ConvertedIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { DataGrid } from '../../../components/DataGrid';
 import { Modal } from '../../../components/Modal';
 import { enquiryApi } from '../api';
@@ -41,7 +48,7 @@ import { usePermission } from '../../../hooks/usePermission';
 import { EnquirySlipModal } from '../components/EnquirySlipModal';
 import { WhatsAppDialog } from '../../communication/components/WhatsAppDialog';
 import { ClassFeeProspectusModal } from '../../fees/components/ClassFeeProspectusModal';
-import { AppDatePicker, AppInput, AppSelect } from '../../../components/common';
+import { AppDatePicker, AppInput, AppSelect, AppButton, SlideActionCell } from '../../../components/common';
 
 const ENQUIRY_STATUSES = [
   { value: 1, label: 'Open', color: 'info' },
@@ -54,10 +61,13 @@ export const EnquiriesPage = () => {
   const navigate = useNavigate();
   const { showSnackbar } = useUiStore();
   const { hasPermission } = usePermission();
-  const { activeAcademicYearId, activeAcademicYearName, academicYears } = useAuthStore();
+  const { user, activeAcademicYearId, activeAcademicYearName, academicYears } = useAuthStore();
 
   const [enquiries, setEnquiries] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [summary, setSummary] = useState({ total: 0, open: 0, followup: 0, converted: 0, closed: 0 });
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -118,6 +128,20 @@ export const EnquiriesPage = () => {
     }
   };
 
+  const fetchSummary = async () => {
+    try {
+      const res = await enquiryApi.getSummary({
+        academicYearId: activeAcademicYearId || undefined,
+        classId: selectedClass || undefined,
+      });
+      if (res.data?.success) {
+        setSummary(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load enquiry summary', err);
+    }
+  };
+
   const fetchEnquiries = async () => {
     try {
       setLoading(true);
@@ -147,6 +171,7 @@ export const EnquiriesPage = () => {
 
   useEffect(() => {
     fetchEnquiries();
+    fetchSummary();
   }, [paginationModel, selectedClass, selectedStatus, activeAcademicYearId]);
 
   const handleSearchSubmit = (e) => {
@@ -303,6 +328,221 @@ export const EnquiriesPage = () => {
     });
   };
 
+  // Fetch all matching records for full export (PDF or Excel)
+  const fetchAllMatchingEnquiries = async () => {
+    if (!enquiries.length && !totalCount) return [];
+    if (totalCount <= enquiries.length) return enquiries;
+    try {
+      const res = await enquiryApi.getEnquiries({
+        search: search.trim() || undefined,
+        classId: selectedClass || undefined,
+        status: selectedStatus || undefined,
+        academicYearId: activeAcademicYearId || undefined,
+        pageNo: 1,
+        pageSize: totalCount || 1000,
+      });
+      if (res.data?.success && res.data.data?.items) {
+        return res.data.data.items;
+      }
+    } catch (err) {
+      console.error('Failed to fetch full enquiries list', err);
+    }
+    return enquiries;
+  };
+
+  // Export to PDF with Comprehensive Details
+  const handleExportPDF = async () => {
+    if (!totalCount && !enquiries.length) {
+      showSnackbar('No enquiries found to export', 'warning');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const exportList = await fetchAllMatchingEnquiries();
+      if (!exportList || !exportList.length) {
+        showSnackbar('No enquiries to export', 'warning');
+        return;
+      }
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.width;
+
+      const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
+      const branchName = user?.branchName || 'Main Campus';
+      const matchedClass = classes.find((c) => String(c.id) === String(selectedClass));
+      const className = matchedClass ? matchedClass.name : 'All Classes';
+      const statusObj = ENQUIRY_STATUSES.find((s) => String(s.value) === String(selectedStatus));
+      const statusLabel = statusObj ? statusObj.label : 'All Statuses';
+
+      const openCount = exportList.filter((e) => e.status === 1).length;
+      const followupCount = exportList.filter((e) => e.status === 2).length;
+      const convertedCount = exportList.filter((e) => e.status === 3).length;
+
+      // School Name Header
+      doc.setFontSize(14);
+      doc.setTextColor(29, 78, 216); // Brand Blue
+      doc.text(schoolName, 8, 12);
+
+      // Subtitle
+      doc.setFontSize(9.5);
+      doc.setTextColor(51, 65, 85);
+      doc.text(`${branchName}  •  STUDENT ENQUIRIES & ADMISSION LEADS REGISTER`, 8, 17.5);
+
+      // Filter & Session info line
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        `Session: ${activeAcademicYearName || 'Current Session'}   |   Class: ${className}   |   Status: ${statusLabel}   |   Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
+        8,
+        22.5
+      );
+
+      // KPI Counts Banner
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text(
+        `Total Enquiries: ${exportList.length}   |   Open Leads: ${openCount}   |   Follow-up: ${followupCount}   |   Converted Admissions: ${convertedCount}`,
+        8,
+        27
+      );
+      doc.setFont(undefined, 'normal');
+
+      // Table Data
+      const tableData = exportList.map((e, idx) => {
+        const dateStr = e.createdOn ? dayjs(e.createdOn).format('DD/MM/YYYY') : '—';
+        const nextDateStr = e.nextFollowupDate ? dayjs(e.nextFollowupDate).format('DD/MM/YYYY') : '—';
+        const stLabel = e.status === 1 ? 'Open' : (e.status === 2 ? 'Follow-up' : (e.status === 3 ? 'Converted' : 'Closed'));
+
+        return [
+          idx + 1,
+          e.enquiryNo || `ENQ-${e.id}`,
+          dateStr,
+          e.studentName || '—',
+          e.className || '—',
+          e.academicYearName || activeAcademicYearName || '—',
+          e.guardianName || '—',
+          e.mobile || '—',
+          e.source || 'Walk-in',
+          stLabel,
+          nextDateStr,
+          e.notes || '—',
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 30,
+        margin: { left: 8, right: 8, bottom: 8 },
+        tableWidth: 281,
+        head: [
+          [
+            '#',
+            'Enquiry No',
+            'Date',
+            'Student Name',
+            'Class Sought',
+            'Session',
+            'Parent / Guardian',
+            'Mobile',
+            'Source',
+            'Status',
+            'Next Follow-up',
+            'Notes / Remarks',
+          ],
+        ],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 7.2, textColor: [30, 41, 59], cellPadding: 1.5, valign: 'middle' },
+        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 7, halign: 'center' },
+          1: { cellWidth: 24 },
+          2: { cellWidth: 17 },
+          3: { cellWidth: 34 },
+          4: { cellWidth: 20 },
+          5: { cellWidth: 17 },
+          6: { cellWidth: 32 },
+          7: { cellWidth: 23 },
+          8: { cellWidth: 18 },
+          9: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+          10: { cellWidth: 21 },
+          11: { cellWidth: 48 },
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 9) {
+            if (data.cell.raw === 'Converted') {
+              data.cell.styles.textColor = [22, 163, 74];
+            } else if (data.cell.raw === 'Open') {
+              data.cell.styles.textColor = [2, 132, 199];
+            } else if (data.cell.raw === 'Follow-up') {
+              data.cell.styles.textColor = [217, 119, 6];
+            }
+          }
+        },
+        didDrawPage: () => {
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount} • School ERP Student Enquiries`,
+            pageWidth - 75,
+            doc.internal.pageSize.height - 5
+          );
+        },
+      });
+
+      const cleanClass = className.replace(/[\/\\:]/g, '-').replace(/\s+/g, '_');
+      doc.save(`Student_Enquiries_${cleanClass}_${dayjs().format('YYYY-MM-DD')}.pdf`);
+      showSnackbar('Enquiry register exported to PDF successfully', 'success');
+    } catch (err) {
+      console.error('Error generating Enquiry PDF', err);
+      showSnackbar('Failed to generate PDF', 'error');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  // Export to Excel
+  const handleExportExcel = async () => {
+    if (!totalCount && !enquiries.length) {
+      showSnackbar('No enquiries to export', 'warning');
+      return;
+    }
+
+    setIsExportingExcel(true);
+    try {
+      const exportList = await fetchAllMatchingEnquiries();
+      const dataToExport = exportList.map((e, idx) => ({
+        'S.No': idx + 1,
+        'Enquiry No': e.enquiryNo || `ENQ-${e.id}`,
+        'Date': e.createdOn ? dayjs(e.createdOn).format('DD/MM/YYYY') : '—',
+        'Student Name': e.studentName || '—',
+        'Class Sought': e.className || '—',
+        'Session': e.academicYearName || activeAcademicYearName || '—',
+        'Parent / Guardian': e.guardianName || '—',
+        'Mobile': e.mobile || '—',
+        'Email': e.email || '—',
+        'Source': e.source || 'Walk-in',
+        'Status': e.status === 1 ? 'Open' : (e.status === 2 ? 'Follow-up' : (e.status === 3 ? 'Converted' : 'Closed')),
+        'Next Follow-up': e.nextFollowupDate ? dayjs(e.nextFollowupDate).format('DD/MM/YYYY') : '—',
+        'Notes': e.notes || '—',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Enquiries');
+      XLSX.writeFile(wb, `Student_Enquiries_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+      showSnackbar('Enquiry list exported to Excel', 'success');
+    } catch (err) {
+      console.error('Error exporting to Excel', err);
+      showSnackbar('Failed to export Excel', 'error');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   const columns = [
     { field: 'studentName', headerName: 'Student Name', width: 170, minWidth: 170 },
     { field: 'className', headerName: 'Class Sought', width: 120, minWidth: 120 },
@@ -341,23 +581,42 @@ export const EnquiriesPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 220,
-      minWidth: 220,
+      width: 90,
+      minWidth: 90,
       sortable: false,
       frozen: true,
       alignFrozen: 'right',
-      headerStyle: { width: '220px', minWidth: '220px', textAlign: 'center' },
-      bodyStyle: { width: '220px', minWidth: '220px', textAlign: 'center' },
-      style: { width: '220px', minWidth: '220px', textAlign: 'center' },
+      headerStyle: { width: '90px', minWidth: '90px', textAlign: 'center' },
+      bodyStyle: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
+      style: { width: '90px', minWidth: '90px', textAlign: 'center', overflow: 'visible' },
       renderCell: (params) => {
         const enq = params.row;
-        const canEdit = hasPermission('Enquiries', 'Edit');
         const canAdmit = hasPermission('Admissions', 'Add');
         const isConverted = enq.status === 3;
 
         return (
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
-            <Tooltip title={`Class Fee Structure (${enq.className || 'Class'})`}>
+          <SlideActionCell label="Actions">
+            {/* 1. Send WhatsApp */}
+            <Tooltip title="Send WhatsApp Message" arrow>
+              <IconButton
+                size="small"
+                sx={{
+                  width: 28,
+                  height: 28,
+                  color: '#16a34a',
+                  bgcolor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  '&:hover': { bgcolor: '#dcfce7' },
+                  borderRadius: '6px',
+                }}
+                onClick={() => handleOpenWhatsApp(enq)}
+              >
+                <WhatsAppIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* 2. Print Enquiry Slip */}
+            <Tooltip title="Print Enquiry Slip" arrow>
               <IconButton
                 size="small"
                 sx={{
@@ -365,84 +624,103 @@ export const EnquiriesPage = () => {
                   height: 28,
                   color: '#0284c7',
                   bgcolor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
                   '&:hover': { bgcolor: '#e0f2fe' },
+                  borderRadius: '6px',
+                }}
+                onClick={() => handleOpenSlip(enq)}
+              >
+                <ReceiptLongIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* 3. Class Fee Structure */}
+            <Tooltip title={`Class Fee Structure (${enq.className || 'Class'})`} arrow>
+              <IconButton
+                size="small"
+                sx={{
+                  width: 28,
+                  height: 28,
+                  color: '#7c3aed',
+                  bgcolor: '#f5f3ff',
+                  border: '1px solid #ddd6fe',
+                  '&:hover': { bgcolor: '#ede9fe' },
+                  borderRadius: '6px',
                 }}
                 onClick={() => {
                   setFeeProspectusClassId(enq.classId || '');
                   setFeeProspectusOpen(true);
                 }}
               >
-                <FeeStructureIcon sx={{ fontSize: '1rem' }} />
+                <FeeStructureIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Send WhatsApp Message">
-              <IconButton
-                size="small"
-                sx={{
-                  width: 28,
-                  height: 28,
-                  color: '#25D366',
-                  bgcolor: '#f0fdf4',
-                  '&:hover': { bgcolor: '#dcfce7' },
-                }}
-                onClick={() => handleOpenWhatsApp(enq)}
-              >
-                <WhatsAppIcon sx={{ fontSize: '1rem' }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Print Enquiry Slip">
-              <IconButton
-                size="small"
-                color="info"
-                sx={{ width: 28, height: 28 }}
-                onClick={() => handleOpenSlip(enq)}
-              >
-                <ReceiptLongIcon sx={{ fontSize: '1rem' }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isConverted ? "Enquiry is already converted to admission" : "Log Follow-up Call / Visit"}>
+
+            {/* 4. Log Follow-up */}
+            <Tooltip title={isConverted ? "Enquiry is already converted to admission" : "Log Follow-up Call / Visit"} arrow>
               <span>
                 <IconButton
                   size="small"
-                  color="primary"
                   disabled={isConverted}
-                  sx={{ width: 28, height: 28 }}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    color: isConverted ? '#94a3b8' : '#2563eb',
+                    bgcolor: isConverted ? '#f8fafc' : '#eff6ff',
+                    border: '1px solid',
+                    borderColor: isConverted ? '#e2e8f0' : '#bfdbfe',
+                    '&:hover': { bgcolor: isConverted ? '#f8fafc' : '#dbeafe' },
+                    borderRadius: '6px',
+                  }}
                   onClick={() => handleOpenFollowup(enq)}
                 >
-                  <FollowupIcon sx={{ fontSize: '1rem' }} />
+                  <FollowupIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </span>
             </Tooltip>
+
+            {/* 5. Convert to Registration */}
             {!isConverted && (
-              <Tooltip title="Convert to Registration (Issue Registration Slip)">
+              <Tooltip title="Convert to Registration (Issue Registration Slip)" arrow>
                 <IconButton
                   size="small"
                   sx={{
                     width: 28,
                     height: 28,
-                    color: '#0284c7',
-                    bgcolor: '#f0f9ff',
-                    '&:hover': { bgcolor: '#e0f2fe' },
+                    color: '#0d9488',
+                    bgcolor: '#f0fdfa',
+                    border: '1px solid #99f6e4',
+                    '&:hover': { bgcolor: '#ccfbf1' },
+                    borderRadius: '6px',
                   }}
                   onClick={() => handleConvertToRegistration(enq)}
                 >
-                  <RegistrationIcon sx={{ fontSize: '1rem' }} />
+                  <RegistrationIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </Tooltip>
             )}
+
+            {/* 6. Convert to Admission */}
             {canAdmit && !isConverted && (
-              <Tooltip title="Convert to Admission">
+              <Tooltip title="Convert to Admission" arrow>
                 <IconButton
                   size="small"
-                  color="success"
-                  sx={{ width: 28, height: 28 }}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    color: '#ea580c',
+                    bgcolor: '#fff7ed',
+                    border: '1px solid #fed7aa',
+                    '&:hover': { bgcolor: '#ffedd5' },
+                    borderRadius: '6px',
+                  }}
                   onClick={() => handleConvertToAdmission(enq)}
                 >
-                  <ConvertIcon sx={{ fontSize: '1rem' }} />
+                  <ConvertIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </Tooltip>
             )}
-          </Box>
+          </SlideActionCell>
         );
       },
     },
@@ -459,31 +737,162 @@ export const EnquiriesPage = () => {
             Manage admission leads, follow-up calls, and lead conversions
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<FeeStructureIcon sx={{ fontSize: '16px !important' }} />}
-          onClick={() => {
-            setFeeProspectusClassId(selectedClass || '');
-            setFeeProspectusOpen(true);
-          }}
-          sx={{
-            height: 32,
-            minHeight: 32,
-            px: 1.5,
-            py: 0,
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '12px',
-            borderRadius: '6px',
-            borderWidth: '1.5px',
-            alignSelf: { xs: 'flex-start', sm: 'center' },
-            '&:hover': { borderWidth: '1.5px' },
-          }}
-        >
-          Class Fee Structure
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <AppButton
+            variant="outlined"
+            severity="danger"
+            icon="pi pi-file-pdf"
+            label="Download PDF"
+            onClick={handleExportPDF}
+            loading={isExportingPdf}
+            disabled={!enquiries.length && totalCount === 0}
+          />
+          <AppButton
+            variant="outlined"
+            severity="success"
+            icon="pi pi-file-excel"
+            label="Export Excel"
+            onClick={handleExportExcel}
+            loading={isExportingExcel}
+            disabled={!enquiries.length && totalCount === 0}
+          />
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<FeeStructureIcon sx={{ fontSize: '16px !important' }} />}
+            onClick={() => {
+              setFeeProspectusClassId(selectedClass || '');
+              setFeeProspectusOpen(true);
+            }}
+            sx={{
+              height: 32,
+              minHeight: 32,
+              px: 1.5,
+              py: 0,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '12px',
+              borderRadius: '6px',
+              borderWidth: '1.5px',
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+              '&:hover': { borderWidth: '1.5px' },
+            }}
+          >
+            Class Fee Structure
+          </Button>
+        </Box>
       </Box>
+
+      {/* KPI Summary Cards: Total Enquiries, Open Leads, Follow-up, Converted */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #2563eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Total Enquiries
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                {summary.total || totalCount}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#eff6ff', color: '#2563eb', width: 34, height: 34 }}>
+              <SchoolIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #0284c7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Open Leads
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0284c7', lineHeight: 1.2 }}>
+                {summary.open ?? 0}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#f0f9ff', color: '#0284c7', width: 34, height: 34 }}>
+              <OpenIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #d97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Follow-up Pending
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#d97706', lineHeight: 1.2 }}>
+                {summary.followup ?? 0}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#fffbeb', color: '#d97706', width: 34, height: 34 }}>
+              <FollowupIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #16a34a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Converted Admissions
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#16a34a', lineHeight: 1.2 }}>
+                {summary.converted ?? 0}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#f0fdf4', color: '#16a34a', width: 34, height: 34 }}>
+              <ConvertedIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Filter Toolbar */}
       <Paper sx={{ p: 1.5, mb: 1.5, borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -553,6 +962,7 @@ export const EnquiriesPage = () => {
         onPaginationModelChange={setPaginationModel}
         onAddClick={() => setAddModalOpen(true)}
         addLabel="Record New Enquiry"
+        onExportClick={handleExportExcel}
         tableStyle={{ minWidth: '1050px' }}
       />
 

@@ -2,6 +2,7 @@ import apiClient from '../../api/client';
 
 export const enquiryApi = {
   getEnquiries: (params) => apiClient.get('/enquiries', { params }),
+  getSummary: (params) => apiClient.get('/enquiries/summary', { params }),
   getEnquiry: (id) => apiClient.get(`/enquiries/${id}`),
   createEnquiry: (data) => apiClient.post('/enquiries', data),
   updateEnquiry: (id, data) => apiClient.put(`/enquiries/${id}`, data),
