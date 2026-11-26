@@ -10,15 +10,23 @@ import { Tag } from 'primereact/tag';
 import { Avatar } from 'primereact/avatar';
 import { Toast } from 'primereact/toast';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import dayjs from 'dayjs';
 import { studentApi } from '../api';
 import { classApi, academicYearApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
+import { useAuthStore } from '../../../store/authStore';
 import { AppInput, AppSelect } from '../../../components/common';
 
 export const AdmissionRecordsPage = () => {
     const navigate = useNavigate();
     const toast = useRef(null);
+    const { user } = useAuthStore();
     const { activeAcademicYearId } = useAcademicYear();
+
+    const [exportingPdf, setExportingPdf] = useState(false);
+    const [exportingExcel, setExportingExcel] = useState(false);
 
     const [summary, setSummary] = useState({
         totalAllTime: 0,
@@ -139,32 +147,208 @@ export const AdmissionRecordsPage = () => {
         setLazyParams({ first: 0, rows: 20, page: 0 });
     };
 
-    const exportToExcel = () => {
-        if (students.length === 0) {
+    // Fetch all matching records for full exports (Excel or PDF)
+    const fetchAllMatchingStudents = async () => {
+        if (students.length === 0 && totalRecords === 0) return [];
+        if (totalRecords <= students.length) return students;
+        try {
+            const res = await studentApi.getStudents({
+                pageNo: 1,
+                pageSize: totalRecords || 1000,
+                academicYearId: selectedYearId !== 0 ? selectedYearId : undefined,
+                classId: selectedClassId || undefined,
+                sectionId: selectedSectionId || undefined,
+                admissionType: admissionTypeFilter !== 'all' ? admissionTypeFilter : undefined,
+                search: searchQuery.trim() || undefined
+            });
+            if (res.data?.success && res.data.data?.items) {
+                return res.data.data.items;
+            }
+        } catch (err) {
+            console.error('Failed to fetch full student list for export', err);
+        }
+        return students;
+    };
+
+    const exportToExcel = async () => {
+        if (totalRecords === 0 && students.length === 0) {
             toast.current?.show({ severity: 'warn', summary: 'Empty', detail: 'No admission records to export' });
             return;
         }
-        const dataToExport = students.map((s, idx) => ({
-            'S.No': idx + 1,
-            'Admission No': s.admissionNo,
-            'Admission Date': s.admissionDate ? new Date(s.admissionDate).toLocaleDateString('en-IN') : '—',
-            'Admission Type': s.admissionType || (s.isNewAdmission === false ? 'Promoted' : 'New Admission'),
-            'Student Name': s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim(),
-            'Class': s.className,
-            'Section': s.sectionName || '—',
-            'Roll No': s.rollNo ?? '—',
-            'Gender': s.gender,
-            'DOB': s.dateOfBirth ? new Date(s.dateOfBirth).toLocaleDateString('en-IN') : '—',
-            'Guardian Name': s.guardianName || '—',
-            'Guardian Mobile': s.guardianMobile || '—',
-            'Status': s.status === 1 ? 'Active' : 'Inactive'
-        }));
 
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Admissions');
-        XLSX.writeFile(wb, `Admission_Register_${new Date().toISOString().split('T')[0]}.xlsx`);
-        toast.current?.show({ severity: 'success', summary: 'Exported', detail: 'Admission register exported to Excel.' });
+        setExportingExcel(true);
+        try {
+            const studentList = await fetchAllMatchingStudents();
+            if (!studentList || studentList.length === 0) {
+                toast.current?.show({ severity: 'warn', summary: 'Empty', detail: 'No records found to export' });
+                return;
+            }
+
+            const dataToExport = studentList.map((s, idx) => ({
+                'S.No': idx + 1,
+                'Admission No': s.admissionNo,
+                'Admission Date': s.admissionDate ? new Date(s.admissionDate).toLocaleDateString('en-IN') : '—',
+                'Admission Type': s.admissionType || (s.isNewAdmission === false ? 'Promoted' : 'New Admission'),
+                'Student Name': s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim(),
+                'Class': s.className,
+                'Section': s.sectionName || '—',
+                'Roll No': s.rollNo ?? '—',
+                'Gender': s.gender,
+                'DOB': s.dateOfBirth ? new Date(s.dateOfBirth).toLocaleDateString('en-IN') : '—',
+                'Guardian Name': s.guardianName || '—',
+                'Guardian Mobile': s.guardianMobile || s.mobileNo || '—',
+                'Status': s.status === 1 ? 'Active' : 'Inactive'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Admissions');
+            const selectedYear = academicYears.find(y => y.id === selectedYearId);
+            const sessionName = selectedYear ? selectedYear.name.replace(/[\/\\:]/g, '-') : 'Session';
+            XLSX.writeFile(wb, `Admission_Register_${sessionName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            toast.current?.show({ severity: 'success', summary: 'Exported', detail: 'Admission register exported to Excel.' });
+        } catch (err) {
+            console.error('Error exporting to Excel', err);
+            toast.current?.show({ severity: 'error', summary: 'Export Failed', detail: 'Could not export Excel file.' });
+        } finally {
+            setExportingExcel(false);
+        }
+    };
+
+    const exportToPdf = async () => {
+        if (totalRecords === 0 && students.length === 0) {
+            toast.current?.show({ severity: 'warn', summary: 'Empty', detail: 'No admission records to export' });
+            return;
+        }
+
+        setExportingPdf(true);
+        try {
+            const studentList = await fetchAllMatchingStudents();
+            if (!studentList || studentList.length === 0) {
+                toast.current?.show({ severity: 'warn', summary: 'Empty', detail: 'No records found to export' });
+                return;
+            }
+
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.width;
+
+            const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
+            const branchName = user?.branchName || 'Main Campus';
+            const selectedYear = academicYears.find(y => y.id === selectedYearId);
+            const sessionName = selectedYear ? selectedYear.name : 'Current Session';
+            const selectedClass = classes.find(c => c.id === selectedClassId);
+            const className = selectedClass ? selectedClass.name : 'All Classes';
+            const typeFilterLabel = admissionTypeFilter === 'new' ? 'New Admissions Only' : (admissionTypeFilter === 'promoted' ? 'Promoted Only' : 'All Students');
+
+            // Header - School Name
+            doc.setFontSize(14);
+            doc.setTextColor(29, 78, 216); // #1d4ed8 Blue
+            doc.text(schoolName, 12, 14);
+
+            // Subtitle
+            doc.setFontSize(10);
+            doc.setTextColor(51, 65, 85);
+            doc.text(`${branchName}  •  ADMISSION RECORDS & REGISTER`, 12, 20);
+
+            // Metadata info line
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(
+                `Academic Session: ${sessionName}   |   Admission Type: ${typeFilterLabel}   |   Class: ${className}   |   Generated On: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
+                12,
+                25.5
+            );
+
+            // KPI / Summary bar line
+            doc.setFontSize(8.5);
+            doc.setTextColor(15, 23, 42);
+            doc.setFont(undefined, 'bold');
+            doc.text(
+                `Total Records: ${studentList.length}   |   New Admissions: ${summary.newAdmissionsCount ?? 0}   |   Promoted: ${summary.promotedCount ?? 0}   |   Gender: ${summary.boysCount || 0} Boys / ${summary.girlsCount || 0} Girls`,
+                12,
+                30.5
+            );
+            doc.setFont(undefined, 'normal');
+
+            // Table Data Mapping
+            const tableData = studentList.map((s, idx) => {
+                const isPromoted = s.admissionType === 'Promoted' || s.isNewAdmission === false;
+                const admType = isPromoted ? 'Promoted' : 'New Admission';
+                const admDateStr = s.admissionDate ? dayjs(s.admissionDate).format('DD MMM YYYY') : '—';
+                const classSecStr = `${s.className || '—'}${s.sectionName ? ` (${s.sectionName})` : ''}`;
+                const studentNameStr = s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '—';
+                const guardianStr = s.guardianName || '—';
+                const contactStr = s.guardianMobile || s.mobileNo || '—';
+
+                return [
+                    idx + 1,
+                    s.admissionNo || '—',
+                    admDateStr,
+                    admType,
+                    studentNameStr,
+                    classSecStr,
+                    s.rollNo ?? '—',
+                    s.gender || '—',
+                    guardianStr,
+                    contactStr,
+                    s.status === 1 ? 'Active' : 'Inactive'
+                ];
+            });
+
+            autoTable(doc, {
+                startY: 34,
+                margin: { left: 10, right: 10, bottom: 12 },
+                tableWidth: 277,
+                head: [['#', 'Adm No', 'Adm Date', 'Admission Type', 'Student Name', 'Class & Sec', 'Roll', 'Gender', 'Father / Guardian', 'Contact No', 'Status']],
+                body: tableData,
+                theme: 'grid',
+                styles: { fontSize: 7.5, textColor: [30, 41, 59], cellPadding: 2, valign: 'middle' },
+                headStyles: { fillColor: [29, 78, 216], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: {
+                    0: { cellWidth: 8, halign: 'center' },
+                    1: { cellWidth: 28 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 24, fontStyle: 'bold' },
+                    4: { cellWidth: 42 },
+                    5: { cellWidth: 24 },
+                    6: { cellWidth: 14, halign: 'center' },
+                    7: { cellWidth: 16 },
+                    8: { cellWidth: 42 },
+                    9: { cellWidth: 26 },
+                    10: { cellWidth: 15, halign: 'center' }
+                },
+                didParseCell: (data) => {
+                    // Highlight Admission Type cell: Green for New Admission, Blue for Promoted
+                    if (data.section === 'body' && data.column.index === 3) {
+                        if (data.cell.raw === 'New Admission') {
+                            data.cell.styles.textColor = [21, 128, 61]; // #15803d
+                        } else if (data.cell.raw === 'Promoted') {
+                            data.cell.styles.textColor = [3, 105, 161]; // #0369a1
+                        }
+                    }
+                },
+                didDrawPage: () => {
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.setFontSize(8);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text(
+                        `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount} • School ERP Admission Register`,
+                        pageWidth - 75,
+                        doc.internal.pageSize.height - 6
+                    );
+                }
+            });
+
+            const safeSession = sessionName.replace(/[\/\\:]/g, '-');
+            doc.save(`Admission_Register_${safeSession}_${dayjs().format('YYYY-MM-DD')}.pdf`);
+            toast.current?.show({ severity: 'success', summary: 'Exported', detail: 'Admission register exported to PDF.' });
+        } catch (err) {
+            console.error('Error generating PDF', err);
+            toast.current?.show({ severity: 'error', summary: 'Export Failed', detail: 'Could not generate PDF.' });
+        } finally {
+            setExportingPdf(false);
+        }
     };
 
     // Class dropdown options with student counts
@@ -231,7 +415,18 @@ export const AdmissionRecordsPage = () => {
                         severity="secondary" 
                         outlined 
                         className="p-button-sm py-1"
+                        loading={exportingExcel}
                         onClick={exportToExcel} 
+                    />
+                    <Button 
+                        label="Download PDF" 
+                        icon="pi pi-file-pdf" 
+                        size="small"
+                        severity="danger" 
+                        outlined 
+                        className="p-button-sm py-1"
+                        loading={exportingPdf}
+                        onClick={exportToPdf} 
                     />
                 </div>
             </div>
