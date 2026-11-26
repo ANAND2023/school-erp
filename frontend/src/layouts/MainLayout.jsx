@@ -117,6 +117,7 @@ const navItems = [
       { title: 'Class Timetable', path: '/timetable/class', menuKey: 'ClassTimetable' },
       { title: 'Teacher Timetable', path: '/timetable/teacher', menuKey: 'TeacherTimetable' },
       { title: 'Substitutions', path: '/timetable/substitution', menuKey: 'Substitutions' },
+      { title: 'Class Homework', path: '/homework', menuKey: ['Attendance', 'StudentAttendance', 'Teacher', 'Classes', 'Homework'] },
     ],
   },
   {

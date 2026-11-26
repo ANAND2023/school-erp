@@ -9,5 +9,6 @@ export const portalApi = {
   getFees: (studentId) => apiClient.get('/portal/fees', { params: { studentId } }),
   getReportCard: (studentId, examId) => apiClient.get('/portal/report-card', { params: { studentId, examId } }),
   getReceiptPrint: (receiptId, studentId) => apiClient.get(`/portal/receipts/${receiptId}/print`, { params: { studentId } }),
+  getHomework: (params) => apiClient.get('/portal/homework', { params }),
   askAi: (data) => apiClient.post('/portal/ai-study-chat', data),
 };

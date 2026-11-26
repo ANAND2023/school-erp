@@ -346,6 +346,30 @@ namespace SchoolERP.API.Controllers.Portal
                 })
                 .ToListAsync();
 
+            // Recent Active Homework
+            var recentHomework = await _context.Homeworks
+                .Include(h => h.Subject)
+                .Include(h => h.Teacher)
+                .Where(h => h.BranchId == student.BranchId && h.ClassId == classId && (h.SectionId == null || h.SectionId == sectionId) && (yearId == 0 || h.AcademicYearId == yearId) && h.IsActive && h.Status == "Active")
+                .OrderBy(h => h.DueDate)
+                .Take(5)
+                .Select(h => new
+                {
+                    h.Id,
+                    h.Title,
+                    h.Description,
+                    Subject = h.Subject != null ? h.Subject.Name : "General",
+                    Teacher = h.Teacher != null ? $"{h.Teacher.FirstName} {h.Teacher.LastName}".Trim() : "Teacher",
+                    DueDate = h.DueDate.ToString("yyyy-MM-dd"),
+                    HomeworkDate = h.HomeworkDate.ToString("yyyy-MM-dd"),
+                    h.AttachmentUrl,
+                    h.AttachmentFileName,
+                    h.AttachmentFileType,
+                    IsPdf = h.AttachmentFileType != null && h.AttachmentFileType.ToLower().Contains("pdf"),
+                    IsImage = h.AttachmentFileType != null && (h.AttachmentFileType.ToLower().Contains("image") || h.AttachmentFileType.ToLower().Contains("jpg") || h.AttachmentFileType.ToLower().Contains("jpeg") || h.AttachmentFileType.ToLower().Contains("png"))
+                })
+                .ToListAsync();
+
             // 1. Holiday Calendar (for this branch and academic year)
             var holidays = await _context.Set<Holiday>()
                 .Where(h => h.BranchId == student.BranchId && (yearId == 0 || h.AcademicYearId == yearId))
@@ -526,10 +550,92 @@ namespace SchoolERP.API.Controllers.Portal
                 UpcomingExams = upcomingExams,
                 RecentMarks = recentMarks,
                 Notices = notices,
-                TodayTimetable = todayTimetable
+                TodayTimetable = todayTimetable,
+                RecentHomework = recentHomework
             };
 
             return Ok(ApiResponse<object>.Ok(data));
+        }
+
+        // 2.5. Homework & Assignments for Student/Parent
+        [HttpGet("homework")]
+        public async Task<IActionResult> GetStudentHomework([FromQuery] long? studentId, [FromQuery] string? filter)
+        {
+            var (sId, student) = await ResolveCurrentStudentAsync(studentId);
+            if (student == null)
+            {
+                return NotFound(ApiResponse.Fail("Student profile not found."));
+            }
+
+            var yearId = _currentUserService.AcademicYearId;
+            var enrollment = student.Enrollments.FirstOrDefault(e => e.AcademicYearId == yearId)
+                             ?? student.Enrollments.OrderByDescending(e => e.AcademicYearId).FirstOrDefault();
+
+            var classId = enrollment?.ClassId ?? 0;
+            var sectionId = enrollment?.SectionId ?? 0;
+
+            var query = _context.Homeworks
+                .Include(h => h.Subject)
+                .Include(h => h.Teacher)
+                .Include(h => h.Class)
+                .Include(h => h.Section)
+                .Include(h => h.Submissions)
+                .Where(h => h.BranchId == student.BranchId && h.ClassId == classId && (h.SectionId == null || h.SectionId == sectionId) && (yearId == 0 || h.AcademicYearId == yearId) && h.IsActive);
+
+            var today = DateTime.UtcNow.Date;
+            if (filter == "pending")
+            {
+                query = query.Where(h => h.DueDate >= today);
+            }
+            else if (filter == "past")
+            {
+                query = query.Where(h => h.DueDate < today);
+            }
+
+            var list = await query
+                .OrderByDescending(h => h.HomeworkDate)
+                .ThenBy(h => h.DueDate)
+                .Select(h => new
+                {
+                    h.Id,
+                    h.Title,
+                    h.Description,
+                    h.Instructions,
+                    Subject = h.Subject != null ? h.Subject.Name : "General",
+                    SubjectCode = h.Subject != null ? h.Subject.Code : "",
+                    Teacher = h.Teacher != null ? $"{h.Teacher.FirstName} {h.Teacher.LastName}".Trim() : "Subject Teacher",
+                    ClassName = h.Class != null ? h.Class.Name : "",
+                    SectionName = h.Section != null ? h.Section.Name : "All Sections",
+                    HomeworkDate = h.HomeworkDate.ToString("yyyy-MM-dd"),
+                    DueDate = h.DueDate.ToString("yyyy-MM-dd"),
+                    IsOverdue = h.DueDate.Date < today,
+                    h.AttachmentUrl,
+                    h.AttachmentFileName,
+                    h.AttachmentFileType,
+                    h.AttachmentFileSize,
+                    IsPdf = h.AttachmentFileType != null && h.AttachmentFileType.ToLower().Contains("pdf"),
+                    IsImage = h.AttachmentFileType != null && (h.AttachmentFileType.ToLower().Contains("image") || h.AttachmentFileType.ToLower().Contains("jpg") || h.AttachmentFileType.ToLower().Contains("jpeg") || h.AttachmentFileType.ToLower().Contains("png")),
+                    h.Status,
+                    Submission = h.Submissions.Where(sub => sub.StudentId == sId && sub.IsActive).Select(sub => new
+                    {
+                        sub.Id,
+                        SubmissionDate = sub.SubmissionDate.ToString("yyyy-MM-dd HH:mm"),
+                        sub.SubmissionText,
+                        sub.AttachmentUrl,
+                        sub.AttachmentFileName,
+                        sub.Status,
+                        sub.TeacherFeedback,
+                        sub.MarksObtained
+                    }).FirstOrDefault()
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                data = list,
+                total = list.Count
+            });
         }
 
         // 3. Detailed Attendance History for Student/Parent

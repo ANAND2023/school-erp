@@ -72,6 +72,9 @@ import ClassTimetablePage from '../features/timetable/pages/ClassTimetablePage';
 import TeacherTimetablePage from '../features/timetable/pages/TeacherTimetablePage';
 import SubstitutionPage from '../features/timetable/pages/SubstitutionPage';
 
+// Module: Homework & Assignments
+import HomeworkPage from '../features/homework/pages/HomeworkPage';
+
 // Module 7: Examinations & Report Cards
 import ExamSchedulesPage from '../features/exams/pages/ExamSchedulesPage';
 import MarksEntryPage from '../features/exams/pages/MarksEntryPage';
@@ -668,6 +671,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute requiredMenu="Substitutions">
               <SubstitutionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="homework"
+          element={
+            <ProtectedRoute requiredMenu={['Teacher', 'Classes', 'Dashboard', 'Homework', 'Attendance']}>
+              <HomeworkPage />
             </ProtectedRoute>
           }
         />

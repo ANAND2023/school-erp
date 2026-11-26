@@ -98,6 +98,10 @@ namespace SchoolERP.Infrastructure.Persistence
         public DbSet<CoScholasticGrade> CoScholasticGrades => Set<CoScholasticGrade>();
         public DbSet<ReportRemark> ReportRemarks => Set<ReportRemark>();
 
+        // Homework & Assignments Module
+        public DbSet<Homework> Homeworks => Set<Homework>();
+        public DbSet<HomeworkSubmission> HomeworkSubmissions => Set<HomeworkSubmission>();
+
         // Promotion & TC Module (Module 8)
         public DbSet<StudentPromotion> StudentPromotions => Set<StudentPromotion>();
         public DbSet<TransferCertificate> TransferCertificates => Set<TransferCertificate>();

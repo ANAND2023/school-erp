@@ -156,6 +156,57 @@ using (var scope = app.Services.CreateScope())
           // Staff Leave Policy (Category-wise SL/CL Quota) & Staff Leave Allocations
           try { context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS `staff_leave_policies` (`id` bigint NOT NULL AUTO_INCREMENT, `branch_id` bigint NOT NULL, `academic_year_id` bigint NOT NULL, `department_id` bigint NULL, `category_name` varchar(150) NOT NULL, `casual_leave_days` decimal(5,2) NOT NULL DEFAULT 12.00, `sick_leave_days` decimal(5,2) NOT NULL DEFAULT 10.00, `earned_leave_days` decimal(5,2) NOT NULL DEFAULT 0.00, `description` longtext NULL, `created_by` bigint NOT NULL DEFAULT 1, `created_on` datetime(6) NOT NULL, `modified_by` bigint NULL, `modified_on` datetime(6) NULL, `is_active` tinyint(1) NOT NULL DEFAULT 1, PRIMARY KEY (`id`), KEY `idx_leave_policy_lookup` (`branch_id`, `academic_year_id`, `department_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"); } catch {}
           try { context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS `staff_leave_allocations` (`id` bigint NOT NULL AUTO_INCREMENT, `branch_id` bigint NOT NULL, `academic_year_id` bigint NOT NULL, `employee_id` bigint NOT NULL, `casual_leave_days` decimal(5,2) NOT NULL DEFAULT 12.00, `sick_leave_days` decimal(5,2) NOT NULL DEFAULT 10.00, `earned_leave_days` decimal(5,2) NOT NULL DEFAULT 0.00, `remarks` longtext NULL, `created_by` bigint NOT NULL DEFAULT 1, `created_on` datetime(6) NOT NULL, `modified_by` bigint NULL, `modified_on` datetime(6) NULL, `is_active` tinyint(1) NOT NULL DEFAULT 1, PRIMARY KEY (`id`), UNIQUE KEY `uk_staff_leave_alloc` (`branch_id`, `academic_year_id`, `employee_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"); } catch {}
+
+          // Homework & Assignments Module
+          try { context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS `homeworks` (
+            `id` bigint NOT NULL AUTO_INCREMENT,
+            `branch_id` bigint NOT NULL,
+            `academic_year_id` bigint NOT NULL,
+            `class_id` bigint NOT NULL,
+            `section_id` bigint NULL,
+            `subject_id` bigint NULL,
+            `teacher_id` bigint NULL,
+            `title` varchar(255) NOT NULL,
+            `description` longtext NULL,
+            `homework_date` datetime(6) NOT NULL,
+            `due_date` datetime(6) NOT NULL,
+            `attachment_url` longtext NULL,
+            `attachment_file_name` varchar(255) NULL,
+            `attachment_file_type` varchar(100) NULL,
+            `attachment_file_size` bigint NULL,
+            `status` varchar(50) NOT NULL DEFAULT 'Active',
+            `instructions` longtext NULL,
+            `created_by` bigint NULL,
+            `created_on` datetime(6) NOT NULL,
+            `modified_by` bigint NULL,
+            `modified_on` datetime(6) NULL,
+            `is_active` tinyint(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            KEY `idx_homework_lookup` (`branch_id`, `academic_year_id`, `class_id`, `section_id`, `due_date`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"); } catch {}
+
+          try { context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS `homework_submissions` (
+            `id` bigint NOT NULL AUTO_INCREMENT,
+            `homework_id` bigint NOT NULL,
+            `student_id` bigint NOT NULL,
+            `submission_date` datetime(6) NOT NULL,
+            `submission_text` longtext NULL,
+            `attachment_url` longtext NULL,
+            `attachment_file_name` varchar(255) NULL,
+            `attachment_file_type` varchar(100) NULL,
+            `attachment_file_size` bigint NULL,
+            `status` varchar(50) NOT NULL DEFAULT 'Submitted',
+            `teacher_feedback` longtext NULL,
+            `marks_obtained` int NULL,
+            `created_by` bigint NULL,
+            `created_on` datetime(6) NOT NULL,
+            `modified_by` bigint NULL,
+            `modified_on` datetime(6) NULL,
+            `is_active` tinyint(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_homework_student` (`homework_id`, `student_id`),
+            KEY `idx_submission_student` (`student_id`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"); } catch {}
     }
     catch (Exception ex)
     {
@@ -177,6 +228,7 @@ app.UseSwaggerUI(c =>
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();

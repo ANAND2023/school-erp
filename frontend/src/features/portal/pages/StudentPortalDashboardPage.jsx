@@ -62,7 +62,9 @@ import {
   Info as InfoIcon,
   Discount as DiscountIcon,
   WarningAmber as WarningIcon,
-  ContactPhone as ContactPhoneIcon
+  ContactPhone as ContactPhoneIcon,
+  Assignment as HomeworkIcon,
+  Image as ImageIcon
 } from '@mui/icons-material';
 import { useAuthStore } from '../../../store/authStore';
 import { useThemeStore } from '../../../store/themeStore';
@@ -71,6 +73,7 @@ import { downloadElementAsPdf, printWithTitle } from '../../../utils/printUtils'
 import { portalApi } from '../api';
 import { StudentAiChatTab } from '../components/StudentAiChatTab';
 import { StudentNcertReaderTab } from '../components/StudentNcertReaderTab';
+import { StudentHomeworkTab } from '../components/StudentHomeworkTab';
 import { CceProgressReportCardSlip } from '../../exams/components/CceProgressReportCardSlip';
 import FeeReceiptSlip from '../../fees/components/FeeReceiptSlip';
 import { SingleDemandSlip } from '../../fees/components/DemandBillSlip';
@@ -134,12 +137,13 @@ export const StudentPortalDashboardPage = () => {
     switch (param) {
       case 'attendance': return 1;
       case 'timetable': return 2;
-      case 'exams': return 3;
-      case 'fees': return 4;
-      case 'id-card': return 5;
-      case 'notices': return 6;
-      case 'ncert': return 7;
-      case 'ai-tutor': return 8;
+      case 'homework': return 3;
+      case 'exams': return 4;
+      case 'fees': return 5;
+      case 'id-card': return 6;
+      case 'notices': return 7;
+      case 'ncert': return 8;
+      case 'ai-tutor': return 9;
       default: return !isNaN(Number(param)) ? Number(param) : 0;
     }
   };
@@ -155,7 +159,7 @@ export const StudentPortalDashboardPage = () => {
 
   const handleTabChange = (_, val) => {
     setActiveTab(val);
-    const tabKeys = ['overview', 'attendance', 'timetable', 'exams', 'fees', 'id-card', 'notices', 'ncert', 'ai-tutor'];
+    const tabKeys = ['overview', 'attendance', 'timetable', 'homework', 'exams', 'fees', 'id-card', 'notices', 'ncert', 'ai-tutor'];
     setSearchParams({ tab: tabKeys[val] || String(val) });
   };
 
@@ -186,9 +190,9 @@ export const StudentPortalDashboardPage = () => {
     return () => window.removeEventListener('academicYearChanged', handleYearChange);
   }, [selectedStudentId]);
 
-  // When activeTab changes to Exams (3), fetch exams data if not loaded
+  // When activeTab changes to Exams (4), fetch exams data if not loaded
   useEffect(() => {
-    if (activeTab === 3 && selectedStudentId) {
+    if (activeTab === 4 && selectedStudentId) {
       loadExamsData(selectedStudentId);
     }
   }, [activeTab, selectedStudentId]);
@@ -614,6 +618,7 @@ export const StudentPortalDashboardPage = () => {
           <Tab icon={<StudentIcon fontSize="small" />} iconPosition="start" label="Overview" />
           <Tab icon={<AttendanceIcon fontSize="small" />} iconPosition="start" label="Attendance Log" />
           <Tab icon={<TimetableIcon fontSize="small" />} iconPosition="start" label="Timetable" />
+          <Tab icon={<HomeworkIcon fontSize="small" />} iconPosition="start" label="Class Homework" />
           <Tab icon={<ExamIcon fontSize="small" />} iconPosition="start" label="Exams & Report Cards" />
           <Tab icon={<FeesIcon fontSize="small" />} iconPosition="start" label="Fees & Receipts" />
           <Tab icon={<BadgeIcon fontSize="small" />} iconPosition="start" label="Student ID Card" />
@@ -663,6 +668,80 @@ export const StudentPortalDashboardPage = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+              )}
+            </Paper>
+
+            {/* Class Homework Summary Widget */}
+            <Paper sx={{ mt: 3, p: 2.5, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight={800} color={primaryColor} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HomeworkIcon fontSize="small" /> Class Homework & Worksheets
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => handleTabChange(null, 3)}
+                  sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.8rem', color: primaryColor }}
+                >
+                  View All &rarr;
+                </Button>
+              </Box>
+
+              {(!portalData?.recentHomework || portalData.recentHomework.length === 0) ? (
+                <Alert severity="success" sx={{ borderRadius: 2 }}>
+                  No pending homework due right now! Great job!
+                </Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {portalData.recentHomework.map((hw) => (
+                    <Box
+                      key={hw.id}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: isDarkMode ? '#334155' : '#f8fafc',
+                        border: '1px solid',
+                        borderColor: isDarkMode ? '#475569' : '#e2e8f0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 1
+                      }}
+                    >
+                      <Box sx={{ minWidth: 180, flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Chip size="small" label={hw.subject || 'General'} color="primary" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                            Due: {hw.dueDate}
+                          </Typography>
+                        </Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                          {hw.title}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {hw.attachmentUrl && (
+                          <Chip
+                            size="small"
+                            icon={hw.isPdf ? <PdfIcon sx={{ fontSize: '14px !important', color: '#ef4444' }} /> : <ImageIcon sx={{ fontSize: '14px !important', color: '#3b82f6' }} />}
+                            label={hw.isPdf ? 'PDF' : 'Photo'}
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: '0.68rem', fontWeight: 700 }}
+                          />
+                        )}
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleTabChange(null, 3)}
+                          sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem', borderRadius: 1.5 }}
+                        >
+                          View Task
+                        </Button>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
               )}
             </Paper>
           </Grid>
@@ -1007,8 +1086,13 @@ export const StudentPortalDashboardPage = () => {
         </Paper>
       )}
 
-      {/* TAB 3: EXAMINATIONS & REPORT CARDS */}
+      {/* TAB 3: CLASS HOMEWORK & ASSIGNMENTS */}
       {activeTab === 3 && (
+        <StudentHomeworkTab studentId={selectedStudentId} primaryColor={primaryColor} />
+      )}
+
+      {/* TAB 4: EXAMINATIONS & REPORT CARDS */}
+      {activeTab === 4 && (
         <Stack spacing={3}>
           {/* Top Master Banner with CCE Progress Card Print Button */}
           <Paper
@@ -1223,8 +1307,8 @@ export const StudentPortalDashboardPage = () => {
         </Stack>
       )}
 
-      {/* TAB 4: FEES RECEIPTS & DUES */}
-      {activeTab === 4 && (
+      {/* TAB 5: FEES RECEIPTS & DUES */}
+      {activeTab === 5 && (
         <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Box>
@@ -1465,38 +1549,8 @@ export const StudentPortalDashboardPage = () => {
         </Paper>
       )}
 
-      {/* TAB 5: NOTICES & CIRCULARS */}
-      {activeTab === 5 && (
-        <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
-          <Typography variant="h6" fontWeight={800} color={primaryColor} sx={{ mb: 2 }}>
-            Official School Notices, Circulars & Announcements
-          </Typography>
-          {notices.length === 0 ? (
-            <Alert severity="info">
-              No recent notifications on the school portal.
-            </Alert>
-          ) : (
-            <Stack spacing={2}>
-              {notices.map((n) => (
-                <Paper key={n.id} sx={{ p: 2.5, bgcolor: isDarkMode ? '#334155' : '#f8fafc', borderRadius: 2, borderLeft: `5px solid ${primaryColor}` }}>
-                  <Typography variant="subtitle1" fontWeight={800}>
-                    {n.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1, color: isDarkMode ? '#e2e8f0' : '#334155', lineHeight: 1.6 }}>
-                    {n.message}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#94a3b8', mt: 1.5, display: 'block', fontWeight: 600 }}>
-                    Announced On: {new Date(n.sentAt).toLocaleString()}
-                  </Typography>
-                </Paper>
-              ))}
-            </Stack>
-          )}
-        </Paper>
-      )}
-
-      {/* TAB 5: STUDENT ID CARD (Item 3) */}
-      {activeTab === 5 && (
+      {/* TAB 6: STUDENT ID CARD */}
+      {activeTab === 6 && (
         <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 3 }}>
             <Box>
@@ -1706,8 +1760,8 @@ export const StudentPortalDashboardPage = () => {
         </Paper>
       )}
 
-      {/* TAB 6: NOTICES & CIRCULARS */}
-      {activeTab === 6 && (
+      {/* TAB 7: NOTICES & CIRCULARS */}
+      {activeTab === 7 && (
         <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 1, bgcolor: isDarkMode ? '#1e293b' : '#ffffff' }}>
           <Typography variant="h6" fontWeight={800} color={primaryColor} sx={{ mb: 2 }}>
             Official School Notices, Circulars & Announcements
@@ -1736,13 +1790,13 @@ export const StudentPortalDashboardPage = () => {
         </Paper>
       )}
 
-      {/* TAB 7: NCERT BOOK READER */}
-      {activeTab === 7 && (
+      {/* TAB 8: NCERT BOOK READER */}
+      {activeTab === 8 && (
         <StudentNcertReaderTab studentClassName={student?.className} />
       )}
 
-      {/* TAB 8: AI STUDY BUDDY */}
-      {activeTab === 8 && (
+      {/* TAB 9: AI STUDY BUDDY */}
+      {activeTab === 9 && (
         <StudentAiChatTab student={student} />
       )}
 
