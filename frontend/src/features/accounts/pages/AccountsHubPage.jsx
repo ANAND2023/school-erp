@@ -53,12 +53,34 @@ import {
   Warning as DueIcon,
   CheckCircle as PaidIcon,
   Close as CloseIcon,
+  PictureAsPdf as PdfIcon,
+  TableChart as ExcelIcon,
 } from '@mui/icons-material';
 import { accountsApi } from '../api/accountsApi';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useThemeStore } from '../../../store/themeStore';
 import { useUiStore } from '../../../store/uiStore';
+import { useAuthStore } from '../../../store/authStore';
 import { AppButton } from '../../../components/common/AppButton';
+import { printWithTitle } from '../../../utils/printUtils';
+import {
+  exportDayBookToExcel,
+  exportDayBookToPdf,
+  exportFeeCollectionToExcel,
+  exportFeeCollectionToPdf,
+  exportExpensesToExcel,
+  exportExpensesToPdf,
+  exportSalaryToExcel,
+  exportSalaryToPdf,
+  exportProfitLossToExcel,
+  exportProfitLossToPdf,
+  exportEnquiriesToExcel,
+  exportEnquiriesToPdf,
+  exportAdmissionsToExcel,
+  exportAdmissionsToPdf,
+  exportDefaultersToExcel,
+  exportDefaultersToPdf,
+} from '../utils/accountsExportUtils';
 
 // Date helper functions
 const formatDate = (date) => {
@@ -109,48 +131,227 @@ export const AccountsHubPage = () => {
   const [filterMode, setFilterMode] = useState('All');
   const [filterType, setFilterType] = useState('All');
 
-  // Print Day Book Modal State
+  // Print Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const printComponentRef = useRef(null);
 
-  const handlePrint = () => {
-    const printContent = printComponentRef.current;
-    if (!printContent) return;
+  const { user } = useAuthStore();
+  const schoolInfo = useMemo(
+    () => ({
+      name: user?.schoolName || 'DELHI PUBLIC SCHOOL',
+      branch: user?.branchName || 'Main Campus',
+      affiliation: user?.affiliationNo || 'CBSE/2026/0912',
+      address: user?.address || '123 Knowledge Park, Sector 4, New Delhi - 110001',
+      phone: user?.phone || '011-23456789',
+      email: user?.email || 'accounts@dps.edu.in',
+    }),
+    [user]
+  );
 
-    const printWindow = window.open('', '_blank', 'width=950,height=750');
-    if (!printWindow) {
-      alert('Please allow popups to print day book');
-      return;
+  const reportNames = [
+    'Daily Cash Book & Day Book Ledger',
+    'Daily Fee Collection Register',
+    'School Operating Expenses Register',
+    'Staff Salary Disbursements Register',
+    'Profit & Loss (Operating Surplus / Deficit)',
+    'Admissions Enquiry & Funnel Report',
+    'New Student Admissions Register',
+    'Outstanding Fee Dues & Defaulters List',
+  ];
+
+  const reportFilePrefixes = [
+    'DayBook',
+    'Fee_Collections',
+    'Expenses',
+    'Salary_Disbursements',
+    'Profit_and_Loss',
+    'Enquiries',
+    'Admissions',
+    'Fee_Defaulters',
+  ];
+
+  // Excel (.xlsx) Download Handler for Active Tab
+  const handleDownloadActiveExcel = () => {
+    try {
+      switch (activeTab) {
+        case 0:
+          exportDayBookToExcel({
+            entries: filteredDayBook,
+            totals: dayBookTotals,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 1:
+          exportFeeCollectionToExcel({
+            collections: filteredCollections,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 2:
+          exportExpensesToExcel({
+            expenses,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 3:
+          exportSalaryToExcel({
+            payrolls,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 4:
+          exportProfitLossToExcel({
+            summary,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 5:
+          exportEnquiriesToExcel({
+            enquiries: enquiryData.items || [],
+            stats: enquiryData,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 6:
+          exportAdmissionsToExcel({
+            students: admissionData.students || [],
+            stats: admissionData,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 7:
+          exportDefaultersToExcel({
+            defaulters: filteredDefaulters,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        default:
+          break;
+      }
+      showSnackbar?.(`${reportNames[activeTab]} Excel exported successfully!`, 'success');
+    } catch (err) {
+      console.error('Error downloading Excel:', err);
+      showSnackbar?.('Failed to download Excel file', 'error');
     }
+  };
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Day Book - ${startDate} to ${endDate}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #ccc; padding: 6px 10px; font-size: 12px; }
-            th { background-color: #f1f5f9; text-align: left; }
-            @media print {
-              body { padding: 0; }
-              @page { size: auto; margin: 10mm; }
-            }
-          </style>
-        </head>
-        <body>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `);
+  // PDF (.pdf) Download Handler for Active Tab
+  const handleDownloadActivePdf = () => {
+    try {
+      switch (activeTab) {
+        case 0:
+          exportDayBookToPdf({
+            entries: filteredDayBook,
+            totals: dayBookTotals,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 1:
+          exportFeeCollectionToPdf({
+            collections: filteredCollections,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 2:
+          exportExpensesToPdf({
+            expenses,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 3:
+          exportSalaryToPdf({
+            payrolls,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 4:
+          exportProfitLossToPdf({
+            summary,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 5:
+          exportEnquiriesToPdf({
+            enquiries: enquiryData.items || [],
+            stats: enquiryData,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 6:
+          exportAdmissionsToPdf({
+            students: admissionData.students || [],
+            stats: admissionData,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        case 7:
+          exportDefaultersToPdf({
+            defaulters: filteredDefaulters,
+            startDate,
+            endDate,
+            academicYearName: activeAcademicYearName,
+            school: schoolInfo,
+          });
+          break;
+        default:
+          break;
+      }
+      showSnackbar?.(`${reportNames[activeTab]} PDF document generated!`, 'success');
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      showSnackbar?.('Failed to generate PDF document', 'error');
+    }
+  };
 
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 400);
+  // Print Handler
+  const handlePrint = () => {
+    const reportTitle = `${reportFilePrefixes[activeTab] || 'Accounts_Report'}_${startDate}_to_${endDate}`;
+    printWithTitle(reportTitle);
   };
 
   // Handle Preset Changes
@@ -642,18 +843,50 @@ export const AccountsHubPage = () => {
             variant="outlined"
             startIcon={<PrintIcon />}
             onClick={() => setPrintModalOpen(true)}
-            sx={{ borderColor: 'divider' }}
+            sx={{ borderColor: 'divider', fontWeight: 600 }}
           >
-            Print Day Book
+            Print / Preview
           </AppButton>
 
-          <AppButton
+          <Button
             variant="contained"
+            startIcon={<ExcelIcon />}
+            onClick={handleDownloadActiveExcel}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
+              px: 1.6,
+              '&:hover': { bgcolor: '#0b5c30' },
+            }}
+          >
+            Download Excel
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<PdfIcon />}
+            onClick={handleDownloadActivePdf}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
+              px: 1.6,
+              '&:hover': { bgcolor: '#b71c1c' },
+            }}
+          >
+            Download PDF
+          </Button>
+
+          <AppButton
+            variant="text"
             startIcon={<ExportIcon />}
             onClick={handleExportCSV}
-            sx={{ bgcolor: themeColor }}
+            sx={{ color: 'text.secondary' }}
           >
-            Export CSV
+            CSV
           </AppButton>
         </Stack>
       </Box>
@@ -980,9 +1213,65 @@ export const AccountsHubPage = () => {
             </Stack>
           )}
 
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-            Session: <b>{activeAcademicYearName || 'Current'}</b> | Range: <b>{formatDate(startDate)}</b> to <b>{formatDate(endDate)}</b>
-          </Typography>
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              Session: <b>{activeAcademicYearName || 'Current'}</b> | Range: <b>{formatDate(startDate)}</b> to <b>{formatDate(endDate)}</b>
+            </Typography>
+
+            <Tooltip title="Print / Save as PDF">
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setPrintModalOpen(true)}
+                sx={{ textTransform: 'none', fontSize: '0.78rem', py: 0.3, px: 1, borderColor: 'divider' }}
+              >
+                Print
+              </Button>
+            </Tooltip>
+
+            <Tooltip title="Download Excel Spreadsheet (.xlsx)">
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
+                onClick={handleDownloadActiveExcel}
+                sx={{
+                  bgcolor: '#107c41',
+                  color: '#ffffff',
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  py: 0.3,
+                  px: 1,
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: '#0b5c30' },
+                }}
+              >
+                Excel
+              </Button>
+            </Tooltip>
+
+            <Tooltip title="Download PDF Document (.pdf)">
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
+                onClick={handleDownloadActivePdf}
+                sx={{
+                  bgcolor: '#d32f2f',
+                  color: '#ffffff',
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  py: 0.3,
+                  px: 1,
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: '#b71c1c' },
+                }}
+              >
+                PDF
+              </Button>
+            </Tooltip>
+          </Stack>
         </Box>
 
         {/* Tab Body */}
@@ -1683,124 +1972,507 @@ export const AccountsHubPage = () => {
         </Box>
       </Card>
 
-      {/* 4. Official Printable Day Book Document Dialog */}
-      <Dialog open={printModalOpen} onClose={() => setPrintModalOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Print Official Day Book Register
-          </Typography>
+      {/* 4. Official Printable Accounts & Finance Report Document Dialog */}
+      <Dialog open={printModalOpen} onClose={() => setPrintModalOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Official Printable Report & Audit Document
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Preview institutional register with header, financial totals, and verification seal
+            </Typography>
+          </Box>
           <IconButton onClick={() => setPrintModalOpen(false)} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
-          <Box ref={printComponentRef} sx={{ p: 3, bgcolor: '#fff', color: '#000' }}>
+        <DialogContent dividers sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: '#f8fafc' }}>
+          <Box
+            ref={printComponentRef}
+            sx={{
+              p: 3,
+              bgcolor: '#fff',
+              color: '#000',
+              borderRadius: 2,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              overflowX: 'auto',
+            }}
+          >
             {/* School Header */}
-            <Box sx={{ textAlign: 'center', pb: 2, mb: 2, borderBottom: '2px solid #333' }}>
-              <Typography variant="h5" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
-                DELHI PUBLIC SCHOOL
+            <Box sx={{ textAlign: 'center', pb: 2, mb: 2, borderBottom: '2px solid #1e293b' }}>
+              <Typography variant="h5" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, color: '#1e3a8a' }}>
+                {schoolInfo.name}
               </Typography>
-              <Typography variant="caption" sx={{ display: 'block', color: '#555' }}>
-                Affiliated to CBSE, New Delhi | Affiliation No: CBSE/2026/0912
+              <Typography variant="caption" sx={{ display: 'block', color: '#475569', fontWeight: 600 }}>
+                {schoolInfo.branch} &bull; Affiliated to CBSE, New Delhi | Affiliation No: {schoolInfo.affiliation}
               </Typography>
-              <Typography variant="caption" sx={{ display: 'block', color: '#555' }}>
-                123 Knowledge Park, Sector 4, New Delhi - 110001 | Phone: 011-23456789 | Email: accounts@dps.edu.in
+              <Typography variant="caption" sx={{ display: 'block', color: '#64748b' }}>
+                {schoolInfo.address} | Phone: {schoolInfo.phone} | Email: {schoolInfo.email}
               </Typography>
-              <Box sx={{ mt: 1.5, p: 0.5, bgcolor: '#f1f5f9', borderRadius: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
-                  DAILY CASH BOOK & DAY BOOK LEDGER
+              <Box sx={{ mt: 1.5, p: 0.75, bgcolor: '#f1f5f9', borderRadius: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#0f172a' }}>
+                  {reportNames[activeTab] || 'ACCOUNTS REPORT'}
                 </Typography>
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  Date Period: {formatDate(startDate)} to {formatDate(endDate)} | Session:{' '}
-                  {activeAcademicYearName || '2026-27'}
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155' }}>
+                  Date Period: <b>{formatDate(startDate)}</b> to <b>{formatDate(endDate)}</b> | Session:{' '}
+                  <b>{activeAcademicYearName || 'Current Session'}</b> | Generated On:{' '}
+                  <b>{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</b>
                 </Typography>
               </Box>
             </Box>
 
-            {/* Printable Table */}
-            <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
-              <TableHead sx={{ bgcolor: '#e2e8f0' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Ref / Receipt #</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Particulars & Account Head</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="right">
-                    Inflow / Credit (₹)
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="right">
-                    Outflow / Debit (₹)
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="right">
-                    Balance (₹)
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Mode</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dayBookEntries.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell>{formatDate(e.date)}</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>{e.refNo}</TableCell>
-                    <TableCell>
-                      {e.particulars}
-                      {e.details ? ` (${e.details})` : ''}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>
-                      {e.inflowAmount > 0 ? formatCurrency(e.inflowAmount) : '—'}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>
-                      {e.outflowAmount > 0 ? formatCurrency(e.outflowAmount) : '—'}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>
-                      {formatCurrency(e.runningBalance)}
-                    </TableCell>
-                    <TableCell>{e.paymentMode}</TableCell>
+            {/* TAB 0: DAY BOOK */}
+            {activeTab === 0 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#e2e8f0' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Ref / Receipt #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Category</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Particulars & Account Head</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Inflow (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Outflow (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Balance (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Mode</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Processed By</TableCell>
                   </TableRow>
-                ))}
-                {/* Summary Row */}
-                <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
-                  <TableCell colSpan={3} sx={{ textAlign: 'right', fontWeight: 800 }}>
-                    TOTAL PERIOD TRANSACTIONS:
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#16a34a' }}>
-                    {formatCurrency(dayBookTotals.totalInflow)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#dc2626' }}>
-                    {formatCurrency(dayBookTotals.totalOutflow)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 900 }}>
-                    {formatCurrency(dayBookTotals.netBalance)}
-                  </TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {filteredDayBook.map((e, idx) => (
+                    <TableRow key={e.id}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell>{formatDate(e.date)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{e.refNo}</TableCell>
+                      <TableCell>{e.category}</TableCell>
+                      <TableCell>
+                        {e.particulars}
+                        {e.details ? ` (${e.details})` : ''}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        {e.inflowAmount > 0 ? formatCurrency(e.inflowAmount) : '—'}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        {e.outflowAmount > 0 ? formatCurrency(e.outflowAmount) : '—'}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        {formatCurrency(e.runningBalance)}
+                      </TableCell>
+                      <TableCell>{e.paymentMode}</TableCell>
+                      <TableCell>{e.processedBy}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={5} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                      TOTAL PERIOD TRANSACTIONS:
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#16a34a' }}>
+                      {formatCurrency(dayBookTotals.totalInflow)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#dc2626' }}>
+                      {formatCurrency(dayBookTotals.totalOutflow)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 900 }}>
+                      {formatCurrency(dayBookTotals.netBalance)}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
 
-            {/* Signatures Area */}
-            <Box sx={{ mt: 6, pt: 3, display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
-              <Box sx={{ width: 160, borderTop: '1px solid #333', pt: 0.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  Cashier / Entry Clerk
-                </Typography>
+            {/* TAB 1: FEE COLLECTION REPORT */}
+            {activeTab === 1 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#e2e8f0' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Receipt #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Student Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Adm No</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Class / Section</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Paid Amount (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Mode</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Cashier</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredCollections.map((col, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{col.receiptNo}</TableCell>
+                      <TableCell>{formatDate(col.receiptDate)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{col.studentName}</TableCell>
+                      <TableCell>{col.admissionNo}</TableCell>
+                      <TableCell>{col.classSection || `${col.className || ''} ${col.sectionName || ''}`.trim() || '—'}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        {formatCurrency(col.totalPaid ?? col.amountPaid ?? col.amount ?? 0)}
+                      </TableCell>
+                      <TableCell>{(col.paymentModes && String(col.paymentModes).trim()) || (col.paymentMode && String(col.paymentMode).trim()) || 'Cash'}</TableCell>
+                      <TableCell>{(col.collectedBy && String(col.collectedBy).trim()) || (col.cashierName && String(col.cashierName).trim()) || (col.createdByName && String(col.createdByName).trim()) || 'Super Admin'}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={6} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                      TOTAL PERIOD COLLECTION ({filteredCollections.length} Receipts):
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#16a34a' }}>
+                      {formatCurrency(filteredCollections.reduce((sum, c) => sum + Number(c.totalPaid ?? c.amountPaid ?? c.amount ?? 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* TAB 2: EXPENSES REPORT */}
+            {activeTab === 2 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#fee2e2' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Voucher #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Expense Title</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Category</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Spender / Vendor</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Amount (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Mode</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {expenses.map((e, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>EXP/{e.id}</TableCell>
+                      <TableCell>{formatDate(e.expenseDate)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{e.title}</TableCell>
+                      <TableCell>{e.categoryName}</TableCell>
+                      <TableCell>{e.spenderName}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>
+                        {formatCurrency(e.amount)}
+                      </TableCell>
+                      <TableCell>{e.paymentMode || 'Cash'}</TableCell>
+                      <TableCell>{e.description || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={6} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                      TOTAL OPERATING EXPENSES ({expenses.length} Vouchers):
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: 'error.dark' }}>
+                      {formatCurrency(expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* TAB 3: SALARY DISBURSEMENTS */}
+            {activeTab === 3 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#ffedd5' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Salary Slip #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Staff Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Code</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Designation</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Month</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Net Salary (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Pay Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Mode</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Txn Ref</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {payrolls.map((p, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{p.salarySlipNo || `SLIP-${p.id}`}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{p.employeeName}</TableCell>
+                      <TableCell>{p.employeeCode}</TableCell>
+                      <TableCell>{p.designation}</TableCell>
+                      <TableCell>{p.monthName} {p.payrollYear}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'warning.dark' }}>
+                        {formatCurrency(p.netSalary)}
+                      </TableCell>
+                      <TableCell>{formatDate(p.paymentDate)}</TableCell>
+                      <TableCell>{p.paymentMode || 'Bank Transfer'}</TableCell>
+                      <TableCell>{p.transactionReference || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={6} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                      TOTAL SALARY DISBURSED ({payrolls.length} Staff):
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: 'warning.dark' }}>
+                      {formatCurrency(payrolls.reduce((sum, p) => sum + Number(p.netSalary || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* TAB 4: PROFIT & LOSS STATEMENT */}
+            {activeTab === 4 && (
+              <Box sx={{ maxWidth: 780, mx: 'auto' }}>
+                <Table size="small" sx={{ mb: 2, '& td, & th': { border: '1px solid #ccc', py: 0.8, px: 1.5 } }}>
+                  <TableHead sx={{ bgcolor: '#1e293b' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800, color: '#fff' }}>Particulars</TableCell>
+                      <TableCell sx={{ fontWeight: 800, color: '#fff' }} align="right">Amount (₹)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow sx={{ bgcolor: '#f0fdf4' }}>
+                      <TableCell colSpan={2} sx={{ fontWeight: 800, color: '#166534' }}>
+                        A. REVENUE & CASH INFLOWS
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ pl: 3 }}>Student Tuition & Composite Fee Collections (Net)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(summary?.totalFeeCollected)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ pl: 3 }}>Late Fines & Penalties Collected</TableCell>
+                      <TableCell align="right">{formatCurrency(summary?.totalLateFines)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ pl: 3 }}>Fee Concessions & Waivers Granted (Discount)</TableCell>
+                      <TableCell align="right" sx={{ color: 'text.secondary' }}>({formatCurrency(summary?.totalFeeDiscounts)})</TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                      <TableCell sx={{ fontWeight: 800 }}>TOTAL OPERATING REVENUE (A)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: '#166534' }}>{formatCurrency(summary?.totalFeeCollected)}</TableCell>
+                    </TableRow>
+
+                    <TableRow sx={{ bgcolor: '#fef2f2' }}>
+                      <TableCell colSpan={2} sx={{ fontWeight: 800, color: '#991b1b' }}>
+                        B. OPERATING COSTS & DISBURSEMENTS
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ pl: 3 }}>School Maintenance, Bills & Operational Expenses</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>{formatCurrency(summary?.totalExpenses)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ pl: 3 }}>Staff Payroll & Salaries Disbursed</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'warning.dark' }}>{formatCurrency(summary?.totalSalariesPaid)}</TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                      <TableCell sx={{ fontWeight: 800 }}>TOTAL OPERATING COSTS (B)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: '#991b1b' }}>{formatCurrency(summary?.totalOutflow)}</TableCell>
+                    </TableRow>
+
+                    <TableRow sx={{ bgcolor: (summary?.netSurplus ?? 0) >= 0 ? '#dcfce7' : '#fee2e2', borderTop: '2px solid #000' }}>
+                      <TableCell sx={{ fontWeight: 900, fontSize: '0.95rem', color: (summary?.netSurplus ?? 0) >= 0 ? '#14532d' : '#7f1d1d' }}>
+                        NET OPERATING {(summary?.netSurplus ?? 0) >= 0 ? 'SURPLUS (PROFIT)' : 'DEFICIT (LOSS)'} (A - B)
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 900, fontSize: '1rem', color: (summary?.netSurplus ?? 0) >= 0 ? '#14532d' : '#7f1d1d' }}>
+                        {formatCurrency(summary?.netSurplus)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </Box>
-              <Box sx={{ width: 160, borderTop: '1px solid #333', pt: 0.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  Senior Accountant
+            )}
+
+            {/* TAB 5: ENQUIRIES REPORT */}
+            {activeTab === 5 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#e0f2fe' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Enquiry #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Student Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Target Class</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Guardian Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Mobile Number</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Lead Source</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Status / Converted</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(enquiryData.items || []).map((q, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{q.enquiryNo}</TableCell>
+                      <TableCell>{formatDate(q.createdOn)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{q.studentName}</TableCell>
+                      <TableCell>{q.className}</TableCell>
+                      <TableCell>{q.guardianName}</TableCell>
+                      <TableCell>{q.mobile}</TableCell>
+                      <TableCell>{q.source}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: q.isConverted ? 'success.dark' : 'text.primary' }}>
+                        {q.isConverted ? 'CONVERTED (Enrolled)' : q.status}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={9} sx={{ textAlign: 'center', fontWeight: 800 }}>
+                      TOTAL ENQUIRIES: {enquiryData.totalEnquiries} &bull; CONVERTED ADMISSIONS: {enquiryData.convertedCount} &bull; CONVERSION RATE: {enquiryData.conversionRate}%
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* TAB 6: ADMISSIONS REPORT */}
+            {activeTab === 6 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#ecfeff' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Admission #</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Adm Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Student Full Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Gender</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Class & Section</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Guardian Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Contact Number</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(admissionData.students || []).map((s, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{s.admissionNo}</TableCell>
+                      <TableCell>{formatDate(s.admissionDate)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{s.fullName}</TableCell>
+                      <TableCell>{s.gender}</TableCell>
+                      <TableCell>{s.className} {s.sectionName}</TableCell>
+                      <TableCell>{s.guardianName}</TableCell>
+                      <TableCell>{s.guardianMobile}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: 'success.dark' }}>{s.status}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={9} sx={{ textAlign: 'center', fontWeight: 800 }}>
+                      TOTAL NEW ADMISSIONS ENROLLED: {(admissionData.students || []).length} STUDENTS
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* TAB 7: PENDING DUES / DEFAULTERS */}
+            {activeTab === 7 && (
+              <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', py: 0.6, px: 1, fontSize: '0.78rem' } }}>
+                <TableHead sx={{ bgcolor: '#fee2e2' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Adm No</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Student Full Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Class & Sec</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Pending Months</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Total Due (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Paid So Far (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }} align="right">Pending Balance (₹)</TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>Guardian & Contact</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredDefaulters.map((d, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>{d.admissionNo}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{d.studentName}</TableCell>
+                      <TableCell>{d.classSection || `${d.className || ''} ${d.sectionName || ''}`.trim() || '—'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.72rem' }}>{d.pendingMonths || 'All Months'}</TableCell>
+                      <TableCell align="right">{formatCurrency(d.totalDue)}</TableCell>
+                      <TableCell align="right" sx={{ color: 'success.dark' }}>{formatCurrency(d.totalPaid)}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>{formatCurrency(d.remainingDue)}</TableCell>
+                      <TableCell>{d.guardianName ? `${d.guardianName} (${d.guardianMobile || d.contactNumber || '—'})` : (d.guardianMobile || d.contactNumber || '—')}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow sx={{ bgcolor: '#f8fafc', fontWeight: 800 }}>
+                    <TableCell colSpan={5} sx={{ textAlign: 'right', fontWeight: 800 }}>
+                      TOTAL OUTSTANDING DUES ({filteredDefaulters.length} Students):
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800 }}>
+                      {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.totalDue) || 0), 0))}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: 'success.main' }}>
+                      {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.totalPaid) || 0), 0))}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 900, color: 'error.main' }}>
+                      {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.remainingDue) || 0), 0))}
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            )}
+
+            {/* Verification Signatures */}
+            <Box sx={{ mt: 5, pt: 3, display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
+              <Box sx={{ width: 180, borderTop: '1px solid #333', pt: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Accountant / Clerk
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  (Prepared By)
                 </Typography>
               </Box>
               <Box sx={{ width: 180, borderTop: '1px solid #333', pt: 0.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Accounts Officer
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  (Verified By)
+                </Typography>
+              </Box>
+              <Box sx={{ width: 200, borderTop: '1px solid #333', pt: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
                   Principal / Director
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  (With Official Seal)
                 </Typography>
               </Box>
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPrintModalOpen(false)}>Cancel</Button>
-          <AppButton variant="contained" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ bgcolor: themeColor }}>
-            Print Now
-          </AppButton>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#fff' }}>
+          <Button onClick={() => setPrintModalOpen(false)} color="inherit">
+            Close
+          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              startIcon={<ExcelIcon />}
+              onClick={handleDownloadActiveExcel}
+              sx={{ bgcolor: '#107c41', '&:hover': { bgcolor: '#0b5c30' }, textTransform: 'none', fontWeight: 700 }}
+            >
+              Download Excel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PdfIcon />}
+              onClick={handleDownloadActivePdf}
+              sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, textTransform: 'none', fontWeight: 700 }}
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PrintIcon />}
+              onClick={handlePrint}
+              sx={{ textTransform: 'none', px: 3, fontWeight: 700 }}
+            >
+              Print / Save as PDF
+            </Button>
+          </Stack>
         </DialogActions>
       </Dialog>
     </Box>
