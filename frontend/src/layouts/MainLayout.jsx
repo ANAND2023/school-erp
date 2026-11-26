@@ -57,8 +57,8 @@ const navItems = [
     icon: 'pi pi-id-card',
     children: [
       { title: 'Enquiries', path: '/enquiries', menuKey: 'Enquiries' },
-      { title: 'Registration Slips Register', path: '/registrations/slips-list', menuKey: 'Admissions' },
-      { title: 'Registration Slip Generator', path: '/registrations/slip-generator', menuKey: 'Admissions' },
+      { title: 'New Registration', path: '/registrations/slip-generator', menuKey: 'Admissions' },
+      { title: 'Registration Register', path: '/registrations/slips-list', menuKey: 'Admissions' },
       { title: 'New Admission', path: '/admissions/new', menuKey: 'Admissions' },
       { title: 'Admission Records', path: '/admissions/records', menuKey: ['Admissions', 'Students'] },
       { title: 'Bulk Student Admission', path: '/students/bulk-operations', menuKey: ['BulkStudentUpload', 'Admissions'] },

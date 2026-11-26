@@ -196,7 +196,7 @@ export const RegistrationSlipGeneratorPage = () => {
     <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
       <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
-          Registration Slip Generator & Payment Collection
+          New Registration & Fee Collection
         </Typography>
         <Typography variant="caption" sx={{ color: '#64748b' }}>
           Quick registration slip issuance (A4 1/3 compact layout) & WhatsApp receipt dispatch for <strong>{activeAcademicYearName || 'Current Session'}</strong>.

@@ -442,7 +442,7 @@ export const RegistrationSlipsListPage = () => {
               alignSelf: { xs: 'flex-start', sm: 'center' },
             }}
           >
-            New Registration Slip
+            New Registration
           </Button>
         </Box>
       </Box>
@@ -534,7 +534,7 @@ export const RegistrationSlipsListPage = () => {
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         onAddClick={() => navigate('/registrations/slip-generator')}
-        addLabel="New Registration Slip"
+        addLabel="New Registration"
         tableStyle={{ minWidth: '1250px' }}
       />
 
