@@ -90,13 +90,15 @@ namespace SchoolERP.API.Controllers
                 var secName = enr?.Section?.Name ?? r.Section?.Name ?? "";
                 var classSection = !string.IsNullOrEmpty(secName) ? $"{clsName} - {secName}" : clsName;
 
-                var modes = r.Payments.Any()
-                    ? string.Join(", ", r.Payments.Select(p => p.PaymentMode.ToString()))
-                    : "Cash";
+                var modes = r.Payments.Any(p => p.Amount > 0)
+                    ? string.Join(", ", r.Payments.Where(p => p.Amount > 0).Select(p => p.PaymentMode.ToString()).Distinct())
+                    : (r.Payments.Any() ? string.Join(", ", r.Payments.Select(p => p.PaymentMode.ToString()).Distinct()) : "Cash");
+                if (string.IsNullOrWhiteSpace(modes)) modes = "Cash";
 
                 var cashier = (userDict.TryGetValue(r.CreatedBy, out var cashierName) && !string.IsNullOrEmpty(cashierName))
                     ? cashierName
                     : (!string.IsNullOrEmpty(r.Remarks) ? r.Remarks : "Super Admin");
+                if (string.IsNullOrWhiteSpace(cashier)) cashier = "Super Admin";
 
                 return new DailyCollectionReportRowDto
                 {

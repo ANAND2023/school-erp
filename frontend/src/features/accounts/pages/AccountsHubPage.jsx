@@ -394,9 +394,9 @@ export const AccountsHubPage = () => {
         Student: c.studentName,
         AdmNo: c.admissionNo,
         Class: c.classSection || `${c.className || ''} ${c.sectionName || ''}`.trim() || '—',
-        Amount: c.totalPaid ?? c.amountPaid ?? 0,
-        Mode: c.paymentModes || c.paymentMode || 'Cash',
-        Cashier: c.collectedBy || c.cashierName || 'Cashier',
+        Amount: c.totalPaid ?? c.amountPaid ?? c.amount ?? 0,
+        Mode: (c.paymentModes && String(c.paymentModes).trim()) || (c.paymentMode && String(c.paymentMode).trim()) || 'Cash',
+        Cashier: (c.collectedBy && String(c.collectedBy).trim()) || (c.cashierName && String(c.cashierName).trim()) || (c.createdByName && String(c.createdByName).trim()) || 'Super Admin',
       }));
     } else if (activeTab === 2) {
       filename = `Expenses_${startDate}_to_${endDate}.csv`;
@@ -1136,19 +1136,19 @@ export const AccountsHubPage = () => {
                                 {col.classSection || `${col.className || ''} ${col.sectionName || ''}`.trim() || '—'}
                               </TableCell>
                               <TableCell align="right" sx={{ fontWeight: 700, color: 'success.dark' }}>
-                                {formatCurrency(col.totalPaid ?? col.amountPaid ?? 0)}
+                                {formatCurrency(col.totalPaid ?? col.amountPaid ?? col.amount ?? 0)}
                               </TableCell>
                               <TableCell>
                                 <Chip
                                   size="small"
-                                  label={col.paymentModes || col.paymentMode || 'Cash'}
+                                  label={(col.paymentModes && String(col.paymentModes).trim()) || (col.paymentMode && String(col.paymentMode).trim()) || 'Cash'}
                                   color="primary"
                                   variant="outlined"
                                   sx={{ height: 22, fontWeight: 600, fontSize: '0.72rem' }}
                                 />
                               </TableCell>
                               <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                {col.collectedBy || col.cashierName || 'Cashier'}
+                                {(col.collectedBy && String(col.collectedBy).trim()) || (col.cashierName && String(col.cashierName).trim()) || (col.createdByName && String(col.createdByName).trim()) || 'Super Admin'}
                               </TableCell>
                             </TableRow>
                           ))

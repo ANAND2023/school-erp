@@ -76,6 +76,7 @@ const navItems = [
       { title: 'ID Card Settings', path: '/students/id-card-design', menuKey: 'IDCardSettings' },
       { title: 'Print ID Cards', path: '/students/id-card-print', menuKey: 'PrintIDCards' },
       { title: 'Student Gate Pass', path: '/students/gate-pass', menuKey: 'Students' },
+      { title: 'Class Homework', path: '/homework', menuKey: ['Homework', 'Students', 'Classes'] },
       { title: 'Bulk Student Edit', path: '/students/bulk-operations', menuKey: ['BulkStudentUpload', 'Students'] },
     ],
   },
@@ -117,8 +118,14 @@ const navItems = [
       { title: 'Class Timetable', path: '/timetable/class', menuKey: 'ClassTimetable' },
       { title: 'Teacher Timetable', path: '/timetable/teacher', menuKey: 'TeacherTimetable' },
       { title: 'Substitutions', path: '/timetable/substitution', menuKey: 'Substitutions' },
-      { title: 'Class Homework', path: '/homework', menuKey: ['Attendance', 'StudentAttendance', 'Teacher', 'Classes', 'Homework'] },
+      { title: 'Class Homework', path: '/homework', menuKey: ['Homework', 'Attendance', 'StudentAttendance', 'Classes'] },
     ],
+  },
+  {
+    title: 'Class Homework',
+    menuKey: 'Homework',
+    icon: 'pi pi-pencil',
+    path: '/homework',
   },
   {
     title: 'Examinations',
@@ -680,6 +687,10 @@ export const MainLayout = () => {
                     )}
                   </div>
                 );
+              }
+
+              if (!isSuperAdmin && item.menuKey && !hasPermission(item.menuKey, 'View')) {
+                return null;
               }
 
               const isSelected = location.pathname === item.path;

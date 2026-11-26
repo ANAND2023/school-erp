@@ -72,6 +72,14 @@ export const usePermission = () => {
       );
     }
 
+    if (!perm && targetKey === 'homework') {
+      perm = permissions.find((p) =>
+        ['homework', 'studentattendance', 'attendance', 'classes', 'students', 'dashboard', 'leavemanagement'].includes(
+          p.menu?.trim().toLowerCase()
+        )
+      );
+    }
+
     if (!perm) return false;
 
     switch (action) {
