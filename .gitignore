@@ -28,6 +28,7 @@ scratch/
 *.idsig
 *.webp
 *.bundle
+backend/SchoolERP.API/wwwroot/uploads/
 *.hbc
 /assets/
 /extracted_icons/
