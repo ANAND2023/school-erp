@@ -44,6 +44,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] StudentStatus? status,
             [FromQuery] long? categoryId,
             [FromQuery] long? academicYearId,
+            [FromQuery] string? admissionType,
             [FromQuery] int pageNo = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -60,6 +61,10 @@ namespace SchoolERP.API.Controllers
                     .FirstOrDefaultAsync();
                 yearId = fallbackYear?.Id ?? 0;
             }
+
+            var effectiveYearId = (academicYearId.HasValue && academicYearId.Value > 0) ? academicYearId.Value : yearId;
+            var targetYearObj = effectiveYearId > 0 ? await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == effectiveYearId && ay.BranchId == branchId) : null;
+            var targetStartDate = targetYearObj?.StartDate ?? DateTime.MinValue;
 
             var query = _context.StudentEnrollments
                 .Include(e => e.Student)
@@ -106,6 +111,24 @@ namespace SchoolERP.API.Controllers
             else if (yearId > 0)
             {
                 query = query.Where(e => e.AcademicYearId == yearId);
+            }
+
+            // Admission Type filtering (All, New/Fresh, Promoted/Continuing)
+            if (!string.IsNullOrWhiteSpace(admissionType) && effectiveYearId > 0)
+            {
+                var at = admissionType.Trim().ToLower();
+                if (at == "new" || at == "fresh")
+                {
+                    query = query.Where(e =>
+                        !e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) &&
+                        (targetYearObj == null || e.Student.AdmissionDate >= targetStartDate));
+                }
+                else if (at == "promoted" || at == "continuing")
+                {
+                    query = query.Where(e =>
+                        e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) ||
+                        (targetYearObj != null && e.Student.AdmissionDate < targetStartDate));
+                }
             }
 
             // Default to Active students unless specified (FR-3.9)
@@ -161,7 +184,12 @@ namespace SchoolERP.API.Controllers
                     GuardianMobile = e.Student.Guardians.Where(g => g.IsPrimary).Select(g => g.Mobile).FirstOrDefault() ??
                                      e.Student.Guardians.Select(g => g.Mobile).FirstOrDefault() ?? "",
                     Status = e.Status,
-                    PhotoUrl = e.Student.PhotoUrl
+                    PhotoUrl = e.Student.PhotoUrl,
+                    AdmissionType = (e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) ||
+                                    (targetYearObj != null && e.Student.AdmissionDate < targetStartDate))
+                                    ? "Promoted" : "New Admission",
+                    IsNewAdmission = !(e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) ||
+                                      (targetYearObj != null && e.Student.AdmissionDate < targetStartDate))
                 })
                 .ToListAsync();
 
@@ -190,7 +218,15 @@ namespace SchoolERP.API.Controllers
                 query = query.Where(e => e.AcademicYearId == yearId);
             }
 
+            var targetYearObj = yearId > 0 ? await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId && ay.BranchId == branchId) : null;
+            var targetStartDate = targetYearObj?.StartDate ?? DateTime.MinValue;
+
             var totalSession = await query.CountAsync();
+
+            var newAdmissionsCount = await query.CountAsync(e =>
+                !e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) &&
+                (targetYearObj == null || e.Student.AdmissionDate >= targetStartDate));
+            var promotedCount = Math.Max(0, totalSession - newAdmissionsCount);
 
             var boysCount = await query.CountAsync(e => e.Student!.Gender.ToLower() == "male");
             var girlsCount = await query.CountAsync(e => e.Student!.Gender.ToLower() == "female");
@@ -232,6 +268,8 @@ namespace SchoolERP.API.Controllers
             {
                 TotalAllTime = totalAllTime,
                 TotalSession = totalSession,
+                NewAdmissionsCount = newAdmissionsCount,
+                PromotedCount = promotedCount,
                 BoysCount = boysCount,
                 GirlsCount = girlsCount,
                 ClassWise = classWise,

@@ -90,6 +90,9 @@ namespace SchoolERP.Application.DTOs
         public string? CategoryName { get; set; }
         public StudentStatus Status { get; set; }
         public string? PhotoUrl { get; set; }
+        public string AdmissionType { get; set; } = "New Admission";
+        public bool IsNewAdmission { get; set; } = true;
+        public string? InitialSessionName { get; set; }
     }
 
     public class StudentGuardianDto
@@ -363,6 +366,8 @@ namespace SchoolERP.Application.DTOs
     {
         public int TotalAllTime { get; set; }
         public int TotalSession { get; set; }
+        public int NewAdmissionsCount { get; set; }
+        public int PromotedCount { get; set; }
         public int BoysCount { get; set; }
         public int GirlsCount { get; set; }
         public List<ClassAdmissionStatDto> ClassWise { get; set; } = new List<ClassAdmissionStatDto>();

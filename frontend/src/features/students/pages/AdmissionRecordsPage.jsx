@@ -23,6 +23,8 @@ export const AdmissionRecordsPage = () => {
     const [summary, setSummary] = useState({
         totalAllTime: 0,
         totalSession: 0,
+        newAdmissionsCount: 0,
+        promotedCount: 0,
         boysCount: 0,
         girlsCount: 0,
         classWise: [],
@@ -36,6 +38,7 @@ export const AdmissionRecordsPage = () => {
     const [classes, setClasses] = useState([]);
     const [selectedClassId, setSelectedClassId] = useState(null);
     const [selectedSectionId, setSelectedSectionId] = useState(null);
+    const [admissionTypeFilter, setAdmissionTypeFilter] = useState('all'); // 'all', 'new', 'promoted'
     const [searchQuery, setSearchQuery] = useState('');
     
     // Students list state
@@ -101,6 +104,7 @@ export const AdmissionRecordsPage = () => {
                 academicYearId: selectedYearId !== 0 ? selectedYearId : undefined,
                 classId: selectedClassId || undefined,
                 sectionId: selectedSectionId || undefined,
+                admissionType: admissionTypeFilter !== 'all' ? admissionTypeFilter : undefined,
                 search: searchQuery.trim() || undefined
             };
             const res = await studentApi.getStudents(params);
@@ -118,7 +122,7 @@ export const AdmissionRecordsPage = () => {
 
     useEffect(() => {
         fetchStudents();
-    }, [lazyParams, selectedYearId, selectedClassId, selectedSectionId]);
+    }, [lazyParams, selectedYearId, selectedClassId, selectedSectionId, admissionTypeFilter]);
 
     const onSearchTrigger = (e) => {
         if (e.key === 'Enter') {
@@ -130,6 +134,7 @@ export const AdmissionRecordsPage = () => {
     const resetFilters = () => {
         setSelectedClassId(null);
         setSelectedSectionId(null);
+        setAdmissionTypeFilter('all');
         setSearchQuery('');
         setLazyParams({ first: 0, rows: 20, page: 0 });
     };
@@ -143,6 +148,7 @@ export const AdmissionRecordsPage = () => {
             'S.No': idx + 1,
             'Admission No': s.admissionNo,
             'Admission Date': s.admissionDate ? new Date(s.admissionDate).toLocaleDateString('en-IN') : '—',
+            'Admission Type': s.admissionType || (s.isNewAdmission === false ? 'Promoted' : 'New Admission'),
             'Student Name': s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim(),
             'Class': s.className,
             'Section': s.sectionName || '—',
@@ -230,7 +236,7 @@ export const AdmissionRecordsPage = () => {
                 </div>
             </div>
 
-            {/* 4 Compact Metric Cards (Ultra-Slim & Minimal Height) */}
+            {/* 5 Compact Metric Cards (Ultra-Slim & Minimal Height) */}
             <div className="grid grid-nogutter gap-2 mb-2">
                 {/* Total All-Time Admissions */}
                 <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-blue-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
@@ -247,16 +253,44 @@ export const AdmissionRecordsPage = () => {
                 </div>
 
                 {/* Session Admissions */}
-                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-green-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-cyan-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
                     <div>
                         <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Session Enrollments</span>
                         <div className="flex align-items-baseline gap-1">
-                            <span className="text-lg font-bold text-green-700">{summary.totalSession || totalRecords}</span>
-                            <span className="text-xs text-green-600">in session</span>
+                            <span className="text-lg font-bold text-cyan-700">{summary.totalSession || totalRecords}</span>
+                            <span className="text-xs text-cyan-600">in session</span>
+                        </div>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-cyan-50 text-cyan-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-calendar text-xs" />
+                    </div>
+                </div>
+
+                {/* Fresh / New Admissions */}
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-green-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>New Admissions</span>
+                        <div className="flex align-items-baseline gap-1">
+                            <span className="text-lg font-bold text-green-700">{summary.newAdmissionsCount ?? 0}</span>
+                            <span className="text-xs text-green-600 font-medium">fresh</span>
                         </div>
                     </div>
                     <div className="flex align-items-center justify-content-center bg-green-50 text-green-600 border-round" style={{ width: '28px', height: '28px' }}>
-                        <i className="pi pi-calendar-plus text-xs" />
+                        <i className="pi pi-user-plus text-xs" />
+                    </div>
+                </div>
+
+                {/* Promoted / Continuing */}
+                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-indigo-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
+                    <div>
+                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Promoted Students</span>
+                        <div className="flex align-items-baseline gap-1">
+                            <span className="text-lg font-bold text-indigo-700">{summary.promotedCount ?? 0}</span>
+                            <span className="text-xs text-indigo-600 font-medium">promoted</span>
+                        </div>
+                    </div>
+                    <div className="flex align-items-center justify-content-center bg-indigo-50 text-indigo-600 border-round" style={{ width: '28px', height: '28px' }}>
+                        <i className="pi pi-arrow-up-right text-xs" />
                     </div>
                 </div>
 
@@ -272,20 +306,6 @@ export const AdmissionRecordsPage = () => {
                     </div>
                     <div className="flex align-items-center justify-content-center bg-pink-50 text-pink-600 border-round" style={{ width: '28px', height: '28px' }}>
                         <i className="pi pi-chart-pie text-xs" />
-                    </div>
-                </div>
-
-                {/* Active Classes */}
-                <div className="col flex-1 surface-0 border-round px-2 py-1.5 shadow-1 border-left-3 border-orange-500 flex align-items-center justify-content-between" style={{ minHeight: '46px' }}>
-                    <div>
-                        <span className="text-xs text-500 font-semibold block uppercase" style={{ fontSize: '10px' }}>Enrolled Classes</span>
-                        <div className="flex align-items-baseline gap-1">
-                            <span className="text-lg font-bold text-orange-600">{summary.classWise?.length || classes.length}</span>
-                            <span className="text-xs text-orange-400">classes</span>
-                        </div>
-                    </div>
-                    <div className="flex align-items-center justify-content-center bg-orange-50 text-orange-600 border-round" style={{ width: '28px', height: '28px' }}>
-                        <i className="pi pi-sitemap text-xs" />
                     </div>
                 </div>
             </div>
@@ -305,6 +325,24 @@ export const AdmissionRecordsPage = () => {
                                 optionValue="id" 
                                 onChange={(e) => { setSelectedYearId(e.value); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
                                 placeholder="Select Session" 
+                                showClear={false}
+                            />
+                        </div>
+
+                        {/* Admission Type AppSelect (Fresh vs Promoted) */}
+                        <div style={{ width: '14rem' }}>
+                            <AppSelect 
+                                label="ADMISSION TYPE"
+                                value={admissionTypeFilter} 
+                                options={[
+                                    { label: `All Students (${summary.totalSession || totalRecords})`, value: 'all' },
+                                    { label: `New Admissions (${summary.newAdmissionsCount ?? 0})`, value: 'new' },
+                                    { label: `Promoted (${summary.promotedCount ?? 0})`, value: 'promoted' }
+                                ]} 
+                                optionLabel="label" 
+                                optionValue="value" 
+                                onChange={(e) => { setAdmissionTypeFilter(e.value); setLazyParams(p => ({ ...p, first: 0, page: 0 })); }} 
+                                placeholder="All Types" 
                                 showClear={false}
                             />
                         </div>
@@ -339,7 +377,7 @@ export const AdmissionRecordsPage = () => {
                         </div>
 
                         {/* Reset Filters */}
-                        {(selectedClassId || selectedSectionId || searchQuery) && (
+                        {(selectedClassId || selectedSectionId || searchQuery || admissionTypeFilter !== 'all') && (
                             <Button label="Reset" icon="pi pi-refresh" text size="small" onClick={resetFilters} className="p-button-sm py-1" />
                         )}
                     </div>
@@ -412,6 +450,32 @@ export const AdmissionRecordsPage = () => {
                             </span>
                         )} 
                         style={{ minWidth: '110px' }} 
+                    />
+
+                    <Column 
+                        field="admissionType" 
+                        header="Admission Type" 
+                        body={(row) => {
+                            const isPromoted = row.admissionType === 'Promoted' || row.isNewAdmission === false;
+                            return isPromoted ? (
+                                <Tag 
+                                    value="Promoted" 
+                                    severity="info" 
+                                    icon="pi pi-arrow-up-right"
+                                    className="text-xs font-semibold px-2 py-1"
+                                    style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd' }}
+                                />
+                            ) : (
+                                <Tag 
+                                    value="New Admission" 
+                                    severity="success" 
+                                    icon="pi pi-check"
+                                    className="text-xs font-semibold px-2 py-1"
+                                    style={{ backgroundColor: '#dcfce7', color: '#15803d', borderColor: '#bbf7d0' }}
+                                />
+                            );
+                        }} 
+                        style={{ minWidth: '135px' }} 
                     />
 
                     <Column 
