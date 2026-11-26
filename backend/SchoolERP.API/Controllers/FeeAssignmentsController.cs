@@ -12,6 +12,7 @@ using SchoolERP.Application.DTOs;
 using SchoolERP.Domain.Entities;
 using SchoolERP.Domain.Enums;
 using SchoolERP.Infrastructure.Persistence;
+using SchoolERP.API.Helpers;
 
 namespace SchoolERP.API.Controllers
 {
@@ -43,7 +44,8 @@ namespace SchoolERP.API.Controllers
                 .Where(s => s.BranchId == branchId &&
                             s.AcademicYearId == yearId &&
                             s.ClassId == request.ClassId &&
-                            s.FeeGroupId == request.FeeGroupId)
+                            s.FeeGroupId == request.FeeGroupId &&
+                            s.IsActive)
                 .ToListAsync();
 
             if (!structures.Any())
@@ -69,78 +71,23 @@ namespace SchoolERP.API.Controllers
                 return BadRequest(ApiResponse.Fail("No active students found in the selected class/section."));
             }
 
-            // 3. Fetch active concessions for students
-            var studentIds = enrollments.Select(e => e.StudentId).ToList();
-            var concessions = await _context.FeeConcessions
-                .Where(c => c.BranchId == branchId &&
-                            c.AcademicYearId == yearId &&
-                            studentIds.Contains(c.StudentId) &&
-                            c.IsApproved)
-                .ToListAsync();
-
-            // 4. Fetch existing dues to avoid duplicating
-            var existingDues = await _context.StudentFeeDues
-                .Where(d => d.BranchId == branchId &&
-                            d.AcademicYearId == yearId &&
-                            studentIds.Contains(d.StudentId))
-                .ToListAsync();
-
             var newDuesCount = 0;
 
             foreach (var en in enrollments)
             {
                 en.FeeGroupId = request.FeeGroupId;
-
-                foreach (var st in structures)
-                {
-                    var exists = existingDues.Any(d =>
-                        d.StudentId == en.StudentId &&
-                        d.FeeHeadId == st.FeeHeadId &&
-                        d.InstallmentId == st.InstallmentId);
-
-                    if (exists) continue;
-
-                    // Calculate concession
-                    decimal concessionAmt = 0;
-                    var conc = concessions.FirstOrDefault(c => c.StudentId == en.StudentId && c.FeeHeadId == st.FeeHeadId);
-                    if (conc != null)
-                    {
-                        if (conc.Type == ConcessionType.Percentage)
-                        {
-                            concessionAmt = Math.Round((st.Amount * conc.Value) / 100m, 2);
-                        }
-                        else
-                        {
-                            concessionAmt = Math.Min(conc.Value, st.Amount);
-                        }
-                    }
-
-                    var balance = st.Amount - concessionAmt;
-
-                    var due = new StudentFeeDue
-                    {
-                        BranchId = branchId,
-                        AcademicYearId = yearId,
-                        StudentId = en.StudentId,
-                        ClassId = en.ClassId,
-                        FeeHeadId = st.FeeHeadId,
-                        InstallmentId = st.InstallmentId,
-                        OriginalAmount = st.Amount,
-                        ConcessionAmount = concessionAmt,
-                        PaidAmount = 0,
-                        BalanceAmount = balance,
-                        Status = balance <= 0 ? DueStatus.Paid : DueStatus.Unpaid,
-                        IsActive = true
-                    };
-
-                    _context.StudentFeeDues.Add(due);
-                    newDuesCount++;
-                }
+                newDuesCount += await FeeAssignmentHelper.AutoAssignStudentDuesAsync(
+                    _context,
+                    branchId,
+                    yearId,
+                    en.StudentId,
+                    en.ClassId,
+                    request.FeeGroupId);
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok(ApiResponse.Ok($"Fee structure applied successfully to {enrollments.Count} students ({newDuesCount} fee dues generated)."));
+            return Ok(ApiResponse.Ok($"Fee structure applied successfully to {enrollments.Count} students ({newDuesCount} fee dues generated/updated)."));
         }
 
         // --- Concessions ---
