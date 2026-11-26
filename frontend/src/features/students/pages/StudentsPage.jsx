@@ -47,10 +47,17 @@ import { DataGrid } from '../../../components/DataGrid';
 import { usePermission } from '../../../hooks/usePermission';
 import { AppInput, AppSelect, AppButton, SlideActionCell } from '../../../components/common';
 import { printWithTitle } from '../../../utils/printUtils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import dayjs from 'dayjs';
+import { useAuthStore } from '../../../store/authStore';
 
 export default function StudentsPage() {
   const navigate = useNavigate();
   const { can } = usePermission();
+  const { user, activeAcademicYearName } = useAuthStore();
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   // Filters state
   const [classId, setClassId] = useState('');
@@ -146,6 +153,17 @@ export default function StudentsPage() {
   const students = studentData.items || (Array.isArray(studentsRes?.data?.data) ? studentsRes?.data?.data : []);
   const totalCount = studentData.totalCount || students.length || 0;
 
+  // Summary counts (Total, Boys, Girls)
+  const { data: summaryRes } = useQuery({
+    queryKey: ['students-admission-summary', classId, sectionId],
+    queryFn: () =>
+      studentApi.getAdmissionSummary({
+        classId: classId || undefined,
+        sectionId: sectionId || undefined,
+      }),
+  });
+  const summary = summaryRes?.data?.data || { totalSession: 0, boysCount: 0, girlsCount: 0, totalAllTime: 0 };
+
   const handleResetFilters = () => {
     setClassId('');
     setSectionId('');
@@ -222,6 +240,176 @@ export default function StudentsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Export to PDF with Maximum Student Details
+  const handleExportPDF = async () => {
+    if (!totalCount && !students.length) return;
+
+    setIsExportingPdf(true);
+    try {
+      let exportList = students;
+      // If there are more students than the current page, fetch all matching records
+      if (totalCount > students.length) {
+        const res = await studentApi.getStudents({
+          pageNo: 1,
+          pageSize: totalCount || 1000,
+          search: searchTerm?.trim() || undefined,
+          classId: classId !== '' && classId != null ? classId : undefined,
+          sectionId: sectionId !== '' && sectionId != null ? sectionId : undefined,
+          status: status !== '' && status != null ? status : undefined,
+          categoryId: categoryId !== '' && categoryId != null ? categoryId : undefined,
+        });
+        if (res.data?.success && res.data.data?.items) {
+          exportList = res.data.data.items;
+        }
+      }
+
+      if (!exportList.length) return;
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.width;
+
+      const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
+      const branchName = user?.branchName || 'Main Campus';
+      const className = selectedClassObj ? selectedClassObj.name : 'All Classes';
+      const secObj = sections.find((s) => String(s.id) === String(sectionId));
+      const sectionName = secObj ? secObj.name : (sectionId ? 'Selected Section' : 'All Sections');
+
+      const statusMap = { '1': 'Active', '2': 'Inactive', '3': 'Suspended', '4': 'Expelled', '5': 'TC Issued' };
+      const statusLabel = status ? (statusMap[status] || 'All') : 'All';
+
+      const boysInList = exportList.filter((s) => s.gender?.toLowerCase() === 'male').length;
+      const girlsInList = exportList.filter((s) => s.gender?.toLowerCase() === 'female').length;
+
+      // School Name Header
+      doc.setFontSize(14);
+      doc.setTextColor(29, 78, 216); // Brand Blue
+      doc.text(schoolName, 8, 12);
+
+      // Subtitle
+      doc.setFontSize(9.5);
+      doc.setTextColor(51, 65, 85);
+      doc.text(`${branchName}  •  STUDENT DIRECTORY (COMPREHENSIVE REGISTER)`, 8, 17.5);
+
+      // Filter & Session info line
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        `Session: ${activeAcademicYearName || 'Current Session'}   |   Class: ${className}   |   Section: ${sectionName}   |   Status: ${statusLabel}   |   Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
+        8,
+        22.5
+      );
+
+      // KPI Counts Banner
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text(
+        `Total Students: ${exportList.length}   |   Boys (Male): ${boysInList}   |   Girls (Female): ${girlsInList}   |   Active: ${exportList.filter(s => s.status === 1).length}`,
+        8,
+        27
+      );
+      doc.setFont(undefined, 'normal');
+
+      // Table Data with Maximum Student Details
+      const tableData = exportList.map((s, idx) => {
+        const admDateStr = s.admissionDate ? dayjs(s.admissionDate).format('DD/MM/YYYY') : '—';
+        const dobStr = s.dateOfBirth ? dayjs(s.dateOfBirth).format('DD/MM/YYYY') : '—';
+        const classSec = `${s.className || '—'}${s.sectionName ? ` (${s.sectionName})` : ''}`;
+        const guardianInfo = s.fatherName
+          ? `${s.fatherName}${s.fatherMobile ? ` (${s.fatherMobile})` : ''}`
+          : (s.guardianName ? `${s.guardianName}${s.guardianMobile ? ` (${s.guardianMobile})` : ''}` : '—');
+        const motherInfo = s.motherName ? `${s.motherName}${s.motherMobile ? ` (${s.motherMobile})` : ''}` : '—';
+        const addressStr = [s.address, s.city].filter(Boolean).join(', ') || '—';
+        const stStr = s.status === 1 ? 'Active' : s.status === 2 ? 'Inactive' : s.status === 5 ? 'TC Issued' : (s.status === 3 ? 'Suspended' : (s.status === 4 ? 'Expelled' : 'Active'));
+
+        return [
+          idx + 1,
+          s.admissionNo || '—',
+          admDateStr,
+          s.fullName || '—',
+          classSec,
+          s.rollNo ?? '—',
+          s.gender || '—',
+          dobStr,
+          s.bloodGroup || '—',
+          guardianInfo,
+          motherInfo,
+          addressStr,
+          stStr,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 30,
+        margin: { left: 8, right: 8, bottom: 8 },
+        tableWidth: 281,
+        head: [
+          [
+            '#',
+            'Adm No',
+            'Adm Date',
+            'Student Name',
+            'Class & Sec',
+            'Roll',
+            'Gender',
+            'DOB',
+            'Blood',
+            "Father's Name & Mobile",
+            "Mother's Name",
+            'Address & City',
+            'Status',
+          ],
+        ],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 7, textColor: [30, 41, 59], cellPadding: 1.5, valign: 'middle' },
+        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 7, halign: 'center' },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 17 },
+          3: { cellWidth: 32 },
+          4: { cellWidth: 20 },
+          5: { cellWidth: 10, halign: 'center' },
+          6: { cellWidth: 13 },
+          7: { cellWidth: 16 },
+          8: { cellWidth: 11, halign: 'center' },
+          9: { cellWidth: 38 },
+          10: { cellWidth: 28 },
+          11: { cellWidth: 49 },
+          12: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 12) {
+            if (data.cell.raw === 'Active') {
+              data.cell.styles.textColor = [22, 163, 74];
+            } else {
+              data.cell.styles.textColor = [220, 38, 38];
+            }
+          }
+        },
+        didDrawPage: () => {
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount} • School ERP Student Directory`,
+            pageWidth - 75,
+            doc.internal.pageSize.height - 5
+          );
+        },
+      });
+
+      const cleanClass = className.replace(/[\/\\:]/g, '-').replace(/\s+/g, '_');
+      doc.save(`Student_Directory_${cleanClass}_${dayjs().format('YYYY-MM-DD')}.pdf`);
+    } catch (err) {
+      console.error('Error generating Student Directory PDF', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleOpenIdCard = (student) => {
@@ -617,6 +805,16 @@ export default function StudentsPage() {
             disabled={!students.length}
           />
 
+          <AppButton
+            variant="outlined"
+            severity="danger"
+            icon="pi pi-file-pdf"
+            label="Download PDF"
+            onClick={handleExportPDF}
+            loading={isExportingPdf}
+            disabled={!students.length && totalCount === 0}
+          />
+
           {can('RollNumbers', 'Edit') && (
             <AppButton
               variant="outlined"
@@ -648,6 +846,117 @@ export default function StudentsPage() {
           )}
         </Stack>
       </Box>
+
+      {/* KPI Metric Cards: Total Students, Boys, Girls, Filtered Count */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #2563eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Total Students
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                {summary.totalSession ?? totalCount}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#eff6ff', color: '#2563eb', width: 34, height: 34 }}>
+              <SchoolIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #0284c7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Boys (Male)
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0284c7', lineHeight: 1.2 }}>
+                {summary.boysCount ?? 0}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#f0f9ff', color: '#0284c7', width: 34, height: 34 }}>
+              <PersonIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #ec4899',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Girls (Female)
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#db2777', lineHeight: 1.2 }}>
+                {summary.girlsCount ?? 0}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#fdf2f8', color: '#ec4899', width: 34, height: 34 }}>
+              <PersonIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: '8px 12px',
+              borderRadius: 2,
+              borderLeft: '4px solid #16a34a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '10px' }}>
+                Filtered Records
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#16a34a', lineHeight: 1.2 }}>
+                {totalCount}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: '#f0fdf4', color: '#16a34a', width: 34, height: 34 }}>
+              <ReceiptLongIcon fontSize="small" />
+            </Avatar>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Filter Toolbar (Single Row) */}
       <Paper

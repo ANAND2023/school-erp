@@ -185,6 +185,15 @@ namespace SchoolERP.API.Controllers
                                      e.Student.Guardians.Select(g => g.Mobile).FirstOrDefault() ?? "",
                     Status = e.Status,
                     PhotoUrl = e.Student.PhotoUrl,
+                    BloodGroup = e.Student.BloodGroup,
+                    AadhaarNo = e.Student.AadhaarNo,
+                    Address = e.Student.Address,
+                    City = e.Student.City,
+                    EmergencyContact = e.Student.EmergencyContact,
+                    FatherName = e.Student.Guardians.Where(g => g.Relation.ToLower() == "father").Select(g => g.Name).FirstOrDefault() ?? "",
+                    FatherMobile = e.Student.Guardians.Where(g => g.Relation.ToLower() == "father").Select(g => g.Mobile).FirstOrDefault() ?? "",
+                    MotherName = e.Student.Guardians.Where(g => g.Relation.ToLower() == "mother").Select(g => g.Name).FirstOrDefault() ?? "",
+                    MotherMobile = e.Student.Guardians.Where(g => g.Relation.ToLower() == "mother").Select(g => g.Mobile).FirstOrDefault() ?? "",
                     AdmissionType = (e.Student!.Enrollments.Any(prev => prev.AcademicYearId != e.AcademicYearId && (prev.AcademicYear!.StartDate < targetStartDate || prev.Id < e.AcademicYearId)) ||
                                     (targetYearObj != null && e.Student.AdmissionDate < targetStartDate))
                                     ? "Promoted" : "New Admission",
@@ -200,7 +209,10 @@ namespace SchoolERP.API.Controllers
 
         [HttpGet("admission-summary")]
         [HasPermission("Students", "View")]
-        public async Task<ActionResult<ApiResponse<AdmissionSummaryDto>>> GetAdmissionSummary([FromQuery] long? academicYearId)
+        public async Task<ActionResult<ApiResponse<AdmissionSummaryDto>>> GetAdmissionSummary(
+            [FromQuery] long? academicYearId,
+            [FromQuery] long? classId,
+            [FromQuery] long? sectionId)
         {
             var branchId = _currentUserService.BranchId;
             var yearId = academicYearId ?? _currentUserService.AcademicYearId;
@@ -216,6 +228,14 @@ namespace SchoolERP.API.Controllers
             if (yearId > 0)
             {
                 query = query.Where(e => e.AcademicYearId == yearId);
+            }
+            if (classId.HasValue && classId.Value > 0)
+            {
+                query = query.Where(e => e.ClassId == classId.Value);
+            }
+            if (sectionId.HasValue && sectionId.Value > 0)
+            {
+                query = query.Where(e => e.SectionId == sectionId.Value);
             }
 
             var targetYearObj = yearId > 0 ? await _context.AcademicYears.FirstOrDefaultAsync(ay => ay.Id == yearId && ay.BranchId == branchId) : null;

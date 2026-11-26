@@ -93,6 +93,15 @@ namespace SchoolERP.Application.DTOs
         public string AdmissionType { get; set; } = "New Admission";
         public bool IsNewAdmission { get; set; } = true;
         public string? InitialSessionName { get; set; }
+        public string? BloodGroup { get; set; }
+        public string? AadhaarNo { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? EmergencyContact { get; set; }
+        public string? FatherName { get; set; }
+        public string? FatherMobile { get; set; }
+        public string? MotherName { get; set; }
+        public string? MotherMobile { get; set; }
     }
 
     public class StudentGuardianDto
