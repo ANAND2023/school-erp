@@ -74,7 +74,7 @@ const formatCurrency = (val) => {
 
 export const AccountsHubPage = () => {
   const { showSnackbar } = useUiStore();
-  const { activeAcademicYearId, activeAcademicYearName } = useAcademicYear();
+  const { activeAcademicYearId, activeAcademicYearName, academicYears } = useAcademicYear();
   const { currentColorHex } = useThemeStore();
   const themeColor = currentColorHex || '#2563eb';
 
@@ -178,12 +178,20 @@ export const AccountsHubPage = () => {
       setStartDate(mStart);
       setEndDate(todayStr);
     } else if (preset === 'session') {
-      // 1st April of current/active academic year to today
-      const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-      setStartDate(`${year}-04-01`);
-      setEndDate(todayStr);
+      const ay = academicYears?.find((y) => y.id === activeAcademicYearId);
+      const sessionStart = ay?.startDate ? ay.startDate.split('T')[0] : (activeAcademicYearName?.includes('2027-28') ? '2027-04-01' : '2026-04-01');
+      const sessionEnd = ay?.endDate ? ay.endDate.split('T')[0] : (activeAcademicYearName?.includes('2027-28') ? '2028-03-31' : '2027-03-31');
+      setStartDate(sessionStart);
+      setEndDate(todayStr > sessionEnd ? sessionEnd : todayStr);
     }
   };
+
+  // Synchronize date range when academic year changes if on session preset
+  useEffect(() => {
+    if (datePreset === 'session') {
+      handlePresetChange('session');
+    }
+  }, [activeAcademicYearId]);
 
   // Fetch KPI Summary
   const fetchSummary = async () => {
@@ -238,6 +246,7 @@ export const AccountsHubPage = () => {
       const res = await accountsApi.getDailyCollection({
         startDate,
         endDate,
+        academicYearId: activeAcademicYearId || undefined,
       });
       setCollections(res.data?.data || []);
     } catch (err) {
@@ -439,7 +448,7 @@ export const AccountsHubPage = () => {
         Status: s.status,
       }));
     } else if (activeTab === 7) {
-      filename = `Pending_Dues_Defaulters_${dayjs().format('YYYY-MM-DD')}.csv`;
+      filename = `Pending_Dues_Defaulters_${new Date().toISOString().split('T')[0]}.csv`;
       rows = filteredDefaulters.map((d) => ({
         AdmNo: d.admissionNo,
         Student: d.studentName,
@@ -1547,13 +1556,24 @@ export const AccountsHubPage = () => {
               {/* TAB 7: OUTSTANDING DUES & DEFAULTERS */}
               {activeTab === 7 && (
                 <Box>
+                  <Box sx={{ mb: 2, p: 1.5, bgcolor: '#eff6ff', borderRadius: 1.5, border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DueIcon sx={{ color: '#1d4ed8', fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ color: '#1e3a8a', fontWeight: 700 }}>
+                        Session Defaulters List: <strong>{activeAcademicYearName || 'Current Session'}</strong>
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#475569', fontWeight: 500 }}>
+                      *Student Admission Numbers reflect their initial year of admission. Classes shown represent their enrolled class in {activeAcademicYearName || 'this session'}.
+                    </Typography>
+                  </Box>
+
                   <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
                     <Table size="small">
                       <TableHead sx={{ bgcolor: 'action.hover' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Adm No</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Student Name</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Class & Section</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Student & Admission #</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Enrolled Class ({activeAcademicYearName || 'Session'})</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Pending Months</TableCell>
                           <TableCell sx={{ fontWeight: 700 }} align="right">
                             Total Due (₹)
@@ -1570,17 +1590,51 @@ export const AccountsHubPage = () => {
                       <TableBody>
                         {filteredDefaulters.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                               No fee dues / defaulters found for this academic session!
                             </TableCell>
                           </TableRow>
                         ) : (
                           filteredDefaulters.map((d, idx) => (
                             <TableRow key={idx} hover>
-                              <TableCell sx={{ fontWeight: 700 }}>{d.admissionNo}</TableCell>
-                              <TableCell sx={{ fontWeight: 600 }}>{d.studentName}</TableCell>
                               <TableCell>
-                                {d.className} {d.sectionName}
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                  {d.studentName}
+                                  {d.rollNo && (
+                                    <Chip
+                                      size="small"
+                                      label={`Roll: #${d.rollNo}`}
+                                      sx={{ ml: 1, height: 18, fontSize: '0.68rem', fontWeight: 600, bgcolor: 'action.selected' }}
+                                    />
+                                  )}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontWeight: 500 }}>
+                                  Adm No: <strong>{d.admissionNo}</strong>
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {d.classSection || `${d.className || ''} ${d.sectionName || ''}`.trim() || '—'}
+                                  </Typography>
+                                  {d.isEnrolledInSession ? (
+                                    <Chip
+                                      size="small"
+                                      label={activeAcademicYearName || '2027-28'}
+                                      color="primary"
+                                      variant="outlined"
+                                      sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }}
+                                    />
+                                  ) : (
+                                    <Chip
+                                      size="small"
+                                      label="Unenrolled in Session"
+                                      color="warning"
+                                      variant="outlined"
+                                      sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }}
+                                    />
+                                  )}
+                                </Box>
                               </TableCell>
                               <TableCell>
                                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', maxWidth: 220 }} noWrap title={d.pendingMonths}>
@@ -1604,8 +1658,8 @@ export const AccountsHubPage = () => {
                         {/* Summary Total Row */}
                         {filteredDefaulters.length > 0 && (
                           <TableRow sx={{ bgcolor: 'action.hover', borderTop: '2px solid', borderColor: 'divider' }}>
-                            <TableCell colSpan={4} sx={{ fontWeight: 800 }}>
-                              TOTAL OUTSTANDING DUES ({filteredDefaulters.length} Students)
+                            <TableCell colSpan={3} sx={{ fontWeight: 800 }}>
+                              TOTAL OUTSTANDING DUES ({filteredDefaulters.length} Students):
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 800 }}>
                               {formatCurrency(filteredDefaulters.reduce((sum, d) => sum + (Number(d.totalDue) || 0), 0))}

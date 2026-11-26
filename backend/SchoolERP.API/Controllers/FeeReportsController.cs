@@ -35,23 +35,37 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<List<DailyCollectionReportRowDto>>>> GetDailyCollection(
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
-            [FromQuery] FeePaymentMode? paymentMode = null)
+            [FromQuery] FeePaymentMode? paymentMode = null,
+            [FromQuery] long? academicYearId = null)
         {
             var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var yearId = (academicYearId.HasValue && academicYearId.Value > 0)
+                ? academicYearId.Value
+                : _currentUserService.AcademicYearId;
 
             var start = startDate?.Date ?? DateTime.UtcNow.Date;
             var end = (endDate?.Date ?? DateTime.UtcNow.Date).AddDays(1).AddTicks(-1);
 
             var query = _context.FeeReceipts
                 .Include(r => r.Student)
+                    .ThenInclude(s => s!.Enrollments)
+                        .ThenInclude(e => e.Class)
+                .Include(r => r.Student)
+                    .ThenInclude(s => s!.Enrollments)
+                        .ThenInclude(e => e.Section)
                 .Include(r => r.Class)
                 .Include(r => r.Section)
                 .Include(r => r.Payments)
                 .Where(r => r.BranchId == branchId &&
-                            r.AcademicYearId == yearId &&
+                            r.Status != ReceiptStatus.Cancelled &&
+                            r.TotalPaid > 0 &&
                             r.ReceiptDate >= start &&
                             r.ReceiptDate <= end);
+
+            if (yearId > 0)
+            {
+                query = query.Where(r => r.AcademicYearId == yearId || r.AcademicYearId == 0);
+            }
 
             if (paymentMode.HasValue)
             {
@@ -68,32 +82,47 @@ namespace SchoolERP.API.Controllers
                 .Where(u => userIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => !string.IsNullOrEmpty(u.FullName) ? u.FullName : u.Username);
 
-            var rows = receipts.Select(r => new DailyCollectionReportRowDto
+            var rows = receipts.Select(r =>
             {
-                ReceiptId = r.Id,
-                ReceiptNo = r.ReceiptNo,
-                ReceiptDate = DateTime.SpecifyKind(r.ReceiptDate, DateTimeKind.Utc),
-                AdmissionNo = r.Student?.AdmissionNo ?? "",
-                StudentName = r.Student?.FullName ?? "",
-                ClassId = r.ClassId,
-                ClassName = r.Class?.Name ?? "",
-                ClassSection = $"{r.Class?.Name ?? ""} - {r.Section?.Name ?? ""}".Trim(' ', '-'),
-                TotalDue = r.TotalDue,
-                TotalPaid = r.TotalPaid,
-                TotalDiscount = r.TotalDiscount,
-                TotalFine = r.TotalFine,
-                PaymentModes = string.Join(", ", r.Payments.Select(p => p.PaymentMode.ToString())),
-                Payments = r.Payments.Select(p => new FeePaymentModeItemDto
-                {
-                    Mode = p.PaymentMode.ToString(),
-                    Amount = p.Amount,
-                    TransactionRef = p.TransactionRef
-                }).ToList(),
-                Status = r.Status,
-                CreatedBy = r.CreatedBy,
-                CollectedBy = (userDict.TryGetValue(r.CreatedBy, out var cashierName) && !string.IsNullOrEmpty(cashierName))
+                // Prefer enrolled class for the receipt's session
+                var enr = r.Student?.Enrollments.FirstOrDefault(e => e.AcademicYearId == (r.AcademicYearId > 0 ? r.AcademicYearId : yearId));
+                var clsName = enr?.Class?.Name ?? r.Class?.Name ?? "—";
+                var secName = enr?.Section?.Name ?? r.Section?.Name ?? "";
+                var classSection = !string.IsNullOrEmpty(secName) ? $"{clsName} - {secName}" : clsName;
+
+                var modes = r.Payments.Any()
+                    ? string.Join(", ", r.Payments.Select(p => p.PaymentMode.ToString()))
+                    : "Cash";
+
+                var cashier = (userDict.TryGetValue(r.CreatedBy, out var cashierName) && !string.IsNullOrEmpty(cashierName))
                     ? cashierName
-                    : "Cashier"
+                    : (!string.IsNullOrEmpty(r.Remarks) ? r.Remarks : "Super Admin");
+
+                return new DailyCollectionReportRowDto
+                {
+                    ReceiptId = r.Id,
+                    ReceiptNo = r.ReceiptNo,
+                    ReceiptDate = DateTime.SpecifyKind(r.ReceiptDate, DateTimeKind.Utc),
+                    AdmissionNo = r.Student?.AdmissionNo ?? "",
+                    StudentName = r.Student?.FullName ?? "",
+                    ClassId = enr?.ClassId ?? r.ClassId,
+                    ClassName = clsName,
+                    ClassSection = classSection,
+                    TotalDue = r.TotalDue,
+                    TotalPaid = r.TotalPaid,
+                    TotalDiscount = r.TotalDiscount,
+                    TotalFine = r.TotalFine,
+                    PaymentModes = modes,
+                    Payments = r.Payments.Select(p => new FeePaymentModeItemDto
+                    {
+                        Mode = p.PaymentMode.ToString(),
+                        Amount = p.Amount,
+                        TransactionRef = p.TransactionRef
+                    }).ToList(),
+                    Status = r.Status,
+                    CreatedBy = r.CreatedBy,
+                    CollectedBy = cashier
+                };
             }).ToList();
 
             return Ok(ApiResponse<List<DailyCollectionReportRowDto>>.Ok(rows));

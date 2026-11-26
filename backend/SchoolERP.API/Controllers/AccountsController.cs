@@ -552,6 +552,8 @@ namespace SchoolERP.API.Controllers
                 ? academicYearId.Value
                 : _currentUserService.AcademicYearId;
 
+            var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(y => y.Id == yearId);
+
             // Fetch dues that have balance remaining (identical condition as KPI card)
             var duesQuery = _context.StudentFeeDues
                 .Include(d => d.Student)
@@ -592,6 +594,35 @@ namespace SchoolERP.API.Controllers
 
             // Group by Student
             var grouped = allDues.GroupBy(d => d.StudentId).ToList();
+            var studentIds = grouped.Select(g => g.Key).ToList();
+
+            // Pre-fetch enrollments directly for all students in this academic year
+            var sessionEnrollments = await _context.StudentEnrollments
+                .Include(e => e.Class)
+                .Include(e => e.Section)
+                .Where(e => studentIds.Contains(e.StudentId) && e.AcademicYearId == yearId)
+                .ToListAsync();
+
+            var enrollmentDict = sessionEnrollments
+                .GroupBy(e => e.StudentId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            // Also fetch previous/fallback enrollments for unenrolled students
+            var unenrolledIds = studentIds.Except(enrollmentDict.Keys).ToList();
+            var fallbackEnrollments = new Dictionary<long, StudentEnrollment>();
+            if (unenrolledIds.Any())
+            {
+                var fallbacks = await _context.StudentEnrollments
+                    .Include(e => e.Class)
+                    .Include(e => e.Section)
+                    .Where(e => unenrolledIds.Contains(e.StudentId))
+                    .OrderByDescending(e => e.AcademicYearId)
+                    .ToListAsync();
+
+                fallbackEnrollments = fallbacks
+                    .GroupBy(e => e.StudentId)
+                    .ToDictionary(g => g.Key, g => g.First());
+            }
 
             var studentRows = new List<object>();
             foreach (var g in grouped)
@@ -600,8 +631,18 @@ namespace SchoolERP.API.Controllers
                 var student = first.Student;
                 if (student == null) continue;
 
-                var enrollment = student.Enrollments.FirstOrDefault(e => e.AcademicYearId == yearId)
-                                 ?? student.Enrollments.FirstOrDefault();
+                bool isEnrolledInSession = enrollmentDict.TryGetValue(g.Key, out var enrollment) && enrollment != null;
+                var fallback = !isEnrolledInSession && fallbackEnrollments.TryGetValue(g.Key, out var fb) ? fb : null;
+
+                string clsName = isEnrolledInSession
+                    ? (enrollment!.Class?.Name ?? "—")
+                    : (first.Class?.Name ?? fallback?.Class?.Name ?? "—");
+
+                string secName = isEnrolledInSession
+                    ? (enrollment!.Section?.Name ?? "—")
+                    : (fallback?.Section?.Name ?? "—");
+
+                string? rollNo = isEnrolledInSession ? enrollment!.RollNo?.ToString() : fallback?.RollNo?.ToString();
 
                 var guardian = student.Guardians.FirstOrDefault(grd => grd.IsPrimary)
                                ?? student.Guardians.FirstOrDefault();
@@ -620,10 +661,14 @@ namespace SchoolERP.API.Controllers
                 {
                     studentId = g.Key,
                     admissionNo = student.AdmissionNo ?? "—",
+                    admissionYear = student.AdmissionDate.Year > 2000 ? student.AdmissionDate.Year.ToString() : "—",
                     studentName = student.FullName ?? "—",
-                    className = first.Class?.Name ?? (enrollment?.Class?.Name ?? "—"),
-                    sectionName = enrollment?.Section?.Name ?? "—",
-                    rollNo = enrollment?.RollNo,
+                    className = clsName,
+                    sectionName = secName,
+                    classSection = !string.IsNullOrEmpty(secName) && secName != "—" ? $"{clsName} - {secName}" : clsName,
+                    rollNo,
+                    isEnrolledInSession,
+                    enrolledSession = isEnrolledInSession ? (academicYear?.Name ?? "Active Session") : "Unenrolled in Session",
                     guardianName = guardian?.Name ?? "—",
                     guardianMobile = guardian?.Mobile ?? "—",
                     contactNumber = guardian?.Mobile ?? "—",
@@ -650,7 +695,8 @@ namespace SchoolERP.API.Controllers
                     totalStudentsWithDues = sorted.Count,
                     totalRemainingDue = totalRemainingAll,
                     totalOriginalDue = totalOriginalAll,
-                    totalPaidSoFar = totalPaidAll
+                    totalPaidSoFar = totalPaidAll,
+                    academicYear = academicYear?.Name ?? "Active Session"
                 }
             });
         }
