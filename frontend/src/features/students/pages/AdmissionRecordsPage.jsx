@@ -758,7 +758,7 @@ export const AdmissionRecordsPage = () => {
                     <Column 
                         header="Action" 
                         body={(row) => (
-                            <div className="flex align-items-center gap-1">
+                            <div className="flex align-items-center justify-content-center gap-1">
                                 <Button 
                                     icon="pi pi-eye" 
                                     size="small" 
@@ -767,9 +767,18 @@ export const AdmissionRecordsPage = () => {
                                     tooltip="View Profile" 
                                     onClick={() => navigate(`/students/profile/${row.id}`)} 
                                 />
+                                <Button 
+                                    icon="pi pi-pencil" 
+                                    size="small" 
+                                    text 
+                                    rounded 
+                                    severity="warning"
+                                    tooltip="Edit Student (Status / Details)" 
+                                    onClick={() => navigate(`/students/profile/${row.id}?edit=true`)} 
+                                />
                             </div>
                         )} 
-                        style={{ width: '4rem', textAlign: 'center' }} 
+                        style={{ width: '5.5rem', textAlign: 'center' }} 
                     />
                 </DataTable>
             </div>
