@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
 import { InputSwitch } from 'primereact/inputswitch';
 import apiClient from '../../../api/client';
+import { branchApi } from '../../masters/api';
 import { printElement } from '../../../utils/printUtils';
 import { useThemeStore } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
+import { AppSelect, AppInput } from '../../../components/common';
 
 const PURPOSE_OPTIONS = [
   { label: 'Passport Application', value: 'Passport Application' },
@@ -259,6 +259,7 @@ export const BonafideCertificateModal = (props) => {
     initialPrintWithLetterhead,
     customOptions,
     onPrinted,
+    branchInfo: passedBranchInfo,
   } = props;
 
   const studentData = directStudentData || altStudent;
@@ -275,6 +276,7 @@ export const BonafideCertificateModal = (props) => {
   const themeColor = currentColorHex || '#0284c7';
 
   const [config, setConfig] = useState(null);
+  const [branchInfo, setBranchInfo] = useState(passedBranchInfo || null);
   const [purpose, setPurpose] = useState(resolvedPurpose || defaultTemplate.defaultPurpose);
   const [customPurpose, setCustomPurpose] = useState('');
   const [refNo, setRefNo] = useState(resolvedRefNo || '');
@@ -291,6 +293,21 @@ export const BonafideCertificateModal = (props) => {
 
   useEffect(() => {
     if (!open) return;
+
+    if (passedBranchInfo) {
+      setBranchInfo(passedBranchInfo);
+    } else {
+      branchApi
+        .getCurrentBranch()
+        .then((res) => {
+          if (res.data?.success && res.data.data) {
+            setBranchInfo(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load branch details for certificate:', err);
+        });
+    }
 
     // Load Dynamic Configuration for this specific certificate type
     apiClient
@@ -450,7 +467,38 @@ export const BonafideCertificateModal = (props) => {
   const secondaryColor = config?.secondaryColor || defaultTemplate.secondaryColor;
   const fontFamily = config?.fontFamily || 'Inter, sans-serif';
   const baseFontSize = config?.baseFontSize || 13;
-  const schoolName = config?.headerSchoolNameCustom || studentData?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const activeBranch = branchInfo || passedBranchInfo || {};
+  const schoolLogo = config?.schoolLogoUrl || activeBranch.logoUrl || user?.schoolLogoUrl || studentData?.schoolLogo || '/dvslogo1.jpeg';
+  const principalSignature = activeBranch.principalSignatureUrl || activeBranch.authorizedSignatureUrl;
+
+  const schoolName =
+    config?.headerSchoolNameCustom?.trim() && !config.headerSchoolNameCustom.includes('JAIPUR')
+      ? config.headerSchoolNameCustom.trim()
+      : activeBranch.schoolName || user?.schoolName || studentData?.schoolName || 'DELHI PUBLIC SCHOOL';
+
+  const branchName = activeBranch.name || activeBranch.branchName || user?.branchName || '';
+  const affiliationNo = activeBranch.affiliationNumber || activeBranch.affiliationNo || user?.affiliationNo || '';
+  const rawPhones = [activeBranch.phone || user?.schoolPhone, activeBranch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : '';
+
+  const addressParts = [activeBranch.address, activeBranch.city, activeBranch.state, activeBranch.pincode].filter(Boolean);
+  const defaultAddress = addressParts.length > 0 ? addressParts.join(', ') : (studentData?.schoolAddress || user?.schoolAddress || '');
+  const schoolAddress =
+    config?.headerAddressCustom?.trim() && !config.headerAddressCustom.includes('Civil Lines') && !config.headerAddressCustom.includes('Jaipur')
+      ? config.headerAddressCustom.trim()
+      : defaultAddress;
+
+  const defaultSubtitleParts = [];
+  if (affiliationNo) defaultSubtitleParts.push(`Affiliated to CBSE • Affil No: ${affiliationNo}`);
+  else defaultSubtitleParts.push('Affiliated to CBSE');
+  if (branchName) defaultSubtitleParts.push(`Branch: ${branchName}`);
+  if (schoolPhone) defaultSubtitleParts.push(`Phone: ${schoolPhone}`);
+  const defaultSubtitle = defaultSubtitleParts.join(' • ');
+
+  const schoolSubtitle =
+    config?.headerSubtitleCustom?.trim() && !config.headerSubtitleCustom.includes('1730245')
+      ? config.headerSubtitleCustom.trim()
+      : defaultSubtitle;
 
   const hasLetterhead = Boolean(config?.letterheadBgImage && printWithLetterhead);
   const hideHeader = hasLetterhead && config?.hideHeaderOnLetterhead;
@@ -472,7 +520,7 @@ export const BonafideCertificateModal = (props) => {
             <div className="flex align-items-center justify-content-between">
               {config?.showSchoolLogo !== false && (
                 <img
-                  src={studentData?.schoolLogo || user?.schoolLogoUrl || '/dvslogo1.jpeg'}
+                  src={schoolLogo}
                   alt="Logo"
                   style={{
                     width: `${config?.logoSize || 64}px`,
@@ -509,9 +557,7 @@ export const BonafideCertificateModal = (props) => {
                     marginTop: '4px',
                   }}
                 >
-                  {config?.headerSubtitleCustom ||
-                    studentData?.affiliationText ||
-                    'Recognized by Dept. of Education • Affiliated to CBSE New Delhi'}
+                  {schoolSubtitle}
                 </div>
 
                 <div
@@ -521,9 +567,7 @@ export const BonafideCertificateModal = (props) => {
                     marginTop: '3px',
                   }}
                 >
-                  {config?.headerAddressCustom ||
-                    studentData?.schoolAddress ||
-                    'Sector 4, Green Avenue, Civil Lines • Phone: 011-26171268'}
+                  {schoolAddress}
                 </div>
               </div>
 
@@ -991,7 +1035,15 @@ export const BonafideCertificateModal = (props) => {
             )}
 
             <div className="text-center" style={{ width: '170px' }}>
-              <div style={{ height: '36px' }}></div>
+              <div style={{ height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {principalSignature ? (
+                  <img
+                    src={principalSignature}
+                    alt="Signature"
+                    style={{ maxHeight: '34px', maxWidth: '140px', objectFit: 'contain' }}
+                  />
+                ) : null}
+              </div>
               <div
                 style={{
                   borderTop: `1px solid ${borderColor}`,
@@ -1054,13 +1106,13 @@ export const BonafideCertificateModal = (props) => {
         </div>
       }
     >
-      {/* Purpose & Letterhead Configuration Toolbar */}
+      {/* Purpose & Dispatch Configuration Toolbar */}
       <div className="surface-50 p-3 border-round mb-3 border-1 surface-border">
-        {/* Row 1: Purpose & Dispatch Ref */}
-        <div className="grid align-items-center mb-2">
+        {/* Row 1: Purpose & Dispatch Ref using Notched Outline AppSelect & AppInput */}
+        <div className="grid align-items-center">
           <div className="col-12 md:col-5">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Certificate Purpose / Reason:</label>
-            <Dropdown
+            <AppSelect
+              label="Certificate Purpose / Reason"
               value={purpose}
               options={PURPOSE_OPTIONS}
               onChange={(e) => {
@@ -1068,102 +1120,39 @@ export const BonafideCertificateModal = (props) => {
                 setCustomPurpose('');
               }}
               placeholder="Select Purpose"
-              className="p-inputtext-sm w-full"
+              filter={false}
+              showClear={false}
             />
           </div>
 
           <div className="col-12 md:col-4">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Custom Purpose (Optional):</label>
-            <InputText
+            <AppInput
+              label="Custom Purpose (Optional)"
               value={customPurpose}
               onChange={(e) => setCustomPurpose(e.target.value)}
               placeholder="e.g. Higher Studies / Passport"
-              className="p-inputtext-sm w-full"
             />
           </div>
 
           <div className="col-12 md:col-3">
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Dispatch Ref No:</label>
-            <InputText
+            <AppInput
+              label="Dispatch Ref No"
               value={refNo}
               onChange={(e) => setRefNo(e.target.value)}
-              className="p-inputtext-sm font-semibold w-full"
             />
           </div>
         </div>
 
-        {/* Row 2: Prominent Colour Options & Letterhead Switch */}
-        <div className="flex flex-wrap justify-content-between align-items-center pt-2 border-top-1 surface-border gap-2">
-          {/* Quick Colour Themes Bar */}
-          <div className="flex align-items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-700 flex align-items-center gap-1">
-              <i className="pi pi-palette" style={{ color: themeColor }}></i> Certificate Colour:
+        {/* Letterhead Switch (if configured) */}
+        {config?.letterheadBgImage && (
+          <div className="flex justify-content-end align-items-center pt-2 mt-2 border-top-1 surface-border gap-2">
+            <span className="text-xs font-bold text-slate-700">Pre-printed Letterhead:</span>
+            <InputSwitch checked={printWithLetterhead} onChange={(e) => setPrintWithLetterhead(e.value)} />
+            <span className="text-xs font-medium text-slate-600">
+              {printWithLetterhead ? 'Letterhead Active (Borders & School Header Hidden)' : 'Plain Paper (Full Print)'}
             </span>
-            {[
-              { name: 'Active ERP Theme', primary: themeColor, secondary: `${themeColor}12`, border: themeColor, text: '#1e293b' },
-              { name: 'Teal Elegance', primary: '#0f766e', secondary: '#f0fdfa', border: '#0f766e', text: '#1e293b' },
-              { name: 'Amber Gold', primary: '#b45309', secondary: '#fffbeb', border: '#b45309', text: '#1e293b' },
-              { name: 'Regal Maroon', primary: '#831843', secondary: '#fdf2f8', border: '#831843', text: '#1e293b' },
-              { name: 'Imperial Violet', primary: '#581c87', secondary: '#faf5ff', border: '#581c87', text: '#1e293b' },
-              { name: 'Royal Navy', primary: '#1e3a8a', secondary: '#eff6ff', border: '#1e3a8a', text: '#1e293b' },
-              { name: 'Classic Slate', primary: '#0f172a', secondary: '#f8fafc', border: '#334155', text: '#0f172a' },
-            ].map((theme, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    primaryColor: theme.primary,
-                    titleBgColor: theme.primary,
-                    borderColor: theme.border,
-                    secondaryColor: theme.secondary,
-                    bodyTextColor: theme.text,
-                  }))
-                }
-                title={`Apply ${theme.name} Colour`}
-                className="w-2rem h-2rem border-circle border-2 cursor-pointer transition-transform hover:scale-110 flex align-items-center justify-content-center p-0 shadow-1"
-                style={{
-                  backgroundColor: theme.primary,
-                  borderColor: primaryColor === theme.primary ? '#000' : '#ffffff',
-                }}
-              >
-                {primaryColor === theme.primary && <i className="pi pi-check text-xs text-white"></i>}
-              </button>
-            ))}
-
-            <div className="flex align-items-center gap-2 ml-2 pl-2 border-left-1 surface-border">
-              <label className="text-xs text-slate-600 font-semibold">Custom Colour:</label>
-              <input
-                type="color"
-                value={primaryColor}
-                onChange={(e) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    primaryColor: e.target.value,
-                    titleBgColor: e.target.value,
-                    borderColor: e.target.value,
-                  }))
-                }
-                className="border-none p-0 cursor-pointer border-round shadow-1"
-                style={{ width: '30px', height: '30px' }}
-                title="Pick Custom Certificate Accent Colour"
-              />
-              <span className="text-xs font-mono font-bold text-slate-700">{primaryColor}</span>
-            </div>
           </div>
-
-          {/* Letterhead Switch */}
-          {config?.letterheadBgImage && (
-            <div className="flex align-items-center gap-2">
-              <span className="text-xs font-bold text-slate-700">Letterhead:</span>
-              <InputSwitch checked={printWithLetterhead} onChange={(e) => setPrintWithLetterhead(e.value)} />
-              <span className="text-xs font-medium text-slate-600">
-                {printWithLetterhead ? 'Letterhead Active' : 'Plain Paper'}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Certificate Print Preview Container */}
