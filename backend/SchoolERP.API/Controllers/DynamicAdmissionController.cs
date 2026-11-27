@@ -203,7 +203,22 @@ namespace SchoolERP.API.Controllers
 
             if (config == null)
             {
-                return BadRequest(new { success = false, message = "Admission form is not configured for this academic session yet." });
+                config = await _context.AdmissionFormConfigs
+                    .FirstOrDefaultAsync(c => c.BranchId == branchId && c.IsActive);
+
+                if (config == null)
+                {
+                    config = new AdmissionFormConfig
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = targetAcademicYearId,
+                        FormTitle = "School Registration Form",
+                        ApplicationFee = 500,
+                        IsActive = true
+                    };
+                    _context.AdmissionFormConfigs.Add(config);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             var slipNumber = await GenerateUniqueSlipNumberAsync(branchId);
@@ -286,7 +301,22 @@ namespace SchoolERP.API.Controllers
 
             if (config == null)
             {
-                return BadRequest(new { success = false, message = "Admission form is not configured for this academic session yet." });
+                config = await _context.AdmissionFormConfigs
+                    .FirstOrDefaultAsync(c => c.BranchId == branchId && c.IsActive);
+
+                if (config == null)
+                {
+                    config = new AdmissionFormConfig
+                    {
+                        BranchId = branchId,
+                        AcademicYearId = targetAcademicYearId,
+                        FormTitle = "School Registration Form",
+                        ApplicationFee = 500,
+                        IsActive = true
+                    };
+                    _context.AdmissionFormConfigs.Add(config);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             var batchId = $"BULK-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}".Substring(0, 24);

@@ -137,9 +137,9 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
   const schoolName = cfg.headerSchoolNameCustom?.trim() || activeBranch.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
   const branchName = activeBranch.branchName || activeBranch.name || user?.branchName || 'Main Campus';
   const rawPhones = [activeBranch.phone || user?.schoolPhone, activeBranch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
-  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : '+91 9873993957';
+  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : (activeBranch.contactNumber || '+91 9911360909');
   const schoolSubtitle = cfg.headerSubtitleCustom?.trim() || `Branch: ${branchName} • Phone: ${schoolPhone} • CBSE Affiliation No: ${activeBranch.affiliationNumber || '2026/0912'}`;
-  const schoolAddress = cfg.headerAddressCustom?.trim() || activeBranch.address || user?.schoolAddress || 'Knowledge Park, Educational Zone, Greater Noida, UP - 201306';
+  const schoolAddress = cfg.headerAddressCustom?.trim() || activeBranch.address || user?.schoolAddress || (activeBranch.city ? `${activeBranch.city}, ${activeBranch.state || 'India'}` : 'Campus Address');
   const logoUrl = activeBranch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
   const cur = cfg.currencySymbol || '₹';
 
@@ -169,21 +169,25 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
   const formattedDate = slip.createdOn ? new Date(slip.createdOn).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
   const formattedDob = slip.dob ? new Date(slip.dob).toLocaleDateString('en-IN') : '';
 
-  const UnderlineVal = ({ value, minWidth = '140px', flex = 'none' }) => {
+  const UnderlineVal = ({ value, minWidth = '30px' }) => {
     const displayVal = cleanVal(value);
     return (
       <span
         style={{
           borderBottom: '1px solid #1e293b',
+          flex: 1,
           minWidth: minWidth,
-          flex: flex,
           display: 'inline-block',
-          padding: '0 6px 1px 6px',
+          padding: '0 4px 1px 4px',
           fontWeight: 600,
           color: '#0f172a',
-          marginLeft: '4px',
-          marginRight: '8px',
+          marginLeft: '6px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          boxSizing: 'border-box',
         }}
+        title={displayVal}
       >
         {displayVal || '\u00A0'}
       </span>
@@ -350,70 +354,70 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
             <div
               style={{
                 fontWeight: 'bold',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 textDecoration: 'underline',
                 color: '#0f172a',
-                marginBottom: '6px',
+                marginBottom: '8px',
                 textTransform: 'capitalize',
               }}
             >
               Student Information:
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
-              <div style={{ width: '60%', display: 'flex', alignItems: 'center' }}>
-                <span>Student's Full Name:</span>
-                <UnderlineVal value={slip.studentName} flex="1" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', columnGap: '12px', rowGap: '8px', alignItems: 'center' }}>
+              <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Student's Full Name:</span>
+                <UnderlineVal value={slip.studentName} />
               </div>
-              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                <span>Seeking Class:</span>
-                <UnderlineVal value={slip.className} flex="1" />
-              </div>
-
-              <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                <span>*Home Address:</span>
-                <UnderlineVal value={slip.address} flex="1" />
+              <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Seeking Class:</span>
+                <UnderlineVal value={slip.className} />
               </div>
 
-              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                <span>City:</span>
-                <UnderlineVal value={slip.city} flex="1" />
-              </div>
-              <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
-                <span>State:</span>
-                <UnderlineVal value={slip.state} flex="1" />
-              </div>
-              <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
-                <span>Zip Code:</span>
-                <UnderlineVal value={slip.pincode || slip.pinCode || slip.zipCode} flex="1" />
+              <div style={{ gridColumn: 'span 12', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>*Home Address:</span>
+                <UnderlineVal value={slip.address} />
               </div>
 
-              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                <span>Student Email Address:</span>
-                <UnderlineVal value={slip.email} flex="1" />
+              <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>City:</span>
+                <UnderlineVal value={slip.city} />
               </div>
-              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                <span>Primary Contact Phone:</span>
-                <UnderlineVal value={slip.contactNumber} flex="1" />
+              <div style={{ gridColumn: 'span 4', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>State:</span>
+                <UnderlineVal value={slip.state} />
+              </div>
+              <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Zip Code:</span>
+                <UnderlineVal value={slip.pincode || slip.pinCode || slip.zipCode} />
               </div>
 
-              <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                <span>Date of Birth:</span>
-                <UnderlineVal value={formattedDob} flex="1" />
+              <div style={{ gridColumn: 'span 6', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Student Email:</span>
+                <UnderlineVal value={slip.email} />
               </div>
-              <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
-                <span>Gender:</span>
-                <UnderlineVal value={slip.gender} flex="1" />
+              <div style={{ gridColumn: 'span 6', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Primary Contact Phone:</span>
+                <UnderlineVal value={slip.contactNumber} />
               </div>
-              <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
-                <span>Place of Birth / City:</span>
-                <UnderlineVal value={slip.city} flex="1" />
+
+              <div style={{ gridColumn: 'span 4', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Date of Birth:</span>
+                <UnderlineVal value={formattedDob} />
+              </div>
+              <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Gender:</span>
+                <UnderlineVal value={slip.gender} />
+              </div>
+              <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Place of Birth:</span>
+                <UnderlineVal value={slip.city} />
               </div>
 
               {cfg.showPreviousSchool && (
-                <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                  <span>Previous School Attended:</span>
-                  <UnderlineVal value={slip.previousSchool} flex="1" />
+                <div style={{ gridColumn: 'span 12', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Previous School Attended:</span>
+                  <UnderlineVal value={slip.previousSchool} />
                 </div>
               )}
             </div>
@@ -424,35 +428,33 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
             <div
               style={{
                 fontWeight: 'bold',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 textDecoration: 'underline',
                 color: '#0f172a',
-                marginBottom: '6px',
+                marginBottom: '8px',
                 textTransform: 'capitalize',
               }}
             >
               Parent / Guardian Information:
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
-              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                <span>Father / Guardian Name:</span>
-                <UnderlineVal value={slip.fatherName} flex="1" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', columnGap: '12px', rowGap: '8px', alignItems: 'center' }}>
+              <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Father / Guardian Name:</span>
+                <UnderlineVal value={slip.fatherName} />
               </div>
-              {/* Cell Phone empty as requested */}
-              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                <span>Cell Phone:</span>
-                <UnderlineVal value="" flex="1" />
+              <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Cell Phone:</span>
+                <UnderlineVal value={slip.alternateNumber || ''} />
               </div>
 
-              <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                <span>Mother / Guardian Name:</span>
-                <UnderlineVal value={slip.motherName} flex="1" />
+              <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Mother / Guardian Name:</span>
+                <UnderlineVal value={slip.motherName} />
               </div>
-              {/* Cell Phone empty as requested */}
-              <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                <span>Cell Phone:</span>
-                <UnderlineVal value="" flex="1" />
+              <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Cell Phone:</span>
+                <UnderlineVal value="" />
               </div>
             </div>
           </div>
@@ -641,8 +643,8 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, py: 1.2, gap: 1 }}>
-        <Button onClick={onClose} variant="outlined" color="inherit" size="small">
+      <DialogActions sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.2, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
+        <Button onClick={onClose} variant="outlined" color="inherit" size="small" sx={{ textTransform: 'none', fontWeight: 600 }}>
           Close
         </Button>
         {onAdmit && (
@@ -655,7 +657,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
             color="success"
             size="small"
             startIcon={<ConvertIcon />}
-            sx={{ fontWeight: 800, textTransform: 'none' }}
+            sx={{ fontWeight: 800, textTransform: 'none', px: 1.5 }}
           >
             Admit Student
           </Button>
@@ -663,7 +665,7 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
         <Button
           onClick={handleShareWhatsApp}
           variant="contained"
-          sx={{ bgcolor: '#25D366', color: '#ffffff', '&:hover': { bgcolor: '#128C7E' }, fontWeight: 700, textTransform: 'none' }}
+          sx={{ bgcolor: '#25D366', color: '#ffffff', '&:hover': { bgcolor: '#128C7E' }, fontWeight: 700, textTransform: 'none', px: 1.5 }}
           size="small"
           startIcon={<WhatsAppIcon />}
         >
@@ -674,9 +676,9 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
           variant="contained"
           size="small"
           startIcon={<PrintIcon />}
-          sx={{ bgcolor: cfg.primaryColor, '&:hover': { bgcolor: cfg.accentColor || cfg.primaryColor }, fontWeight: 800, textTransform: 'none' }}
+          sx={{ bgcolor: cfg.primaryColor, '&:hover': { bgcolor: cfg.accentColor || cfg.primaryColor }, fontWeight: 800, textTransform: 'none', px: 2 }}
         >
-          Print 1 Copy (Official Registration Form)
+          Print 1 Copy (Official Slip)
         </Button>
       </DialogActions>
     </Dialog>

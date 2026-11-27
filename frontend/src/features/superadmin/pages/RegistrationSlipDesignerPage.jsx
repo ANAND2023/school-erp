@@ -415,9 +415,8 @@ export const RegistrationSlipDesignerPage = () => {
   };
 
   // Mock registration data for live preview
-  const defaultSchoolName = selectedSchoolId
-    ? schools.find((s) => s.id === selectedSchoolId)?.name || 'KUSH PUBLIC SCHOOL'
-    : 'KUSH PUBLIC SCHOOL';
+  const selectedSchool = selectedSchoolId ? schools.find((s) => s.id === selectedSchoolId) : null;
+  const defaultSchoolName = selectedSchool?.name || 'KUSH PUBLIC SCHOOL';
 
   const mockReg = {
     slipNo: 'REG-2026-0042',
@@ -451,21 +450,25 @@ export const RegistrationSlipDesignerPage = () => {
     return str;
   };
 
-  const UnderlineVal = ({ value, minWidth = '120px', flex = 'none' }) => {
+  const UnderlineVal = ({ value, minWidth = '30px' }) => {
     const displayVal = cleanVal(value);
     return (
       <span
         style={{
           borderBottom: '1px solid #1e293b',
+          flex: 1,
           minWidth: minWidth,
-          flex: flex,
           display: 'inline-block',
-          padding: '0 6px 1px 6px',
+          padding: '0 4px 1px 4px',
           fontWeight: 600,
           color: '#0f172a',
-          marginLeft: '4px',
-          marginRight: '8px',
+          marginLeft: '6px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          boxSizing: 'border-box',
         }}
+        title={displayVal}
       >
         {displayVal || '\u00A0'}
       </span>
@@ -521,7 +524,19 @@ export const RegistrationSlipDesignerPage = () => {
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Header */}
           {isVisible('header') && (
-            <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '10px' }}>
+            <div
+              onClick={() => setActiveTab('header')}
+              title="Click to edit school header & typography"
+              style={{
+                textAlign: 'center',
+                borderBottom: '2px solid #0f172a',
+                paddingBottom: '8px',
+                marginBottom: '10px',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                transition: 'background-color 0.15s',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '4px' }}>
                 {config.showSchoolLogo && (
                   <div
@@ -622,70 +637,70 @@ export const RegistrationSlipDesignerPage = () => {
               <div
                 style={{
                   fontWeight: 'bold',
-                  fontSize: '12.5px',
+                  fontSize: '12px',
                   textDecoration: 'underline',
                   color: '#0f172a',
-                  marginBottom: '6px',
+                  marginBottom: '8px',
                   textTransform: 'capitalize',
                 }}
               >
                 Student Information:
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
-                <div style={{ width: '60%', display: 'flex', alignItems: 'center' }}>
-                  <span>Student's Full Name:</span>
-                  <UnderlineVal value={mockReg.studentName} flex="1" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', columnGap: '12px', rowGap: '8px', alignItems: 'center' }}>
+                <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Student's Full Name:</span>
+                  <UnderlineVal value={mockReg.studentName} />
                 </div>
-                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                  <span>Seeking Class:</span>
-                  <UnderlineVal value={mockReg.className} flex="1" />
-                </div>
-
-                <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                  <span>*Home Address:</span>
-                  <UnderlineVal value={mockReg.address} flex="1" />
+                <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Seeking Class:</span>
+                  <UnderlineVal value={mockReg.className} />
                 </div>
 
-                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                  <span>City:</span>
-                  <UnderlineVal value={mockReg.city} flex="1" />
-                </div>
-                <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
-                  <span>State:</span>
-                  <UnderlineVal value={mockReg.state} flex="1" />
-                </div>
-                <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
-                  <span>Zip Code:</span>
-                  <UnderlineVal value={mockReg.pincode} flex="1" />
+                <div style={{ gridColumn: 'span 12', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>*Home Address:</span>
+                  <UnderlineVal value={mockReg.address} />
                 </div>
 
-                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                  <span>Student Email Address:</span>
-                  <UnderlineVal value={mockReg.email} flex="1" />
+                <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>City:</span>
+                  <UnderlineVal value={mockReg.city} />
                 </div>
-                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                  <span>Primary Contact Phone:</span>
-                  <UnderlineVal value={mockReg.contact} flex="1" />
+                <div style={{ gridColumn: 'span 4', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>State:</span>
+                  <UnderlineVal value={mockReg.state} />
+                </div>
+                <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Zip Code:</span>
+                  <UnderlineVal value={mockReg.pincode} />
                 </div>
 
-                <div style={{ width: '40%', display: 'flex', alignItems: 'center' }}>
-                  <span>Date of Birth:</span>
-                  <UnderlineVal value={mockReg.dob} flex="1" />
+                <div style={{ gridColumn: 'span 6', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Student Email Address:</span>
+                  <UnderlineVal value={mockReg.email} />
                 </div>
-                <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
-                  <span>Gender:</span>
-                  <UnderlineVal value={mockReg.gender} flex="1" />
+                <div style={{ gridColumn: 'span 6', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Primary Contact Phone:</span>
+                  <UnderlineVal value={mockReg.contact} />
                 </div>
-                <div style={{ width: '35%', display: 'flex', alignItems: 'center' }}>
-                  <span>Place of Birth:</span>
-                  <UnderlineVal value={mockReg.city} flex="1" />
+
+                <div style={{ gridColumn: 'span 4', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Date of Birth:</span>
+                  <UnderlineVal value={mockReg.dob} />
+                </div>
+                <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Gender:</span>
+                  <UnderlineVal value={mockReg.gender} />
+                </div>
+                <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Place of Birth:</span>
+                  <UnderlineVal value={mockReg.city} />
                 </div>
 
                 {config.showPreviousSchool && (
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                    <span>Previous School Attended:</span>
-                    <UnderlineVal value={mockReg.previousSchool} flex="1" />
+                  <div style={{ gridColumn: 'span 12', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                    <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Previous School Attended:</span>
+                    <UnderlineVal value={mockReg.previousSchool} />
                   </div>
                 )}
               </div>
@@ -698,33 +713,33 @@ export const RegistrationSlipDesignerPage = () => {
               <div
                 style={{
                   fontWeight: 'bold',
-                  fontSize: '12.5px',
+                  fontSize: '12px',
                   textDecoration: 'underline',
                   color: '#0f172a',
-                  marginBottom: '6px',
+                  marginBottom: '8px',
                   textTransform: 'capitalize',
                 }}
               >
                 Parent / Guardian Information:
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '8px', alignItems: 'center' }}>
-                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                  <span>Father / Guardian Name:</span>
-                  <UnderlineVal value={mockReg.fatherName} flex="1" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', columnGap: '12px', rowGap: '8px', alignItems: 'center' }}>
+                <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Father / Guardian Name:</span>
+                  <UnderlineVal value={mockReg.fatherName} />
                 </div>
-                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                  <span>Cell Phone:</span>
-                  <UnderlineVal value="" flex="1" />
+                <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Cell Phone:</span>
+                  <UnderlineVal value="" />
                 </div>
 
-                <div style={{ width: '55%', display: 'flex', alignItems: 'center' }}>
-                  <span>Mother / Guardian Name:</span>
-                  <UnderlineVal value={mockReg.motherName} flex="1" />
+                <div style={{ gridColumn: 'span 7', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Mother / Guardian Name:</span>
+                  <UnderlineVal value={mockReg.motherName} />
                 </div>
-                <div style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-                  <span>Cell Phone:</span>
-                  <UnderlineVal value="" flex="1" />
+                <div style={{ gridColumn: 'span 5', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Cell Phone:</span>
+                  <UnderlineVal value="" />
                 </div>
               </div>
             </div>
@@ -1107,25 +1122,164 @@ export const RegistrationSlipDesignerPage = () => {
 
                 <Divider />
 
-                <h3 className="text-base font-semibold text-800 m-0">Subtitle & Address Details</h3>
-                <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Subtitle / Affiliation Note</label>
-                  <InputText
-                    value={config.headerSubtitleCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
-                    placeholder="e.g. Affiliated to CBSE, New Delhi (Affiliation No: 2130892)"
-                    className="w-full p-inputtext-sm"
-                  />
-                </div>
+                {/* School Header Content & Details Section */}
+                <div className="p-3 bg-blue-50 border-round border-1 border-blue-200">
+                  <div className="flex align-items-center justify-content-between mb-2">
+                    <span className="font-bold text-sm text-900 flex align-items-center gap-2">
+                      <i className="pi pi-building text-primary"></i> School Header Content & Details
+                    </span>
+                    <span className="text-xs text-600 bg-white px-2 py-1 border-round border-1 border-200">
+                      Scope: {selectedSchool?.name || 'Platform Default School'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-600 m-0 mb-3">
+                    Configure which school details appear in the registration slip top header, how they are formatted, and customize any line manually.
+                  </p>
 
-                <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Address & Contact Phone Line</label>
-                  <InputText
-                    value={config.headerAddressCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
-                    placeholder="e.g. Plot No 999, Main Road Surya Vihar, Sec 91 • Helpline: +91 9911360909"
-                    className="w-full p-inputtext-sm"
-                  />
+                  {/* Header Visibility Toggles */}
+                  <div className="grid mb-3">
+                    <div className="col-12 md:col-6">
+                      <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 border-200">
+                        <span className="text-xs font-semibold text-700">Show Subtitle / Affiliation</span>
+                        <InputSwitch
+                          checked={config.showAffiliationNo !== false}
+                          onChange={(e) => setConfig({ ...config, showAffiliationNo: e.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-12 md:col-6">
+                      <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 border-200">
+                        <span className="text-xs font-semibold text-700">Show School Logo</span>
+                        <InputSwitch
+                          checked={config.showSchoolLogo !== false}
+                          onChange={(e) => setConfig({ ...config, showSchoolLogo: e.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 1: School Name */}
+                  <div className="field mb-3">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">1. Institution / School Name:</label>
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, headerSchoolNameCustom: defaultSchoolName })}
+                        className="text-xs text-primary underline border-none bg-transparent cursor-pointer p-0"
+                      >
+                        Reset to "{defaultSchoolName}"
+                      </button>
+                    </div>
+                    <InputText
+                      value={config.headerSchoolNameCustom || ''}
+                      onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
+                      placeholder={`e.g. ${defaultSchoolName}`}
+                      className="w-full p-inputtext-sm bg-white"
+                    />
+                  </div>
+
+                  {/* Field 2: Subtitle / Affiliation & Board */}
+                  <div className="field mb-3">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">2. Affiliation & Accreditation Subtitle:</label>
+                      <span className="text-xs text-500">Quick Presets below</span>
+                    </div>
+                    <InputText
+                      value={config.headerSubtitleCustom || ''}
+                      onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
+                      placeholder="e.g. Affiliated to CBSE, New Delhi (Affiliation No: 2130892)"
+                      className="w-full p-inputtext-sm bg-white mb-2"
+                    />
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-xs text-500 align-self-center mr-1">Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: `Affiliated to CBSE, New Delhi (Affiliation No: ${selectedSchool?.affiliationNumber || '2130892'})`,
+                          })
+                        }
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        CBSE Standard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: `Recognized by Govt. of NCT Delhi & Affiliated to CBSE (Affiliation No: ${selectedSchool?.affiliationNumber || '2130892'})`,
+                          })
+                        }
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        Recognized & CBSE
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: `Affiliated to CISCE, New Delhi (School Code: ${selectedSchool?.affiliationNumber || 'UP-092'})`,
+                          })
+                        }
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        ICSE / CISCE
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Field 3: Address & Phone */}
+                  <div className="field mb-1">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">3. Campus Address & Contact Numbers:</label>
+                      <span className="text-xs text-500">Quick Presets below</span>
+                    </div>
+                    <InputText
+                      value={config.headerAddressCustom || ''}
+                      onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
+                      placeholder="e.g. Plot No 999, Main Road Surya Vihar, Sec 91 • Phone: +91 9911360909"
+                      className="w-full p-inputtext-sm bg-white mb-2"
+                    />
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-xs text-500 align-self-center mr-1">Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const addr = [selectedSchool?.address, selectedSchool?.city, selectedSchool?.state, selectedSchool?.pincode]
+                            .filter(Boolean)
+                            .join(', ') || 'Main Campus, Educational Zone';
+                          const ph = [selectedSchool?.contactNumber, selectedSchool?.alternateContactNumber].filter(Boolean).join(', ') || '+91 9911360909';
+                          setConfig({ ...config, headerAddressCustom: `${addr} • Phone: ${ph}` });
+                        }}
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        Full Address + Phones
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const addr = [selectedSchool?.address, selectedSchool?.city, selectedSchool?.state].filter(Boolean).join(', ') || 'Main Campus';
+                          setConfig({ ...config, headerAddressCustom: addr });
+                        }}
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        Address Only
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ph = [selectedSchool?.contactNumber, selectedSchool?.alternateContactNumber].filter(Boolean).join(', ') || '+91 9911360909';
+                          setConfig({ ...config, headerAddressCustom: `Helpline: ${ph}` });
+                        }}
+                        className="p-1 px-2 text-xs border-1 border-300 border-round bg-white hover:bg-100 cursor-pointer text-700"
+                      >
+                        Phones Only
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

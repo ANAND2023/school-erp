@@ -112,15 +112,18 @@ export const RegistrationSlipGeneratorPage = () => {
   const [generatedSlip, setGeneratedSlip] = useState(null);
   const [slipModalOpen, setSlipModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const singleMutation = useMutation({
     mutationFn: (data) => dynamicRegistrationApi.createIndividualSlip(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(['admission-slips']);
+      queryClient.invalidateQueries(['registration-slips']);
       queryClient.invalidateQueries(['admission-dashboard-stats']);
       const slip = res.data.data;
       setGeneratedSlip(slip);
       setSlipModalOpen(true);
+      setErrorMsg('');
       setSuccessMsg(`Registration Slip #${slip.slipNumber} generated successfully for ${slip.studentName}!`);
 
       // WhatsApp trigger
@@ -135,19 +138,29 @@ export const RegistrationSlipGeneratorPage = () => {
       // Empty the form
       setSingleData(initialSingleState);
     },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to generate registration slip';
+      setErrorMsg(msg);
+    },
   });
 
   const bulkMutation = useMutation({
     mutationFn: (data) => dynamicRegistrationApi.createBulkSlips(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(['admission-slips']);
+      queryClient.invalidateQueries(['registration-slips']);
       queryClient.invalidateQueries(['admission-dashboard-stats']);
+      setErrorMsg('');
       setSuccessMsg(res.data.message || 'Bulk slips generated successfully!');
       setBulkRows([
         { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
         { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
         { studentName: '', classId: '', contactNumber: '', fatherName: '', gender: 'Male' },
       ]);
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to generate bulk registration slips';
+      setErrorMsg(msg);
     },
   });
 
@@ -212,6 +225,14 @@ export const RegistrationSlipGeneratorPage = () => {
         </Paper>
       )}
 
+      {errorMsg && (
+        <Paper sx={{ p: 1.2, mb: 2, bgcolor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', display: 'flex', alignItems: 'center', gap: 1, borderRadius: 1.5 }}>
+          <Typography variant="subtitle2" fontWeight={700}>
+            {errorMsg}
+          </Typography>
+        </Paper>
+      )}
+
       {enquiryRefInfo && (
         <Paper sx={{ p: 1.2, mb: 2, bgcolor: '#f0f9ff', border: '1px solid #7dd3fc', color: '#0369a1', display: 'flex', alignItems: 'center', gap: 1, borderRadius: 1.5 }}>
           <CheckIcon color="info" sx={{ fontSize: 20 }} />
@@ -234,7 +255,7 @@ export const RegistrationSlipGeneratorPage = () => {
         <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
           {/* ================= TAB 0: COMPACT INDIVIDUAL SLIP (3-4 FIELDS PER ROW) ================= */}
           {tabIndex === 0 && (
-            <form onSubmit={handleSingleSubmit}>
+            <form noValidate onSubmit={handleSingleSubmit}>
               {/* Row 1: Student Core Info (4 fields) */}
               <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
                 <Grid item xs={12} sm={6} md={3}>
