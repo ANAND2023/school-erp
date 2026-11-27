@@ -80,6 +80,16 @@ export const usePermission = () => {
       );
     }
 
+    // Accounts & Reports Hub: accessible across all school roles
+    if (!perm && (targetKey === 'accounts' || targetKey === 'account' || targetKey === 'accountsreports')) {
+      return true;
+    }
+
+    // General Central Reports: accessible across all school roles
+    if (!perm && (targetKey === 'reports' || targetKey === 'report')) {
+      return true;
+    }
+
     if (!perm) return false;
 
     switch (action) {

@@ -783,15 +783,8 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Central Reports Hub */}
-        <Route
-          path="reports"
-          element={
-            <ProtectedRoute requiredMenu="Reports">
-              <ReportsHubPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Central Reports Hub - Accessible to all school roles */}
+        <Route path="reports" element={<ReportsHubPage />} />
 
         {/* Module: Inventory Management */}
         <Route

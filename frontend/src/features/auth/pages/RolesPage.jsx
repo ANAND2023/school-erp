@@ -113,6 +113,9 @@ const ALL_MENUS = [
   // Expenses
   { key: 'Expenses', label: 'Expense Management' },
 
+  // Accounts & Finance
+  { key: 'Accounts', label: 'Accounts & Reports Hub' },
+
   // Reports
   { key: 'Reports', label: 'General Reports' },
 ];
@@ -130,8 +133,8 @@ const MENU_GROUPS = [
   { group: 'Transport', keys: ['Vehicles', 'RoutesStops', 'TransportAllocations'] },
   { group: 'Promotion & TC', keys: ['Promotion', 'TransferCertificates'] },
   { group: 'Inventory & Stock', keys: ['InventoryOverview', 'ItemsMaster', 'ItemCategories', 'Suppliers', 'Manufactures', 'StockInward', 'StockIssue', 'StockLedger'] },
-  { group: 'Expenses', keys: ['Expenses'] },
-  { group: 'Reports', keys: ['Reports'] }
+  { group: 'Accounts & Finance', keys: ['Accounts', 'Expenses'] },
+  { group: 'Reports', keys: ['Reports', 'Accounts'] }
 ];
 
 const ACTIONS = ['canView', 'canAdd', 'canEdit', 'canDelete', 'canPrint', 'canExport'];

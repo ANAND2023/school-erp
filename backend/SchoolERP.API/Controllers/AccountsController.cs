@@ -27,6 +27,29 @@ namespace SchoolERP.API.Controllers
             _currentUserService = currentUserService;
         }
 
+        private async Task<(long branchId, long yearId)> ResolveBranchAndYearAsync(long? requestedYearId = null)
+        {
+            var branchId = _currentUserService.BranchId;
+            if (branchId == 0)
+            {
+                var firstBranch = await _context.Branches.FirstOrDefaultAsync(b => b.IsActive);
+                if (firstBranch != null) branchId = firstBranch.Id;
+            }
+
+            var yearId = (requestedYearId.HasValue && requestedYearId.Value > 0)
+                ? requestedYearId.Value
+                : _currentUserService.AcademicYearId;
+
+            if (yearId == 0)
+            {
+                var currentYear = await _context.AcademicYears.FirstOrDefaultAsync(y => y.IsCurrent && y.IsActive)
+                    ?? await _context.AcademicYears.FirstOrDefaultAsync(y => y.IsActive);
+                if (currentYear != null) yearId = currentYear.Id;
+            }
+
+            return (branchId, yearId);
+        }
+
         /// <summary>
         /// Comprehensive Financial & Operations Summary (KPIs)
         /// </summary>
@@ -36,10 +59,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] DateTime? endDate,
             [FromQuery] long? academicYearId)
         {
-            var branchId = _currentUserService.BranchId;
-            var yearId = (academicYearId.HasValue && academicYearId.Value > 0)
-                ? academicYearId.Value
-                : _currentUserService.AcademicYearId;
+            var (branchId, yearId) = await ResolveBranchAndYearAsync(academicYearId);
 
             var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(y => y.Id == yearId);
 
@@ -184,10 +204,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] string? paymentMode,
             [FromQuery] long? academicYearId)
         {
-            var branchId = _currentUserService.BranchId;
-            var yearId = (academicYearId.HasValue && academicYearId.Value > 0)
-                ? academicYearId.Value
-                : _currentUserService.AcademicYearId;
+            var (branchId, yearId) = await ResolveBranchAndYearAsync(academicYearId);
 
             var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(y => y.Id == yearId);
 
@@ -353,8 +370,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] long? classId,
             [FromQuery] EnquiryStatus? status)
         {
-            var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var (branchId, yearId) = await ResolveBranchAndYearAsync();
 
             var start = startDate?.Date ?? DateTime.UtcNow.AddMonths(-1).Date;
             var end = (endDate?.Date ?? DateTime.UtcNow.Date).AddDays(1).AddTicks(-1);
@@ -443,8 +459,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] long? classId,
             [FromQuery] long? sectionId)
         {
-            var branchId = _currentUserService.BranchId;
-            var yearId = _currentUserService.AcademicYearId;
+            var (branchId, yearId) = await ResolveBranchAndYearAsync();
 
             var start = startDate?.Date ?? DateTime.UtcNow.AddMonths(-3).Date;
             var end = (endDate?.Date ?? DateTime.UtcNow.Date).AddDays(1).AddTicks(-1);
@@ -547,10 +562,7 @@ namespace SchoolERP.API.Controllers
             [FromQuery] long? classId,
             [FromQuery] long? sectionId)
         {
-            var branchId = _currentUserService.BranchId;
-            var yearId = (academicYearId.HasValue && academicYearId.Value > 0)
-                ? academicYearId.Value
-                : _currentUserService.AcademicYearId;
+            var (branchId, yearId) = await ResolveBranchAndYearAsync(academicYearId);
 
             var academicYear = await _context.AcademicYears.FirstOrDefaultAsync(y => y.Id == yearId);
 
