@@ -549,26 +549,30 @@ export const BonafideCertificateModal = (props) => {
                   {schoolName}
                 </h2>
 
-                <div
-                  style={{
-                    fontSize: `${config?.headerSubtitleFontSize || 12}px`,
-                    fontWeight: config?.headerSubtitleFontWeight || '600',
-                    color: config?.headerSubtitleColor || '#334155',
-                    marginTop: '4px',
-                  }}
-                >
-                  {schoolSubtitle}
-                </div>
+                {config?.showHeaderSubtitle !== false && (
+                  <div
+                    style={{
+                      fontSize: `${config?.headerSubtitleFontSize || 12}px`,
+                      fontWeight: config?.headerSubtitleFontWeight || '600',
+                      color: config?.headerSubtitleColor || '#334155',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {schoolSubtitle}
+                  </div>
+                )}
 
-                <div
-                  style={{
-                    fontSize: `${config?.headerAddressFontSize || 11}px`,
-                    color: config?.headerAddressColor || '#475569',
-                    marginTop: '3px',
-                  }}
-                >
-                  {schoolAddress}
-                </div>
+                {config?.showHeaderAddress !== false && (
+                  <div
+                    style={{
+                      fontSize: `${config?.headerAddressFontSize || 11}px`,
+                      color: config?.headerAddressColor || '#475569',
+                      marginTop: '3px',
+                    }}
+                  >
+                    {schoolAddress}
+                  </div>
+                )}
               </div>
 
               {config?.showQrCode !== false && (

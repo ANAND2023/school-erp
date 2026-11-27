@@ -426,15 +426,18 @@ export const BonafideCertificateDesignerPage = () => {
   // School Details Resolution (matching AdmissionSlipDesignerPage)
   const selectedSchool = selectedSchoolId ? schools.find((s) => s.id === selectedSchoolId) : null;
   const defaultSchoolName = selectedSchool?.name || 'DELHI PUBLIC SCHOOL';
-  const defaultSubtitle = selectedSchool?.affiliationNumber
-    ? `Affiliated to CBSE, New Delhi (Affiliation No: ${selectedSchool.affiliationNumber})`
-    : 'Affiliated to CBSE, New Delhi (Affiliation No: 2130892)';
+
+  const affiliationNumber = selectedSchool?.affiliationNumber || 'CBSE/2026/0912';
+  const defaultSubtitle = `Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNumber})`;
+
   const addressParts = selectedSchool
     ? [selectedSchool.address, selectedSchool.city, selectedSchool.state, selectedSchool.pincode].filter(Boolean)
     : [];
+  const phones = [selectedSchool?.contactNumber, selectedSchool?.alternateContactNumber].filter(Boolean);
+  const phoneText = phones.length > 0 ? `Phone: ${phones.join(', ')}` : 'Phone: 4564564564, 9811223344';
   const defaultAddress = addressParts.length > 0
-    ? `${addressParts.join(', ')}${selectedSchool.contactNumber ? ` • Phone: ${selectedSchool.contactNumber}` : ''}`
-    : 'Sector 12, RK Puram, New Delhi - 110022 • Phone: +91 11 2617 8900';
+    ? `${addressParts.join(', ')} • ${phoneText}`
+    : `123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001 • ${phoneText}`;
 
   const activeCertMeta = CERT_TYPES.find((c) => c.id === selectedCertType) || CERT_TYPES[0];
 
@@ -844,25 +847,178 @@ export const BonafideCertificateDesignerPage = () => {
 
                 <Divider />
 
-                <h3 className="text-base font-semibold text-800 m-0">Subtitle & Address Details</h3>
-                <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Affiliation & Board Subtitle</label>
-                  <InputText
-                    value={config.headerSubtitleCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
-                    placeholder="e.g. Affiliated to CBSE, New Delhi (Affiliation No: 2130892)"
-                    className="w-full p-inputtext-sm"
-                  />
-                </div>
+                <div className="surface-100 p-3 border-round border-1 border-300">
+                  <div className="flex align-items-center justify-content-between mb-2">
+                    <span className="font-bold text-sm text-900 flex align-items-center gap-2">
+                      <i className="pi pi-building text-primary"></i> School Header Content & Details
+                    </span>
+                    <span className="text-xs text-600 bg-white px-2 py-1 border-round border-1 border-200">
+                      Scope: {selectedSchool?.name || 'Platform Default School'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-600 m-0 mb-3">
+                    Configure which school details appear in the certificate top header, how they are formatted, and customize any line manually.
+                  </p>
 
-                <div className="field mb-2">
-                  <label className="text-xs font-medium text-700">Campus Address & Contact Phone Line</label>
-                  <InputText
-                    value={config.headerAddressCustom || ''}
-                    onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
-                    placeholder="e.g. Sector 12, RK Puram, New Delhi - 110022 • Phone: +91 11 2617 8900"
-                    className="w-full p-inputtext-sm"
-                  />
+                  {/* Header Visibility Toggles */}
+                  <div className="grid mb-3">
+                    <div className="col-12 md:col-6">
+                      <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 border-200">
+                        <span className="text-xs font-semibold text-700">Show Subtitle / Affiliation</span>
+                        <InputSwitch
+                          checked={config.showHeaderSubtitle !== false}
+                          onChange={(e) => setConfig({ ...config, showHeaderSubtitle: e.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-12 md:col-6">
+                      <div className="flex align-items-center justify-content-between p-2 bg-white border-round border-1 border-200">
+                        <span className="text-xs font-semibold text-700">Show Address & Phone</span>
+                        <InputSwitch
+                          checked={config.showHeaderAddress !== false}
+                          onChange={(e) => setConfig({ ...config, showHeaderAddress: e.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 1: School Name */}
+                  <div className="field mb-3">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">1. Institution / School Name:</label>
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, headerSchoolNameCustom: defaultSchoolName })}
+                        className="text-xs text-primary underline border-none bg-transparent cursor-pointer p-0"
+                      >
+                        Reset to Default ({defaultSchoolName})
+                      </button>
+                    </div>
+                    <InputText
+                      value={config.headerSchoolNameCustom ?? ''}
+                      onChange={(e) => setConfig({ ...config, headerSchoolNameCustom: e.target.value })}
+                      placeholder={`Default: ${defaultSchoolName}`}
+                      className="w-full p-inputtext-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Field 2: Affiliation & Board Subtitle Line */}
+                  <div className="field mb-3">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">2. Affiliation & Board Subtitle Line:</label>
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, headerSubtitleCustom: defaultSubtitle })}
+                        className="text-xs text-primary underline border-none bg-transparent cursor-pointer p-0"
+                      >
+                        Reset to Profile ({defaultSubtitle})
+                      </button>
+                    </div>
+                    <InputText
+                      value={config.headerSubtitleCustom ?? ''}
+                      onChange={(e) => setConfig({ ...config, headerSubtitleCustom: e.target.value })}
+                      placeholder={`Default: ${defaultSubtitle}`}
+                      className="w-full p-inputtext-sm"
+                    />
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      <span className="text-xs text-500 mr-1">Quick Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: `Affiliated to CBSE, New Delhi (Affiliation No: ${affiliationNumber})`,
+                          })
+                        }
+                        className="text-xs surface-200 text-700 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        CBSE ({affiliationNumber})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: 'Recognized by Dept. of Education • Affiliated to CBSE New Delhi',
+                          })
+                        }
+                        className="text-xs surface-200 text-700 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        Recognized & CBSE
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: 'Affiliated to Council for the Indian School Certificate Examinations (CISCE)',
+                          })
+                        }
+                        className="text-xs surface-200 text-700 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        ICSE / CISCE
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerSubtitleCustom: '',
+                          })
+                        }
+                        className="text-xs surface-200 text-red-600 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        Clear (Use Profile)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Field 3: Address & Phone Line */}
+                  <div className="field mb-2">
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-xs font-bold text-800">3. Campus Address & Contact Phone Line:</label>
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, headerAddressCustom: defaultAddress })}
+                        className="text-xs text-primary underline border-none bg-transparent cursor-pointer p-0"
+                      >
+                        Reset to Profile ({defaultAddress})
+                      </button>
+                    </div>
+                    <InputText
+                      value={config.headerAddressCustom ?? ''}
+                      onChange={(e) => setConfig({ ...config, headerAddressCustom: e.target.value })}
+                      placeholder={`Default: ${defaultAddress}`}
+                      className="w-full p-inputtext-sm"
+                    />
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      <span className="text-xs text-500 mr-1">Quick Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerAddressCustom: defaultAddress,
+                          })
+                        }
+                        className="text-xs surface-200 text-700 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        Full Address + Phones
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            headerAddressCustom: '',
+                          })
+                        }
+                        className="text-xs surface-200 text-red-600 border-none px-2 py-1 border-round cursor-pointer hover:surface-300"
+                      >
+                        Clear (Use Profile)
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid">
@@ -1448,7 +1604,16 @@ export const BonafideCertificateDesignerPage = () => {
                       </div>
                     )}
 
-                    <div style={{ textAlign: config.headerAlignment === 'left' ? 'left' : 'center', flex: 1 }}>
+                    <div
+                      style={{
+                        textAlign: config.headerAlignment === 'left' ? 'left' : 'center',
+                        flex: 1,
+                        cursor: 'pointer',
+                      }}
+                      title="Click to edit Header & School Details in Left Controls"
+                      onClick={() => setActiveTab('header')}
+                      className="hover:surface-50 p-1 border-round transition-colors"
+                    >
                       <div
                         style={{
                           fontSize: `${config.headerSchoolNameFontSize || 22}px`,
@@ -1462,26 +1627,30 @@ export const BonafideCertificateDesignerPage = () => {
                         {config.headerSchoolNameCustom || defaultSchoolName}
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: `${config.headerSubtitleFontSize || 12}px`,
-                          fontWeight: config.headerSubtitleFontWeight || '600',
-                          color: config.headerSubtitleColor || '#334155',
-                          marginTop: '3px',
-                        }}
-                      >
-                        {config.headerSubtitleCustom || defaultSubtitle}
-                      </div>
+                      {config.showHeaderSubtitle !== false && (
+                        <div
+                          style={{
+                            fontSize: `${config.headerSubtitleFontSize || 12}px`,
+                            fontWeight: config.headerSubtitleFontWeight || '600',
+                            color: config.headerSubtitleColor || '#334155',
+                            marginTop: '3px',
+                          }}
+                        >
+                          {config.headerSubtitleCustom || defaultSubtitle}
+                        </div>
+                      )}
 
-                      <div
-                        style={{
-                          fontSize: `${config.headerAddressFontSize || 11}px`,
-                          color: config.headerAddressColor || '#475569',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {config.headerAddressCustom || defaultAddress}
-                      </div>
+                      {config.showHeaderAddress !== false && (
+                        <div
+                          style={{
+                            fontSize: `${config.headerAddressFontSize || 11}px`,
+                            color: config.headerAddressColor || '#475569',
+                            marginTop: '2px',
+                          }}
+                        >
+                          {config.headerAddressCustom || defaultAddress}
+                        </div>
+                      )}
                     </div>
 
                     {config.showQrCode && (

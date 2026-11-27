@@ -38,9 +38,14 @@ namespace SchoolERP.Application.DTOs
         public string? LogoUrl { get; set; }
         public string? City { get; set; }
         public string? State { get; set; }
+        public string? Address { get; set; }
+        public string? Pincode { get; set; }
+        public string? AffiliationNumber { get; set; }
         public string Status { get; set; } = "Active";
         public string? ContactNumber { get; set; }
+        public string? AlternateContactNumber { get; set; }
         public string? Email { get; set; }
+        public string? Website { get; set; }
         public string? CurrentPlanName { get; set; }
         public string? CurrentPlanCode { get; set; }
         public string? SubscriptionStatus { get; set; }
