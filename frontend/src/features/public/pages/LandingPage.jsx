@@ -150,245 +150,1299 @@ export const LandingPage = () => {
   }, [primaryColor]);
 
   const categorizedModules = [
-    {
-      category: 'admissions',
-      title: 'Online Enquiries & Admissions',
-      icon: 'pi pi-user-plus',
-      tag: 'Admissions & CRM',
-      badge: 'Fast Onboarding',
-      color: '#ea580c',
-      lightColor: '#fff7ed',
-      gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-      desc: 'Digital registration, merit ranking, multi-step student admission forms, document verification, and auto admission number allocation.',
-      highlights: ['Merit Ranking Lists', 'Online Document KYC', 'Auto Roll & Reg Number'],
-      targetUser: 'Admissions Desk & Counselors',
-      workflow: 'Public Enquiry -> Form Verification -> Fee Deposit -> Student ID Created'
-    },
-    {
-      category: 'finance',
-      title: 'Fee Collection Counter POS',
-      icon: 'pi pi-wallet',
-      tag: 'Finance & Accounts',
-      badge: 'High Impact',
-      color: '#059669',
-      lightColor: '#ecfdf5',
-      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-      desc: 'Custom heads (Tuition, Lab, Transport), concessions, online gateway integration, instant thermal/A4 receipts, and auto demand notices.',
-      highlights: ['Thermal & A4 Receipts', 'Custom Fee Heads & Concessions', 'Auto WhatsApp Alerts'],
-      targetUser: 'Accountants & Cashiers',
-      workflow: 'Student Lookup -> Head Selection -> Cash/UPI/Gateway -> Instant Printed Slip'
-    },
-    {
-      category: 'academics',
-      title: 'Smart Attendance & Leaves',
-      icon: 'pi pi-check-circle',
-      tag: 'Daily Operations',
-      badge: 'Automated',
-      color: '#2563eb',
-      lightColor: '#eff6ff',
-      gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-      desc: 'Class-wise daily student roll-call attendance registers, monthly percentage reports, staff presence logs, and leave approval workflows.',
-      highlights: ['1-Click Roll-Call Register', 'Monthly % Attendance Reports', 'Parent Absent Alerts'],
-      targetUser: 'Class Teachers & HR',
-      workflow: 'Class Selection -> Mark Present/Absent -> Save Register -> Instant Parent Alert'
-    },
-    {
-      category: 'academics',
-      title: 'Timetable & Bell Scheduler',
-      icon: 'pi pi-calendar',
-      tag: 'Academic Planning',
-      badge: 'Smart Proxy',
-      color: '#0284c7',
-      lightColor: '#f0f9ff',
-      gradient: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
-      desc: 'Weekly class & teacher period grids, bell schedules, and intelligent automated substitution suggesting proxy faculty for absent teachers.',
-      highlights: ['Visual Weekly Grids', 'Automated Bell Timings', 'Smart Proxy Substitution'],
-      targetUser: 'Academic Coordinators',
-      workflow: 'Period Matrix -> Teacher Assignment -> Conflict Check -> Live Display'
-    },
-    {
-      category: 'academics',
-      title: 'Exams & Automated Report Cards',
-      icon: 'pi pi-file-edit',
-      tag: 'Assessments',
-      badge: 'CBSE / ICSE',
-      color: '#4f46e5',
-      lightColor: '#eef2ff',
-      gradient: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
-      desc: 'Term-wise date sheets, subject teacher marks entry, automated grading/percentage calculations, and printable CBSE/ICSE report cards.',
-      highlights: ['Subject Marks Entry Grid', 'Automated Grade & Rank Calc', '1-Click Multi-Term Slips'],
-      targetUser: 'Exam Cell & Faculty',
-      workflow: 'Exam Date Sheet -> Faculty Marks Entry -> Auto Grading -> Download Report Cards'
-    },
-    {
-      category: 'academics',
-      title: 'Promotion & Transfer Certificates',
-      icon: 'pi pi-arrow-up-right',
-      tag: 'Student Lifecycle',
-      badge: 'QR Verifiable',
-      color: '#0891b2',
-      lightColor: '#ecfeff',
-      gradient: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
-      desc: 'Session-end 1-click bulk student promotion and formal verifiable Transfer Certificate (TC) issuance with QR verification.',
-      highlights: ['Bulk Class Promotion', 'Official TC Numbering', 'Tamper-Proof QR Code'],
-      targetUser: 'Principals & Registrars',
-      workflow: 'Select Class -> Academic Criteria -> 1-Click Promote -> Formal TC Archive'
-    },
-    {
-      category: 'admissions',
-      title: 'Dynamic ID Card Studio',
-      icon: 'pi pi-id-card',
-      tag: 'Identity & Security',
-      badge: 'Built-in Designer',
-      color: '#d97706',
-      lightColor: '#fffbeb',
-      gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-      desc: 'Built-in visual ID card designer with custom school templates, photo alignment, QR codes/barcodes, and bulk print sheets.',
-      highlights: ['Custom Template Layouts', 'Live Photo & Barcode', 'A4 Multi-Up Bulk Print'],
-      targetUser: 'Admin Office & Printing',
-      workflow: 'Choose Template -> Select Class/Staff -> Live Preview -> Print High-Res PDF'
-    },
-    {
-      category: 'hr',
-      title: 'Staff Directory & HR Payroll',
-      icon: 'pi pi-users',
-      tag: 'Staff HR',
-      badge: 'Full Lifecycle',
-      color: '#7c3aed',
-      lightColor: '#f5f3ff',
-      gradient: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-      desc: 'Complete employee credentials, qualification tracking, salary structures, class teacher allocations, and faculty subject mapping.',
-      highlights: ['Employee KYC & Records', 'Teacher Subject Allocations', 'Monthly Salary & Leaves'],
-      targetUser: 'HR & Administrative Head',
-      workflow: 'Staff Onboarding -> Class Mapping -> Biometric Attendance -> Payroll Generation'
-    },
-    {
-      category: 'logistics',
-      title: 'Transport Fleet & Route Tracking',
-      icon: 'pi pi-car',
-      tag: 'Fleet Logistics',
-      badge: 'Route Mapping',
-      color: '#dc2626',
-      lightColor: '#fef2f2',
-      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-      desc: 'Bus vehicles, driver licensing, pickup/drop route stops, timings, distance slabs, and student/staff seat allocations.',
-      highlights: ['Vehicle & Driver Matrix', 'Route Stops & Pick Timings', 'Distance Fare Slabs'],
-      targetUser: 'Transport In-charge',
-      workflow: 'Create Route & Stops -> Assign Bus & Driver -> Allocate Students -> Fee Sync'
-    },
-    {
-      category: 'logistics',
-      title: 'Inventory & Stock Management',
-      icon: 'pi pi-box',
-      tag: 'Supply Chain',
-      badge: 'Real-time Stock',
-      color: '#b45309',
-      lightColor: '#fffbeb',
-      gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
-      desc: 'Uniforms, books, stationery, item categories, supplier directory, purchase inward bills, department stock issue, and stock ledger.',
-      highlights: ['Purchase Inward Bills', 'Department Issue Slips', 'Real-Time Stock Ledger'],
-      targetUser: 'Storekeeper & Procurement',
-      workflow: 'Supplier PO -> Inward Stock Verification -> Department Issue -> Ledger Audit'
-    },
-    {
-      category: 'finance',
-      title: 'School Expense Management',
-      icon: 'pi pi-chart-line',
-      tag: 'Expense & Audit',
-      badge: 'Audit Trail',
-      color: '#0d9488',
-      lightColor: '#f0fdfa',
-      gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
-      desc: 'Petty cash tracking, operational expense categories, bill attachments, voucher receipts, and branch-level financial auditing.',
-      highlights: ['Petty Cash Accounts', 'Voucher Numbering Series', 'Expense Trend Analytics'],
-      targetUser: 'Accountant & Manager',
-      workflow: 'Voucher Request -> Bill Document Upload -> Manager Approval -> Ledger Entry'
-    },
-    {
-      category: 'platform',
-      title: 'Super Admin Multi-Tenant SaaS',
-      icon: 'pi pi-building',
-      tag: 'Enterprise Cloud',
-      badge: 'Multi-Tenant',
-      color: '#0f172a',
-      lightColor: '#f8fafc',
-      gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      desc: 'Executive portal to onboard infinite schools, toggle module catalogs, configure subscription plans, and inspect global audit logs.',
-      highlights: ['Infinite School Onboarding', 'Module Feature Flags', 'Subscription Tier Engine'],
-      targetUser: 'Trustees & Central Management',
-      workflow: 'Tenant Onboarding -> Select Plan -> Assign Admin -> Global Dashboard'
-    },
-    {
-      category: 'platform',
-      title: 'Granular Role-Based Security',
-      icon: 'pi pi-shield',
-      tag: 'Security & RBAC',
-      badge: 'Bank Grade',
-      color: '#1e3a8a',
-      lightColor: '#eff6ff',
-      gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-      desc: 'Screen-level View, Add, Edit, Delete, Print and Export permissions for Principals, Accountants, Teachers, and Clerks.',
-      highlights: ['Granular Screen Permissions', 'Print & Export Locks', 'Full Mutation Audit Trail'],
-      targetUser: 'System Administrator',
-      workflow: 'Define Custom Roles -> Matrix Checkboxes -> Assign Users -> Active Policy'
-    },
-    {
-      category: 'platform',
-      title: 'Central Analytical Reports Hub',
-      icon: 'pi pi-chart-bar',
-      tag: 'BI & Analytics',
-      badge: 'Executive BI',
-      color: '#4338ca',
-      lightColor: '#eef2ff',
-      gradient: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
-      desc: 'Consolidated multi-branch reporting covering fee collection trends, defaulters, daily attendance ratios, and institutional growth.',
-      highlights: ['Fee Defaulter Rosters', 'Attendance Ratio Graphs', 'Export to Excel & PDF'],
-      targetUser: 'Trustees & Directors',
-      workflow: 'Select Branch & Range -> Live Calculation -> Chart Visualization -> Export'
-    },
-    {
-      category: 'portal',
-      title: 'Student & Parent Self-Service Portal',
-      icon: 'pi pi-user',
-      tag: 'Family Portal',
-      badge: 'Multi-Child',
-      color: '#9333ea',
-      lightColor: '#faf5ff',
-      gradient: 'linear-gradient(135deg, #9333ea 0%, #a855f7 100%)',
-      desc: 'Dedicated login for students and parents featuring multi-child switching, live period timetables, attendance tracking, and instant fee receipts.',
-      highlights: ['Multi-Sibling Switcher', 'Live Timetable Schedule', 'Instant Download Fee Slips'],
-      targetUser: 'Parents & Students',
-      workflow: 'Parent Login -> Choose Child -> View Attendance & Dues -> Download Receipts'
-    },
-    {
-      category: 'portal',
-      title: 'NCERT E-Books Digital Reader (Class 6-12)',
-      icon: 'pi pi-book',
-      tag: 'Digital Library',
-      badge: 'Free Library',
-      color: '#0284c7',
-      lightColor: '#f0f9ff',
-      gradient: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)',
-      desc: 'Complete syllabus textbooks for Mathematics, Science, English, Social Science & Physics with embedded HD reader, chapters breakdown, and direct PDF downloads.',
-      highlights: ['Classes 6 to 12 Covered', 'Chapter-wise HD Reader', 'Offline PDF Downloads'],
-      targetUser: 'Students & Faculty',
-      workflow: 'Select Class -> Select Subject -> Open Chapter -> Read or Download'
-    },
-    {
-      category: 'portal',
-      title: 'AI Study Buddy (24/7 Doubt Solver)',
-      icon: 'pi pi-sparkles',
-      tag: 'Next-Gen AI Tutor',
-      badge: 'AI Powered',
-      color: '#ec4899',
-      lightColor: '#fdf2f8',
-      gradient: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-      desc: 'Smart interactive study buddy providing instantaneous, curriculum-aligned homework explanations, mathematical concept breakdowns, and grammar practice.',
-      highlights: ['Instant Doubt Clarification', 'CBSE Syllabus Aligned', 'Step-by-Step Explanations'],
-      targetUser: 'Students & Self-Learners',
-      workflow: 'Type Homework Question -> Instant AI Explanation -> Interactive Practice Qs'
-    }
-  ];
+  {
+    "category": "admissions",
+    "title": "Online Enquiries & CRM Leads",
+    "icon": "pi pi-user-plus",
+    "tag": "Admissions & CRM",
+    "badge": "Lead Tracking",
+    "color": "#ea580c",
+    "lightColor": "#fff7ed",
+    "gradient": "linear-gradient(135deg, #ea580c 0%, #f97316 100%)",
+    "desc": "Capture walk-in and online visitor enquiries, schedule follow-up calls, update conversion statuses, and engage parents directly via 1-click WhatsApp.",
+    "highlights": [
+      "Real-Time Lead Status",
+      "Follow-up Scheduler",
+      "1-Click WhatsApp Chat",
+      "Lead to Admission Conversion"
+    ],
+    "targetUser": "Admission Counselors & Front Desk",
+    "workflow": "Visitor Enquiry -> Follow-up Schedule -> Status Tracking -> Convert to Admission"
+  },
+  {
+    "category": "admissions",
+    "title": "New Registration Slip Generator",
+    "icon": "pi pi-file-edit",
+    "tag": "Student Onboarding",
+    "badge": "Instant Slip",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Rapid registration form generator capturing candidate particulars, parent details, registration fee receipts, and printing professional A4 registration slips.",
+    "highlights": [
+      "Unique Slip Numbering",
+      "Auto Fee Calculation",
+      "Thermal & A4 Printouts",
+      "Direct WhatsApp Slip Share"
+    ],
+    "targetUser": "Registration Desk & Accounts",
+    "workflow": "Applicant Entry -> Fee Deposit -> Generate Number -> Print A4 Slip"
+  },
+  {
+    "category": "admissions",
+    "title": "Registration Register & Archive",
+    "icon": "pi pi-list",
+    "tag": "Admissions Registry",
+    "badge": "Searchable Log",
+    "color": "#2563eb",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    "desc": "Searchable historical registration master log with live filters, payment status badges (Paid, Partial, Unpaid), quick re-printing, and detailed data export.",
+    "highlights": [
+      "Real-time Search Filter",
+      "Payment Status Badges",
+      "1-Click Re-print",
+      "Export to Excel & PDF"
+    ],
+    "targetUser": "Registrars & Cashiers",
+    "workflow": "Search Record -> Review Payment -> Re-print Slip -> Export Reports"
+  },
+  {
+    "category": "admissions",
+    "title": "Dynamic Registration Form Builder",
+    "icon": "pi pi-sliders-h",
+    "tag": "Form Customization",
+    "badge": "Drag & Drop",
+    "color": "#7c3aed",
+    "lightColor": "#f5f3ff",
+    "gradient": "linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)",
+    "desc": "Visual custom registration form designer allowing institutions to define custom fields, dropdowns, document attachments, mandatory flags, and section headers.",
+    "highlights": [
+      "Custom Form Fields",
+      "Required/Optional Flags",
+      "Multi-Section Layouts",
+      "Dynamic Schema Engine"
+    ],
+    "targetUser": "School Super Admin & IT Coordinators",
+    "workflow": "Add Form Field -> Set Validation -> Order Sections -> Live Form Integration"
+  },
+  {
+    "category": "admissions",
+    "title": "New Student Admission & KYC",
+    "icon": "pi pi-id-card",
+    "tag": "Enrollment",
+    "badge": "Full KYC",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Multi-step admission engine capturing complete student bio-data, parent details, Aadhaar/KYC verification, photo upload, emergency contacts, and scholar number assignment.",
+    "highlights": [
+      "Scholar & Admission No Gen",
+      "Document KYC Attachments",
+      "Sibling & Category Tagging",
+      "Medical & Emergency Info"
+    ],
+    "targetUser": "Admission Officers & Principals",
+    "workflow": "Verify Registration -> Complete Admission Form -> Upload Documents -> Generate Scholar No"
+  },
+  {
+    "category": "admissions",
+    "title": "Admission Records & Profiles",
+    "icon": "pi pi-users",
+    "tag": "Student Archives",
+    "badge": "Quick Actions",
+    "color": "#0d9488",
+    "lightColor": "#f0fdfa",
+    "gradient": "linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)",
+    "desc": "Centralized student admission repository with instant profile editing, class filtering, admission report generation, and student status management.",
+    "highlights": [
+      "Quick Profile Editor",
+      "Direct Admission Report",
+      "Class-wise Filters",
+      "Export Student List"
+    ],
+    "targetUser": "Administrative Staff & Clerks",
+    "workflow": "Filter Class -> Search Student -> View/Edit Profile -> Print Official Report"
+  },
+  {
+    "category": "admissions",
+    "title": "Bulk Student Upload & Migration",
+    "icon": "pi pi-upload",
+    "tag": "Data Operations",
+    "badge": "Fast Migration",
+    "color": "#d97706",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+    "desc": "High-volume Excel/CSV template download, validation engine, bulk student profile imports, and bulk class edits for rapid school onboarding.",
+    "highlights": [
+      "Excel Template Download",
+      "Format Validation",
+      "Zero-Downtime Import",
+      "Bulk Class/Section Edit"
+    ],
+    "targetUser": "Data Entry Operators & IT Admins",
+    "workflow": "Download Template -> Fill Excel Data -> Upload & Validate -> Batch Enrollment"
+  },
+  {
+    "category": "admissions",
+    "title": "Statutory A.W.R. Register & Folio",
+    "icon": "pi pi-book",
+    "tag": "Statutory Compliance",
+    "badge": "Govt Standard",
+    "color": "#065f46",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #065f46 0%, #047857 100%)",
+    "desc": "Official statutory Admission and Withdrawal Register (A.W.R.) maintaining legally required student entry/exit records, sequential ledger numbers, and verifiable folio extracts.",
+    "highlights": [
+      "Official AWR Ledger No",
+      "Statutory Board Compliance",
+      "Verifiable Student Folio Extract",
+      "Landscape Full Register Print"
+    ],
+    "targetUser": "Principals & Record Keepers",
+    "workflow": "Admission Recorded -> Auto AWR Numbering -> Statutory Register Update -> Issue Folio Extract"
+  },
+  {
+    "category": "admissions",
+    "title": "Student Directory & Demographics",
+    "icon": "pi pi-table",
+    "tag": "Student Master",
+    "badge": "Smart Demographics",
+    "color": "#4338ca",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4338ca 0%, #6366f1 100%)",
+    "desc": "Complete student database with live KPI counts (Total Students, Boys, Girls), active/inactive status toggle, class/section filters, and high-detail landscape PDF directory download.",
+    "highlights": [
+      "Live Boy/Girl Counters",
+      "Active/Inactive Status Toggle",
+      "Landscape A4 PDF Directory",
+      "Detailed Contact & Address Export"
+    ],
+    "targetUser": "School Administration & Teachers",
+    "workflow": "Select Class/Section -> View Live Demographics -> Toggle Status -> Download Master Directory PDF"
+  },
+  {
+    "category": "admissions",
+    "title": "Roll Number Allocation Matrix",
+    "icon": "pi pi-sort-numeric-down",
+    "tag": "Academic Organization",
+    "badge": "Auto Sequence",
+    "color": "#0891b2",
+    "lightColor": "#ecfeff",
+    "gradient": "linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)",
+    "desc": "1-click automatic roll number generation by alphabetical order, gender sequence, or manual drag-and-drop ordering per class & section.",
+    "highlights": [
+      "Alphabetical Auto-Numbering",
+      "Gender-wise Sequencing",
+      "Manual Override Grid",
+      "Conflict Prevention"
+    ],
+    "targetUser": "Class Teachers & Exam In-charge",
+    "workflow": "Select Class & Section -> Choose Sorting Rule -> Auto Sequence -> Lock Roll Numbers"
+  },
+  {
+    "category": "admissions",
+    "title": "Section Change & Transfer",
+    "icon": "pi pi-arrows-h",
+    "tag": "Student Movement",
+    "badge": "Seamless Transfer",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)",
+    "desc": "Flexible mid-session student section reassignments, strength balancing between sections, and automatic attendance/timetable synchronization.",
+    "highlights": [
+      "Section Capacity Check",
+      "Instant Roster Rebalance",
+      "Attendance History Retained",
+      "1-Click Student Transfer"
+    ],
+    "targetUser": "Academic Coordinators & Class Teachers",
+    "workflow": "Select Student -> Choose Target Section -> Confirm Capacity -> Instant Transfer"
+  },
+  {
+    "category": "admissions",
+    "title": "Dynamic ID Card Studio",
+    "icon": "pi pi-palette",
+    "tag": "Identity & Security",
+    "badge": "Visual Designer",
+    "color": "#d97706",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+    "desc": "Built-in visual ID card designer with custom school templates, logo placement, barcode/QR code generation, and student photo auto-fitting.",
+    "highlights": [
+      "Custom Template Layouts",
+      "Live Photo & Barcode",
+      "Front & Back Card Designs",
+      "Multiple Theme Presets"
+    ],
+    "targetUser": "Admin Office & Printing Cell",
+    "workflow": "Choose Template -> Customise Branding -> Preview Live Student Data -> Save Template"
+  },
+  {
+    "category": "admissions",
+    "title": "Bulk ID Card Printing Studio",
+    "icon": "pi pi-print",
+    "tag": "Card Generation",
+    "badge": "Multi-Up Grid",
+    "color": "#b45309",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #b45309 0%, #d97706 100%)",
+    "desc": "High-resolution multi-up A4 printable sheets for classroom or whole-school ID card batch printing with cutting guides and crop marks.",
+    "highlights": [
+      "A4 Multi-Up Layout",
+      "Crop & Cutting Guidelines",
+      "Class & Batch Filter",
+      "High-Res Print Ready PDF"
+    ],
+    "targetUser": "Printing Department & Admin Clerks",
+    "workflow": "Select Class/Section -> Select ID Template -> Generate A4 Sheet -> Print/Save PDF"
+  },
+  {
+    "category": "admissions",
+    "title": "Student Gate Pass & Movement Tracker",
+    "icon": "pi pi-shield",
+    "tag": "Campus Security",
+    "badge": "Safety & Exit",
+    "color": "#dc2626",
+    "lightColor": "#fef2f2",
+    "gradient": "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+    "desc": "Authorized early departure pass, guardian identity verification, reason logging, status tracking (Issued, Departed, Returned), and dual-copy printable security slip.",
+    "highlights": [
+      "Guardian Verification",
+      "Real-Time Exit/Return Time",
+      "Dual Copy Security Slip",
+      "Exit History Audit"
+    ],
+    "targetUser": "Security Staff & Front Desk",
+    "workflow": "Parent Request -> Reason & Guardian Verification -> Issue Gate Pass -> Security Verification at Gate"
+  },
+  {
+    "category": "finance",
+    "title": "Fee Collection Counter POS",
+    "icon": "pi pi-wallet",
+    "tag": "Finance & Accounts",
+    "badge": "High Impact",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Rapid fee collection counter with barcode lookup, multi-head itemization, partial payment handling, instant thermal or dual-copy A4 receipt printing, and WhatsApp slip dispatch.",
+    "highlights": [
+      "Dual-Copy A4 & Thermal Slips",
+      "Cash / Cheque / UPI / Gateway",
+      "Auto WhatsApp Receipt Message",
+      "Real-Time Daily Counter Summary"
+    ],
+    "targetUser": "Accountants & Cashiers",
+    "workflow": "Student Lookup -> Head Selection -> Cash/UPI/Gateway -> Instant Printed Slip"
+  },
+  {
+    "category": "finance",
+    "title": "Comprehensive Fee Structure Master",
+    "icon": "pi pi-sitemap",
+    "tag": "Fee Configuration",
+    "badge": "Flexible Rules",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Annual, term, and monthly fee head definitions (Tuition, Development, Library, Lab, Sports, Transport), class-wise assignment, and customizable installment schedules.",
+    "highlights": [
+      "Unlimited Fee Heads",
+      "One-Time vs Recurring Heads",
+      "Custom Due Date Schedules",
+      "Class-wise Fee Rules"
+    ],
+    "targetUser": "Finance Directors & Chief Accountants",
+    "workflow": "Define Fee Heads -> Set Installment Schedules -> Map to Classes -> Activate Structure"
+  },
+  {
+    "category": "finance",
+    "title": "Class Fee Prospectus & Structure Slip",
+    "icon": "pi pi-file-pdf",
+    "tag": "Admission Prospectus",
+    "badge": "A4 Prospectus",
+    "color": "#2563eb",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    "desc": "Clean, official class-wise fee breakdown slip detailing annual costs, mandatory vs optional heads, installment due dates, and school payment policies for parents.",
+    "highlights": [
+      "Full A4 Prospectus Frame",
+      "One-Time vs Term Breakup",
+      "Official Signatures & Stamp",
+      "Installment Due Calendar"
+    ],
+    "targetUser": "Admissions Desk & Parents",
+    "workflow": "Select Class -> View Breakdown -> 1-Click Print Prospectus -> Handover to Parent"
+  },
+  {
+    "category": "finance",
+    "title": "Student Fee Dues & Defaulter Tracking",
+    "icon": "pi pi-exclamation-circle",
+    "tag": "Dues Collection",
+    "badge": "Auto Defaulters",
+    "color": "#dc2626",
+    "lightColor": "#fef2f2",
+    "gradient": "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+    "desc": "Student-wise fee ledger, outstanding balance tracking, automatic late fine computation, customizable reminder notices, and defaulter list export.",
+    "highlights": [
+      "Automated Late Fine Rules",
+      "Class-wise Defaulter Lists",
+      "SMS/WhatsApp Payment Reminders",
+      "Historical Payment Ledger"
+    ],
+    "targetUser": "Accounts Department",
+    "workflow": "Filter Dues by Class -> Check Overdue Days -> Send Payment Reminders -> Record Collection"
+  },
+  {
+    "category": "finance",
+    "title": "Fee Discount & Concession Master",
+    "icon": "pi pi-percentage",
+    "tag": "Financial Aid",
+    "badge": "Approval Workflow",
+    "color": "#7c3aed",
+    "lightColor": "#f5f3ff",
+    "gradient": "linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)",
+    "desc": "Merit scholarships, sibling concessions, staff ward waivers, RTE exemptions, and custom percentage/fixed fee discounts with audit logs.",
+    "highlights": [
+      "Sibling Concession Logic",
+      "Merit & Need-based Waivers",
+      "RTE Compliance Discounts",
+      "Strict Manager Approval Logs"
+    ],
+    "targetUser": "Management & Fee In-charge",
+    "workflow": "Create Concession Scheme -> Apply to Eligible Student -> Administrative Approval -> Automatic Bill Discount"
+  },
+  {
+    "category": "finance",
+    "title": "Financial Fee Reports & Analytics",
+    "icon": "pi pi-chart-bar",
+    "tag": "Financial Analytics",
+    "badge": "Executive BI",
+    "color": "#4338ca",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4338ca 0%, #6366f1 100%)",
+    "desc": "Daily collection register, payment mode breakup (Cash, Bank, UPI, POS), head-wise collection breakdown, class collection ratios, and exportable financial summaries.",
+    "highlights": [
+      "Daily Cashier Closing Book",
+      "Head-wise Revenue Breakup",
+      "Payment Mode Analytics",
+      "Direct Excel & PDF Export"
+    ],
+    "targetUser": "Auditors, Accountants & Trustees",
+    "workflow": "Select Date Range -> View Consolidated Analytics -> Audit Modes -> Export Financial Reports"
+  },
+  {
+    "category": "finance",
+    "title": "School Expense Management & Petty Cash",
+    "icon": "pi pi-chart-line",
+    "tag": "Expense & Audit",
+    "badge": "Audit Trail",
+    "color": "#0d9488",
+    "lightColor": "#f0fdfa",
+    "gradient": "linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)",
+    "desc": "Petty cash tracking, operational expense categories, bill attachments, voucher receipts, and branch-level financial auditing.",
+    "highlights": [
+      "Petty Cash Accounts",
+      "Voucher Numbering Series",
+      "Expense Trend Analytics",
+      "Bill Attachment Archives"
+    ],
+    "targetUser": "Accountant & Manager",
+    "workflow": "Voucher Request -> Bill Document Upload -> Manager Approval -> Ledger Entry"
+  },
+  {
+    "category": "finance",
+    "title": "Isolated Slip & Voucher Designer",
+    "icon": "pi pi-desktop",
+    "tag": "Custom Slips",
+    "badge": "Print Customization",
+    "color": "#0891b2",
+    "lightColor": "#ecfeff",
+    "gradient": "linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)",
+    "desc": "Visual customizers for Fee Receipts, Admission Slips, and Enquiry Slips with custom typography, borders, logos, signatures, and full A4 border framing.",
+    "highlights": [
+      "Live WYSIWYG Preview",
+      "Custom Logo & Stamp Placements",
+      "Print Margin & Padding Controls",
+      "Complete A4 Enclosed Border"
+    ],
+    "targetUser": "System Administrators",
+    "workflow": "Open Slip Designer -> Toggle Elements -> Adjust Branding -> Instant Print Preview"
+  },
+  {
+    "category": "academics",
+    "title": "Smart Student Attendance",
+    "icon": "pi pi-check-circle",
+    "tag": "Daily Operations",
+    "badge": "1-Click Roll Call",
+    "color": "#2563eb",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    "desc": "Class-wise daily student roll-call attendance registers, monthly percentage reports, staff presence logs, and leave approval workflows.",
+    "highlights": [
+      "1-Click Roll-Call Register",
+      "Monthly % Attendance Reports",
+      "Parent Absent Alerts",
+      "Holiday Calendar Sync"
+    ],
+    "targetUser": "Class Teachers & HR",
+    "workflow": "Class Selection -> Mark Present/Absent -> Save Register -> Instant Parent Alert"
+  },
+  {
+    "category": "academics",
+    "title": "Monthly Attendance Register & % Summaries",
+    "icon": "pi pi-calendar-times",
+    "tag": "Attendance Audit",
+    "badge": "CBSE % Threshold",
+    "color": "#1d4ed8",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+    "desc": "Month-wise 31-day visual attendance sheet per class, working days count, attendance percentage calculation, and low-attendance alert lists for exam eligibility.",
+    "highlights": [
+      "31-Day Heatmap Grid",
+      "Calculated Monthly %",
+      "Below 75% Defaulter Alert",
+      "Printable Monthly Register"
+    ],
+    "targetUser": "Principals & Academic Coordinators",
+    "workflow": "Select Month & Class -> Review Student % -> Identify Short Attendance -> Print Monthly Sheet"
+  },
+  {
+    "category": "academics",
+    "title": "Class & Section Timetable Matrix",
+    "icon": "pi pi-calendar",
+    "tag": "Academic Planning",
+    "badge": "Visual Grid",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Weekly timetable schedule per class and section, period timings, break intervals, lab/library sessions, and visual conflict alerts.",
+    "highlights": [
+      "Visual Weekly Grids",
+      "Automated Bell Timings",
+      "Smart Proxy Substitution",
+      "Printable Class Schedule"
+    ],
+    "targetUser": "Academic Coordinators",
+    "workflow": "Period Matrix -> Teacher Assignment -> Conflict Check -> Live Display"
+  },
+  {
+    "category": "academics",
+    "title": "Teacher Timetable & Workload Matrix",
+    "icon": "pi pi-clock",
+    "tag": "Faculty Allocation",
+    "badge": "Workload Balancing",
+    "color": "#0369a1",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0369a1 0%, #0284c7 100%)",
+    "desc": "Faculty-wise period matrix, weekly period quota tracking, free period indicators, and balanced teaching workload distribution.",
+    "highlights": [
+      "Teacher Weekly Period Counts",
+      "Free Period Finder",
+      "Workload Balancing",
+      "Individual Teacher Time Slips"
+    ],
+    "targetUser": "Vice Principals & Coordinators",
+    "workflow": "Select Faculty -> Inspect Weekly Schedule -> Balance Workload -> Print Faculty Roster"
+  },
+  {
+    "category": "academics",
+    "title": "Smart Proxy Substitution & Bell Timings",
+    "icon": "pi pi-sync",
+    "tag": "Automation",
+    "badge": "Auto Proxy",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Intelligent automated substitution suggesting proxy faculty for absent teachers by subject specialization and free periods.",
+    "highlights": [
+      "Automatic Absent Teacher Detection",
+      "Smart Specialization Matching",
+      "Proxy Slip Printing",
+      "WhatsApp Alert to Assigned Proxy"
+    ],
+    "targetUser": "Daily Timetable In-charge",
+    "workflow": "Mark Absent Teacher -> AI Finds Free Faculty -> 1-Click Assign -> Notify Teacher"
+  },
+  {
+    "category": "academics",
+    "title": "Class-Subject Curriculum Mapping",
+    "icon": "pi pi-bookmark",
+    "tag": "Curriculum",
+    "badge": "Board Compliant",
+    "color": "#4f46e5",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+    "desc": "Complete mapping of subjects (Core, Elective, Additional) to classes and sections, credit hours, passing marks, and board syllabus guidelines.",
+    "highlights": [
+      "Mandatory vs Optional Subjects",
+      "Theory & Practical Weightage",
+      "Class-wise Subject Roster",
+      "Board Curriculum Codes"
+    ],
+    "targetUser": "Academic Head & Exam Cell",
+    "workflow": "Create Subjects -> Map to Classes -> Set Evaluation Weightage -> Link with Teachers"
+  },
+  {
+    "category": "academics",
+    "title": "Class Homework & Daily Assignments",
+    "icon": "pi pi-pencil",
+    "tag": "Classroom Learning",
+    "badge": "Digital Homework",
+    "color": "#7c3aed",
+    "lightColor": "#f5f3ff",
+    "gradient": "linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)",
+    "desc": "Daily subject-wise homework publishing with assignment descriptions, attachment files, submission due dates, and instant delivery to student/parent portals.",
+    "highlights": [
+      "Subject-wise Homework Posting",
+      "Document & Image Attachments",
+      "Submission Due Date Tracking",
+      "Parent Portal Notification"
+    ],
+    "targetUser": "Subject Teachers & Students",
+    "workflow": "Teacher Posts Assignment -> Attaches Study Material -> Published to Portal -> Parent Notified"
+  },
+  {
+    "category": "academics",
+    "title": "Exam Terms & Date Sheet Scheduler",
+    "icon": "pi pi-calendar-plus",
+    "tag": "Assessments",
+    "badge": "CBSE / State Board",
+    "color": "#4338ca",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4338ca 0%, #6366f1 100%)",
+    "desc": "Term examination creation (Unit Tests, Mid-Term, Half-Yearly, Annual), subject-wise exam dates, session timings, and printable date sheets for students.",
+    "highlights": [
+      "Multi-Term Exam Architecture",
+      "Subject-wise Date & Shift Scheduler",
+      "Student Date Sheet Printing",
+      "Admit Card Generation"
+    ],
+    "targetUser": "Exam In-charge & Academic Cell",
+    "workflow": "Create Exam Term -> Add Subject Dates & Times -> Check Date Gaps -> Print Date Sheets"
+  },
+  {
+    "category": "academics",
+    "title": "Exam Schedule & Seating Management",
+    "icon": "pi pi-th-large",
+    "tag": "Exam Operations",
+    "badge": "Hall Seating",
+    "color": "#3730a3",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #3730a3 0%, #4338ca 100%)",
+    "desc": "Examination hall allocations, roll number seat matrices, room capacity management, and invigilator duty allocation.",
+    "highlights": [
+      "Room Capacity Allocation",
+      "Roll Number Seating Grid",
+      "Invigilation Duty Matrix",
+      "Hall Door Seating Charts"
+    ],
+    "targetUser": "Exam Controllers",
+    "workflow": "Allocate Rooms -> Map Students to Desks -> Assign Faculty Invigilators -> Print Room Slips"
+  },
+  {
+    "category": "academics",
+    "title": "Subject Teacher Marks Entry Grid",
+    "icon": "pi pi-file-edit",
+    "tag": "Evaluation",
+    "badge": "Fast Spreadsheet",
+    "color": "#4f46e5",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+    "desc": "Intuitive spreadsheet-style marks entry grid for teachers, supporting Theory, Practical, Periodic Tests, and Internal Assessments with validation locks.",
+    "highlights": [
+      "Fast Tab-key Grid Entry",
+      "Theory & Practical Separate Columns",
+      "Absent / Medical Flagging",
+      "Max Marks Validation Lock"
+    ],
+    "targetUser": "Subject Teachers & Evaluators",
+    "workflow": "Select Class, Subject & Exam -> Enter Marks in Spreadsheet Grid -> Validate Limits -> Submit for Grading"
+  },
+  {
+    "category": "academics",
+    "title": "Automated Grading & Student Marks Cards",
+    "icon": "pi pi-calculator",
+    "tag": "Grading Engine",
+    "badge": "Auto Grade & Rank",
+    "color": "#6366f1",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
+    "desc": "Automatic percentage, CGPA, and letter grade calculations according to CBSE 8-point / 9-point scale, class rank generation, and student marks cards.",
+    "highlights": [
+      "Configurable Grading Scales",
+      "Automatic CGPA & Percentage",
+      "Class Rank Determination",
+      "Subject Highest Marks Comparison"
+    ],
+    "targetUser": "Exam Cell & Class Teachers",
+    "workflow": "Finalize Marks -> Run Auto-Grading Engine -> Verify Grade Bounds -> Generate Marks Slips"
+  },
+  {
+    "category": "academics",
+    "title": "Exams & Automated Report Cards",
+    "icon": "pi pi-file-edit",
+    "tag": "Report Cards",
+    "badge": "CBSE / ICSE",
+    "color": "#4f46e5",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+    "desc": "Term-wise date sheets, subject teacher marks entry, automated grading/percentage calculations, and printable CBSE/ICSE report cards.",
+    "highlights": [
+      "Subject Marks Entry Grid",
+      "Automated Grade & Rank Calc",
+      "1-Click Multi-Term Slips",
+      "Personalized Faculty Remarks"
+    ],
+    "targetUser": "Exam Cell & Faculty",
+    "workflow": "Exam Date Sheet -> Faculty Marks Entry -> Auto Grading -> Download Report Cards"
+  },
+  {
+    "category": "academics",
+    "title": "Promotion & Transfer Certificates",
+    "icon": "pi pi-arrow-up-right",
+    "tag": "Student Lifecycle",
+    "badge": "QR Verifiable",
+    "color": "#0891b2",
+    "lightColor": "#ecfeff",
+    "gradient": "linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)",
+    "desc": "Session-end 1-click bulk student promotion and formal verifiable Transfer Certificate (TC) issuance with QR verification.",
+    "highlights": [
+      "Bulk Class Promotion",
+      "Official TC Numbering",
+      "Tamper-Proof QR Code",
+      "Dues Clearance Check"
+    ],
+    "targetUser": "Principals & Registrars",
+    "workflow": "Select Class -> Academic Criteria -> 1-Click Promote -> Formal TC Archive"
+  },
+  {
+    "category": "academics",
+    "title": "Transfer Certificate (TC) with Tamper-Proof QR",
+    "icon": "pi pi-verified",
+    "tag": "Student Exit",
+    "badge": "Govt Standard",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Statutory school Transfer Certificate (TC) generator adhering to board bylaws, sequential TC numbering series, reason for leaving, and verifiable public QR code.",
+    "highlights": [
+      "Statutory 20-Point CBSE Format",
+      "Tamper-Proof Verification QR",
+      "Sequential TC Numbering",
+      "Complete Dues Clearance Check"
+    ],
+    "targetUser": "Principals & Registrars",
+    "workflow": "TC Application -> Dues Verification -> Generate TC Number -> Print Official A4 Certificate"
+  },
+  {
+    "category": "academics",
+    "title": "Statutory Bonafide & Institutional Certificates",
+    "icon": "pi pi-file-check",
+    "tag": "Certificates",
+    "badge": "5+ Legal Formats",
+    "color": "#0d9488",
+    "lightColor": "#f0fdfa",
+    "gradient": "linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)",
+    "desc": "Instant generation of legal institutional certificates including Bonafide Student, Date of Birth (DOB) extract, Certificate of Age, Character Certificate, and RTE Verification.",
+    "highlights": [
+      "Bonafide & Character Certificates",
+      "Date of Birth (DOB) Statutory Extract",
+      "Certificate of Age Calculation",
+      "Custom Accent Colors & Letterheads"
+    ],
+    "targetUser": "Office Clerks & Principals",
+    "workflow": "Select Student -> Choose Certificate Type -> Select Purpose -> Print Full A4 Certificate"
+  },
+  {
+    "category": "hr",
+    "title": "Staff Directory & HR Payroll",
+    "icon": "pi pi-users",
+    "tag": "Staff HR",
+    "badge": "Full Lifecycle",
+    "color": "#7c3aed",
+    "lightColor": "#f5f3ff",
+    "gradient": "linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)",
+    "desc": "Complete employee credentials, qualification tracking, salary structures, class teacher allocations, and faculty subject mapping.",
+    "highlights": [
+      "Employee KYC & Records",
+      "Teacher Subject Allocations",
+      "Monthly Salary & Leaves",
+      "Service Book Management"
+    ],
+    "targetUser": "HR & Administrative Head",
+    "workflow": "Staff Onboarding -> Class Mapping -> Biometric Attendance -> Payroll Generation"
+  },
+  {
+    "category": "hr",
+    "title": "Teacher Class & Subject Allocation",
+    "icon": "pi pi-user-edit",
+    "tag": "Academic Staff",
+    "badge": "Faculty Mapping",
+    "color": "#6d28d9",
+    "lightColor": "#f5f3ff",
+    "gradient": "linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%)",
+    "desc": "Dedicated mapping tool to assign class teachers to sections and map subject specialist teachers across primary, secondary, and higher secondary grades.",
+    "highlights": [
+      "Class Teacher Designation",
+      "Subject Specialist Assignments",
+      "Visual Allocation Matrix",
+      "Conflict Prevention"
+    ],
+    "targetUser": "Academic Coordinators & Principals",
+    "workflow": "Select Teacher -> Assign Class Teacher Role -> Map Subject Classes -> Save Allocation Matrix"
+  },
+  {
+    "category": "hr",
+    "title": "Staff Attendance & Biometric Tracking",
+    "icon": "pi pi-user-check",
+    "tag": "Staff Attendance",
+    "badge": "Shift Tracking",
+    "color": "#2563eb",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    "desc": "Daily punch-in/out logging for staff, biometric sync, leave application review, half-day recording, and monthly staff attendance register.",
+    "highlights": [
+      "Daily Manual & Biometric Log",
+      "Approved Leave Integration",
+      "Monthly Staff Duty Hours",
+      "Absence Deductions Sync"
+    ],
+    "targetUser": "HR & Front Office",
+    "workflow": "Daily Staff Check-in -> Review Late Arrivals -> Process Leaves -> Export Attendance Log"
+  },
+  {
+    "category": "hr",
+    "title": "Automated Monthly Staff Payroll & Salary Slips",
+    "icon": "pi pi-money-bill",
+    "tag": "Payroll & Salary",
+    "badge": "Full A4 Slip",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Automated monthly payroll calculation based on attendance, earnings (Basic, HRA, DA, Allowances), deductions (PF, ESI, TDS, Leaves), and professional A4 salary slip printing.",
+    "highlights": [
+      "Auto Gross & Net Pay Calc",
+      "Earnings & Deductions Itemization",
+      "Enclosed A4 Salary Slip",
+      "Bank Transfer Sheet & WhatsApp Share"
+    ],
+    "targetUser": "Accountants & HR Head",
+    "workflow": "Select Month -> Sync Attendance & Leaves -> Calculate Net Pay -> Print Salary Slips & Bank Sheet"
+  },
+  {
+    "category": "logistics",
+    "title": "Transport Fleet & Route Tracking",
+    "icon": "pi pi-car",
+    "tag": "Fleet Logistics",
+    "badge": "Route Mapping",
+    "color": "#dc2626",
+    "lightColor": "#fef2f2",
+    "gradient": "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+    "desc": "Bus vehicles, driver licensing, pickup/drop route stops, timings, distance slabs, and student/staff seat allocations.",
+    "highlights": [
+      "Vehicle & Driver Matrix",
+      "Route Stops & Pick Timings",
+      "Distance Fare Slabs",
+      "Seat Capacity Safety"
+    ],
+    "targetUser": "Transport In-charge",
+    "workflow": "Create Route & Stops -> Assign Bus & Driver -> Allocate Students -> Fee Sync"
+  },
+  {
+    "category": "logistics",
+    "title": "Transport Bus Fleet & Vehicle Master",
+    "icon": "pi pi-car",
+    "tag": "Fleet Master",
+    "badge": "Vehicle Security",
+    "color": "#b91c1c",
+    "lightColor": "#fef2f2",
+    "gradient": "linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)",
+    "desc": "School bus and van tracking, registration numbers, vehicle fitness certificate expiry alerts, insurance documents, pollution checks, and driver/conductor profiles.",
+    "highlights": [
+      "Fitness & Insurance Expiry Alerts",
+      "Driver & Conductor Licensing",
+      "Vehicle Seating Capacity",
+      "Maintenance & Service Log"
+    ],
+    "targetUser": "Transport In-charge & Fleet Admin",
+    "workflow": "Register Vehicle -> Attach Insurance & Fitness Docs -> Assign Driver & Conductor -> Active Status"
+  },
+  {
+    "category": "logistics",
+    "title": "Transport Routes, Stops & Distance Slabs",
+    "icon": "pi pi-map-marker",
+    "tag": "Route Logistics",
+    "badge": "Stop Schedules",
+    "color": "#ea580c",
+    "lightColor": "#fff7ed",
+    "gradient": "linear-gradient(135deg, #ea580c 0%, #f97316 100%)",
+    "desc": "Pickup and drop route creation, individual stop milestones, morning/evening timings, distance slabs, and route-wise monthly transport fee mapping.",
+    "highlights": [
+      "Morning & Evening Timings",
+      "Distance-based Fare Slabs",
+      "Ordered Route Milestones",
+      "Fee Structure Integration"
+    ],
+    "targetUser": "Transport Manager",
+    "workflow": "Define Route Name -> Add Ordered Stops & Times -> Set Fare Slabs -> Link Bus Vehicle"
+  },
+  {
+    "category": "logistics",
+    "title": "Student & Staff Transport Allocation",
+    "icon": "pi pi-ticket",
+    "tag": "Passenger Allocations",
+    "badge": "Seat Management",
+    "color": "#c2410c",
+    "lightColor": "#fff7ed",
+    "gradient": "linear-gradient(135deg, #c2410c 0%, #ea580c 100%)",
+    "desc": "Student and staff bus seat bookings, route assignment, pickup stop selection, bus pass generation, and automated addition of transport fees to student fee dues.",
+    "highlights": [
+      "Seat Capacity Validation",
+      "Pickup Stop Assignment",
+      "Auto Transport Fee Addition",
+      "Printable Bus Commuter Rosters"
+    ],
+    "targetUser": "Transport Office & Accounts",
+    "workflow": "Select Student -> Assign Bus & Stop -> Automatic Transport Fee Sync -> Issue Bus Pass"
+  },
+  {
+    "category": "logistics",
+    "title": "School Inventory Store & Slip Setup",
+    "icon": "pi pi-cog",
+    "tag": "Supply Chain",
+    "badge": "Store Configuration",
+    "color": "#92400e",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #92400e 0%, #b45309 100%)",
+    "desc": "Central store configuration, warehouse locations, departments, inventory slip formats, terms & conditions, and numbering series for stock documents.",
+    "highlights": [
+      "Warehouse Location Setup",
+      "Departmental Cost Centers",
+      "Custom Slip Layouts",
+      "Sequential Stock Voucher Numbers"
+    ],
+    "targetUser": "Storekeeper & Procurement Manager",
+    "workflow": "Configure Main Store -> Define Department Locations -> Set Voucher Formats -> Activate Store"
+  },
+  {
+    "category": "logistics",
+    "title": "Inventory & Stock Management",
+    "icon": "pi pi-box",
+    "tag": "Supply Chain",
+    "badge": "Real-time Stock",
+    "color": "#b45309",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #b45309 0%, #d97706 100%)",
+    "desc": "Uniforms, books, stationery, item categories, supplier directory, purchase inward bills, department stock issue, and stock ledger.",
+    "highlights": [
+      "Purchase Inward Bills",
+      "Department Issue Slips",
+      "Real-Time Stock Ledger",
+      "Low Stock Threshold Alerts"
+    ],
+    "targetUser": "Storekeeper & Procurement",
+    "workflow": "Supplier PO -> Inward Stock Verification -> Department Issue -> Ledger Audit"
+  },
+  {
+    "category": "logistics",
+    "title": "Inventory Items Master & Categories",
+    "icon": "pi pi-tags",
+    "tag": "Stock Catalog",
+    "badge": "Item Matrix",
+    "color": "#d97706",
+    "lightColor": "#fffbeb",
+    "gradient": "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+    "desc": "Complete product catalog for textbooks, school uniforms, sports equipment, stationery, laboratory chemicals, and cleaning supplies with unit of measure and reorder levels.",
+    "highlights": [
+      "SKU Code & Item Categorization",
+      "Unit of Measure (UOM)",
+      "Minimum Reorder Level Alerts",
+      "Tax Rate & Standard Cost"
+    ],
+    "targetUser": "Inventory Managers",
+    "workflow": "Create Category -> Add Item Specifications -> Set Minimum Stock Threshold -> Catalog Ready"
+  },
+  {
+    "category": "logistics",
+    "title": "Suppliers & Vendor Management",
+    "icon": "pi pi-briefcase",
+    "tag": "Procurement",
+    "badge": "Vendor Directory",
+    "color": "#0d9488",
+    "lightColor": "#f0fdfa",
+    "gradient": "linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)",
+    "desc": "Complete vendor directory, contact personnel, GSTIN verification, credit terms, payment tracking, and purchase transaction histories.",
+    "highlights": [
+      "Vendor GSTIN & Contact Info",
+      "Credit Period & Bank Details",
+      "Purchase Order History",
+      "Vendor Balance Tracking"
+    ],
+    "targetUser": "Purchase Department & Accounts",
+    "workflow": "Onboard Vendor -> Record Terms -> Issue Purchase Orders -> Verify Deliveries"
+  },
+  {
+    "category": "logistics",
+    "title": "Stock Inward & Department Issue (Outward)",
+    "icon": "pi pi-arrow-right-arrow-left",
+    "tag": "Material Dispatches",
+    "badge": "Inward & Issue",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Purchase order receipts, vendor invoice recording, departmental requisitions, issue of items to science labs, libraries, teachers, and classrooms with authorized signature slips.",
+    "highlights": [
+      "Vendor Invoice Number Sync",
+      "Batch & Expiry Date Tracking",
+      "Authorized Issue Signature Slips",
+      "Real-Time Stock Depletion"
+    ],
+    "targetUser": "Storekeeper & Department Heads",
+    "workflow": "Receive Inward Goods -> Store in Warehouse -> Department Requisition -> Issue Material with Slip"
+  },
+  {
+    "category": "logistics",
+    "title": "Stock Movement Ledger & Item Returns",
+    "icon": "pi pi-history",
+    "tag": "Audit & Reconciliation",
+    "badge": "Real-Time Ledger",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Comprehensive bin-card style stock movement ledger tracking opening balance, inwards, issues, returns, and closing balance per item with date filters.",
+    "highlights": [
+      "Bin Card Stock Statement",
+      "Uniform & Book Counter Sales",
+      "Item Size Exchange Register",
+      "Audited Physical vs System Count"
+    ],
+    "targetUser": "Auditors & School Management",
+    "workflow": "Select Item & Date Range -> Generate Statement -> Reconcile Physical Stock -> Export Ledger"
+  },
+  {
+    "category": "platform",
+    "title": "Super Admin Multi-Tenant SaaS",
+    "icon": "pi pi-building",
+    "tag": "Enterprise Cloud",
+    "badge": "Multi-Tenant",
+    "color": "#0f172a",
+    "lightColor": "#f8fafc",
+    "gradient": "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+    "desc": "Executive portal to onboard infinite schools, toggle module catalogs, configure subscription plans, and inspect global audit logs.",
+    "highlights": [
+      "Infinite School Onboarding",
+      "Module Feature Flags",
+      "Subscription Tier Engine",
+      "Central Database Isolations"
+    ],
+    "targetUser": "Trustees & Central Management",
+    "workflow": "Tenant Onboarding -> Select Plan -> Assign Admin -> Global Dashboard"
+  },
+  {
+    "category": "platform",
+    "title": "Multi-Campus School & Branch Master",
+    "icon": "pi pi-sitemap",
+    "tag": "Campus Profiles",
+    "badge": "Branding & Signatures",
+    "color": "#1e3a8a",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
+    "desc": "Official school details, branch names, affiliation codes (CBSE/ICSE/State), primary & alternate contact numbers, official logo upload, and principal/cashier signature graphics.",
+    "highlights": [
+      "Alternate Phone Support",
+      "Official Logo & Stamp Upload",
+      "Principal & Cashier Signatures",
+      "CBSE/ICSE Affiliation Details"
+    ],
+    "targetUser": "Principals & School Owners",
+    "workflow": "Update School Profile -> Upload Logo & Signatures -> Add Alternate Phones -> Auto-Applied across All Slips"
+  },
+  {
+    "category": "platform",
+    "title": "Granular Role-Based Security (RBAC)",
+    "icon": "pi pi-shield",
+    "tag": "Security & RBAC",
+    "badge": "Bank Grade",
+    "color": "#1e3a8a",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
+    "desc": "Screen-level View, Add, Edit, Delete, Print and Export permissions for Principals, Accountants, Teachers, and Clerks.",
+    "highlights": [
+      "Granular Screen Permissions",
+      "Print & Export Locks",
+      "Full Mutation Audit Trail",
+      "Dynamic Policy Enforcement"
+    ],
+    "targetUser": "System Administrator",
+    "workflow": "Define Custom Roles -> Matrix Checkboxes -> Assign Users -> Active Policy"
+  },
+  {
+    "category": "platform",
+    "title": "User Management & Multi-Campus Access",
+    "icon": "pi pi-lock",
+    "tag": "Identity Management",
+    "badge": "Multi-Campus",
+    "color": "#334155",
+    "lightColor": "#f1f5f9",
+    "gradient": "linear-gradient(135deg, #334155 0%, #475569 100%)",
+    "desc": "Staff login creation, password policies, multi-branch assignment, active/inactive suspension toggle, and last login tracking.",
+    "highlights": [
+      "Multi-Branch Switching",
+      "Secure Hashed Passwords",
+      "1-Click Account Suspension",
+      "User Activity Timestamps"
+    ],
+    "targetUser": "IT Administrators",
+    "workflow": "Create User -> Link to Staff Record -> Assign Branch & Role -> Send Login Credentials"
+  },
+  {
+    "category": "platform",
+    "title": "Academic Year Management & Sessions",
+    "icon": "pi pi-calendar",
+    "tag": "Session Management",
+    "badge": "Active Session",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Multi-year academic session setup (e.g. 2026-27, 2027-28), start/end date configuration, active session lock, and global instant session switcher.",
+    "highlights": [
+      "Multi-Session Support",
+      "Active Session Tagging",
+      "Global Header Session Switcher",
+      "Historical Data Isolation"
+    ],
+    "targetUser": "System Administrators",
+    "workflow": "Add Academic Session -> Set Start/End Dates -> Mark Active -> All Data Filters Updated"
+  },
+  {
+    "category": "platform",
+    "title": "Custom Numbering Series Engine",
+    "icon": "pi pi-hashtag",
+    "tag": "Document Control",
+    "badge": "Prefix & Padding",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Automated, customizable sequential numbering series for Admissions, Enquiries, Fee Receipts, Gate Passes, Salary Slips, and Vouchers with branch-specific prefixes.",
+    "highlights": [
+      "Custom Prefixes & Suffixes",
+      "Configurable Digit Padding",
+      "Auto-Increment with Lock Protection",
+      "Separate Series per Document Type"
+    ],
+    "targetUser": "Administrators & Accountants",
+    "workflow": "Select Document Type -> Set Prefix (e.g. DPS/RCP/) -> Set Starting Number -> Seamless Sequential Numbering"
+  },
+  {
+    "category": "platform",
+    "title": "System Audit Logs & Mutation Tracking",
+    "icon": "pi pi-eye",
+    "tag": "Compliance & Security",
+    "badge": "Audit Trail",
+    "color": "#475569",
+    "lightColor": "#f8fafc",
+    "gradient": "linear-gradient(135deg, #475569 0%, #64748b 100%)",
+    "desc": "Tamper-evident system activity logging recording every record creation, modification, deletion, fee adjustment, and administrative login with IP and timestamps.",
+    "highlights": [
+      "Mutation Delta Tracking",
+      "User IP Address & Timestamp",
+      "Action Categorization",
+      "Non-Deletable Security Log"
+    ],
+    "targetUser": "Management & External Auditors",
+    "workflow": "User Performs Mutation -> System Captures Payload -> Permanent Log Stored -> Audit Inspection"
+  },
+  {
+    "category": "platform",
+    "title": "Central Analytical Reports Hub",
+    "icon": "pi pi-chart-bar",
+    "tag": "BI & Analytics",
+    "badge": "Executive BI",
+    "color": "#4338ca",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4338ca 0%, #6366f1 100%)",
+    "desc": "Consolidated multi-branch reporting covering fee collection trends, defaulters, daily attendance ratios, and institutional growth.",
+    "highlights": [
+      "Fee Defaulter Rosters",
+      "Attendance Ratio Graphs",
+      "Export to Excel & PDF",
+      "Multi-Branch Comparative Charts"
+    ],
+    "targetUser": "Trustees & Directors",
+    "workflow": "Select Branch & Range -> Live Calculation -> Chart Visualization -> Export"
+  },
+  {
+    "category": "platform",
+    "title": "Centralized A4 Print & Slip Engine",
+    "icon": "pi pi-desktop",
+    "tag": "Print Utility",
+    "badge": "A4 Full-Border",
+    "color": "#1e40af",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+    "desc": "Isolated iframe print engine guaranteeing complete A4 bordered framing, identical 8mm margins and paddings on all 4 sides, zero popup blocks, and no multi-page spills.",
+    "highlights": [
+      "Complete A4 Enclosed Border",
+      "Uniform 8mm Margin on All 4 Sides",
+      "Zero Background Clutter in Print",
+      "Thermal & A4 Multi-Format Ready"
+    ],
+    "targetUser": "All Administrative Users",
+    "workflow": "Click Print -> Isolated Iframe Injected -> A4 Sizing Applied -> Clean Official Printout"
+  },
+  {
+    "category": "portal",
+    "title": "Student & Parent Self-Service Portal",
+    "icon": "pi pi-user",
+    "tag": "Family Portal",
+    "badge": "Multi-Child",
+    "color": "#9333ea",
+    "lightColor": "#faf5ff",
+    "gradient": "linear-gradient(135deg, #9333ea 0%, #a855f7 100%)",
+    "desc": "Dedicated login for students and parents featuring multi-child switching, live period timetables, attendance tracking, and instant fee receipts.",
+    "highlights": [
+      "Multi-Sibling Switcher",
+      "Personalized Student Dashboard",
+      "Direct Communication with School",
+      "Mobile Responsive Layout"
+    ],
+    "targetUser": "Parents & Students",
+    "workflow": "Parent Login -> Choose Child -> View Attendance & Dues -> Download Receipts"
+  },
+  {
+    "category": "portal",
+    "title": "Live Class Timetable & Bell Schedule",
+    "icon": "pi pi-calendar",
+    "tag": "Daily Schedule",
+    "badge": "Period Matrix",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+    "desc": "Real-time class timetable grid showing daily periods, subject names, assigned faculty, and bell timings for students and parents.",
+    "highlights": [
+      "Day-wise Period Grid",
+      "Subject & Teacher Names",
+      "Bell & Recess Timings",
+      "Proxy Substitution Live Updates"
+    ],
+    "targetUser": "Students & Parents",
+    "workflow": "Open Timetable Tab -> Select Day -> View Period Schedule -> Prepare School Bag"
+  },
+  {
+    "category": "portal",
+    "title": "Daily & Monthly Attendance Logs",
+    "icon": "pi pi-check-circle",
+    "tag": "Attendance Portal",
+    "badge": "Attendance History",
+    "color": "#2563eb",
+    "lightColor": "#eff6ff",
+    "gradient": "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    "desc": "Transparent view of student daily attendance history with Present, Absent, Late, and Leave status flags alongside monthly percentage metrics.",
+    "highlights": [
+      "Calendar Attendance Visualizer",
+      "Current Month Percentage",
+      "Absent Date History",
+      "Official Attendance Records"
+    ],
+    "targetUser": "Parents & Students",
+    "workflow": "Open Attendance Tab -> View Monthly Calendar -> Inspect Absent Days -> Track 75% Requirement"
+  },
+  {
+    "category": "portal",
+    "title": "Term Marks, Report Cards & Grade Slips",
+    "icon": "pi pi-file-edit",
+    "tag": "Academic Results",
+    "badge": "Instant Results",
+    "color": "#4f46e5",
+    "lightColor": "#eef2ff",
+    "gradient": "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+    "desc": "Immediate access to published examination marks, subject grades, total scores, class rankings, and 1-click download of official CBSE report cards.",
+    "highlights": [
+      "Subject-wise Marks & Grades",
+      "Term Comparison History",
+      "Teacher Remarks View",
+      "1-Click Official Report Card PDF"
+    ],
+    "targetUser": "Students & Parents",
+    "workflow": "Open Exams Tab -> Select Exam Term -> View Detailed Scores -> Download Report Card PDF"
+  },
+  {
+    "category": "portal",
+    "title": "Instant Fee Receipts & Online Dues",
+    "icon": "pi pi-wallet",
+    "tag": "Fee Portal",
+    "badge": "Receipts Download",
+    "color": "#059669",
+    "lightColor": "#ecfdf5",
+    "gradient": "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    "desc": "Complete historical record of all paid fee receipts, outstanding fee breakdown, due dates, and instant download of official signed payment vouchers.",
+    "highlights": [
+      "Historical Paid Receipts Archive",
+      "1-Click PDF Receipt Download",
+      "Outstanding Fee Head Breakdown",
+      "Due Date Countdown"
+    ],
+    "targetUser": "Parents & Guardians",
+    "workflow": "Open Fees Tab -> Inspect Pending Dues -> View Paid Invoices -> Download Official Receipt PDF"
+  },
+  {
+    "category": "portal",
+    "title": "Circulars, Homework & Digital Notices",
+    "icon": "pi pi-bell",
+    "tag": "School Notices",
+    "badge": "Daily Updates",
+    "color": "#ea580c",
+    "lightColor": "#fff7ed",
+    "gradient": "linear-gradient(135deg, #ea580c 0%, #f97316 100%)",
+    "desc": "Digital notice board displaying official school circulars, event announcements, daily homework assignments with teacher attachments, and holiday alerts.",
+    "highlights": [
+      "Subject-wise Homework Descriptions",
+      "Downloadable Assignment Files",
+      "Urgent School Circulars",
+      "Event & Exam Announcements"
+    ],
+    "targetUser": "Students & Parents",
+    "workflow": "Open Notices / Homework Tab -> Read Announcement -> Download Attachment -> Complete Homework"
+  },
+  {
+    "category": "portal",
+    "title": "NCERT E-Books Digital Reader (Class 6-12)",
+    "icon": "pi pi-book",
+    "tag": "Digital Library",
+    "badge": "Free Library",
+    "color": "#0284c7",
+    "lightColor": "#f0f9ff",
+    "gradient": "linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)",
+    "desc": "Complete syllabus textbooks for Mathematics, Science, English, Social Science & Physics with embedded HD reader, chapters breakdown, and direct PDF downloads.",
+    "highlights": [
+      "Classes 6 to 12 Covered",
+      "Chapter-wise HD Reader",
+      "Offline PDF Downloads",
+      "Zero Additional Cost"
+    ],
+    "targetUser": "Students & Faculty",
+    "workflow": "Select Class -> Select Subject -> Open Chapter -> Read or Download"
+  },
+  {
+    "category": "portal",
+    "title": "AI Study Buddy (24/7 Doubt Solver)",
+    "icon": "pi pi-sparkles",
+    "tag": "Next-Gen AI Tutor",
+    "badge": "AI Powered",
+    "color": "#ec4899",
+    "lightColor": "#fdf2f8",
+    "gradient": "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
+    "desc": "Smart interactive study buddy providing instantaneous, curriculum-aligned homework explanations, mathematical concept breakdowns, and grammar practice.",
+    "highlights": [
+      "Instant Doubt Clarification",
+      "CBSE Syllabus Aligned",
+      "Step-by-Step Explanations",
+      "Friendly Encouraging Mentor"
+    ],
+    "targetUser": "Students & Self-Learners",
+    "workflow": "Type Homework Question -> Instant AI Explanation -> Interactive Practice Qs"
+  }
+];
 
   const filteredModules = categorizedModules.filter(item => {
     const matchesTab = activeTab === 'all' || item.category === activeTab;
