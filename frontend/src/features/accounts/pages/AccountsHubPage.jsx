@@ -61,7 +61,7 @@ import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useThemeStore } from '../../../store/themeStore';
 import { useUiStore } from '../../../store/uiStore';
 import { useAuthStore } from '../../../store/authStore';
-import { AppButton } from '../../../components/common/AppButton';
+import { AppButton, AppDatePicker } from '../../../components/common';
 import { printWithTitle } from '../../../utils/printUtils';
 import {
   exportDayBookToExcel,
@@ -388,6 +388,28 @@ export const AccountsHubPage = () => {
       const sessionEnd = ay?.endDate ? ay.endDate.split('T')[0] : (activeAcademicYearName?.includes('2027-28') ? '2028-03-31' : '2027-03-31');
       setStartDate(sessionStart);
       setEndDate(todayStr > sessionEnd ? sessionEnd : todayStr);
+    }
+  };
+
+  // Safe date change handler for AppDatePicker (converts Date/string to YYYY-MM-DD)
+  const handleDateChange = (val, isStart = true) => {
+    if (!val) return;
+    let ymd = '';
+    if (typeof val === 'string' && val.trim().length === 10 && val.includes('-')) {
+      ymd = val.trim();
+    } else {
+      const d = val instanceof Date ? val : new Date(val);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        ymd = `${y}-${m}-${day}`;
+      }
+    }
+    if (ymd) {
+      if (isStart) setStartDate(ymd);
+      else setEndDate(ymd);
+      setDatePreset('custom');
     }
   };
 
@@ -738,36 +760,36 @@ export const AccountsHubPage = () => {
 
   return (
     <Box sx={{ pb: 3 }}>
-      {/* 1. Header & Date Range Action Bar */}
+      {/* 1. Header & Date Range Action Bar (Compact) */}
       <Box
         sx={{
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 2,
-          mb: 2.5,
-          p: 2,
+          gap: 1.5,
+          mb: 1.5,
+          p: 1.25,
           bgcolor: 'background.paper',
           borderRadius: 2,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           border: '1px solid',
           borderColor: 'divider',
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <WalletIcon sx={{ color: themeColor, fontSize: 28 }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1, fontSize: '1.1rem' }}>
+            <WalletIcon sx={{ color: themeColor, fontSize: 24 }} />
             Accounts & Finance Reports Hub
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.2 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.1, fontSize: '0.74rem' }}>
             Complete day book, cash register, fee collections, operational expenses, staff payrolls, profit & loss, and student conversions.
           </Typography>
         </Box>
 
-        {/* Date Presets & Custom Range */}
+        {/* Date Presets, Modern AppDatePicker & Actions */}
         <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-          <Stack direction="row" spacing={0.5} sx={{ bgcolor: 'action.hover', p: 0.5, borderRadius: 1.5 }}>
+          <Stack direction="row" spacing={0.5} sx={{ bgcolor: 'action.hover', p: 0.35, borderRadius: 1.5 }}>
             {[
               { id: 'today', label: 'Today' },
               { id: 'yesterday', label: 'Yesterday' },
@@ -782,10 +804,11 @@ export const AccountsHubPage = () => {
                 onClick={() => handlePresetChange(p.id)}
                 sx={{
                   textTransform: 'none',
-                  fontSize: '0.78rem',
-                  py: 0.4,
-                  px: 1.2,
+                  fontSize: '0.75rem',
+                  py: 0.25,
+                  px: 1,
                   minWidth: 'auto',
+                  height: 28,
                   bgcolor: datePreset === p.id ? themeColor : 'transparent',
                   color: datePreset === p.id ? '#fff' : 'text.primary',
                   fontWeight: datePreset === p.id ? 700 : 500,
@@ -799,34 +822,34 @@ export const AccountsHubPage = () => {
             ))}
           </Stack>
 
-          <TextField
-            type="date"
-            size="small"
-            label="From"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              setDatePreset('custom');
-            }}
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 140 }}
-          />
+          {/* New AppDatePicker (same as Admission) */}
+          <Box sx={{ width: 135 }}>
+            <AppDatePicker
+              label="From"
+              value={startDate}
+              onChange={(e) => handleDateChange(e.value, true)}
+              dateFormat="dd/M/yy"
+              placeholder="dd/M/yy"
+              containerClassName="!mb-0"
+              style={{ marginBottom: 0 }}
+            />
+          </Box>
 
-          <TextField
-            type="date"
-            size="small"
-            label="To"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              setDatePreset('custom');
-            }}
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 140 }}
-          />
+          <Box sx={{ width: 135 }}>
+            <AppDatePicker
+              label="To"
+              value={endDate}
+              onChange={(e) => handleDateChange(e.value, false)}
+              dateFormat="dd/M/yy"
+              placeholder="dd/M/yy"
+              containerClassName="!mb-0"
+              style={{ marginBottom: 0 }}
+            />
+          </Box>
 
           <Tooltip title="Refresh Data">
             <IconButton
+              size="small"
               onClick={() => {
                 fetchSummary();
                 if (activeTab === 0) fetchDayBook();
@@ -837,7 +860,7 @@ export const AccountsHubPage = () => {
                 else if (activeTab === 6) fetchAdmissions();
                 else if (activeTab === 7) fetchDefaulters();
               }}
-              sx={{ bgcolor: 'action.hover' }}
+              sx={{ bgcolor: 'action.hover', width: 30, height: 30 }}
             >
               <RefreshIcon fontSize="small" />
             </IconButton>
@@ -845,23 +868,27 @@ export const AccountsHubPage = () => {
 
           <AppButton
             variant="outlined"
-            startIcon={<PrintIcon />}
+            size="small"
+            startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
             onClick={() => setPrintModalOpen(true)}
-            sx={{ borderColor: 'divider', fontWeight: 600 }}
+            sx={{ borderColor: 'divider', fontWeight: 600, height: 30, fontSize: '0.76rem', px: 1.2 }}
           >
             Print / Preview
           </AppButton>
 
           <Button
+            size="small"
             variant="contained"
-            startIcon={<ExcelIcon />}
+            startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
             onClick={handleDownloadActiveExcel}
             sx={{
               bgcolor: '#107c41',
               color: '#ffffff',
               fontWeight: 700,
               textTransform: 'none',
-              px: 1.6,
+              height: 30,
+              fontSize: '0.76rem',
+              px: 1.2,
               '&:hover': { bgcolor: '#0b5c30' },
             }}
           >
@@ -869,15 +896,18 @@ export const AccountsHubPage = () => {
           </Button>
 
           <Button
+            size="small"
             variant="contained"
-            startIcon={<PdfIcon />}
+            startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
             onClick={handleDownloadActivePdf}
             sx={{
               bgcolor: '#d32f2f',
               color: '#ffffff',
               fontWeight: 700,
               textTransform: 'none',
-              px: 1.6,
+              height: 30,
+              fontSize: '0.76rem',
+              px: 1.2,
               '&:hover': { bgcolor: '#b71c1c' },
             }}
           >
@@ -886,43 +916,46 @@ export const AccountsHubPage = () => {
 
           <AppButton
             variant="text"
-            startIcon={<ExportIcon />}
+            size="small"
+            startIcon={<ExportIcon sx={{ fontSize: 16 }} />}
             onClick={handleExportCSV}
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: 'text.secondary', height: 30, fontSize: '0.76rem', px: 1 }}
           >
             CSV
           </AppButton>
         </Stack>
       </Box>
 
-      {/* 2. Top KPI Cards */}
-      <Grid container spacing={2} sx={{ mb: 2.5 }}>
+      {/* 2. Top KPI Cards (Compact ERP Design) */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         {/* Total Collections */}
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              p: 2,
-              borderRadius: 2,
+              p: 1.25,
+              borderRadius: 1.5,
               border: '1px solid',
               borderColor: 'divider',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 3px 8px rgba(0,0,0,0.06)' },
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
                   Total Fee Collected
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: 'success.dark', mt: 0.5 }}>
-                  {summaryLoading ? <CircularProgress size={20} /> : formatCurrency(summary?.totalFeeCollected)}
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'success.dark', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {summaryLoading ? <CircularProgress size={16} /> : formatCurrency(summary?.totalFeeCollected)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block', noWrap: true }}>
                   Cash: <b>{formatCurrency(summary?.cashCollections)}</b> | Online: <b>{formatCurrency(summary?.bankOnlineCollections)}</b>
                 </Typography>
               </Box>
-              <Box sx={{ p: 1, bgcolor: 'success.light', color: 'success.dark', borderRadius: 1.5 }}>
-                <InflowIcon />
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: 'success.light', color: 'success.dark', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <InflowIcon sx={{ fontSize: 18 }} />
               </Box>
             </Stack>
           </Card>
@@ -932,28 +965,30 @@ export const AccountsHubPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              p: 2,
-              borderRadius: 2,
+              p: 1.25,
+              borderRadius: 1.5,
               border: '1px solid',
               borderColor: 'divider',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 3px 8px rgba(0,0,0,0.06)' },
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
                   School Expenses
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: 'error.main', mt: 0.5 }}>
-                  {summaryLoading ? <CircularProgress size={20} /> : formatCurrency(summary?.totalExpenses)}
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'error.main', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {summaryLoading ? <CircularProgress size={16} /> : formatCurrency(summary?.totalExpenses)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
-                  Maintenance, supplies, bills & activities
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block', noWrap: true }}>
+                  Maintenance, supplies & bills
                 </Typography>
               </Box>
-              <Box sx={{ p: 1, bgcolor: 'error.light', color: 'error.dark', borderRadius: 1.5 }}>
-                <ExpenseIcon />
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: 'error.light', color: 'error.dark', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <ExpenseIcon sx={{ fontSize: 18 }} />
               </Box>
             </Stack>
           </Card>
@@ -963,28 +998,30 @@ export const AccountsHubPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              p: 2,
-              borderRadius: 2,
+              p: 1.25,
+              borderRadius: 1.5,
               border: '1px solid',
               borderColor: 'divider',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 3px 8px rgba(0,0,0,0.06)' },
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
                   Salaries Disbursed
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: 'warning.dark', mt: 0.5 }}>
-                  {summaryLoading ? <CircularProgress size={20} /> : formatCurrency(summary?.totalSalariesPaid)}
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {summaryLoading ? <CircularProgress size={16} /> : formatCurrency(summary?.totalSalariesPaid)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block', noWrap: true }}>
                   Total Outflow: <b>{formatCurrency(summary?.totalOutflow)}</b>
                 </Typography>
               </Box>
-              <Box sx={{ p: 1, bgcolor: 'warning.light', color: 'warning.dark', borderRadius: 1.5 }}>
-                <SalaryIcon />
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: 'warning.light', color: 'warning.dark', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <SalaryIcon sx={{ fontSize: 18 }} />
               </Box>
             </Stack>
           </Card>
@@ -994,78 +1031,91 @@ export const AccountsHubPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              p: 2,
-              borderRadius: 2,
+              p: 1.25,
+              borderRadius: 1.5,
               border: '1px solid',
               borderColor: (summary?.netSurplus ?? 0) >= 0 ? 'success.main' : 'error.main',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
               background:
                 (summary?.netSurplus ?? 0) >= 0
                   ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(255, 255, 255, 1) 100%)'
                   : 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(255, 255, 255, 1) 100%)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 3px 8px rgba(0,0,0,0.06)' },
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
                   Net Surplus (P&L)
                 </Typography>
                 <Typography
-                  variant="h5"
+                  variant="h6"
                   sx={{
                     fontWeight: 800,
                     color: (summary?.netSurplus ?? 0) >= 0 ? 'success.dark' : 'error.dark',
-                    mt: 0.5,
+                    fontSize: '1.2rem',
+                    lineHeight: 1.2,
+                    my: 0.25,
                   }}
                 >
-                  {summaryLoading ? <CircularProgress size={20} /> : formatCurrency(summary?.netSurplus)}
+                  {summaryLoading ? <CircularProgress size={16} /> : formatCurrency(summary?.netSurplus)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block', noWrap: true }}>
                   {(summary?.netSurplus ?? 0) >= 0 ? 'Net Operating Profit' : 'Operating Deficit'}
                 </Typography>
               </Box>
               <Box
                 sx={{
-                  p: 1,
+                  width: 34,
+                  height: 34,
+                  minWidth: 34,
                   bgcolor: (summary?.netSurplus ?? 0) >= 0 ? 'success.light' : 'error.light',
                   color: (summary?.netSurplus ?? 0) >= 0 ? 'success.dark' : 'error.dark',
-                  borderRadius: 1.5,
+                  borderRadius: 1.2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  ml: 1,
                 }}
               >
-                {(summary?.netSurplus ?? 0) >= 0 ? <SurplusIcon /> : <DeficitIcon />}
+                {(summary?.netSurplus ?? 0) >= 0 ? <SurplusIcon sx={{ fontSize: 18 }} /> : <DeficitIcon sx={{ fontSize: 18 }} />}
               </Box>
             </Stack>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Secondary Operations KPI Banner */}
-      <Grid container spacing={2} sx={{ mb: 2.5 }}>
+      {/* Secondary Operations KPI Banner (Compact) */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         {/* Total Enquiries */}
         <Grid item xs={12} sm={4}>
           <Paper
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              px: 1.5,
+              borderRadius: 1.5,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               border: '1px solid',
               borderColor: 'divider',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              bgcolor: 'background.paper',
             }}
           >
             <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 Total Enquiries / Leads
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.95rem', lineHeight: 1.2 }}>
                 {summary?.totalEnquiries ?? 0}{' '}
-                <Typography component="span" variant="caption" sx={{ color: 'success.main', fontWeight: 700 }}>
+                <Typography component="span" variant="caption" sx={{ color: 'success.main', fontWeight: 700, fontSize: '0.72rem' }}>
                   ({summary?.conversionRate ?? 0}% converted)
                 </Typography>
               </Typography>
             </Box>
-            <EnquiryIcon sx={{ color: 'info.main', fontSize: 32 }} />
+            <EnquiryIcon sx={{ color: 'info.main', fontSize: 24 }} />
           </Paper>
         </Grid>
 
@@ -1073,24 +1123,27 @@ export const AccountsHubPage = () => {
         <Grid item xs={12} sm={4}>
           <Paper
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              px: 1.5,
+              borderRadius: 1.5,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               border: '1px solid',
               borderColor: 'divider',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              bgcolor: 'background.paper',
             }}
           >
             <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 New Admissions Enrolled
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.95rem', lineHeight: 1.2 }}>
                 {summary?.totalAdmissions ?? 0} Students
               </Typography>
             </Box>
-            <AdmissionIcon sx={{ color: 'primary.main', fontSize: 32 }} />
+            <AdmissionIcon sx={{ color: 'primary.main', fontSize: 24 }} />
           </Paper>
         </Grid>
 
@@ -1098,24 +1151,27 @@ export const AccountsHubPage = () => {
         <Grid item xs={12} sm={4}>
           <Paper
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              px: 1.5,
+              borderRadius: 1.5,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               border: '1px solid',
               borderColor: 'divider',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              bgcolor: 'background.paper',
             }}
           >
             <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase' }}>
                 Pending Fee Dues
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'error.main' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'error.main', fontSize: '0.95rem', lineHeight: 1.2 }}>
                 {formatCurrency(summary?.totalPendingDues)}
               </Typography>
             </Box>
-            <DueIcon sx={{ color: 'error.main', fontSize: 32 }} />
+            <DueIcon sx={{ color: 'error.main', fontSize: 24 }} />
           </Paper>
         </Grid>
       </Grid>
