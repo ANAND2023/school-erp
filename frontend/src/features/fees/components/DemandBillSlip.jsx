@@ -27,7 +27,7 @@ export const SingleDemandSlip = ({ data = {}, copyTitle = 'STUDENT / PARENT COPY
 
   const schoolName = schoolInfo?.schoolName || data.schoolName || 'DIGITAL VIDYA SARTHI PUBLIC SCHOOL';
   const address = schoolInfo?.address || data.address || 'Main Campus Road, City Center';
-  const phone = schoolInfo?.phone || data.schoolPhone || '9876543210';
+  const phone = [schoolInfo?.phone || data.schoolPhone, schoolInfo?.alternatePhone || data.schoolAlternatePhone].filter(Boolean).join(', ') || '9876543210';
   const email = schoolInfo?.email || data.schoolEmail || 'info@school.edu';
   const affiliation = schoolInfo?.affiliationNumber ? `Affiliation No: ${schoolInfo.affiliationNumber}` : 'Affiliated to CBSE / State Board';
   const logoUrl = schoolInfo?.logoUrl || data.logoUrl;
@@ -343,7 +343,7 @@ export const MiniDemandSlip8 = ({ data = {}, schoolInfo = {} }) => {
   const [imgErr, setImgErr] = React.useState(false);
 
   const schoolName = schoolInfo?.schoolName || data.schoolName || 'DIGITAL VIDYA SARTHI PUBLIC SCHOOL';
-  const phone = schoolInfo?.phone || data.schoolPhone || '9876543210';
+  const phone = [schoolInfo?.phone || data.schoolPhone, schoolInfo?.alternatePhone || data.schoolAlternatePhone].filter(Boolean).join(', ') || '9876543210';
   const logoUrl = schoolInfo?.logoUrl || data.logoUrl;
 
   const billNo = data.demandBillNo || `DB-${data.admissionNo || data.studentId || '101'}`;

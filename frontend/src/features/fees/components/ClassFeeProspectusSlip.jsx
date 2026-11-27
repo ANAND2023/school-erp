@@ -39,7 +39,7 @@ export default function ClassFeeProspectusSlip({ summary }) {
   const branchName = branch.name || user?.branchName || '';
   const affiliationNo = branch.affiliationNumber || '';
   const fullAddress = [branch.address, branch.city, branch.state, branch.pincode].filter(Boolean).join(', ') || user?.schoolAddress || '';
-  const phone = branch.phone || user?.schoolPhone || '';
+  const phone = [branch.phone || user?.schoolPhone, branch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean).join(', ');
   const email = branch.email || user?.schoolEmail || '';
   const logoUrl = branch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
 

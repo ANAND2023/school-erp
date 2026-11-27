@@ -45,6 +45,7 @@ namespace SchoolERP.Application.DTOs
         public string? SchoolLogoUrl { get; set; }
         public string? SchoolAddress { get; set; }
         public string? SchoolPhone { get; set; }
+        public string? SchoolAlternatePhone { get; set; }
         public string? SchoolEmail { get; set; }
         public long BranchId { get; set; }
         public string? BranchName { get; set; }

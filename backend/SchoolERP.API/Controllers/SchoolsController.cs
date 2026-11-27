@@ -66,6 +66,7 @@ namespace SchoolERP.API.Controllers
                     LogoUrl = s.LogoUrl,
                     Address = s.Address,
                     ContactNumber = s.ContactNumber,
+                    AlternateContactNumber = s.AlternateContactNumber,
                     Email = s.Email,
                     Website = s.Website,
                     IsActive = s.IsActive,
@@ -123,6 +124,7 @@ namespace SchoolERP.API.Controllers
                 LogoUrl = school.LogoUrl,
                 Address = school.Address,
                 ContactNumber = school.ContactNumber,
+                AlternateContactNumber = school.AlternateContactNumber,
                 Email = school.Email,
                 Website = school.Website,
                 IsActive = school.IsActive,
@@ -189,6 +191,7 @@ namespace SchoolERP.API.Controllers
                         LogoUrl = request.LogoUrl?.Trim(),
                         Address = request.Address?.Trim(),
                         ContactNumber = request.ContactNumber?.Trim(),
+                        AlternateContactNumber = request.AlternateContactNumber?.Trim(),
                         Email = request.Email?.Trim(),
                         Website = request.Website?.Trim(),
                         CreatedBy = _currentUserService.UserId ?? 0,
@@ -344,6 +347,7 @@ namespace SchoolERP.API.Controllers
             school.LogoUrl = request.LogoUrl?.Trim();
             school.Address = request.Address?.Trim();
             school.ContactNumber = request.ContactNumber?.Trim();
+            school.AlternateContactNumber = request.AlternateContactNumber?.Trim();
             school.Email = request.Email?.Trim();
             school.Website = request.Website?.Trim();
             school.IsActive = request.IsActive;
@@ -361,6 +365,7 @@ namespace SchoolERP.API.Controllers
                 LogoUrl = school.LogoUrl,
                 Address = school.Address,
                 ContactNumber = school.ContactNumber,
+                AlternateContactNumber = school.AlternateContactNumber,
                 Email = school.Email,
                 Website = school.Website,
                 IsActive = school.IsActive,

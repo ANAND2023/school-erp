@@ -277,7 +277,7 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
 
   const resolvedSchoolAddress = payroll.schoolAddress || user?.schoolAddress || '123 Knowledge Park, Sector 4, New Delhi, Delhi, 110001';
 
-  const resolvedSchoolContact = payroll.schoolContact || user?.schoolPhone || '9876543210';
+  const resolvedSchoolContact = [payroll.schoolContact || user?.schoolPhone, user?.schoolAlternatePhone].filter(Boolean).join(', ') || '9876543210';
 
   const resolvedSchoolEmail = payroll.schoolEmail || user?.schoolEmail || 'info@dps.edu.in';
 

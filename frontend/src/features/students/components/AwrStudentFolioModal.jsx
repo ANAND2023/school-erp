@@ -6,6 +6,7 @@ import { Tag } from 'primereact/tag';
 import apiClient from '../../../api/client';
 import { printElement } from '../../../utils/printUtils';
 import { useThemeStore, shadeColor } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
 
 export const AwrStudentFolioModal = ({ open, onClose, student, config: passedConfig }) => {
   const printRef = useRef(null);
@@ -39,6 +40,9 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
   }, [open, passedConfig]);
 
   if (!student) return null;
+
+  const user = useAuthStore((state) => state.user);
+  const schoolLogo = currentConfig.schoolLogoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
 
   const currentConfig = config || {
     primaryColor: '#065f46',
@@ -178,7 +182,7 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
               <div className="flex align-items-center justify-content-between">
                 {currentConfig.showSchoolLogo && (
                   <img
-                    src="/dvslogo1.jpeg"
+                    src={schoolLogo}
                     alt="Logo"
                     style={{
                       width: `${currentConfig.logoSize || 54}px`,

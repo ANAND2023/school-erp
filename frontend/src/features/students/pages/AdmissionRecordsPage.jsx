@@ -234,28 +234,40 @@ export const AdmissionRecordsPage = () => {
 
             const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
             const branchName = user?.branchName || 'Main Campus';
+            const schoolPhones = [user?.schoolPhone, user?.schoolAlternatePhone].filter(Boolean);
+            const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
             const selectedYear = academicYears.find(y => y.id === selectedYearId);
             const sessionName = selectedYear ? selectedYear.name : 'Current Session';
             const selectedClass = classes.find(c => c.id === selectedClassId);
             const className = selectedClass ? selectedClass.name : 'All Classes';
             const typeFilterLabel = admissionTypeFilter === 'new' ? 'New Admissions Only' : (admissionTypeFilter === 'promoted' ? 'Promoted Only' : 'All Students');
 
+            let startX = 12;
+            if (user?.schoolLogoUrl) {
+                try {
+                    doc.addImage(user.schoolLogoUrl, 'PNG', 12, 10, 15, 15);
+                    startX = 30;
+                } catch (e) {
+                    startX = 12;
+                }
+            }
+
             // Header - School Name
             doc.setFontSize(14);
             doc.setTextColor(29, 78, 216); // #1d4ed8 Blue
-            doc.text(schoolName, 12, 14);
+            doc.text(schoolName, startX, 14);
 
             // Subtitle
             doc.setFontSize(10);
             doc.setTextColor(51, 65, 85);
-            doc.text(`${branchName}  •  ADMISSION RECORDS & REGISTER`, 12, 20);
+            doc.text(`${branchName}${contactStr}  •  ADMISSION RECORDS & REGISTER`, startX, 20);
 
             // Metadata info line
             doc.setFontSize(8);
             doc.setTextColor(100, 116, 139);
             doc.text(
                 `Academic Session: ${sessionName}   |   Admission Type: ${typeFilterLabel}   |   Class: ${className}   |   Generated On: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-                12,
+                startX,
                 25.5
             );
 
@@ -266,7 +278,7 @@ export const AdmissionRecordsPage = () => {
             doc.text(
                 `Total Records: ${studentList.length}   |   New Admissions: ${summary.newAdmissionsCount ?? 0}   |   Promoted: ${summary.promotedCount ?? 0}   |   Gender: ${summary.boysCount || 0} Boys / ${summary.girlsCount || 0} Girls`,
                 12,
-                30.5
+                32
             );
             doc.setFont(undefined, 'normal');
 

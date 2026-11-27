@@ -303,7 +303,7 @@ export default function GatePassSlipModal({ open, onClose, pass, onStatusUpdate 
     schoolName: branch.schoolName || user?.schoolName || 'Delhi Public School',
     branchName: branch.name || user?.branchName || '',
     schoolAddress: [branch.address, branch.city, branch.state, branch.pincode].filter(Boolean).join(', ') || user?.schoolAddress || '',
-    schoolPhone: branch.phone || user?.schoolPhone || '',
+    schoolPhone: [branch.phone || user?.schoolPhone, branch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean).join(', '),
     schoolLogoUrl: branch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg',
   };
 

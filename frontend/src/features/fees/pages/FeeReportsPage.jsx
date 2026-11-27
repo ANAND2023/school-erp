@@ -290,6 +290,9 @@ export default function FeeReportsPage() {
       modeFilter: paymentModeFilter === 'ALL' ? 'All Modes' : paymentModeFilter,
       schoolName,
       branchName,
+      schoolPhone: user?.schoolPhone,
+      alternatePhone: user?.schoolAlternatePhone,
+      logoUrl: user?.schoolLogoUrl,
     });
   };
 
@@ -353,6 +356,9 @@ export default function FeeReportsPage() {
       selectedSectionName: selectedSection ? selectedSection.name : 'All Sections',
       schoolName,
       branchName,
+      schoolPhone: user?.schoolPhone,
+      alternatePhone: user?.schoolAlternatePhone,
+      logoUrl: user?.schoolLogoUrl,
     });
   };
 
@@ -835,6 +841,9 @@ export default function FeeReportsPage() {
       selectedUser: userNames,
       schoolName,
       branchName,
+      schoolPhone: user?.schoolPhone,
+      alternatePhone: user?.schoolAlternatePhone,
+      logoUrl: user?.schoolLogoUrl,
     });
   };
 

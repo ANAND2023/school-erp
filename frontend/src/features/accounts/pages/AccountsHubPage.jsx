@@ -136,16 +136,20 @@ export const AccountsHubPage = () => {
   const printComponentRef = useRef(null);
 
   const { user } = useAuthStore();
+  const schoolPhones = [user?.schoolPhone || user?.phone, user?.schoolAlternatePhone].filter(Boolean);
+  const formattedPhone = schoolPhones.length > 0 ? schoolPhones.join(', ') : '011-23456789';
+
   const schoolInfo = useMemo(
     () => ({
       name: user?.schoolName || 'DELHI PUBLIC SCHOOL',
       branch: user?.branchName || 'Main Campus',
       affiliation: user?.affiliationNo || 'CBSE/2026/0912',
-      address: user?.address || '123 Knowledge Park, Sector 4, New Delhi - 110001',
-      phone: user?.phone || '011-23456789',
-      email: user?.email || 'accounts@dps.edu.in',
+      address: user?.schoolAddress || user?.address || '123 Knowledge Park, Sector 4, New Delhi - 110001',
+      phone: formattedPhone,
+      email: user?.schoolEmail || user?.email || 'accounts@dps.edu.in',
+      logoUrl: user?.schoolLogoUrl || '',
     }),
-    [user]
+    [user, formattedPhone]
   );
 
   const reportNames = [

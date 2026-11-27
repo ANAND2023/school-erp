@@ -271,12 +271,14 @@ export const AdmissionReportModal = ({
   const mother = guardians.find((g) => g.relation?.toLowerCase() === 'mother') || null;
   const primaryGuardian = guardians.find((g) => g.isPrimary) || guardians[0] || null;
 
-  const schoolName = activeConfig.headerSchoolNameCustom || branchInfo?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const schoolName = activeConfig.headerSchoolNameCustom || branchInfo?.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
   const branchName = branchInfo?.name ? `${branchInfo.name} Branch` : (user?.branchName || 'Main Campus');
-  const branchAddress = activeConfig.headerAddressCustom || branchInfo?.address || 'Sector 12, RK Puram, New Delhi - 110022';
-  const branchPhone = branchInfo?.phone || '+91 11 2617 8900';
-  const branchEmail = branchInfo?.email || 'admissions@dpsdelhi.edu.in';
-  const affiliationNo = branchInfo?.affiliationNo || '2130892';
+  const branchAddress = activeConfig.headerAddressCustom || branchInfo?.address || user?.schoolAddress || 'Sector 12, RK Puram, New Delhi - 110022';
+  const rawAdmissionPhones = [branchInfo?.phone || user?.schoolPhone, branchInfo?.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const branchPhone = rawAdmissionPhones.length > 0 ? rawAdmissionPhones.join(', ') : '+91 11 2617 8900';
+  const branchEmail = branchInfo?.email || user?.schoolEmail || 'admissions@dpsdelhi.edu.in';
+  const affiliationNo = branchInfo?.affiliationNo || branchInfo?.affiliationNumber || user?.affiliationNo || '2130892';
+  const admissionLogoUrl = branchInfo?.logoUrl || user?.schoolLogoUrl;
 
   // 4 Photos
   const studentPhoto = student?.photoUrl || null;
@@ -542,10 +544,10 @@ export const AdmissionReportModal = ({
                   <Box sx={{ textAlign: activeConfig.headerAlignment === 'left' ? 'left' : 'center', pb: 0.8, borderBottom: `2.5px double ${primaryCol}` }}>
                     <Stack direction="row" spacing={2} justifyContent={activeConfig.headerAlignment === 'left' ? 'flex-start' : 'center'} alignItems="center">
                       {activeConfig.showSchoolLogo && (
-                        branchInfo?.logoUrl ? (
+                        admissionLogoUrl ? (
                           <Box
                             component="img"
-                            src={branchInfo.logoUrl}
+                            src={admissionLogoUrl}
                             alt="Logo"
                             sx={{ width: activeConfig.logoSize || 52, height: activeConfig.logoSize || 52, objectFit: 'contain', borderRadius: 1 }}
                           />

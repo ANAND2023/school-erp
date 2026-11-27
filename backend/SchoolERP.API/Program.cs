@@ -128,8 +128,10 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
+        try { context.Database.ExecuteSqlRaw("ALTER TABLE `branches` ADD COLUMN `alternate_phone` longtext NULL;"); } catch {}
+        try { context.Database.ExecuteSqlRaw("ALTER TABLE `schools` ADD COLUMN `alternate_contact_number` longtext NULL;"); } catch {}
         await DbInitializer.SeedAsync(context);
-          try { context.Database.ExecuteSqlRaw("INSERT INTO `roles` (`name`, `description`, `is_system_role`, `created_by`, `created_on`, `is_active`) SELECT 'Driver', 'Transport vehicle driver', 1, 1, UTC_TIMESTAMP(), 1 WHERE NOT EXISTS (SELECT 1 FROM `roles` WHERE `name` = 'Driver');"); } catch {}
+        try { context.Database.ExecuteSqlRaw("INSERT INTO `roles` (`name`, `description`, `is_system_role`, `created_by`, `created_on`, `is_active`) SELECT 'Driver', 'Transport vehicle driver', 1, 1, UTC_TIMESTAMP(), 1 WHERE NOT EXISTS (SELECT 1 FROM `roles` WHERE `name` = 'Driver');"); } catch {}
           try { context.Database.ExecuteSqlRaw("ALTER TABLE `vehicles` ADD COLUMN `driver_id` bigint NULL;"); } catch {}
           try { context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS `landing_enquiries` (`id` bigint NOT NULL AUTO_INCREMENT, `name` longtext NOT NULL, `school_name` longtext NOT NULL, `phone` longtext NOT NULL, `email` longtext NULL, `message` longtext NULL, `is_read` tinyint(1) NOT NULL, `submitted_at` datetime(6) NOT NULL, `created_by` bigint NULL, `created_on` datetime(6) NOT NULL, `modified_by` bigint NULL, `modified_on` datetime(6) NULL, `is_active` tinyint(1) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"); } catch {}
           try { context.Database.ExecuteSqlRaw("ALTER TABLE `landing_enquiries` ADD COLUMN `status` longtext NULL;"); } catch {}

@@ -370,6 +370,8 @@ export const EnquiriesPage = () => {
 
       const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
       const branchName = user?.branchName || 'Main Campus';
+      const schoolPhones = [user?.schoolPhone, user?.schoolAlternatePhone].filter(Boolean);
+      const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
       const matchedClass = classes.find((c) => String(c.id) === String(selectedClass));
       const className = matchedClass ? matchedClass.name : 'All Classes';
       const statusObj = ENQUIRY_STATUSES.find((s) => String(s.value) === String(selectedStatus));
@@ -379,22 +381,32 @@ export const EnquiriesPage = () => {
       const followupCount = exportList.filter((e) => e.status === 2).length;
       const convertedCount = exportList.filter((e) => e.status === 3).length;
 
+      let startX = 8;
+      if (user?.schoolLogoUrl) {
+        try {
+          doc.addImage(user.schoolLogoUrl, 'PNG', 8, 8, 14, 14);
+          startX = 25;
+        } catch (e) {
+          startX = 8;
+        }
+      }
+
       // School Name Header
       doc.setFontSize(14);
       doc.setTextColor(29, 78, 216); // Brand Blue
-      doc.text(schoolName, 8, 12);
+      doc.text(schoolName, startX, 12);
 
       // Subtitle
       doc.setFontSize(9.5);
       doc.setTextColor(51, 65, 85);
-      doc.text(`${branchName}  •  STUDENT ENQUIRIES & ADMISSION LEADS REGISTER`, 8, 17.5);
+      doc.text(`${branchName}${contactStr}  •  STUDENT ENQUIRIES & ADMISSION LEADS REGISTER`, startX, 17.5);
 
       // Filter & Session info line
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
       doc.text(
         `Session: ${activeAcademicYearName || 'Current Session'}   |   Class: ${className}   |   Status: ${statusLabel}   |   Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-        8,
+        startX,
         22.5
       );
 

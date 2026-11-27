@@ -1,11 +1,13 @@
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid } from '@mui/material';
+import { useAuthStore } from '../../../store/authStore';
 
 export const MultiTermReportCardSlip = ({ data }) => {
+  const user = useAuthStore((state) => state.user);
   if (!data) return null;
 
   const {
-    schoolName = 'Bright Future Public School',
+    schoolName = user?.schoolName || 'Bright Future Public School',
     tagline = 'Learn • Grow • Succeed',
     slogan = 'Good Education\nBuilds a Better Tomorrow',
     academicSession = '2024 – 2025',
@@ -21,6 +23,8 @@ export const MultiTermReportCardSlip = ({ data }) => {
     date = '31-03-2025',
     bottomQuote = 'Small Steps Every Day Lead to Big Achievements',
   } = data;
+
+  const logoUrl = data.logoUrl || data.schoolLogo || user?.schoolLogoUrl;
 
   return (
     <Box
@@ -51,30 +55,43 @@ export const MultiTermReportCardSlip = ({ data }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 2 }}>
         {/* Left: School Crest Logo + Name */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-          {/* Circular Gold/Blue School Crest SVG */}
-          <Box
-            sx={{
-              width: { xs: 58, sm: 68 },
-              height: { xs: 58, sm: 68 },
-              flexShrink: 0,
-              borderRadius: '50%',
-              bgcolor: '#0f2b48',
-              border: '3px solid #d97706',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#f59e0b',
-            }}
-          >
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#1e3a8a" />
-              <path d="M12 6.5v11" stroke="#f59e0b" strokeWidth="1.2" />
-              <path d="M12 17.5c-2.5-1.5-5-1.5-7 0V9.5c2-1.5 4.5-1.5 7 0" stroke="#fef08a" strokeWidth="1.2" />
-              <path d="M12 17.5c2.5-1.5 5-1.5 7 0V9.5c-2-1.5-4.5-1.5-7 0" stroke="#fef08a" strokeWidth="1.2" />
-              <circle cx="12" cy="4" r="1" fill="#f59e0b" />
-            </svg>
-          </Box>
+          {logoUrl ? (
+            <Box
+              component="img"
+              src={logoUrl}
+              alt="School Logo"
+              sx={{
+                width: { xs: 58, sm: 68 },
+                height: { xs: 58, sm: 68 },
+                flexShrink: 0,
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: { xs: 58, sm: 68 },
+                height: { xs: 58, sm: 68 },
+                flexShrink: 0,
+                borderRadius: '50%',
+                bgcolor: '#0f2b48',
+                border: '3px solid #d97706',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#f59e0b',
+              }}
+            >
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#1e3a8a" />
+                <path d="M12 6.5v11" stroke="#f59e0b" strokeWidth="1.2" />
+                <path d="M12 17.5c-2.5-1.5-5-1.5-7 0V9.5c2-1.5 4.5-1.5 7 0" stroke="#fef08a" strokeWidth="1.2" />
+                <path d="M12 17.5c2.5-1.5 5-1.5 7 0V9.5c-2-1.5-4.5-1.5-7 0" stroke="#fef08a" strokeWidth="1.2" />
+                <circle cx="12" cy="4" r="1" fill="#f59e0b" />
+              </svg>
+            </Box>
+          )}
 
           <Box>
             <Typography

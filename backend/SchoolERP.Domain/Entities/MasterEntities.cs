@@ -17,6 +17,7 @@ namespace SchoolERP.Domain.Entities
         public string? State { get; set; }
         public string? Pincode { get; set; }
         public string? ContactNumber { get; set; }
+        public string? AlternateContactNumber { get; set; }
         public string? Email { get; set; }
         public string? IdCardFront { get; set; }
         public string? IdCardBack { get; set; }
@@ -47,6 +48,7 @@ namespace SchoolERP.Domain.Entities
         public string? State { get; set; }
         public string? Pincode { get; set; }
         public string? Phone { get; set; }
+        public string? AlternatePhone { get; set; }
         public string? Email { get; set; }
         public string? IdCardFront { get; set; }
         public string? IdCardBack { get; set; }

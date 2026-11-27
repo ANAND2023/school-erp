@@ -88,6 +88,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
     logoUrl: '',
     address: '',
     contactNumber: '',
+    alternateContactNumber: '',
     email: '',
     website: '',
     createDefaultBranch: true,
@@ -104,6 +105,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
     logoUrl: '',
     address: '',
     contactNumber: '',
+    alternateContactNumber: '',
     email: '',
     website: '',
     isActive: true,
@@ -128,6 +130,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
     state: '',
     pincode: '',
     phone: '',
+    alternatePhone: '',
     email: '',
     logoUrl: '',
     principalSignatureUrl: '',
@@ -144,6 +147,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
     state: '',
     pincode: '',
     phone: '',
+    alternatePhone: '',
     email: '',
     logoUrl: '',
     principalSignatureUrl: '',
@@ -224,6 +228,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
             state: active.state || '',
             pincode: active.pincode || '',
             phone: active.phone || '',
+            alternatePhone: active.alternatePhone || '',
             email: active.email || '',
             logoUrl: active.logoUrl || '',
             principalSignatureUrl: active.principalSignatureUrl || '',
@@ -288,6 +293,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       logoUrl: sch.logoUrl || '',
       address: sch.address || '',
       contactNumber: sch.contactNumber || '',
+      alternateContactNumber: sch.alternateContactNumber || '',
       email: sch.email || '',
       website: sch.website || '',
       isActive: sch.isActive !== false,
@@ -371,6 +377,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       state: b.state || '',
       pincode: b.pincode || '',
       phone: b.phone || '',
+      alternatePhone: b.alternatePhone || '',
       email: b.email || '',
       logoUrl: b.logoUrl || '',
       principalSignatureUrl: b.principalSignatureUrl || '',
@@ -404,6 +411,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
       state: '',
       pincode: '',
       phone: '',
+      alternatePhone: '',
       email: '',
       logoUrl: '',
       principalSignatureUrl: '',
@@ -1065,7 +1073,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                           disabled={!canEdit}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={12} sm={4}>
                         <TextField
                           fullWidth
                           label="Contact Phone"
@@ -1075,7 +1083,19 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                           disabled={!canEdit}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          fullWidth
+                          label="Alternate Phone (Optional)"
+                          placeholder="e.g. 9876543210"
+                          value={branchFormData.alternatePhone || ''}
+                          inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
+                          helperText="Appears on all slips & reports"
+                          onChange={(e) => setBranchFormData({ ...branchFormData, alternatePhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                          disabled={!canEdit}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
                         <TextField
                           fullWidth
                           label="Official Email"
@@ -1661,7 +1681,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                 onChange={(e) => setEditSchoolForm({ ...editSchoolForm, logoUrl: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Contact Phone"
@@ -1670,7 +1690,17 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                 onChange={(e) => setEditSchoolForm({ ...editSchoolForm, contactNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="Alternate Phone"
+                value={editSchoolForm.alternateContactNumber || ''}
+                inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
+                helperText="Optional second number"
+                onChange={(e) => setEditSchoolForm({ ...editSchoolForm, alternateContactNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Official Email"
@@ -1811,7 +1841,7 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                 onChange={(e) => setNewBranchForm({ ...newBranchForm, pincode: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 size="small"
@@ -1821,7 +1851,17 @@ export const BranchMasterPage = ({ initialTab = 0 }) => {
                 onChange={(e) => setNewBranchForm({ ...newBranchForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Alternate Phone"
+                value={newBranchForm.alternatePhone || ''}
+                inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
+                onChange={(e) => setNewBranchForm({ ...newBranchForm, alternatePhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 size="small"

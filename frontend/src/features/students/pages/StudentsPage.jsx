@@ -272,6 +272,8 @@ export default function StudentsPage() {
 
       const schoolName = (user?.schoolName || 'DELHI PUBLIC SCHOOL').toUpperCase();
       const branchName = user?.branchName || 'Main Campus';
+      const schoolPhones = [user?.schoolPhone, user?.schoolAlternatePhone].filter(Boolean);
+      const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
       const className = selectedClassObj ? selectedClassObj.name : 'All Classes';
       const secObj = sections.find((s) => String(s.id) === String(sectionId));
       const sectionName = secObj ? secObj.name : (sectionId ? 'Selected Section' : 'All Sections');
@@ -282,22 +284,32 @@ export default function StudentsPage() {
       const boysInList = exportList.filter((s) => s.gender?.toLowerCase() === 'male').length;
       const girlsInList = exportList.filter((s) => s.gender?.toLowerCase() === 'female').length;
 
+      let startX = 8;
+      if (user?.schoolLogoUrl) {
+        try {
+          doc.addImage(user.schoolLogoUrl, 'PNG', 8, 8, 14, 14);
+          startX = 25;
+        } catch (e) {
+          startX = 8;
+        }
+      }
+
       // School Name Header
       doc.setFontSize(14);
       doc.setTextColor(29, 78, 216); // Brand Blue
-      doc.text(schoolName, 8, 12);
+      doc.text(schoolName, startX, 12);
 
       // Subtitle
       doc.setFontSize(9.5);
       doc.setTextColor(51, 65, 85);
-      doc.text(`${branchName}  •  STUDENT DIRECTORY (COMPREHENSIVE REGISTER)`, 8, 17.5);
+      doc.text(`${branchName}${contactStr}  •  STUDENT DIRECTORY (COMPREHENSIVE REGISTER)`, startX, 17.5);
 
       // Filter & Session info line
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
       doc.text(
         `Session: ${activeAcademicYearName || 'Current Session'}   |   Class: ${className}   |   Section: ${sectionName}   |   Status: ${statusLabel}   |   Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-        8,
+        startX,
         22.5
       );
 
@@ -308,7 +320,7 @@ export default function StudentsPage() {
       doc.text(
         `Total Students: ${exportList.length}   |   Boys (Male): ${boysInList}   |   Girls (Female): ${girlsInList}   |   Active: ${exportList.filter(s => s.status === 1).length}`,
         8,
-        27
+        28
       );
       doc.setFont(undefined, 'normal');
 

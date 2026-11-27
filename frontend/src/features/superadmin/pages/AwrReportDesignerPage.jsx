@@ -921,7 +921,7 @@ export const AwrReportDesignerPage = () => {
                     <div className="flex align-items-center justify-content-between">
                       {config.showSchoolLogo && (
                         <img
-                          src="/dvslogo1.jpeg"
+                          src={config.schoolLogoUrl || (selectedSchoolId ? schools.find((s) => s.id === selectedSchoolId)?.logoUrl : null) || '/dvslogo1.jpeg'}
                           alt="Logo"
                           style={{ width: `${config.logoSize}px`, height: `${config.logoSize}px`, objectFit: 'contain' }}
                           onError={(e) => { e.target.style.display = 'none'; }}

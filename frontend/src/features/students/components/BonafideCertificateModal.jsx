@@ -7,6 +7,7 @@ import { InputSwitch } from 'primereact/inputswitch';
 import apiClient from '../../../api/client';
 import { printElement } from '../../../utils/printUtils';
 import { useThemeStore } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
 
 const PURPOSE_OPTIONS = [
   { label: 'Passport Application', value: 'Passport Application' },
@@ -353,6 +354,7 @@ export const BonafideCertificateModal = (props) => {
   if (!open) return null;
 
   const currentPurpose = customPurpose.trim() || purpose || defaultTemplate.defaultPurpose;
+  const user = useAuthStore((state) => state.user);
 
   // Student variables extraction
   const sName =
@@ -464,7 +466,7 @@ export const BonafideCertificateModal = (props) => {
             <div className="flex align-items-center justify-content-between">
               {config?.showSchoolLogo !== false && (
                 <img
-                  src={studentData?.schoolLogo || '/dvslogo1.jpeg'}
+                  src={studentData?.schoolLogo || user?.schoolLogoUrl || '/dvslogo1.jpeg'}
                   alt="Logo"
                   style={{
                     width: `${config?.logoSize || 64}px`,

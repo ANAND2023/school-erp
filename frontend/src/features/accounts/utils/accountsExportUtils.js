@@ -23,7 +23,16 @@ const defaultSchool = {
   affiliation: 'CBSE/2026/0912',
   address: '123 Knowledge Park, Sector 4, New Delhi - 110001',
   phone: '011-23456789',
+  alternatePhone: null,
   email: 'accounts@dps.edu.in',
+  logoUrl: null,
+};
+
+const getSchoolContactStr = (school) => {
+  if (!school) return '';
+  const parts = [school.phone, school.alternatePhone].filter(Boolean);
+  const uniqueParts = Array.from(new Set(parts.flatMap((p) => String(p).split(',').map((s) => s.trim())).filter(Boolean)));
+  return uniqueParts.length > 0 ? `  |  Phone: ${uniqueParts.join(', ')}` : '';
 };
 
 // ==========================================
@@ -91,19 +100,31 @@ export const exportDayBookToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(25, 118, 210);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • DAILY CASH BOOK & DAY BOOK LEDGER`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • DAILY CASH BOOK & DAY BOOK LEDGER`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -228,19 +249,31 @@ export const exportFeeCollectionToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(25, 118, 210);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • FEE COLLECTION REGISTER`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • FEE COLLECTION REGISTER`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -363,19 +396,31 @@ export const exportExpensesToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(211, 47, 47);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • SCHOOL OPERATING EXPENSES REGISTER`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • SCHOOL OPERATING EXPENSES REGISTER`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -495,19 +540,31 @@ export const exportSalaryToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(234, 88, 12);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • STAFF SALARY DISBURSEMENTS REGISTER`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • STAFF SALARY DISBURSEMENTS REGISTER`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -622,22 +679,34 @@ export const exportProfitLossToPdf = ({
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 14;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 14, 10, 14, 14);
+      startX = 31;
+    } catch (e) {
+      startX = 14;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(15);
   doc.setTextColor(isSurplus ? 22 : 185, isSurplus ? 101 : 28, isSurplus ? 52 : 28);
-  doc.text(school.name.toUpperCase(), 14, 16);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 16);
 
   doc.setFontSize(11);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • PROFIT & LOSS STATEMENT`, 14, 23);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • PROFIT & LOSS STATEMENT`, startX, 23);
 
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Accounting Period: ${formatDate(startDate)} to ${formatDate(endDate)}  |  Session: ${academicYearName || 'Current'}`,
-    14,
+    startX,
     29
   );
-  doc.text(`Generated On: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`, 14, 34);
+  doc.text(`Generated On: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`, startX, 34);
 
   const tableData = [
     ['REVENUE', 'Student Fee Collections (Net)', formatCurrency(summary.totalFeeCollected)],
@@ -749,19 +818,31 @@ export const exportEnquiriesToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(2, 132, 199);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • ADMISSION ENQUIRY & CONVERSION REPORT`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • ADMISSION ENQUIRY & CONVERSION REPORT`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -879,19 +960,31 @@ export const exportAdmissionsToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(16, 149, 193);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • NEW ADMISSIONS REGISTER & ROLL`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • NEW ADMISSIONS REGISTER & ROLL`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Period: ${formatDate(startDate)} to ${formatDate(endDate)} | Session: ${academicYearName || 'Current'} | Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 
@@ -1019,19 +1112,31 @@ export const exportDefaultersToPdf = ({
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.width;
 
+  let startX = 12;
+  if (school.logoUrl) {
+    try {
+      doc.addImage(school.logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
+  const contactStr = getSchoolContactStr(school);
+
   doc.setFontSize(14);
   doc.setTextColor(220, 38, 38);
-  doc.text(school.name.toUpperCase(), 12, 14);
+  doc.text((school.name || 'DELHI PUBLIC SCHOOL').toUpperCase(), startX, 14);
 
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${school.branch} • OUTSTANDING FEE DUES & DEFAULTERS LIST`, 12, 20);
+  doc.text(`${school.branch || 'Main Campus'}${contactStr} • OUTSTANDING FEE DUES & DEFAULTERS LIST`, startX, 20);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
     `Session: ${academicYearName || 'Current Session'} | Generated On: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     25.5
   );
 

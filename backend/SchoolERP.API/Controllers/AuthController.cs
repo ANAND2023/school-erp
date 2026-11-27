@@ -457,6 +457,7 @@ namespace SchoolERP.API.Controllers
                     SchoolLogoUrl = branch?.LogoUrl ?? branch?.School?.LogoUrl,
                     SchoolAddress = fullAddress,
                     SchoolPhone = branch?.Phone ?? branch?.School?.ContactNumber,
+                    SchoolAlternatePhone = branch?.AlternatePhone ?? branch?.School?.AlternateContactNumber,
                     SchoolEmail = branch?.Email ?? branch?.School?.Email,
                     BranchId = user.BranchId,
                     BranchName = branch?.Name,

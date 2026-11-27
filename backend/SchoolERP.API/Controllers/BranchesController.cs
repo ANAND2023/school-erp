@@ -117,6 +117,7 @@ namespace SchoolERP.API.Controllers
                 State = branch.State ?? branch.School?.State,
                 Pincode = branch.Pincode ?? branch.School?.Pincode,
                 Phone = branch.Phone ?? branch.School?.ContactNumber,
+                AlternatePhone = branch.AlternatePhone ?? branch.School?.AlternateContactNumber,
                 Email = branch.Email ?? branch.School?.Email,
                 IdCardFront = branch.IdCardFront,
                 IdCardBack = branch.IdCardBack
@@ -158,6 +159,7 @@ namespace SchoolERP.API.Controllers
                 State = b.State,
                 Pincode = b.Pincode,
                 Phone = b.Phone,
+                AlternatePhone = b.AlternatePhone,
                 Email = b.Email
             }).ToListAsync();
 
@@ -190,6 +192,7 @@ namespace SchoolERP.API.Controllers
                 State = branch.State,
                 Pincode = branch.Pincode,
                 Phone = branch.Phone,
+                AlternatePhone = branch.AlternatePhone,
                 Email = branch.Email
             }));
         }
@@ -212,6 +215,7 @@ namespace SchoolERP.API.Controllers
             public string? State { get; set; }
             public string? Pincode { get; set; }
             public string? Phone { get; set; }
+            public string? AlternatePhone { get; set; }
             public string? Email { get; set; }
         }
 
@@ -240,6 +244,7 @@ namespace SchoolERP.API.Controllers
                 State = request.State,
                 Pincode = request.Pincode,
                 Phone = request.Phone,
+                AlternatePhone = request.AlternatePhone,
                 Email = request.Email,
                 IsActive = true
             };
@@ -283,6 +288,7 @@ namespace SchoolERP.API.Controllers
             branch.State = request.State;
             branch.Pincode = request.Pincode;
             branch.Phone = request.Phone;
+            branch.AlternatePhone = request.AlternatePhone;
             branch.Email = request.Email;
 
             if (branch.School != null)
@@ -296,6 +302,7 @@ namespace SchoolERP.API.Controllers
                 if (!string.IsNullOrWhiteSpace(request.State)) branch.School.State = request.State.Trim();
                 if (!string.IsNullOrWhiteSpace(request.Pincode)) branch.School.Pincode = request.Pincode.Trim();
                 if (!string.IsNullOrWhiteSpace(request.Phone)) branch.School.ContactNumber = request.Phone.Trim();
+                if (!string.IsNullOrWhiteSpace(request.AlternatePhone)) branch.School.AlternateContactNumber = request.AlternatePhone.Trim();
                 if (!string.IsNullOrWhiteSpace(request.Email)) branch.School.Email = request.Email.Trim();
             }
 

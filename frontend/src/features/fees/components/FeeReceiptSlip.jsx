@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { numberToIndianWords, formatReceiptMonths } from '../utils/numberToWords';
 import apiClient from '../../../api/client';
 import { formatDateTime } from '../../../utils/dateUtils';
+import { useAuthStore } from '../../../store/authStore';
 
 // Cache for receipt config
 let cachedFeeConfig = null;
@@ -102,9 +103,11 @@ const DEFAULT_CONFIG = {
 const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
   const [imageError, setImageError] = useState(false);
 
-  const schoolName = config.headerSchoolNameCustom || data.schoolName || 'Kush Public School';
-  const address = config.headerAddressCustom || data.address || 'Plot No 999, Main road Surya\nVihar, Part 3 Sec 91';
-  const contact = data.contact || data.guardianMobile || '9911360909';
+  const user = useAuthStore((state) => state.user);
+  const schoolName = config.headerSchoolNameCustom || data.schoolName || user?.schoolName || 'Kush Public School';
+  const address = config.headerAddressCustom || data.address || user?.schoolAddress || 'Plot No 999, Main road Surya\nVihar, Part 3 Sec 91';
+  const schoolPhones = [data.schoolPhone || user?.schoolPhone, data.schoolAlternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const contact = schoolPhones.length > 0 ? schoolPhones.join(', ') : (data.contact || data.guardianMobile || '9911360909');
   const receiptNo = data.receiptNo || 'KU7304';
   const dateFormatted = data.receiptDate ? formatDateTime(data.receiptDate, 'DD-MM-YYYY') : dayjs().format('DD-MM-YYYY');
   const studentName = (data.studentName || '').toUpperCase();
@@ -141,7 +144,7 @@ const SingleSlip = ({ data = {}, copyTitle = '', config = DEFAULT_CONFIG }) => {
   const totalPayableAmount = Math.max(0, totalActualAmount + totalFine - totalConcession - totalDiscount);
   const cur = config.currencySymbol || '₹';
   const amountInWords = numberToIndianWords(totalPaid);
-  const logoSrc = data.logoUrl || data.schoolLogo;
+  const logoSrc = data.logoUrl || data.schoolLogo || user?.schoolLogoUrl;
 
   // Consolidate duplicate fee heads across multiple months into a single clean row
   const groupedItems = React.useMemo(() => {

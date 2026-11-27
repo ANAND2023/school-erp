@@ -16,6 +16,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { dynamicRegistrationApi } from '../api/dynamicRegistrationApi';
+import { branchApi } from '../../masters/api';
+import { useAuthStore } from '../../../store/authStore';
 import { printElement } from '../../../utils/printUtils';
 
 const DEFAULT_CONFIG = {
@@ -115,17 +117,30 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
     staleTime: 60000,
   });
 
+  const user = useAuthStore((state) => state.user);
+
+  // Fetch current branch details (logo, contact, alternate phone)
+  const { data: branchRes } = useQuery({
+    queryKey: ['current-branch-details-slip'],
+    queryFn: () => branchApi.getCurrentBranch().then((r) => r.data?.data || {}),
+    staleTime: 60000,
+  });
+
+  const currentBranch = branchRes || {};
+  const activeBranch = Object.keys(branchInfo || {}).length > 0 ? branchInfo : currentBranch;
+
   const cfg = {
     ...DEFAULT_CONFIG,
     ...(configRes?.data?.data || {}),
   };
 
-  const schoolName = cfg.headerSchoolNameCustom?.trim() || branchInfo.schoolName || 'DELHI PUBLIC SCHOOL';
-  const branchName = branchInfo.branchName || 'Main Campus';
-  const schoolPhone = branchInfo.phone || '+91 9873993957';
-  const schoolSubtitle = cfg.headerSubtitleCustom?.trim() || `Branch: ${branchName} • Phone: ${schoolPhone} • CBSE Affiliation No: 2026/0912`;
-  const schoolAddress = cfg.headerAddressCustom?.trim() || branchInfo.address || 'Knowledge Park, Educational Zone, Greater Noida, UP - 201306';
-  const logoUrl = '/dvslogo1.jpeg';
+  const schoolName = cfg.headerSchoolNameCustom?.trim() || activeBranch.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const branchName = activeBranch.branchName || activeBranch.name || user?.branchName || 'Main Campus';
+  const rawPhones = [activeBranch.phone || user?.schoolPhone, activeBranch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : '+91 9873993957';
+  const schoolSubtitle = cfg.headerSubtitleCustom?.trim() || `Branch: ${branchName} • Phone: ${schoolPhone} • CBSE Affiliation No: ${activeBranch.affiliationNumber || '2026/0912'}`;
+  const schoolAddress = cfg.headerAddressCustom?.trim() || activeBranch.address || user?.schoolAddress || 'Knowledge Park, Educational Zone, Greater Noida, UP - 201306';
+  const logoUrl = activeBranch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
   const cur = cfg.currencySymbol || '₹';
 
   const feeAmount = Number(slip.feeAmount || 0);

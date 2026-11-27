@@ -243,12 +243,14 @@ export const EnquirySlipModal = ({
     ? dayjs(enquiry.nextFollowupDate).format('DD MMM YYYY')
     : 'Not Scheduled';
 
-  const schoolName = branchInfo?.schoolName || 'DELHI PUBLIC SCHOOL';
+  const schoolName = branchInfo?.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
   const branchName = branchInfo?.name ? `${branchInfo.name} Branch` : user?.branchName || 'Main Campus';
-  const branchAddress = branchInfo?.address || 'Sector 12, RK Puram, New Delhi - 110022';
-  const branchPhone = branchInfo?.phone || '+91 11 2617 8900';
-  const branchEmail = branchInfo?.email || 'admissions@dpsdelhi.edu.in';
-  const affiliationNo = branchInfo?.affiliationNo || '2130892';
+  const branchAddress = branchInfo?.address || user?.schoolAddress || 'Sector 12, RK Puram, New Delhi - 110022';
+  const rawBranchPhones = [branchInfo?.phone || user?.schoolPhone, branchInfo?.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const branchPhone = rawBranchPhones.length > 0 ? rawBranchPhones.join(', ') : '+91 11 2617 8900';
+  const branchEmail = branchInfo?.email || user?.schoolEmail || 'admissions@dpsdelhi.edu.in';
+  const affiliationNo = branchInfo?.affiliationNo || branchInfo?.affiliationNumber || user?.affiliationNo || '2130892';
+  const branchLogoUrl = branchInfo?.logoUrl || user?.schoolLogoUrl;
 
   const getStatusLabel = (status) => {
     switch (Number(status)) {
@@ -387,10 +389,10 @@ export const EnquirySlipModal = ({
                 alignItems="center"
               >
                 {slipConfig.showSchoolLogo && (
-                  branchInfo?.logoUrl ? (
+                  branchLogoUrl ? (
                     <Box
                       component="img"
-                      src={branchInfo.logoUrl}
+                      src={branchLogoUrl}
                       alt="Logo"
                       sx={{
                         width: `${logoPx}px`,
@@ -454,10 +456,10 @@ export const EnquirySlipModal = ({
             >
               <Stack direction="row" spacing={2} alignItems="center">
                 {slipConfig.showSchoolLogo && (
-                  branchInfo?.logoUrl ? (
+                  branchLogoUrl ? (
                     <Box
                       component="img"
-                      src={branchInfo.logoUrl}
+                      src={branchLogoUrl}
                       alt="Logo"
                       sx={{ width: `${logoPx}px`, height: `${logoPx}px`, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
                     />
@@ -540,10 +542,10 @@ export const EnquirySlipModal = ({
               alignItems="center"
             >
               {slipConfig.showSchoolLogo && (
-                branchInfo?.logoUrl ? (
+                branchLogoUrl ? (
                   <Box
                     component="img"
-                    src={branchInfo.logoUrl}
+                    src={branchLogoUrl}
                     alt="Logo"
                     sx={{ width: `${logoPx}px`, height: `${logoPx}px`, objectFit: 'contain', borderRadius: 1, flexShrink: 0 }}
                   />

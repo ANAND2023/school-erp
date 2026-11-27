@@ -97,6 +97,9 @@ export const exportCollectionToPdf = ({
   modeFilter = 'All',
   schoolName = 'Delhi Public School',
   branchName = 'Main Campus',
+  schoolPhone,
+  alternatePhone,
+  logoUrl,
 }) => {
   if (!collectionList || collectionList.length === 0) return;
 
@@ -116,14 +119,27 @@ export const exportCollectionToPdf = ({
   // A4 Landscape = 297mm width x 210mm height
   const pageWidth = doc.internal.pageSize.width;
 
+  const schoolPhones = [schoolPhone, alternatePhone].filter(Boolean);
+  const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
+
+  let startX = 12;
+  if (logoUrl) {
+    try {
+      doc.addImage(logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
   // Header Title
   doc.setFontSize(15);
   doc.setTextColor(25, 118, 210); // #1976d2
-  doc.text(schoolName.toUpperCase(), 12, 14);
+  doc.text(schoolName.toUpperCase(), startX, 14);
 
   doc.setFontSize(10.5);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${branchName}  •  DAILY FEE COLLECTION REGISTER`, 12, 20.5);
+  doc.text(`${branchName}${contactStr}  •  DAILY FEE COLLECTION REGISTER`, startX, 20.5);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
@@ -131,7 +147,7 @@ export const exportCollectionToPdf = ({
     `Report Period: ${dayjs(startDate).format('DD MMM YYYY')} to ${dayjs(endDate).format(
       'DD MMM YYYY'
     )}   |   Payment Mode: ${modeFilter}   |   Generated: ${dayjs().format('DD-MMM-YYYY, hh:mm A')}`,
-    12,
+    startX,
     26
   );
 
@@ -340,6 +356,9 @@ export const exportDefaultersToPdf = ({
   selectedSectionName = 'All Sections',
   schoolName = 'Delhi Public School',
   branchName = 'Main Campus',
+  schoolPhone,
+  alternatePhone,
+  logoUrl,
 }) => {
   if (!defaultersList || defaultersList.length === 0) return;
 
@@ -355,14 +374,27 @@ export const exportDefaultersToPdf = ({
 
   const pageWidth = doc.internal.pageSize.width;
 
+  const schoolPhones = [schoolPhone, alternatePhone].filter(Boolean);
+  const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
+
+  let startX = 12;
+  if (logoUrl) {
+    try {
+      doc.addImage(logoUrl, 'PNG', 12, 8, 14, 14);
+      startX = 29;
+    } catch (e) {
+      startX = 12;
+    }
+  }
+
   // Header
   doc.setFontSize(15);
   doc.setTextColor(198, 40, 40); // Deep Red
-  doc.text(schoolName.toUpperCase(), 12, 14);
+  doc.text(schoolName.toUpperCase(), startX, 14);
 
   doc.setFontSize(10.5);
   doc.setTextColor(51, 65, 85);
-  doc.text(`${branchName}  •  FEE DEFAULTERS & OUTSTANDING DUES REGISTER`, 12, 20.5);
+  doc.text(`${branchName}${contactStr}  •  FEE DEFAULTERS & OUTSTANDING DUES REGISTER`, startX, 20.5);
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
@@ -370,7 +402,7 @@ export const exportDefaultersToPdf = ({
     `Filter: ${selectedClassName} (${selectedSectionName})   |   Date: ${dayjs().format(
       'DD-MMM-YYYY, hh:mm A'
     )}`,
-    12,
+    startX,
     26
   );
 
@@ -496,7 +528,9 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
 
   const schoolName = receiptData.schoolName || 'Kush Public School';
   const address = (receiptData.address || 'Plot No 999, Main road Surya Vihar, Part 3 Sec 91').replace(/\n/g, ', ');
-  const contact = receiptData.contact || receiptData.guardianMobile || '9911360909';
+  const schoolPhones = [receiptData.contact || receiptData.schoolPhone, receiptData.alternatePhone || receiptData.schoolAlternatePhone].filter(Boolean);
+  const contact = schoolPhones.length > 0 ? schoolPhones.join(', ') : (receiptData.guardianMobile || '9911360909');
+  const receiptLogoUrl = receiptData.logoUrl || receiptData.schoolLogoUrl;
   const receiptNo = receiptData.receiptNo || 'KU7304';
   const dateStr = receiptData.receiptDate ? dayjs(receiptData.receiptDate).format('DD-MM-YYYY') : dayjs().format('DD-MM-YYYY');
   const studentName = (receiptData.studentName || '').toUpperCase();
@@ -579,9 +613,9 @@ export const exportDualFeeReceiptPdf = (receiptData) => {
 
     // School Emblem or Custom Logo
     let logoDrawn = false;
-    if (receiptData.logoUrl) {
+    if (receiptLogoUrl) {
       try {
-        doc.addImage(receiptData.logoUrl, 'PNG', startX + 1, y, 12, 12);
+        doc.addImage(receiptLogoUrl, 'PNG', startX + 1, y, 12, 12);
         logoDrawn = true;
       } catch (err) {
         logoDrawn = false;
@@ -1085,6 +1119,9 @@ export const exportDateWiseCollectionToPdf = ({
   selectedUser = 'All Users',
   schoolName = 'Delhi Public School',
   branchName = 'Main Campus',
+  schoolPhone,
+  alternatePhone,
+  logoUrl,
 }) => {
   if (!dateWiseGroups || dateWiseGroups.length === 0) return;
 
@@ -1096,6 +1133,15 @@ export const exportDateWiseCollectionToPdf = ({
   const doc = new jsPDF('landscape', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.width;
 
+  const schoolPhones = [schoolPhone, alternatePhone].filter(Boolean);
+  const contactStr = schoolPhones.length > 0 ? `  |  Phone: ${schoolPhones.join(', ')}` : '';
+
+  if (logoUrl) {
+    try {
+      doc.addImage(logoUrl, 'PNG', 12, 8, 14, 14);
+    } catch (e) {}
+  }
+
   // Header
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
@@ -1106,7 +1152,7 @@ export const exportDateWiseCollectionToPdf = ({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text(
-    `${branchName} • DATE-WISE FEE COLLECTION & AUDIT REGISTER • Generated: ${dayjs().format('DD-MMM-YYYY hh:mm A')}`,
+    `${branchName}${contactStr} • DATE-WISE FEE COLLECTION & AUDIT REGISTER • Generated: ${dayjs().format('DD-MMM-YYYY hh:mm A')}`,
     pageWidth / 2,
     18,
     { align: 'center' }
