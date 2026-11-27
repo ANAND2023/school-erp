@@ -10,9 +10,10 @@ import { Avatar } from 'primereact/avatar';
 import { Toast } from 'primereact/toast';
 import { useNavigate } from 'react-router-dom';
 import { studentApi } from '../api';
-import { classesApi } from '../../masters/api';
+import { classesApi, branchApi } from '../../masters/api';
 import { useAcademicYear } from '../../../hooks/useAcademicYear';
 import { useThemeStore, shadeColor } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
 import { AwrStudentFolioModal } from '../components/AwrStudentFolioModal';
 import { printElement } from '../../../utils/printUtils';
 
@@ -21,6 +22,7 @@ export const StudentAwrReportPage = () => {
   const toastRef = useRef(null);
   const ledgerPrintRef = useRef(null);
   const { currentAcademicYearId } = useAcademicYear();
+  const { user, activeAcademicYearName } = useAuthStore();
   const { currentColorHex, isDarkMode } = useThemeStore();
   const themeColor = currentColorHex || '#0f766e';
   const themeDarker = shadeColor(themeColor, -20);
@@ -28,6 +30,7 @@ export const StudentAwrReportPage = () => {
   const themeBorder = isDarkMode ? 'rgba(255,255,255,0.12)' : `${themeColor}30`;
 
   const [loading, setLoading] = useState(false);
+  const [branchInfo, setBranchInfo] = useState(null);
   const [data, setData] = useState({
     summary: { totalRegistered: 0, activeOnRoll: 0, totalWithdrawn: 0, newAdmissionsThisYear: 0 },
     students: [],
@@ -57,6 +60,17 @@ export const StudentAwrReportPage = () => {
         }
       })
       .catch(() => {});
+
+    branchApi
+      .getCurrentBranch()
+      .then((res) => {
+        if (res.data?.success && res.data.data) {
+          setBranchInfo(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load current branch for AWR:', err);
+      });
   }, []);
 
   useEffect(() => {
@@ -207,6 +221,36 @@ export const StudentAwrReportPage = () => {
     footerText:
       'Certified that this document is an authentic extract from the Admission and Withdrawal Register maintained by the institution.',
   };
+
+  const activeBranch = branchInfo || {};
+  const ledgerSchoolName =
+    config.headerSchoolNameCustom?.trim() && !config.headerSchoolNameCustom.includes('JAIPUR')
+      ? config.headerSchoolNameCustom.trim()
+      : activeBranch.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
+
+  const branchName = activeBranch.name || activeBranch.branchName || user?.branchName || '';
+  const affiliationNo = activeBranch.affiliationNumber || activeBranch.affiliationNo || user?.affiliationNo || '';
+  const rawPhones = [activeBranch.phone || user?.schoolPhone, activeBranch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : '';
+
+  const addressParts = [activeBranch.address, activeBranch.city, activeBranch.state, activeBranch.pincode].filter(Boolean);
+  const defaultAddress = addressParts.length > 0 ? addressParts.join(', ') : (user?.schoolAddress || '');
+  const ledgerAddress =
+    config.headerAddressCustom?.trim() && !config.headerAddressCustom.includes('Jaipur')
+      ? config.headerAddressCustom.trim()
+      : defaultAddress;
+
+  const defaultSubtitleParts = [];
+  if (affiliationNo) defaultSubtitleParts.push(`Affiliated to CBSE • Affil No: ${affiliationNo}`);
+  else defaultSubtitleParts.push('Affiliated to CBSE');
+  if (branchName) defaultSubtitleParts.push(`Branch: ${branchName}`);
+  if (schoolPhone) defaultSubtitleParts.push(`Phone: ${schoolPhone}`);
+  const defaultSubtitle = defaultSubtitleParts.join(' • ');
+
+  const ledgerSubtitle =
+    config.headerSubtitleCustom?.trim() && !config.headerSubtitleCustom.includes('1730245')
+      ? config.headerSubtitleCustom.trim()
+      : defaultSubtitle;
 
   return (
     <div className="pb-3 surface-ground min-h-screen">
@@ -716,6 +760,7 @@ export const StudentAwrReportPage = () => {
           }}
           student={selectedStudent}
           config={data.config}
+          branchInfo={branchInfo}
         />
       )}
 
@@ -725,14 +770,16 @@ export const StudentAwrReportPage = () => {
           {/* Header */}
           <div className="text-center pb-2 mb-2" style={{ borderBottom: `2.5px double ${config.borderColor || '#065f46'}` }}>
             <h2 style={{ margin: 0, fontSize: '20px', color: config.primaryColor || '#065f46', textTransform: 'uppercase' }}>
-              {config.headerSchoolNameCustom || 'DELHI PUBLIC SCHOOL JAIPUR'}
+              {ledgerSchoolName}
             </h2>
             <div style={{ fontSize: '11px', color: '#334155', fontWeight: 600 }}>
-              {config.headerSubtitleCustom || 'Affiliated to CBSE, New Delhi • Affil No: 1730245 • School Code: 10589 • U-DISE: 081203001'}
+              {ledgerSubtitle}
             </div>
-            <div style={{ fontSize: '10px', color: '#475569' }}>
-              {config.headerAddressCustom || 'Sector 4, Green Avenue, Vidyadhar Nagar, Jaipur - 302023 (Rajasthan)'}
-            </div>
+            {ledgerAddress && (
+              <div style={{ fontSize: '10px', color: '#475569' }}>
+                {ledgerAddress}
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -757,7 +804,7 @@ export const StudentAwrReportPage = () => {
           {/* Filter summary bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '8px', color: '#334155' }}>
             <div><strong>Ref:</strong> {config.refPrefix || 'DPS/AWR'}/REGISTER</div>
-            <div><strong>Academic Session:</strong> 2025-2026</div>
+            <div><strong>Academic Session:</strong> {activeAcademicYearName || '2027-28'}</div>
             <div><strong>Total Students:</strong> {data.students.length} (Active: {data.summary.activeOnRoll}, Withdrawn: {data.summary.totalWithdrawn})</div>
             <div><strong>Date of Print:</strong> {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
           </div>
@@ -823,7 +870,16 @@ export const StudentAwrReportPage = () => {
               </div>
             </div>
             <div style={{ textAlign: 'center', width: '200px' }}>
-              <div style={{ height: '30px' }}></div>
+              <div style={{ height: '30px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                {(activeBranch.principalSignatureUrl || activeBranch.authorizedSignatureUrl) && (
+                  <img
+                    src={activeBranch.principalSignatureUrl || activeBranch.authorizedSignatureUrl}
+                    alt="Signature"
+                    style={{ maxHeight: '28px', maxWidth: '140px', objectFit: 'contain' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                )}
+              </div>
               <div style={{ borderTop: '1px solid #065f46', paddingTop: '4px', fontWeight: 'bold', fontSize: '10px' }}>
                 {config.signature3 || 'Principal / Head of Institution'}
               </div>

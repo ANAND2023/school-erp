@@ -942,7 +942,7 @@ export const AwrReportDesignerPage = () => {
                           {config.headerSchoolNameCustom ||
                             (selectedSchoolId
                               ? schools.find((s) => s.id === selectedSchoolId)?.name
-                              : 'DELHI PUBLIC SCHOOL JAIPUR')}
+                              : 'DELHI PUBLIC SCHOOL')}
                         </h2>
 
                         <div
@@ -954,7 +954,7 @@ export const AwrReportDesignerPage = () => {
                           }}
                         >
                           {config.headerSubtitleCustom ||
-                            'Affiliated to CBSE, New Delhi • Affil No: 1730245 • School Code: 10589 • U-DISE: 081203001'}
+                            'Affiliated to CBSE • Affil No: 2026/0912 • Statutory General Register'}
                         </div>
 
                         <div
@@ -965,7 +965,7 @@ export const AwrReportDesignerPage = () => {
                           }}
                         >
                           {config.headerAddressCustom ||
-                            'Sector 4, Green Avenue, Vidyadhar Nagar, Jaipur - 302023 (Rajasthan)'}
+                            '123 Knowledge Park, Sector 4, New Delhi - 110001'}
                         </div>
                       </div>
 

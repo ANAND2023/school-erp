@@ -578,7 +578,7 @@ export const BonafideCertificateDesignerPage = () => {
                   {config.headerSchoolNameCustom ||
                     (selectedSchoolId
                       ? schools.find((s) => s.id === selectedSchoolId)?.name
-                      : 'DELHI PUBLIC SCHOOL JAIPUR')}
+                      : 'DELHI PUBLIC SCHOOL')}
                 </h2>
 
                 <div
@@ -590,7 +590,7 @@ export const BonafideCertificateDesignerPage = () => {
                   }}
                 >
                   {config.headerSubtitleCustom ||
-                    'Recognized by Dept. of Education • Affiliated to CBSE New Delhi (Affil No: 1730245)'}
+                    'Recognized by Dept. of Education • Affiliated to CBSE New Delhi'}
                 </div>
 
                 <div
@@ -601,7 +601,7 @@ export const BonafideCertificateDesignerPage = () => {
                   }}
                 >
                   {config.headerAddressCustom ||
-                    'Sector 4, Green Avenue, Vidyadhar Nagar, Jaipur - 302023 • Tel: 0141-2234567'}
+                    '123 Knowledge Park, Sector 4, New Delhi - 110001'}
                 </div>
               </div>
 

@@ -4,15 +4,17 @@ import { Button } from 'primereact/button';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Tag } from 'primereact/tag';
 import apiClient from '../../../api/client';
+import { branchApi } from '../../masters/api';
 import { printElement } from '../../../utils/printUtils';
 import { useThemeStore, shadeColor } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
 
-export const AwrStudentFolioModal = ({ open, onClose, student, config: passedConfig }) => {
+export const AwrStudentFolioModal = ({ open, onClose, student, config: passedConfig, branchInfo: passedBranchInfo }) => {
   const printRef = useRef(null);
   const { currentColorHex, isDarkMode } = useThemeStore();
   const themeColor = currentColorHex || '#0f766e';
   const [config, setConfig] = useState(passedConfig || null);
+  const [branchInfo, setBranchInfo] = useState(passedBranchInfo || null);
   const [printWithLetterhead, setPrintWithLetterhead] = useState(true);
 
   useEffect(() => {
@@ -37,7 +39,22 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
           console.error('Failed to load AWR config:', err);
         });
     }
-  }, [open, passedConfig]);
+
+    if (passedBranchInfo) {
+      setBranchInfo(passedBranchInfo);
+    } else {
+      branchApi
+        .getCurrentBranch()
+        .then((res) => {
+          if (res.data?.success && res.data.data) {
+            setBranchInfo(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load branch details for AWR folio:', err);
+        });
+    }
+  }, [open, passedConfig, passedBranchInfo]);
 
   if (!student) return null;
 
@@ -66,7 +83,38 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
       'Certified that this document is an authentic extract from the Admission and Withdrawal Register maintained by the institution.',
   };
 
-  const schoolLogo = currentConfig.schoolLogoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
+  const activeBranch = branchInfo || passedBranchInfo || {};
+  const schoolLogo = currentConfig.schoolLogoUrl || activeBranch.logoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
+  const principalSignature = activeBranch.principalSignatureUrl || activeBranch.authorizedSignatureUrl;
+
+  const schoolName =
+    currentConfig.headerSchoolNameCustom?.trim() && !currentConfig.headerSchoolNameCustom.includes('JAIPUR')
+      ? currentConfig.headerSchoolNameCustom.trim()
+      : activeBranch.schoolName || user?.schoolName || 'DELHI PUBLIC SCHOOL';
+
+  const branchName = activeBranch.name || activeBranch.branchName || user?.branchName || '';
+  const affiliationNo = activeBranch.affiliationNumber || activeBranch.affiliationNo || user?.affiliationNo || '';
+  const rawPhones = [activeBranch.phone || user?.schoolPhone, activeBranch.alternatePhone || user?.schoolAlternatePhone].filter(Boolean);
+  const schoolPhone = rawPhones.length > 0 ? rawPhones.join(', ') : '';
+
+  const addressParts = [activeBranch.address, activeBranch.city, activeBranch.state, activeBranch.pincode].filter(Boolean);
+  const defaultAddress = addressParts.length > 0 ? addressParts.join(', ') : (user?.schoolAddress || '');
+  const schoolAddress =
+    currentConfig.headerAddressCustom?.trim() && !currentConfig.headerAddressCustom.includes('Jaipur')
+      ? currentConfig.headerAddressCustom.trim()
+      : defaultAddress;
+
+  const defaultSubtitleParts = [];
+  if (affiliationNo) defaultSubtitleParts.push(`Affiliated to CBSE • Affil No: ${affiliationNo}`);
+  else defaultSubtitleParts.push('Affiliated to CBSE');
+  if (branchName) defaultSubtitleParts.push(`Branch: ${branchName}`);
+  if (schoolPhone) defaultSubtitleParts.push(`Phone: ${schoolPhone}`);
+  const defaultSubtitle = defaultSubtitleParts.join(' • ');
+
+  const schoolSubtitle =
+    currentConfig.headerSubtitleCustom?.trim() && !currentConfig.headerSubtitleCustom.includes('1730245')
+      ? currentConfig.headerSubtitleCustom.trim()
+      : defaultSubtitle;
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -212,7 +260,7 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
                       letterSpacing: currentConfig.headerSchoolNameLetterSpacing || '1px',
                     }}
                   >
-                    {currentConfig.headerSchoolNameCustom || 'DELHI PUBLIC SCHOOL JAIPUR'}
+                    {schoolName}
                   </h2>
 
                   <div
@@ -223,20 +271,20 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
                       marginTop: '2px',
                     }}
                   >
-                    {currentConfig.headerSubtitleCustom ||
-                      'Affiliated to CBSE, New Delhi • Affil No: 1730245 • School Code: 10589 • U-DISE: 081203001'}
+                    {schoolSubtitle}
                   </div>
 
-                  <div
-                    style={{
-                      fontSize: `${currentConfig.headerAddressFontSize || 10}px`,
-                      color: currentConfig.headerAddressColor || '#475569',
-                      marginTop: '2px',
-                    }}
-                  >
-                    {currentConfig.headerAddressCustom ||
-                      'Sector 4, Green Avenue, Vidyadhar Nagar, Jaipur - 302023 (Rajasthan)'}
-                  </div>
+                  {schoolAddress && (
+                    <div
+                      style={{
+                        fontSize: `${currentConfig.headerAddressFontSize || 10}px`,
+                        color: currentConfig.headerAddressColor || '#475569',
+                        marginTop: '2px',
+                      }}
+                    >
+                      {schoolAddress}
+                    </div>
+                  )}
                 </div>
 
                 {currentConfig.showQrCode && (
@@ -492,7 +540,16 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
               )}
 
               <div className="text-center" style={{ width: '180px' }}>
-                <div style={{ height: '36px' }}></div>
+                <div style={{ height: '36px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                  {principalSignature && (
+                    <img
+                      src={principalSignature}
+                      alt="Principal Signature"
+                      style={{ maxHeight: '34px', maxWidth: '140px', objectFit: 'contain' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                </div>
                 <div
                   style={{
                     borderTop: `1px solid ${currentConfig.borderColor || '#065f46'}`,
