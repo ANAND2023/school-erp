@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -73,6 +73,7 @@ export const LoginPage = () => {
   // Multi-School Single Domain Support
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolInput, setSchoolInput] = useState(() => localStorage.getItem('dvs_school_code_input') || '');
   const [schoolsLoading, setSchoolsLoading] = useState(false);
 
   const from = location.state?.from?.pathname || '/dashboard';
@@ -108,17 +109,36 @@ export const LoginPage = () => {
             );
             if (matched) {
               setSelectedSchoolId(matched.id);
+              setSchoolInput(matched.code || matched.name);
               localStorage.setItem('dvs_selected_school_id', String(matched.id));
+              localStorage.setItem('dvs_school_code_input', matched.code || matched.name);
               return;
             }
           }
 
           // 2. Check localStorage saved school
           const savedSchoolId = localStorage.getItem('dvs_selected_school_id');
+          const savedSchoolInput = localStorage.getItem('dvs_school_code_input');
           if (savedSchoolId && schoolList.some((s) => String(s.id) === savedSchoolId)) {
+            const found = schoolList.find((s) => String(s.id) === savedSchoolId);
             setSelectedSchoolId(Number(savedSchoolId));
+            if (found && !savedSchoolInput) {
+              setSchoolInput(found.code || found.name);
+            } else if (savedSchoolInput) {
+              setSchoolInput(savedSchoolInput);
+            }
+          } else if (savedSchoolInput) {
+            setSchoolInput(savedSchoolInput);
+            const found = schoolList.find(
+              (s) =>
+                s.code?.toLowerCase() === savedSchoolInput.trim().toLowerCase() ||
+                s.slug?.toLowerCase() === savedSchoolInput.trim().toLowerCase() ||
+                s.name?.toLowerCase() === savedSchoolInput.trim().toLowerCase()
+            );
+            if (found) setSelectedSchoolId(found.id);
           } else if (schoolList.length === 1) {
             setSelectedSchoolId(schoolList[0].id);
+            setSchoolInput(schoolList[0].code || schoolList[0].name);
           }
         }
       } catch (err) {
@@ -131,14 +151,47 @@ export const LoginPage = () => {
     fetchSchools();
   }, [location.search]);
 
-  const handleSchoolChange = (newSchoolId) => {
-    setSelectedSchoolId(newSchoolId);
-    if (newSchoolId) {
-      localStorage.setItem('dvs_selected_school_id', String(newSchoolId));
+  const handleSchoolInputChange = (val) => {
+    setSchoolInput(val);
+    const trimmed = (val || '').trim().toLowerCase();
+    localStorage.setItem('dvs_school_code_input', val);
+
+    if (!trimmed) {
+      setSelectedSchoolId('');
+      localStorage.removeItem('dvs_selected_school_id');
+      return;
+    }
+
+    const matched = schools.find(
+      (s) =>
+        s.code?.toLowerCase() === trimmed ||
+        s.slug?.toLowerCase() === trimmed ||
+        s.name?.toLowerCase() === trimmed ||
+        String(s.id) === trimmed
+    );
+
+    if (matched) {
+      setSelectedSchoolId(matched.id);
+      localStorage.setItem('dvs_selected_school_id', String(matched.id));
     } else {
+      setSelectedSchoolId('');
       localStorage.removeItem('dvs_selected_school_id');
     }
   };
+
+  const matchedSchool = useMemo(() => {
+    if (selectedSchoolId) {
+      return schools.find((s) => s.id === selectedSchoolId);
+    }
+    const trimmed = (schoolInput || '').trim().toLowerCase();
+    if (!trimmed) return null;
+    return schools.find(
+      (s) =>
+        s.code?.toLowerCase() === trimmed ||
+        s.slug?.toLowerCase() === trimmed ||
+        s.name?.toLowerCase() === trimmed
+    );
+  }, [schools, selectedSchoolId, schoolInput]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,8 +202,8 @@ export const LoginPage = () => {
       return;
     }
 
-    if ((portalType === 'student' || portalType === 'parent') && !selectedSchoolId && schools.length > 1) {
-      setErrorMessage('Please select your school to proceed.');
+    if ((portalType === 'student' || portalType === 'parent') && !selectedSchoolId && !matchedSchool && !schoolInput.trim() && schools.length > 1) {
+      setErrorMessage('Please enter your school code or name to proceed.');
       return;
     }
 
@@ -166,7 +219,8 @@ export const LoginPage = () => {
       const payload = {
         username: username.trim(),
         password,
-        schoolId: selectedSchoolId ? Number(selectedSchoolId) : null,
+        schoolId: selectedSchoolId ? Number(selectedSchoolId) : (matchedSchool ? matchedSchool.id : null),
+        schoolCode: schoolInput.trim() || (matchedSchool ? matchedSchool.code : undefined),
       };
 
       const res = await apiClient.post('/auth/login', payload);
@@ -428,7 +482,7 @@ export const LoginPage = () => {
 
               {/* Form */}
               <Box component="form" onSubmit={handleSubmit} noValidate>
-                {/* School Selector (for Student/Parent or when multiple schools exist) */}
+                {/* School Input (replacing the dropdown as requested) */}
                 {(portalType === 'student' || portalType === 'parent' || schools.length > 1) && (
                   <Box sx={{ mb: 1.8 }}>
                     <Typography
@@ -445,50 +499,46 @@ export const LoginPage = () => {
                         mb: 0.6,
                       }}
                     >
-                      <span>🏫 Select Your School</span>
-                      {selectedSchoolId && (
-                        <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓ Saved for Next Time</span>
+                      <span>🏫 School Code / School Name</span>
+                      {matchedSchool && (
+                        <span style={{ color: '#10b981', fontSize: '0.7rem' }}>
+                          ✓ {matchedSchool.name}
+                        </span>
                       )}
                     </Typography>
                     <TextField
-                      select
                       fullWidth
-                      id="school-select"
-                      value={selectedSchoolId}
-                      onChange={(e) => handleSchoolChange(e.target.value)}
+                      id="school-input"
+                      name="schoolInput"
+                      placeholder="Enter School Code or Name (e.g. DPS)"
+                      value={schoolInput}
+                      onChange={(e) => handleSchoolInputChange(e.target.value)}
                       disabled={loading || schoolsLoading}
-                      SelectProps={{
-                        displayEmpty: true,
-                        renderValue: (val) => {
-                          if (!val) {
-                            return <span style={{ color: '#94a3b8' }}>-- Choose Your School --</span>;
-                          }
-                          const found = schools.find((s) => s.id === val);
-                          return found ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden' }}>
-                              <Typography variant="body2" noWrap sx={{ color: '#ffffff', fontWeight: 600 }}>
-                                {found.name}
-                              </Typography>
-                              <Box
-                                component="span"
-                                sx={{
-                                  fontSize: '0.7rem',
-                                  bgcolor: 'rgba(56, 189, 248, 0.2)',
-                                  color: '#38bdf8',
-                                  px: 0.8,
-                                  py: 0.1,
-                                  borderRadius: '4px',
-                                  fontWeight: 800,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                {found.code}
-                              </Box>
-                            </Box>
-                          ) : (
-                            val
-                          );
-                        },
+                      inputProps={{
+                        list: 'dvs-school-options',
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SchoolOutlined sx={{ color: '#38bdf8', fontSize: 22 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: matchedSchool ? (
+                          <InputAdornment position="end">
+                            <Chip
+                              label={matchedSchool.code || 'MATCHED'}
+                              size="small"
+                              sx={{
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                height: 22,
+                                bgcolor: 'rgba(16, 185, 129, 0.2)',
+                                color: '#10b981',
+                                border: '1px solid rgba(16, 185, 129, 0.4)',
+                              }}
+                            />
+                          </InputAdornment>
+                        ) : null,
                       }}
                       sx={{
                         '& .MuiOutlinedInput-root': {
@@ -497,52 +547,30 @@ export const LoginPage = () => {
                           color: '#ffffff',
                           fontSize: '0.9rem',
                           '& fieldset': {
-                            borderColor: selectedSchoolId ? '#38bdf8' : 'rgba(255, 255, 255, 0.18)',
+                            borderColor: matchedSchool ? 'rgba(16, 185, 129, 0.6)' : 'rgba(255, 255, 255, 0.18)',
                           },
                           '&:hover fieldset': {
                             borderColor: '#38bdf8',
                           },
                           '&.Mui-focused fieldset': {
                             borderColor: '#38bdf8',
+                            borderWidth: '2px',
                             boxShadow: '0 0 14px rgba(56, 189, 248, 0.35)',
                           },
-                        },
-                        '& .MuiSelect-icon': {
-                          color: '#38bdf8',
+                          '& input::placeholder': {
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            opacity: 1,
+                          },
                         },
                       }}
-                    >
-                      <MenuItem value="" disabled sx={{ color: '#64748b', fontSize: '0.85rem' }}>
-                        -- Choose Your School --
-                      </MenuItem>
+                    />
+                    <datalist id="dvs-school-options">
                       {schools.map((s) => (
-                        <MenuItem key={s.id} value={s.id} sx={{ py: 1 }}>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="body2" fontWeight={700} color="#0f172a">
-                                {s.name}
-                              </Typography>
-                              <Chip
-                                label={s.code}
-                                size="small"
-                                sx={{
-                                  fontSize: '0.7rem',
-                                  fontWeight: 800,
-                                  height: 20,
-                                  bgcolor: '#e0f2fe',
-                                  color: '#0369a1',
-                                }}
-                              />
-                            </Box>
-                            {s.city && (
-                              <Typography variant="caption" color="text.secondary">
-                                {s.city}
-                              </Typography>
-                            )}
-                          </Box>
-                        </MenuItem>
+                        <option key={s.id} value={s.code || s.name}>
+                          {s.name} ({s.code})
+                        </option>
                       ))}
-                    </TextField>
+                    </datalist>
                   </Box>
                 )}
 
