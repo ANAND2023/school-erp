@@ -695,7 +695,7 @@ export const FeeReceiptSlip = React.forwardRef(({ data = {}, showCuttingLine = t
         @media print {
           @page {
             size: ${activeConfig.pageSize || 'A4'} ${activeConfig.pageOrientation || 'portrait'};
-            margin: ${activeConfig.pageMargin || '4mm'};
+            margin: 8mm;
           }
           html, body {
             width: 100% !important;

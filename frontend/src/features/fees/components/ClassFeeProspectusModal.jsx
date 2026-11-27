@@ -89,6 +89,7 @@ export default function ClassFeeProspectusModal({ open, onClose, initialClassId 
       pageSize: 'A4',
       orientation: 'portrait',
       margin: '8mm',
+      padding: '8mm',
     });
   };
 

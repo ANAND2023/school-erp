@@ -349,7 +349,7 @@ export const AdmissionReportModal = ({
         {`
           @page {
             size: ${activeConfig.pageSize || 'A4'} ${activeConfig.pageOrientation || 'portrait'};
-            margin: ${activeConfig.pageMargin || '6mm'};
+            margin: 8mm;
           }
           @media print {
             html, body {
@@ -411,14 +411,16 @@ export const AdmissionReportModal = ({
             #printable-admission-report {
               display: flex !important;
               flex-direction: column !important;
+              justify-content: space-between !important;
               position: static !important;
               width: 100% !important;
               max-width: 100% !important;
-              min-height: auto !important;
-              margin: 0 auto !important;
-              padding: 12px 16px !important;
+              min-height: 280mm !important;
+              height: 280mm !important;
+              margin: 0 !important;
+              padding: 8mm !important;
               border: 2px solid ${primaryCol} !important;
-              border-radius: 4px !important;
+              border-radius: 0 !important;
               box-sizing: border-box !important;
               background: #ffffff !important;
               color: #000000 !important;
@@ -426,7 +428,7 @@ export const AdmissionReportModal = ({
               break-inside: avoid !important;
               page-break-after: avoid !important;
               break-after: avoid !important;
-              overflow: visible !important;
+              overflow: hidden !important;
             }
             #printable-admission-report * {
               visibility: visible !important;

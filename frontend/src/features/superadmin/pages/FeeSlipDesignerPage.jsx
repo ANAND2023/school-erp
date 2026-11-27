@@ -438,7 +438,8 @@ export const FeeSlipDesignerPage = () => {
       title: `Fee_Receipt_${config.schoolName || 'Template'}`,
       pageSize: config.pageSize || 'A4',
       orientation: config.pageOrientation || 'portrait',
-      margin: config.pageMargin || '4mm',
+      margin: '8mm',
+      padding: '8mm',
     });
   };
 

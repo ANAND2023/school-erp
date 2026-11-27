@@ -153,7 +153,8 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
       title: `Registration_Form_${slip.slipNumber}_${slip.studentName}`,
       pageSize: cfg.pageSize || 'A4',
       orientation: 'portrait',
-      margin: cfg.pageMargin || '5mm',
+      margin: '8mm',
+      padding: '8mm',
     });
   };
 
@@ -241,12 +242,21 @@ export const RegistrationSlipModal = ({ open, onClose, slip, branchInfo = {}, on
             '@media print': {
               width: '100% !important',
               maxWidth: '100% !important',
-              p: '5mm 8mm !important',
-              m: '0 auto !important',
+              minHeight: '280mm !important',
+              height: '280mm !important',
+              p: '8mm !important',
+              m: '0 !important',
               boxShadow: 'none !important',
               border: `1.5px solid ${cfg.borderColor || '#1e3a8a'} !important`,
+              borderRadius: '0 !important',
+              display: 'flex !important',
+              flexDirection: 'column !important',
+              justifyContent: 'space-between !important',
               pageBreakInside: 'avoid !important',
               breakInside: 'avoid !important',
+              pageBreakAfter: 'avoid !important',
+              breakAfter: 'avoid !important',
+              overflow: 'hidden !important',
             },
           }}
         >

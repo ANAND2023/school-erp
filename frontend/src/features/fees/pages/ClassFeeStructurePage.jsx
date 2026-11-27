@@ -94,6 +94,7 @@ export default function ClassFeeStructurePage() {
       pageSize: 'A4',
       orientation: 'portrait',
       margin: '8mm',
+      padding: '8mm',
     });
   };
 

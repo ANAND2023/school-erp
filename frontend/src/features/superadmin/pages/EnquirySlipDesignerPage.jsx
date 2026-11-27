@@ -442,7 +442,8 @@ export const EnquirySlipDesignerPage = () => {
       title: `Enquiry_Slip_${config.schoolName || 'Template'}`,
       pageSize: config.pageSize || 'A4',
       orientation: config.pageOrientation || 'portrait',
-      margin: config.pageMargin || '8mm',
+      margin: '8mm',
+      padding: '8mm',
     });
   };
 

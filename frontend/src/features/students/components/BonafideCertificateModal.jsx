@@ -420,7 +420,13 @@ export const BonafideCertificateModal = (props) => {
         bonafide: 'Bonafide_Certificate',
       };
       const docName = `${typeLabels[typeKey] || 'Certificate'}_${sName.replace(/\s+/g, '_')}`;
-      printElement(printRef.current, docName);
+      printElement(printRef.current, {
+        title: docName,
+        pageSize: 'A4',
+        orientation: 'portrait',
+        margin: '8mm',
+        padding: '8mm',
+      });
       if (typeof onPrinted === 'function') {
         onPrinted({
           studentId: studentData?.id || studentId,
@@ -1164,7 +1170,8 @@ export const BonafideCertificateModal = (props) => {
       <div ref={containerRef} className="surface-200 p-3 border-round overflow-auto" style={{ maxHeight: '62vh' }}>
         <div
           ref={printRef}
-          className="bg-white mx-auto shadow-2 relative"
+          id="bonafide-certificate-print-area"
+          className="bg-white mx-auto shadow-2 relative bonafide-certificate-print"
           style={{
             maxWidth: `${config?.pageMaxWidth || 800}px`,
             width: `${config?.pageMaxWidth || 800}px`,

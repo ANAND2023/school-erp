@@ -228,7 +228,8 @@ export const EnquirySlipModal = ({
       title: `Enquiry_Slip_${sName}_${num}`,
       pageSize: slipConfig.pageSize || 'A4',
       orientation: slipConfig.pageOrientation || 'portrait',
-      margin: slipConfig.pageMargin || '8mm',
+      margin: '8mm',
+      padding: '8mm',
     });
   };
 
@@ -960,7 +961,7 @@ export const EnquirySlipModal = ({
         {`
           @page {
             size: ${slipConfig.pageSize || 'A4'} ${slipConfig.pageOrientation || 'portrait'};
-            margin: ${slipConfig.pageMargin || '8mm'};
+            margin: 8mm;
           }
           @media print {
             html, body {
@@ -1027,14 +1028,16 @@ export const EnquirySlipModal = ({
             #printable-enquiry-slip {
               display: flex !important;
               flex-direction: column !important;
+              justify-content: space-between !important;
               position: static !important;
               width: 100% !important;
-              max-width: ${maxWidthPx}px !important;
-              min-height: auto !important;
-              margin: 0 auto !important;
-              padding: ${slipPadding}px !important;
+              max-width: 100% !important;
+              min-height: 280mm !important;
+              height: 280mm !important;
+              margin: 0 !important;
+              padding: 8mm !important;
               border: ${getBorderCss()} !important;
-              border-radius: 6px !important;
+              border-radius: 0 !important;
               box-sizing: border-box !important;
               background: #ffffff !important;
               color: #000000 !important;
@@ -1042,7 +1045,7 @@ export const EnquirySlipModal = ({
               break-inside: avoid !important;
               page-break-after: avoid !important;
               break-after: avoid !important;
-              overflow: visible !important;
+              overflow: hidden !important;
               font-family: ${slipConfig.fontFamily} !important;
               font-size: ${slipConfig.baseFontSize || 13}px !important;
             }

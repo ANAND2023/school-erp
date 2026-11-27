@@ -92,23 +92,60 @@ export async function downloadElementAsPdf(elementOrId, fileName = 'document.pdf
  * Isolated print utility that prints ONLY the targeted DOM element.
  * Perfect for vouchers, slips, fee receipts, and certificates where
  * sidebars, navigation headers, and control panels must NEVER appear in print.
+ * 
+ * Supports complete A4 page border framing with identical 4-sided margins and paddings.
  */
 export function printElement(elementOrId, options = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+  const resolvedOptions = typeof options === 'string' ? { title: options } : (options || {});
   const {
     title = 'Document',
     pageSize = 'A4',
     orientation = 'portrait',
     margin = '8mm',
+    padding = '8mm',
     customCss = '',
-  } = options;
+  } = resolvedOptions;
 
   const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
   if (!element) {
     console.error('Element not found for printElement:', elementOrId);
     return;
   }
+
+  // Ensure identical margins on all 4 sides (top, right, bottom, left)
+  const marginParts = String(margin).trim().split(/\s+/);
+  const cleanMargin = marginParts.length === 1 ? marginParts[0] : (marginParts[0] || '8mm');
+
+  // Ensure identical padding on all 4 sides (top, right, bottom, left)
+  const paddingParts = String(padding).trim().split(/\s+/);
+  const cleanPadding = paddingParts.length === 1 ? paddingParts[0] : (paddingParts[0] || '8mm');
+
+  const isA4 = String(pageSize).trim().toUpperCase() === 'A4';
+  const isLandscape = String(orientation).trim().toLowerCase() === 'landscape';
+
+  // For A4: 297mm height (portrait) or 210mm height (landscape).
+  // Deducting 2x 8mm margins: 297 - 16 = 281mm. 280mm provides 1mm safety margin against Chrome multi-page spill.
+  const fullA4Height = isLandscape ? '193mm' : '280mm';
+
+  // Check if printing a single-page slip/card/form/certificate
+  const isSinglePageSlip = Boolean(
+    element.classList?.contains('printable-slip') ||
+    element.classList?.contains('slip-card') ||
+    element.classList?.contains('bonafide-certificate-print') ||
+    element.classList?.contains('awr-folio-print') ||
+    element.classList?.contains('a4-full-page') ||
+    element.id?.includes('slip') ||
+    element.id?.includes('registration') ||
+    element.id?.includes('enquiry') ||
+    element.id?.includes('admission') ||
+    element.id?.includes('prospectus') ||
+    element.id?.includes('report') ||
+    element.id?.includes('certificate') ||
+    element.id?.includes('gate-pass') ||
+    resolvedOptions.fullPageFrame
+  );
 
   // Remove existing print iframe if any
   const existingIframe = document.getElementById('erp-print-isolated-frame');
@@ -144,10 +181,10 @@ export function printElement(elementOrId, options = {}) {
         <style>
           @page {
             size: ${pageSize} ${orientation};
-            margin: ${margin};
+            margin: ${cleanMargin};
           }
           * {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -155,12 +192,45 @@ export function printElement(elementOrId, options = {}) {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            height: auto !important;
+            height: ${isA4 && isSinglePageSlip ? '100%' : 'auto'} !important;
             background: #ffffff !important;
             color: #000000 !important;
-            overflow: visible !important;
+            overflow: ${isA4 && isSinglePageSlip ? 'hidden' : 'visible'} !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           }
+          ${isA4 && isSinglePageSlip ? `
+          body > *:first-child,
+          .printable-slip,
+          #printable-registration-slip-container,
+          #printable-enquiry-slip,
+          #printable-admission-slip,
+          #class-fee-prospectus-slip,
+          #modal-class-fee-prospectus-slip,
+          #page-class-fee-prospectus-slip,
+          #printable-admission-report,
+          #printable-fee-slip,
+          #printable-registration-form-preview,
+          .slip-card,
+          .bonafide-certificate-print,
+          .awr-folio-print,
+          .a4-full-page {
+            box-sizing: border-box !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: ${fullA4Height} !important;
+            height: ${fullA4Height} !important;
+            margin: 0 !important;
+            padding: ${cleanPadding} !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            overflow: hidden !important;
+          }
+          ` : `
           #printable-enquiry-slip,
           #class-fee-prospectus-slip,
           #printable-admission-slip,
@@ -177,6 +247,7 @@ export function printElement(elementOrId, options = {}) {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
+          `}
           ${customCss}
         </style>
       </head>

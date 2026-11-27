@@ -4,6 +4,7 @@ import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { numberToIndianWords } from '../../fees/utils/numberToWords';
 import { useAuthStore } from '../../../store/authStore';
+import { printElement } from '../../../utils/printUtils';
 
 // Circular School Emblem Fallback SVG
 const SchoolEmblem = ({ size = 56, primaryColor = '#1e3a8a', secondaryColor = '#eff6ff' }) => (
@@ -25,14 +26,20 @@ const SchoolEmblem = ({ size = 56, primaryColor = '#1e3a8a', secondaryColor = '#
 const SLIP_CSS = `
   .slip-card {
     border: 1.5px solid #0f172a;
-    border-radius: 6px;
-    padding: 16px 20px;
+    border-radius: 0;
+    padding: 8mm;
     position: relative;
     background: #ffffff;
     color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 11px;
     line-height: 1.35;
+    min-height: 280mm;
+    height: 280mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
   }
   .school-header-wrap {
     display: flex;
@@ -291,48 +298,14 @@ export const SalarySlipModal = ({ visible, onHide, payroll }) => {
     const printContent = printRef.current;
     if (!printContent) return;
 
-    const printWindow = window.open('', '_blank', 'width=950,height=750');
-    if (!printWindow) {
-      alert('Please allow popups to print salary slip');
-      return;
-    }
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Salary Slip - ${payroll.employeeName || 'Staff'} - ${payroll.monthName || ''}</title>
-          <style>
-            @page {
-              size: A4 portrait;
-              margin: 10mm 12mm;
-            }
-            body {
-              color: #0f172a;
-              margin: 0;
-              padding: 0;
-              background: #fff;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            * {
-              box-sizing: border-box;
-            }
-            ${SLIP_CSS}
-          </style>
-        </head>
-        <body>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 350);
+    printElement(printContent, {
+      title: `Salary_Slip_${payroll.employeeName || 'Staff'}_${payroll.monthName || ''}`,
+      pageSize: 'A4',
+      orientation: 'portrait',
+      margin: '8mm',
+      padding: '8mm',
+      customCss: SLIP_CSS,
+    });
   };
 
   const handleWhatsApp = () => {

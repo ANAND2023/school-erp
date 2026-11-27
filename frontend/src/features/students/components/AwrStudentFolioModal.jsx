@@ -69,7 +69,13 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
 
   const handlePrint = () => {
     if (printRef.current) {
-      printElement(printRef.current, `AWR_Folio_${student.admissionNo}`);
+      printElement(printRef.current, {
+        title: `AWR_Folio_${student.admissionNo}`,
+        pageSize: 'A4',
+        orientation: 'portrait',
+        margin: '8mm',
+        padding: '8mm',
+      });
     }
   };
 
@@ -124,7 +130,8 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
         {/* Printable Canvas */}
         <div
           ref={printRef}
-          className="bg-white mx-auto shadow-2 relative"
+          id="awr-student-folio-print-area"
+          className="bg-white mx-auto shadow-2 relative awr-folio-print"
           style={{
             width: '740px',
             minHeight: '850px',

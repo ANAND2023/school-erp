@@ -409,7 +409,8 @@ export const RegistrationSlipDesignerPage = () => {
       title: `Registration_Form_${config.schoolName || 'Template'}`,
       pageSize: config.pageSize || 'A4',
       orientation: 'portrait',
-      margin: config.pageMargin || '5mm',
+      margin: '8mm',
+      padding: '8mm',
     });
   };
 
