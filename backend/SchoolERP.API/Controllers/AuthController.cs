@@ -70,10 +70,22 @@ namespace SchoolERP.API.Controllers
             {
                 var sCode = request.SchoolCode.Trim().ToLower();
                 var matchedSchool = await _context.Schools
-                    .FirstOrDefaultAsync(s => s.Code.ToLower() == sCode || s.Slug.ToLower() == sCode);
+                    .FirstOrDefaultAsync(s => s.Code.ToLower() == sCode || s.Slug.ToLower() == sCode || s.Id.ToString() == sCode);
                 if (matchedSchool != null)
                 {
                     targetSchoolId = matchedSchool.Id;
+                }
+                else if (long.TryParse(sCode, out var parsedId))
+                {
+                    var schoolById = await _context.Schools.FindAsync(parsedId);
+                    if (schoolById != null)
+                    {
+                        targetSchoolId = schoolById.Id;
+                    }
+                    else
+                    {
+                        return BadRequest(ApiResponse<LoginResponseDto>.Fail($"School with ID '{request.SchoolCode}' not found. Please verify your school ID."));
+                    }
                 }
                 else
                 {

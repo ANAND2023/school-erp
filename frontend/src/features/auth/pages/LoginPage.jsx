@@ -72,7 +72,7 @@ export const LoginPage = () => {
 
   // Multi-School Single Domain Support
   const [schools, setSchools] = useState([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolIdInput, setSchoolIdInput] = useState(() => localStorage.getItem('dvs_school_id_input') || '');
   const [schoolsLoading, setSchoolsLoading] = useState(false);
 
   const from = location.state?.from?.pathname || '/dashboard';
@@ -85,7 +85,7 @@ export const LoginPage = () => {
     }
   }, []);
 
-  // Fetch active schools for single-domain login & check URL parameter ?school= / ?code=
+  // Fetch active schools for single-domain login & check URL parameter ?school= / ?code= / ?id=
   useEffect(() => {
     const fetchSchools = async () => {
       try {
@@ -95,31 +95,20 @@ export const LoginPage = () => {
           const schoolList = res.data.data;
           setSchools(schoolList);
 
-          // 1. Check URL query params for ?school= or ?code= or ?slug=
+          // 1. Check URL query params for ?school= or ?code= or ?slug= or ?id=
           const searchParams = new URLSearchParams(location.search);
-          const schoolParam = searchParams.get('school') || searchParams.get('code') || searchParams.get('slug');
+          const schoolParam = searchParams.get('school') || searchParams.get('code') || searchParams.get('slug') || searchParams.get('id');
 
           if (schoolParam) {
-            const matched = schoolList.find(
-              (s) =>
-                s.code?.toLowerCase() === schoolParam.toLowerCase() ||
-                s.slug?.toLowerCase() === schoolParam.toLowerCase() ||
-                String(s.id) === schoolParam
-            );
-            if (matched) {
-              setSelectedSchoolId(matched.id);
-              localStorage.setItem('dvs_selected_school_id', String(matched.id));
-              return;
-            }
+            setSchoolIdInput(schoolParam);
+            localStorage.setItem('dvs_school_id_input', schoolParam);
+            return;
           }
 
-          // 2. Check localStorage saved school
-          const savedSchoolId = localStorage.getItem('dvs_selected_school_id');
-          if (savedSchoolId && schoolList.some((s) => String(s.id) === savedSchoolId)) {
-            setSelectedSchoolId(Number(savedSchoolId));
-          } else if (schoolList.length === 1) {
-            setSelectedSchoolId(schoolList[0].id);
-            localStorage.setItem('dvs_selected_school_id', String(schoolList[0].id));
+          // 2. Check localStorage saved school input
+          const savedInput = localStorage.getItem('dvs_school_id_input');
+          if (savedInput) {
+            setSchoolIdInput(savedInput);
           }
         }
       } catch (err) {
@@ -132,16 +121,6 @@ export const LoginPage = () => {
     fetchSchools();
   }, [location.search]);
 
-  const handleSchoolChange = (val) => {
-    const numId = val ? Number(val) : '';
-    setSelectedSchoolId(numId);
-    if (numId) {
-      localStorage.setItem('dvs_selected_school_id', String(numId));
-    } else {
-      localStorage.removeItem('dvs_selected_school_id');
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -151,8 +130,9 @@ export const LoginPage = () => {
       return;
     }
 
-    if ((portalType === 'student' || portalType === 'parent') && !selectedSchoolId && schools.length > 1) {
-      setErrorMessage('Please select your school to proceed.');
+    const enteredSchool = (schoolIdInput || '').trim();
+    if ((portalType === 'student' || portalType === 'parent') && !enteredSchool && schools.length > 1) {
+      setErrorMessage('Please enter your School ID or Code to proceed.');
       return;
     }
 
@@ -165,12 +145,35 @@ export const LoginPage = () => {
         localStorage.removeItem('dvs_remembered_user');
       }
 
-      const selectedSchool = schools.find((s) => s.id === selectedSchoolId);
+      // Resolve schoolId and schoolCode from entered input
+      let resolvedSchoolId = null;
+      let resolvedSchoolCode = undefined;
+
+      if (enteredSchool) {
+        const matched = schools.find(
+          (s) =>
+            String(s.id) === enteredSchool ||
+            s.code?.toLowerCase() === enteredSchool.toLowerCase() ||
+            s.slug?.toLowerCase() === enteredSchool.toLowerCase() ||
+            s.name?.toLowerCase() === enteredSchool.toLowerCase()
+        );
+
+        if (matched) {
+          resolvedSchoolId = matched.id;
+          resolvedSchoolCode = matched.code;
+        } else if (!isNaN(enteredSchool) && Number(enteredSchool) > 0) {
+          resolvedSchoolId = Number(enteredSchool);
+          resolvedSchoolCode = enteredSchool;
+        } else {
+          resolvedSchoolCode = enteredSchool;
+        }
+      }
+
       const payload = {
         username: username.trim(),
         password,
-        schoolId: selectedSchoolId ? Number(selectedSchoolId) : null,
-        schoolCode: selectedSchool ? selectedSchool.code : undefined,
+        schoolId: resolvedSchoolId,
+        schoolCode: resolvedSchoolCode,
       };
 
       const res = await apiClient.post('/auth/login', payload);
@@ -432,105 +435,56 @@ export const LoginPage = () => {
 
               {/* Form */}
               <Box component="form" onSubmit={handleSubmit} noValidate>
-                {/* School Dropdown */}
-                {(portalType === 'student' || portalType === 'parent' || schools.length > 0) && (
-                  <Box sx={{ mb: 1.8 }}>
-                    <TextField
-                      select
-                      fullWidth
-                      id="school-select"
-                      name="schoolId"
-                      value={selectedSchoolId || ''}
-                      onChange={(e) => handleSchoolChange(e.target.value)}
-                      disabled={loading || schoolsLoading}
-                      SelectProps={{
-                        displayEmpty: true,
-                        renderValue: (val) => {
-                          if (!val) {
-                            return (
-                              <Typography component="span" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem' }}>
-                                Select School
-                              </Typography>
-                            );
-                          }
-                          const found = schools.find((s) => s.id === Number(val));
-                          return found ? (found.code ? `${found.name} (${found.code})` : found.name) : val;
+                {/* School ID / Code Input - Simple Input, No Dropdown, No Suggestions */}
+                <Box sx={{ mb: 1.8 }}>
+                  <TextField
+                    fullWidth
+                    id="schoolId"
+                    name="schoolId"
+                    placeholder="Enter School ID / Code"
+                    value={schoolIdInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSchoolIdInput(val);
+                      if (val) {
+                        localStorage.setItem('dvs_school_id_input', val);
+                      } else {
+                        localStorage.removeItem('dvs_school_id_input');
+                      }
+                    }}
+                    disabled={loading}
+                    autoComplete="off"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SchoolOutlined sx={{ color: '#38bdf8', fontSize: 22 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(255, 255, 255, 0.07)',
+                        color: '#ffffff',
+                        fontSize: '0.9rem',
+                        '& fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.18)',
                         },
-                        MenuProps: {
-                          PaperProps: {
-                            sx: {
-                              bgcolor: '#0f172a',
-                              color: '#ffffff',
-                              borderRadius: '12px',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                              maxHeight: 280,
-                              mt: 0.5,
-                              '& .MuiMenuItem-root': {
-                                fontSize: '0.88rem',
-                                py: 1.2,
-                                px: 2,
-                                color: '#e2e8f0',
-                                '&:hover': {
-                                  bgcolor: 'rgba(56, 189, 248, 0.12)',
-                                  color: '#38bdf8',
-                                },
-                                '&.Mui-selected': {
-                                  bgcolor: 'rgba(56, 189, 248, 0.2)',
-                                  color: '#38bdf8',
-                                  fontWeight: 600,
-                                  '&:hover': {
-                                    bgcolor: 'rgba(56, 189, 248, 0.28)',
-                                  },
-                                },
-                              },
-                            },
-                          },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(56, 189, 248, 0.5)',
                         },
-                        sx: {
-                          color: '#ffffff',
-                          '& .MuiSelect-icon': {
-                            color: 'rgba(255, 255, 255, 0.6)',
-                          },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#38bdf8',
+                          borderWidth: '2px',
                         },
-                      }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SchoolOutlined sx={{ color: '#38bdf8', fontSize: 22 }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '12px',
-                          bgcolor: 'rgba(255, 255, 255, 0.07)',
-                          color: '#ffffff',
-                          fontSize: '0.9rem',
-                          '& fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.18)',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(56, 189, 248, 0.5)',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#38bdf8',
-                            borderWidth: '2px',
-                          },
+                        '& input::placeholder': {
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          opacity: 1,
                         },
-                      }}
-                    >
-                      <MenuItem value="" disabled sx={{ display: 'none' }}>
-                        Select School
-                      </MenuItem>
-                      {schools.map((s) => (
-                        <MenuItem key={s.id} value={s.id}>
-                          {s.name} {s.code ? `(${s.code})` : ''}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Box>
-                )}
+                      },
+                    }}
+                  />
+                </Box>
 
                 {/* Input 1: Email or Username */}
                 <Box sx={{ mb: 1.8 }}>
