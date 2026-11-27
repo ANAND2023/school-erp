@@ -42,7 +42,6 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
   if (!student) return null;
 
   const user = useAuthStore((state) => state.user);
-  const schoolLogo = currentConfig.schoolLogoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
 
   const currentConfig = config || {
     primaryColor: '#065f46',
@@ -66,6 +65,8 @@ export const AwrStudentFolioModal = ({ open, onClose, student, config: passedCon
     footerText:
       'Certified that this document is an authentic extract from the Admission and Withdrawal Register maintained by the institution.',
   };
+
+  const schoolLogo = currentConfig.schoolLogoUrl || user?.schoolLogoUrl || '/dvslogo1.jpeg';
 
   const handlePrint = () => {
     if (printRef.current) {
