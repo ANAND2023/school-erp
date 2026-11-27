@@ -32,6 +32,12 @@ namespace SchoolERP.API.Controllers
         public async Task<ActionResult<ApiResponse<DashboardSummaryDto>>> GetDashboardStats([FromQuery] long? academicYearId = null)
         {
             var branchId = _currentUserService.BranchId;
+            if (branchId == 0)
+            {
+                var firstBranch = await _context.Branches.FirstOrDefaultAsync(b => b.IsActive);
+                if (firstBranch != null) branchId = firstBranch.Id;
+            }
+
             var yearId = academicYearId.HasValue && academicYearId.Value > 0
                 ? academicYearId.Value
                 : _currentUserService.AcademicYearId;
@@ -74,16 +80,19 @@ namespace SchoolERP.API.Controllers
                 .CountAsync(e => e.BranchId == branchId && e.Status == EmployeeStatus.Active);
 
             // 3. Classes and Sections
-            var totalClasses = await _context.Classes
-                .CountAsync(c => c.BranchId == branchId);
+            var classesList = await _context.Classes
+                .Include(c => c.Sections)
+                .Where(c => c.BranchId == branchId)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
 
-            var totalSections = await _context.Sections
-                .CountAsync(s => s.Class != null && s.Class.BranchId == branchId);
+            var totalClasses = classesList.Count;
+            var totalSections = classesList.Sum(c => c.Sections?.Count ?? 0);
 
-            // 4. Today's Student Attendance
-            var today = DateTime.UtcNow.Date;
+            // 4. Today's Student Attendance (Indian Timezone Support)
+            var today = DateTime.UtcNow.AddHours(5.5).Date;
             var todayAttendances = await _context.StudentAttendances
-                .Where(a => a.BranchId == branchId && a.AttendanceDate.Date == today)
+                .Where(a => a.BranchId == branchId && (a.AttendanceDate.Date == today || a.AttendanceDate.Date == DateTime.UtcNow.Date))
                 .ToListAsync();
 
             var totalMarked = todayAttendances.Count;
@@ -92,6 +101,78 @@ namespace SchoolERP.API.Controllers
             var halfDayCount = todayAttendances.Count(a => a.Status == AttendanceStatus.HalfDay);
             var leaveCount = todayAttendances.Count(a => a.Status == AttendanceStatus.Leave);
             var attendancePercentage = totalMarked > 0 ? Math.Round((double)presentCount / totalMarked * 100, 1) : 0.0;
+
+            // Compute Class-wise Attendance Status
+            var activeEnrollments = await _context.StudentEnrollments
+                .Where(e => e.AcademicYearId == yearId && e.Student!.BranchId == branchId && e.Status == StudentStatus.Active)
+                .Select(e => new { e.ClassId, e.SectionId, e.StudentId })
+                .ToListAsync();
+
+            var classStatusList = new List<ClassAttendanceStatusDto>();
+            foreach (var cls in classesList)
+            {
+                if (cls.Sections != null && cls.Sections.Any())
+                {
+                    foreach (var sec in cls.Sections.OrderBy(s => s.Name))
+                    {
+                        var secStudents = activeEnrollments.Count(e => e.ClassId == cls.Id && e.SectionId == sec.Id);
+                        var secAtt = todayAttendances.Where(a => a.ClassId == cls.Id && a.SectionId == sec.Id).ToList();
+                        bool isMarked = secAtt.Any();
+                        int pres = secAtt.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
+                        int abs = secAtt.Count(a => a.Status == AttendanceStatus.Absent);
+                        int half = secAtt.Count(a => a.Status == AttendanceStatus.HalfDay);
+                        int lv = secAtt.Count(a => a.Status == AttendanceStatus.Leave);
+                        double pct = secStudents > 0 && isMarked
+                            ? Math.Round((double)pres / secStudents * 100, 1)
+                            : (isMarked && secAtt.Count > 0 ? Math.Round((double)pres / secAtt.Count * 100, 1) : 0.0);
+
+                        classStatusList.Add(new ClassAttendanceStatusDto
+                        {
+                            ClassId = cls.Id,
+                            ClassName = cls.Name,
+                            SectionId = sec.Id,
+                            SectionName = sec.Name,
+                            DisplayName = $"{cls.Name} - {sec.Name}",
+                            IsMarked = isMarked,
+                            TotalStudents = secStudents,
+                            PresentCount = pres,
+                            AbsentCount = abs,
+                            HalfDayCount = half,
+                            LeaveCount = lv,
+                            Percentage = pct
+                        });
+                    }
+                }
+                else
+                {
+                    var clsStudents = activeEnrollments.Count(e => e.ClassId == cls.Id);
+                    var clsAtt = todayAttendances.Where(a => a.ClassId == cls.Id).ToList();
+                    bool isMarked = clsAtt.Any();
+                    int pres = clsAtt.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
+                    int abs = clsAtt.Count(a => a.Status == AttendanceStatus.Absent);
+                    int half = clsAtt.Count(a => a.Status == AttendanceStatus.HalfDay);
+                    int lv = clsAtt.Count(a => a.Status == AttendanceStatus.Leave);
+                    double pct = clsStudents > 0 && isMarked
+                        ? Math.Round((double)pres / clsStudents * 100, 1)
+                        : (isMarked && clsAtt.Count > 0 ? Math.Round((double)pres / clsAtt.Count * 100, 1) : 0.0);
+
+                    classStatusList.Add(new ClassAttendanceStatusDto
+                    {
+                        ClassId = cls.Id,
+                        ClassName = cls.Name,
+                        SectionId = 0,
+                        SectionName = "",
+                        DisplayName = cls.Name,
+                        IsMarked = isMarked,
+                        TotalStudents = clsStudents,
+                        PresentCount = pres,
+                        AbsentCount = abs,
+                        HalfDayCount = half,
+                        LeaveCount = lv,
+                        Percentage = pct
+                    });
+                }
+            }
 
             // 5. Fee Summary for Academic Year
             var totalCollected = await _context.FeeReceipts
@@ -171,13 +252,7 @@ namespace SchoolERP.API.Controllers
                 ReceiptDate = r.ReceiptDate
             }).ToList();
 
-            // 9. Class-wise Enrollment
-            var classesList = await _context.Classes
-                .Include(c => c.Sections)
-                .Where(c => c.BranchId == branchId)
-                .OrderBy(c => c.DisplayOrder)
-                .ToListAsync();
-
+            // 9. Class-wise Enrollment (reuses classesList)
             var enrollmentCounts = await _context.StudentEnrollments
                 .Where(e => e.AcademicYearId == yearId && e.Student!.BranchId == branchId && e.Status == StudentStatus.Active)
                 .GroupBy(e => e.ClassId)
@@ -252,7 +327,11 @@ namespace SchoolERP.API.Controllers
                     Absent = absentCount,
                     HalfDay = halfDayCount,
                     Leave = leaveCount,
-                    Percentage = attendancePercentage
+                    Percentage = attendancePercentage,
+                    TotalClassesCount = classStatusList.Count,
+                    MarkedClassesCount = classStatusList.Count(c => c.IsMarked),
+                    PendingClassesCount = classStatusList.Count(c => !c.IsMarked),
+                    ClassStatusList = classStatusList
                 },
                 FeeSummary = new FeeSummaryDto
                 {

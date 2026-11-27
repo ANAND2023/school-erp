@@ -39,6 +39,22 @@ namespace SchoolERP.Application.DTOs
         public int Other { get; set; }
     }
 
+    public class ClassAttendanceStatusDto
+    {
+        public long ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public long SectionId { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public bool IsMarked { get; set; }
+        public int TotalStudents { get; set; }
+        public int PresentCount { get; set; }
+        public int AbsentCount { get; set; }
+        public int HalfDayCount { get; set; }
+        public int LeaveCount { get; set; }
+        public double Percentage { get; set; }
+    }
+
     public class TodayAttendanceDto
     {
         public int TotalMarked { get; set; }
@@ -47,6 +63,10 @@ namespace SchoolERP.Application.DTOs
         public int HalfDay { get; set; }
         public int Leave { get; set; }
         public double Percentage { get; set; }
+        public int TotalClassesCount { get; set; }
+        public int MarkedClassesCount { get; set; }
+        public int PendingClassesCount { get; set; }
+        public List<ClassAttendanceStatusDto> ClassStatusList { get; set; } = new List<ClassAttendanceStatusDto>();
     }
 
     public class FeeSummaryDto

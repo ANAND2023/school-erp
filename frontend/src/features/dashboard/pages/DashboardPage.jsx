@@ -45,6 +45,7 @@ import {
   HourglassEmpty as PendingIcon,
   Cake as CakeIcon,
   WhatsApp as WhatsAppIcon,
+  FormatListBulleted as ListIcon,
 } from '@mui/icons-material';
 import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
@@ -84,6 +85,8 @@ export const DashboardPage = () => {
   const defaultRoleView = isAdmin ? 'all' : isAccountant ? 'accounts' : isTeacher ? 'teacher' : isFrontDesk ? 'admissions' : 'all';
   const [activeRoleView, setActiveRoleView] = useState(defaultRoleView);
   const [birthdayFilter, setBirthdayFilter] = useState('all'); // 'all' | 'students' | 'staff'
+  const [attendanceFilter, setAttendanceFilter] = useState('all'); // 'all' | 'marked' | 'pending'
+  const [attendanceViewMode, setAttendanceViewMode] = useState('list'); // 'list' | 'chart'
 
   const currentAY = academicYears.find((y) => y.id === activeAcademicYearId) || academicYears[0];
   const activeYearLabel = activeAcademicYearName || (currentAY ? (currentAY.rawName || currentAY.name.replace('Session: ', '').replace(' (Current)', '')) : (user?.academicYearName || '2026-27'));
@@ -117,7 +120,18 @@ export const DashboardPage = () => {
     activeStaff: 0,
     totalClasses: 0,
     totalSections: 0,
-    todayAttendance: { totalMarked: 0, present: 0, absent: 0, halfDay: 0, leave: 0, percentage: 0 },
+    todayAttendance: {
+      totalMarked: 0,
+      present: 0,
+      absent: 0,
+      halfDay: 0,
+      leave: 0,
+      percentage: 0,
+      totalClassesCount: 0,
+      markedClassesCount: 0,
+      pendingClassesCount: 0,
+      classStatusList: [],
+    },
     feeSummary: { totalCollected: 0, totalPending: 0, totalFeeDue: 0 },
     enquiries: { total: 0, converted: 0, open: 0 },
     recentAdmissions: [],
@@ -127,6 +141,21 @@ export const DashboardPage = () => {
     genderDistribution: { male: 0, female: 0, other: 0 },
     birthdays: { todayBirthdays: [], upcomingBirthdays: [], totalThisMonth: 0 },
   };
+
+  // Class-wise Attendance helpers
+  const classStatusList = useMemo(() => {
+    return stats.todayAttendance?.classStatusList || [];
+  }, [stats.todayAttendance]);
+
+  const markedClassesCount = stats.todayAttendance?.markedClassesCount ?? classStatusList.filter((c) => c.isMarked).length;
+  const pendingClassesCount = stats.todayAttendance?.pendingClassesCount ?? classStatusList.filter((c) => !c.isMarked).length;
+  const totalClassesCount = stats.todayAttendance?.totalClassesCount ?? classStatusList.length;
+
+  const filteredClassStatusList = useMemo(() => {
+    if (attendanceFilter === 'marked') return classStatusList.filter((c) => c.isMarked);
+    if (attendanceFilter === 'pending') return classStatusList.filter((c) => !c.isMarked);
+    return classStatusList;
+  }, [classStatusList, attendanceFilter]);
 
   // Birthday list helpers
   const allBirthdaysList = useMemo(() => {
@@ -1117,22 +1146,231 @@ export const DashboardPage = () => {
         {(activeRoleView === 'all' || activeRoleView === 'teacher' || activeRoleView === 'admissions') && (
           <Grid item xs={12} lg={activeRoleView === 'all' ? 6 : 5}>
             <Grid container spacing={2} sx={{ height: '100%' }}>
-              {/* Attendance Doughnut (All or Teacher) */}
+              {/* Enhanced Class-Wise Today's Attendance Card */}
               {(activeRoleView === 'all' || activeRoleView === 'teacher') && (
                 <Grid item xs={12} sm={activeRoleView === 'all' ? 6 : 12}>
-                  <Card sx={{ borderRadius: 2.5, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid', borderColor: isDarkMode ? '#334155' : '#e2e8f0', height: '100%' }}>
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, color: isDarkMode ? '#f8fafc' : '#1e293b' }}>
-                        <AttendanceIcon sx={{ color: '#ed6c02', fontSize: 18 }} />
-                        Today's Attendance
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                        {stats.todayAttendance.percentage}% Overall Present
-                      </Typography>
+                  <Card
+                    sx={{
+                      borderRadius: 2.5,
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                      border: '1px solid',
+                      borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      {/* Header with Title and View Switch */}
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight={800}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              color: isDarkMode ? '#f8fafc' : '#1e293b',
+                            }}
+                          >
+                            <AttendanceIcon sx={{ color: '#ed6c02', fontSize: 18 }} />
+                            Today's Attendance
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.72rem' }}>
+                            {stats.todayAttendance.percentage}% Present &bull; {markedClassesCount}/{totalClassesCount} Marked
+                          </Typography>
+                        </Box>
 
-                      <Box sx={{ height: 185, position: 'relative' }}>
-                        <Chart type="doughnut" data={attendanceChartData} options={attendanceChartOptions} style={{ height: '100%' }} />
-                      </Box>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Tooltip title="List View">
+                            <IconButton
+                              size="small"
+                              onClick={() => setAttendanceViewMode('list')}
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                bgcolor: attendanceViewMode === 'list' ? (isDarkMode ? '#334155' : '#e0e7ff') : 'transparent',
+                                color: attendanceViewMode === 'list' ? '#2563eb' : 'text.secondary',
+                              }}
+                            >
+                              <ListIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Chart View">
+                            <IconButton
+                              size="small"
+                              onClick={() => setAttendanceViewMode('chart')}
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                bgcolor: attendanceViewMode === 'chart' ? (isDarkMode ? '#334155' : '#e0e7ff') : 'transparent',
+                                color: attendanceViewMode === 'chart' ? '#2563eb' : 'text.secondary',
+                              }}
+                            >
+                              <PieChartIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Mark Attendance">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate('/attendance/student')}
+                              sx={{ width: 28, height: 28, color: 'text.secondary' }}
+                            >
+                              <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </Stack>
+
+                      {/* Filter Chips Bar */}
+                      <Stack direction="row" spacing={0.6} sx={{ mb: 1.2, p: 0.35, bgcolor: isDarkMode ? '#1e293b' : '#f1f5f9', borderRadius: 1.5 }}>
+                        {[
+                          { id: 'all', label: `All (${totalClassesCount})` },
+                          { id: 'marked', label: `✓ Marked (${markedClassesCount})`, color: 'success' },
+                          { id: 'pending', label: `⏳ Pending (${pendingClassesCount})`, color: 'warning' },
+                        ].map((btn) => (
+                          <Button
+                            key={btn.id}
+                            size="small"
+                            onClick={() => {
+                              setAttendanceFilter(btn.id);
+                              setAttendanceViewMode('list');
+                            }}
+                            sx={{
+                              textTransform: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: attendanceFilter === btn.id ? 700 : 500,
+                              py: 0.25,
+                              px: 0.8,
+                              minWidth: 'auto',
+                              height: 24,
+                              borderRadius: 1.2,
+                              bgcolor: attendanceFilter === btn.id ? (isDarkMode ? '#334155' : '#ffffff') : 'transparent',
+                              color: attendanceFilter === btn.id ? (btn.color === 'success' ? '#16a34a' : btn.color === 'warning' ? '#d97706' : 'primary.main') : 'text.secondary',
+                              boxShadow: attendanceFilter === btn.id ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                              '&:hover': {
+                                bgcolor: attendanceFilter === btn.id ? (isDarkMode ? '#334155' : '#ffffff') : 'action.hover',
+                              },
+                            }}
+                          >
+                            {btn.label}
+                          </Button>
+                        ))}
+                      </Stack>
+
+                      {/* Content Area */}
+                      {attendanceViewMode === 'chart' ? (
+                        <Box sx={{ height: 185, position: 'relative', my: 'auto' }}>
+                          <Chart type="doughnut" data={attendanceChartData} options={attendanceChartOptions} style={{ height: '100%' }} />
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            flex: 1,
+                            maxHeight: 205,
+                            overflowY: 'auto',
+                            pr: 0.5,
+                            '&::-webkit-scrollbar': { width: 5 },
+                            '&::-webkit-scrollbar-thumb': { bgcolor: isDarkMode ? '#475569' : '#cbd5e1', borderRadius: 2 },
+                          }}
+                        >
+                          {filteredClassStatusList.length === 0 ? (
+                            <Box sx={{ py: 3, textAlign: 'center' }}>
+                              <Typography variant="caption" color="text.secondary">
+                                {attendanceFilter === 'pending'
+                                  ? '🎉 All classes have marked attendance today!'
+                                  : attendanceFilter === 'marked'
+                                  ? 'No classes have marked attendance yet today.'
+                                  : 'No classes found.'}
+                              </Typography>
+                              {attendanceFilter !== 'all' && (
+                                <Button size="small" onClick={() => setAttendanceFilter('all')} sx={{ display: 'block', mx: 'auto', mt: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>
+                                  Show All Classes
+                                </Button>
+                              )}
+                            </Box>
+                          ) : (
+                            filteredClassStatusList.map((item) => (
+                              <Paper
+                                key={`${item.classId}-${item.sectionId}`}
+                                variant="outlined"
+                                sx={{
+                                  p: 0.8,
+                                  px: 1.1,
+                                  mb: 0.7,
+                                  borderRadius: 1.5,
+                                  bgcolor: isDarkMode
+                                    ? item.isMarked ? 'rgba(34, 197, 94, 0.08)' : 'rgba(234, 88, 12, 0.08)'
+                                    : item.isMarked ? '#f0fdf4' : '#fffbeb',
+                                  borderColor: item.isMarked ? (isDarkMode ? '#15803d' : '#86efac') : (isDarkMode ? '#c2410c' : '#fde68a'),
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: 1,
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                    transform: 'translateY(-1px)',
+                                  },
+                                }}
+                              >
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Typography variant="body2" fontWeight={800} sx={{ color: isDarkMode ? '#f8fafc' : '#1e293b', fontSize: '0.8rem', lineHeight: 1.2 }}>
+                                    {item.displayName || `${item.className} ${item.sectionName}`.trim()}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block', mt: 0.1 }}>
+                                    {item.isMarked
+                                      ? `${item.presentCount}/${item.totalStudents || (item.presentCount + item.absentCount)} Present (${item.percentage}%)`
+                                      : `${item.totalStudents} Active Students`}
+                                  </Typography>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                  {item.isMarked ? (
+                                    <Chip
+                                      icon={<CheckIcon sx={{ fontSize: '13px !important' }} />}
+                                      label="Marked"
+                                      size="small"
+                                      color="success"
+                                      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, px: 0.2 }}
+                                    />
+                                  ) : (
+                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                      <Chip
+                                        icon={<PendingIcon sx={{ fontSize: '13px !important' }} />}
+                                        label="Pending"
+                                        size="small"
+                                        color="warning"
+                                        sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, px: 0.2 }}
+                                      />
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        onClick={() => navigate(`/attendance/student?classId=${item.classId}&sectionId=${item.sectionId}`)}
+                                        sx={{
+                                          height: 20,
+                                          fontSize: '0.65rem',
+                                          fontWeight: 700,
+                                          px: 0.8,
+                                          py: 0,
+                                          minWidth: 'auto',
+                                          textTransform: 'none',
+                                          bgcolor: '#ed6c02',
+                                          color: '#ffffff',
+                                          '&:hover': { bgcolor: '#c25e00' },
+                                        }}
+                                      >
+                                        Mark
+                                      </Button>
+                                    </Stack>
+                                  )}
+                                </Box>
+                              </Paper>
+                            ))
+                          )}
+                        </Box>
+                      )}
                     </CardContent>
                   </Card>
                 </Grid>
