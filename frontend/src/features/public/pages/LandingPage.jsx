@@ -11,6 +11,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import SchoolIcon from '@mui/icons-material/School';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -20,6 +21,177 @@ import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../../../api/client';
 import { updateThemeCssVariables } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
+
+const CLIENTS_LIST = [
+  {
+    id: 1,
+    name: 'Delhi Public School (DPS)',
+    shortName: 'DPS',
+    category: 'cbse',
+    board: 'CBSE Affiliated',
+    location: 'New Delhi & NCR',
+    students: '3,200+ Students',
+    primaryColor: '#0a387c',
+    accentColor: '#d97706',
+    motto: 'Service Before Self',
+    icon: 'pi pi-compass',
+    type: 'Senior Secondary K-12'
+  },
+  {
+    id: 2,
+    name: "St. Xavier's Senior Secondary School",
+    shortName: 'St. Xavier',
+    category: 'icse',
+    board: 'ICSE / ISC Board',
+    location: 'Mumbai & Patna',
+    students: '2,600+ Students',
+    primaryColor: '#7f1d1d',
+    accentColor: '#f59e0b',
+    motto: 'Semper Fidelis',
+    icon: 'pi pi-shield',
+    type: 'Convent Higher Secondary'
+  },
+  {
+    id: 3,
+    name: 'DAV Public School Network',
+    shortName: 'DAV',
+    category: 'cbse',
+    board: 'CBSE Affiliated',
+    location: 'Chandigarh & Punjab',
+    students: '4,100+ Students',
+    primaryColor: '#b45309',
+    accentColor: '#1e3a8a',
+    motto: 'Work is Worship',
+    icon: 'pi pi-sun',
+    type: 'Senior Secondary School'
+  },
+  {
+    id: 4,
+    name: 'Kendriya Vidyalaya Sangathan (KVS)',
+    shortName: 'KVS',
+    category: 'cbse',
+    board: 'CBSE Board',
+    location: 'North Zone Hub',
+    students: '3,800+ Students',
+    primaryColor: '#047857',
+    accentColor: '#2563eb',
+    motto: 'Knowledge Dispels Darkness',
+    icon: 'pi pi-book',
+    type: 'Premier Central School'
+  },
+  {
+    id: 5,
+    name: 'GD Goenka Public School',
+    shortName: 'GD Goenka',
+    category: 'international',
+    board: 'CBSE & Cambridge',
+    location: 'Greater Noida & Delhi',
+    students: '2,400+ Students',
+    primaryColor: '#065f46',
+    accentColor: '#d97706',
+    motto: 'Higher Stronger Brighter',
+    icon: 'pi pi-star',
+    type: 'Global International Campus'
+  },
+  {
+    id: 6,
+    name: 'Ryan International Academy',
+    shortName: 'Ryan Int.',
+    category: 'international',
+    board: 'CBSE / ICSE / IB',
+    location: 'Gurugram & Noida',
+    students: '2,900+ Students',
+    primaryColor: '#1e40af',
+    accentColor: '#f59e0b',
+    motto: 'Excellence in Education',
+    icon: 'pi pi-globe',
+    type: 'Montessori to Grade 12'
+  },
+  {
+    id: 7,
+    name: 'Army Public School (APS)',
+    shortName: 'APS',
+    category: 'cbse',
+    board: 'CBSE Affiliated',
+    location: 'Cantt Campuses',
+    students: '2,750+ Students',
+    primaryColor: '#365314',
+    accentColor: '#b45309',
+    motto: 'Truth is God',
+    icon: 'pi pi-flag',
+    type: 'Senior Secondary School'
+  },
+  {
+    id: 8,
+    name: 'Modern International Academy',
+    shortName: 'Modern Academy',
+    category: 'international',
+    board: 'Cambridge & IB World',
+    location: 'Bangalore & Hyderabad',
+    students: '1,850+ Students',
+    primaryColor: '#312e81',
+    accentColor: '#06b6d4',
+    motto: 'Inspiring Global Minds',
+    icon: 'pi pi-sparkles',
+    type: 'International Day & Boarding'
+  },
+  {
+    id: 9,
+    name: 'Mount Litera Zee School',
+    shortName: 'Mount Litera',
+    category: 'cbse',
+    board: 'CBSE Affiliated',
+    location: 'Lucknow & Kanpur',
+    students: '2,100+ Students',
+    primaryColor: '#0e7490',
+    accentColor: '#ea580c',
+    motto: 'Great School Great Future',
+    icon: 'pi pi-send',
+    type: 'Future Ready K-12 Academy'
+  },
+  {
+    id: 10,
+    name: 'Holy Cross Convent School',
+    shortName: 'Holy Cross',
+    category: 'convent',
+    board: 'Convent / ICSE',
+    location: 'Muzaffarpur & Bihar',
+    students: '2,300+ Students',
+    primaryColor: '#581c87',
+    accentColor: '#cbd5e1',
+    motto: 'In The Cross is Salvation',
+    icon: 'pi pi-heart',
+    type: 'Higher Secondary Convent'
+  },
+  {
+    id: 11,
+    name: 'Springdales Senior School',
+    shortName: 'Springdales',
+    category: 'cbse',
+    board: 'CBSE Board',
+    location: 'Jaipur & Delhi',
+    students: '2,500+ Students',
+    primaryColor: '#831843',
+    accentColor: '#fbbf24',
+    motto: 'The World is My Family',
+    icon: 'pi pi-crown',
+    type: 'Heritage Public School'
+  },
+  {
+    id: 12,
+    name: 'Little Angels High School',
+    shortName: 'Little Angels',
+    category: 'cbse',
+    board: 'CBSE & State Board',
+    location: 'Faridabad & Haryana',
+    students: '1,950+ Students',
+    primaryColor: '#0284c7',
+    accentColor: '#facc15',
+    motto: 'Knowledge is Power',
+    icon: 'pi pi-trophy',
+    type: 'Senior Secondary Campus'
+  }
+];
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -35,6 +207,7 @@ export const LandingPage = () => {
   }, [isAuthenticated, homeRoute, navigate]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('all');
+  const [clientCategory, setClientCategory] = useState('all');
   const [moduleSearch, setModuleSearch] = useState('');
   const [selectedModule, setSelectedModule] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
@@ -1547,6 +1720,7 @@ export const LandingPage = () => {
             {/* Desktop Navigation Links */}
             <Box sx={{ display: { xs: 'none', lg: 'flex' }, gap: 3.5, alignItems: 'center' }}>
               <a href="#" style={{ textDecoration: 'none', color: '#12233f', fontWeight: 700, fontSize: '0.92rem' }}>Home</a>
+              <a href="#clients" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>Our Clients</a>
               <a href="#slider-preview" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>Product Tour</a>
               <a href="#modules-suite" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>65+ ERP Modules</a>
               <a href="#why-us" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '0.92rem' }}>Why DVS ERP</a>
@@ -1649,6 +1823,7 @@ export const LandingPage = () => {
         <List sx={{ p: 0, mb: 3 }}>
           {[
             { label: 'Home', href: '#' },
+            { label: 'Our Clients & Schools', href: '#clients' },
             { label: 'Product Tour', href: '#slider-preview' },
             { label: '65+ ERP Modules', href: '#modules-suite' },
             { label: 'Why DVS ERP', href: '#why-us' },
@@ -2164,6 +2339,308 @@ export const LandingPage = () => {
                 </Typography>
               </Grid>
             ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ── OUR CLIENTS & PARTNER INSTITUTIONS MODULE ── */}
+      <Box id="clients" sx={{ py: { xs: 8, md: 10 }, bgcolor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+        <Container maxWidth="xl">
+          {/* Header */}
+          <Box sx={{ textAlign: 'center', mb: 5 }} data-aos="fade-up">
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+              <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
+              <Typography sx={{ color: '#0a387c', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                TRUSTED BY 550+ PREMIER INSTITUTES
+              </Typography>
+              <Box sx={{ width: 18, height: 3, borderRadius: 2, bgcolor: goldColor }} />
+            </Box>
+            <Typography variant="h3" fontWeight={900} sx={{ color: '#0f172a', fontSize: { xs: '1.8rem', sm: '2.4rem', md: '2.8rem' }, lineHeight: 1.2, mb: 1.5 }}>
+              Our Esteemed Clients & Partner Schools
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b', maxWidth: 780, mx: 'auto', fontSize: { xs: '0.92rem', md: '1.05rem' } }}>
+              From prestigious nationwide public school chains to progressive international day-boarding academies, Digital Vidya Saarthi (DVS ERP) powers mission-critical academic, fee counter, and administrative operations.
+            </Typography>
+          </Box>
+
+          {/* Continuous Running Logo Stream (Marquee) */}
+          <Box sx={{ mb: 5, overflow: 'hidden' }}>
+            <div className="eduerp-marquee-container">
+              <div className="eduerp-marquee-track">
+                {CLIENTS_LIST.concat(CLIENTS_LIST).map((client, idx) => (
+                  <Box
+                    key={`client-logo-stream-${idx}`}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      py: 1,
+                      px: 2.2,
+                      bgcolor: '#f8fafc',
+                      borderRadius: 99,
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: client.primaryColor,
+                        bgcolor: '#ffffff',
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 6px 16px ${client.primaryColor}20`,
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        bgcolor: `${client.primaryColor}14`,
+                        border: `1.5px solid ${client.primaryColor}30`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: client.primaryColor,
+                      }}
+                    >
+                      <i className={client.icon} style={{ fontSize: '1rem' }}></i>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ color: '#1e293b', fontWeight: 800, fontSize: '0.86rem', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
+                        {client.name}
+                      </Typography>
+                      <Typography sx={{ color: '#64748b', fontSize: '0.68rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {client.board} • {client.location}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </div>
+            </div>
+          </Box>
+
+          {/* Interactive Category Filter Pills */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 4 }} data-aos="fade-up">
+            {[
+              { id: 'all', label: 'All Institutions (550+)' },
+              { id: 'cbse', label: 'CBSE Affiliated Schools' },
+              { id: 'icse', label: 'ICSE & Convent Schools' },
+              { id: 'international', label: 'International & Cambridge' },
+            ].map((tab) => (
+              <Chip
+                key={tab.id}
+                label={tab.label}
+                clickable
+                onClick={() => setClientCategory(tab.id)}
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  py: 2.2,
+                  px: 1.5,
+                  borderRadius: 99,
+                  bgcolor: clientCategory === tab.id ? '#0a387c' : '#f1f5f9',
+                  color: clientCategory === tab.id ? '#ffffff' : '#475569',
+                  border: '1px solid',
+                  borderColor: clientCategory === tab.id ? '#0a387c' : '#e2e8f0',
+                  boxShadow: clientCategory === tab.id ? '0 4px 12px rgba(10, 56, 124, 0.25)' : 'none',
+                  '&:hover': {
+                    bgcolor: clientCategory === tab.id ? '#0a387c' : '#e2e8f0',
+                  },
+                }}
+              />
+            ))}
+          </Box>
+
+          {/* Client Cards Grid */}
+          <Grid container spacing={2.5}>
+            {CLIENTS_LIST.filter(c => clientCategory === 'all' || c.category === clientCategory).map((client, idx) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={client.id} data-aos="fade-up" data-aos-delay={(idx % 4) * 80}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.25,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    borderRadius: 2.5,
+                    border: '1px solid #e2e8f0',
+                    bgcolor: '#ffffff',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      borderColor: client.primaryColor,
+                      boxShadow: `0 12px 28px ${client.primaryColor}18`,
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      bgcolor: client.primaryColor,
+                    },
+                  }}
+                >
+                  <Box>
+                    {/* Top Row: Logo Badge & Verified Tag */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 54,
+                          height: 54,
+                          borderRadius: '14px',
+                          bgcolor: `${client.primaryColor}10`,
+                          border: `1.5px solid ${client.primaryColor}30`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: `0 3px 10px ${client.primaryColor}15`,
+                          position: 'relative',
+                        }}
+                      >
+                        <i className={client.icon} style={{ fontSize: '1.4rem', color: client.primaryColor }}></i>
+                        <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: client.primaryColor, letterSpacing: '0.04em', textTransform: 'uppercase', mt: 0.1, lineHeight: 1 }}>
+                          {client.shortName.substring(0, 4)}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        icon={<VerifiedIcon sx={{ fontSize: '13px !important', color: '#16a34a !important' }} />}
+                        label="Verified Client"
+                        size="small"
+                        sx={{
+                          bgcolor: '#f0fdf4',
+                          color: '#15803d',
+                          fontWeight: 700,
+                          fontSize: '0.67rem',
+                          height: 22,
+                          border: '1px solid #bbf7d0',
+                        }}
+                      />
+                    </Box>
+
+                    {/* School Name */}
+                    <Typography variant="h6" fontWeight={800} sx={{ color: '#0f172a', fontSize: '0.98rem', lineHeight: 1.3, mb: 0.5 }}>
+                      {client.name}
+                    </Typography>
+
+                    {/* Motto */}
+                    <Typography variant="caption" sx={{ color: '#64748b', fontStyle: 'italic', display: 'block', mb: 1.2, fontSize: '0.72rem' }}>
+                      "{client.motto}"
+                    </Typography>
+
+                    {/* Board & Type Badge */}
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, mb: 1.5 }}>
+                      <Chip
+                        label={client.board}
+                        size="small"
+                        sx={{
+                          bgcolor: `${client.primaryColor}0d`,
+                          color: client.primaryColor,
+                          fontWeight: 700,
+                          fontSize: '0.68rem',
+                          height: 22,
+                          border: `1px solid ${client.primaryColor}25`,
+                        }}
+                      />
+                      <Chip
+                        label={client.type}
+                        size="small"
+                        sx={{
+                          bgcolor: '#f1f5f9',
+                          color: '#475569',
+                          fontWeight: 600,
+                          fontSize: '0.68rem',
+                          height: 22,
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  {/* Bottom Strip: Location & Students */}
+                  <Box sx={{ pt: 1.25, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LocationOnIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.72rem' }}>
+                        {client.location}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ color: client.primaryColor, fontWeight: 800, fontSize: '0.72rem' }}>
+                      {client.students}
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+
+            {/* Final CTA Card in Grid: Join Network */}
+            <Grid item xs={12} sm={6} md={4} lg={3} data-aos="fade-up">
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  borderRadius: 2.5,
+                  background: 'linear-gradient(135deg, #0a387c 0%, #1e40af 100%)',
+                  color: '#ffffff',
+                  boxShadow: '0 8px 24px rgba(10, 56, 124, 0.3)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box>
+                  <Box
+                    sx={{
+                      width: 54,
+                      height: 54,
+                      borderRadius: '14px',
+                      bgcolor: 'rgba(255, 176, 0, 0.2)',
+                      border: '1.5px solid #ffb000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffb000',
+                      mb: 2,
+                    }}
+                  >
+                    <SchoolIcon sx={{ fontSize: 28 }} />
+                  </Box>
+                  <Typography variant="h6" fontWeight={900} sx={{ fontSize: '1.05rem', lineHeight: 1.3, mb: 1, color: '#ffffff' }}>
+                    Join 550+ Esteemed Educational Institutions
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#93c5fd', display: 'block', fontSize: '0.76rem', lineHeight: 1.4, mb: 2 }}>
+                    Ready to modernize fee collection, attendance, marksheets and parent communication at your campus?
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  href="#contact"
+                  fullWidth
+                  sx={{
+                    background: 'linear-gradient(120deg, #ffb000 30%, #ffd47e 48%, #ffb000 62%)',
+                    color: '#12233f',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    py: 1,
+                    borderRadius: 99,
+                    textTransform: 'none',
+                    boxShadow: '0 6px 16px rgba(255, 176, 0, 0.4)',
+                    '&:hover': { transform: 'translateY(-2px)' },
+                  }}
+                >
+                  Book Demo For School →
+                </Button>
+              </Paper>
+            </Grid>
           </Grid>
         </Container>
       </Box>
