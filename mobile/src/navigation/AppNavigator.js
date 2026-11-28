@@ -34,6 +34,10 @@ import StudentOperationsScreen from '../screens/StudentOperationsScreen';
 import FeeOperationsScreen from '../screens/FeeOperationsScreen';
 import SuperAdminScreen from '../screens/SuperAdminScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import HomeworkScreen from '../screens/HomeworkScreen';
+import RegistrationSlipsScreen from '../screens/RegistrationSlipsScreen';
+import CertificatesScreen from '../screens/CertificatesScreen';
+import AccountsScreen from '../screens/AccountsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -254,6 +258,26 @@ export default function AppNavigator() {
           name="Dashboard"
           component={DashboardScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Homework"
+          component={HomeworkScreen}
+          options={{ title: 'Class Homework' }}
+        />
+        <Stack.Screen
+          name="RegistrationSlips"
+          component={RegistrationSlipsScreen}
+          options={{ title: 'Registration Slips' }}
+        />
+        <Stack.Screen
+          name="Certificates"
+          component={CertificatesScreen}
+          options={{ title: 'Certificates Hub' }}
+        />
+        <Stack.Screen
+          name="Accounts"
+          component={AccountsScreen}
+          options={{ title: 'Accounts & Finance' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

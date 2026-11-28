@@ -145,6 +145,26 @@ const QUICK_MODULES = [
     color: '#a855f7',
     shadowColor: 'rgba(168, 85, 247, 0.4)',
   },
+  {
+    id: 'registration-slips',
+    title: 'Reg Slips',
+    category: 'students',
+    screen: 'RegistrationSlips',
+    menuKey: 'Admissions',
+    icon: 'receipt',
+    color: '#059669',
+    shadowColor: 'rgba(5, 150, 105, 0.4)',
+  },
+  {
+    id: 'certificates',
+    title: 'Certificates',
+    category: 'students',
+    screen: 'Certificates',
+    menuKey: ['Students', 'TransferCertificates'],
+    icon: 'ribbon',
+    color: '#0284c7',
+    shadowColor: 'rgba(2, 132, 199, 0.4)',
+  },
 
   // --- FEES & BILLING ---
   {
@@ -221,6 +241,16 @@ const QUICK_MODULES = [
     icon: 'wallet',
     color: '#ef4444',
     shadowColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  {
+    id: 'accounts',
+    title: 'Accounts Hub',
+    category: 'fees',
+    screen: 'Accounts',
+    menuKey: ['Accounts', 'Fees', 'Expenses'],
+    icon: 'calculator',
+    color: '#2563eb',
+    shadowColor: 'rgba(37, 99, 235, 0.4)',
   },
 
   // --- ATTENDANCE & HR ---
@@ -343,6 +373,16 @@ const QUICK_MODULES = [
     icon: 'megaphone',
     color: '#ef4444',
     shadowColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  {
+    id: 'homework',
+    title: 'Class Homework',
+    category: 'academics',
+    screen: 'Homework',
+    menuKey: ['Homework', 'Academics'],
+    icon: 'book',
+    color: '#0d9488',
+    shadowColor: 'rgba(13, 148, 136, 0.4)',
   },
 
   // --- LOGISTICS & INVENTORY ---

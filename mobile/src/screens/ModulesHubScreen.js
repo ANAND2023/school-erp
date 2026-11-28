@@ -71,6 +71,7 @@ export default function ModulesHubScreen({ navigation }) {
       color: '#0ea5e9',
       items: [
         { label: 'Enquiries', route: 'Enquiries', menuKey: 'Enquiries', sub: 'Admission leads, calls, status & follow-ups' },
+        { label: 'Registration Slips', route: 'RegistrationSlips', menuKey: 'Admissions', sub: '₹500 session token slips & student register' },
         { label: 'Class Fee Structure', route: 'StudentOperations', params: { tab: 'fee-structure' }, menuKey: ['Enquiries', 'Students', 'Fees', 'FeeStructure'], sub: 'Prescribed fee heads class-wise' },
         { label: 'New Admission', route: 'NewAdmission', menuKey: ['Admissions', 'Students'], sub: 'Multi-tab student enrollment & guardian details' },
         { label: 'Student Directory', route: 'Students', menuKey: 'Students', sub: 'Class-wise student roster & full profiles' },
@@ -102,6 +103,7 @@ export default function ModulesHubScreen({ navigation }) {
         { label: 'Fee Discount Master', route: 'FeeOperations', params: { tab: 'discount-master' }, menuKey: 'FeeDiscountMaster', sub: 'Sibling, merit & staff concession rules' },
         { label: 'Demand Bill', route: 'FeeOperations', params: { tab: 'demand-bill' }, menuKey: 'DemandBill', sub: 'Calculate dues notices & late fine rules' },
         { label: 'Fee Concessions', route: 'FeeOperations', params: { tab: 'concessions' }, menuKey: 'FeeConcessions', sub: 'Special scholarships & fee waivers' },
+        { label: 'Accounts & Day Book', route: 'Accounts', menuKey: ['Accounts', 'Fees', 'Expenses'], sub: 'Cash book, day book, inflows, outflows & P&L' },
         { label: 'Fee Reports', route: 'Reports', params: { reportCategory: 'fees' }, menuKey: 'FeeReports', sub: 'Daily collection register & head-wise totals' },
       ],
     },
@@ -110,6 +112,7 @@ export default function ModulesHubScreen({ navigation }) {
       icon: 'calendar',
       color: '#f59e0b',
       items: [
+        { label: 'Class Homework', route: 'Homework', menuKey: ['Homework', 'Academics'], sub: 'Assign daily homework, questions & worksheets' },
         { label: 'Student Attendance', route: 'Attendance', menuKey: 'StudentAttendance', sub: 'Present, Absent, Late & HalfDay marking' },
         { label: 'Staff Attendance', route: 'Attendance', params: { mode: 'staff' }, menuKey: 'StaffAttendance', sub: 'Daily faculty & employee register' },
         { label: 'Leave Management', route: 'LeaveManagement', menuKey: 'LeaveManagement', sub: 'Staff & student leaves with 1-tap approval' },
@@ -147,6 +150,7 @@ export default function ModulesHubScreen({ navigation }) {
       items: [
         { label: 'Promote Students', route: 'PromotionTc', params: { tab: 'promotion' }, menuKey: 'Promotion', sub: 'Batch students promotion to next academic class' },
         { label: 'Transfer Certificates', route: 'PromotionTc', params: { tab: 'tc' }, menuKey: 'TransferCertificates', sub: 'Issue official school leaving certificates' },
+        { label: 'Certificates Hub', route: 'Certificates', menuKey: ['Students', 'TransferCertificates'], sub: 'Bonafide, Birth, Age, Character & RET certificates' },
       ],
     },
     {

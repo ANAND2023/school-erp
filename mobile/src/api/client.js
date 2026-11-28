@@ -497,4 +497,54 @@ export const superAdminApi = {
   impersonateTenant: (schoolId) => apiClient.post(`/superadmin/tenants/${schoolId}/impersonate`),
 };
 
+// Homework & Assignments Hub
+export const homeworkApi = {
+  getHomeworkList: (params) => apiClient.get('/homework', { params }),
+  getHomeworkById: (id) => apiClient.get(`/homework/${id}`),
+  createHomework: (formData) =>
+    apiClient.post('/homework', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  updateHomework: (id, formData) =>
+    apiClient.put(`/homework/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteHomework: (id) => apiClient.delete(`/homework/${id}`),
+  getHomeworkMeta: () => apiClient.get('/homework/meta'),
+};
+
+// Dynamic Registration Slips & Admission Register
+export const registrationApi = {
+  getSlips: (params) => apiClient.get('/DynamicAdmission/slips', { params }),
+  getSlipById: (id) => apiClient.get(`/DynamicAdmission/slips/${id}`),
+  createIndividualSlip: (data) => apiClient.post('/DynamicAdmission/slips/individual', data),
+  markSlipAdmitted: (id) => apiClient.post(`/DynamicAdmission/slips/${id}/admit`),
+  collectPayment: (data) => apiClient.post('/DynamicAdmission/payments/collect', data),
+  getDashboardStats: (academicYearId) =>
+    apiClient.get('/DynamicAdmission/reports/dashboard-stats', { params: { academicYearId } }),
+};
+
+// Student Certificates (Bonafide, Birth, Age, Character, RET)
+export const certificateApi = {
+  getCertificates: (params) => apiClient.get('/student-certificates', { params }),
+  getCertificate: (id) => apiClient.get(`/student-certificates/${id}`),
+  createCertificate: (data) => apiClient.post('/student-certificates', data),
+  deleteCertificate: (id) => apiClient.delete(`/student-certificates/${id}`),
+  getStats: (params) => apiClient.get('/student-certificates/stats', { params }),
+  searchStudents: (params) => apiClient.get('/student-certificates/search-students', { params }),
+  getNextNumber: (type) => apiClient.get(`/student-certificates/next-number/${type}`),
+};
+
+// Accounts Hub (Day Book, Cash Book, Income/Expense, Profit & Loss)
+export const accountsApi = {
+  getSummary: (params) => apiClient.get('/accounts/summary', { params }),
+  getDayBook: (params) => apiClient.get('/accounts/daybook', { params }),
+  getDailyCollection: (params) => apiClient.get('/fees/reports/daily-collection', { params }),
+  getExpenses: (params) => apiClient.get('/expense', { params }),
+  getPayrolls: (params) => apiClient.get('/payroll', { params }),
+  getEnquiryReport: (params) => apiClient.get('/accounts/enquiry-report', { params }),
+  getAdmissionReport: (params) => apiClient.get('/accounts/admission-report', { params }),
+  getDefaulters: (params) => apiClient.get('/accounts/pending-dues-report', { params }),
+};
+
 export default apiClient;
