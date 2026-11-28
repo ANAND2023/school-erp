@@ -21,177 +21,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../../../api/client';
 import { updateThemeCssVariables } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
+import { DEFAULT_CLIENTS_LIST } from '../data/clientsData';
 
-const CLIENTS_LIST = [
-  {
-    id: 1,
-    name: 'Delhi Public School (DPS)',
-    shortName: 'DPS',
-    category: 'cbse',
-    board: 'CBSE Affiliated',
-    location: 'New Delhi & NCR',
-    students: '3,200+ Students',
-    primaryColor: '#0a387c',
-    accentColor: '#d97706',
-    motto: 'Service Before Self',
-    icon: 'pi pi-compass',
-    type: 'Senior Secondary K-12'
-  },
-  {
-    id: 2,
-    name: "St. Xavier's Senior Secondary School",
-    shortName: 'St. Xavier',
-    category: 'icse',
-    board: 'ICSE / ISC Board',
-    location: 'Mumbai & Patna',
-    students: '2,600+ Students',
-    primaryColor: '#7f1d1d',
-    accentColor: '#f59e0b',
-    motto: 'Semper Fidelis',
-    icon: 'pi pi-shield',
-    type: 'Convent Higher Secondary'
-  },
-  {
-    id: 3,
-    name: 'DAV Public School Network',
-    shortName: 'DAV',
-    category: 'cbse',
-    board: 'CBSE Affiliated',
-    location: 'Chandigarh & Punjab',
-    students: '4,100+ Students',
-    primaryColor: '#b45309',
-    accentColor: '#1e3a8a',
-    motto: 'Work is Worship',
-    icon: 'pi pi-sun',
-    type: 'Senior Secondary School'
-  },
-  {
-    id: 4,
-    name: 'Kendriya Vidyalaya Sangathan (KVS)',
-    shortName: 'KVS',
-    category: 'cbse',
-    board: 'CBSE Board',
-    location: 'North Zone Hub',
-    students: '3,800+ Students',
-    primaryColor: '#047857',
-    accentColor: '#2563eb',
-    motto: 'Knowledge Dispels Darkness',
-    icon: 'pi pi-book',
-    type: 'Premier Central School'
-  },
-  {
-    id: 5,
-    name: 'GD Goenka Public School',
-    shortName: 'GD Goenka',
-    category: 'international',
-    board: 'CBSE & Cambridge',
-    location: 'Greater Noida & Delhi',
-    students: '2,400+ Students',
-    primaryColor: '#065f46',
-    accentColor: '#d97706',
-    motto: 'Higher Stronger Brighter',
-    icon: 'pi pi-star',
-    type: 'Global International Campus'
-  },
-  {
-    id: 6,
-    name: 'Ryan International Academy',
-    shortName: 'Ryan Int.',
-    category: 'international',
-    board: 'CBSE / ICSE / IB',
-    location: 'Gurugram & Noida',
-    students: '2,900+ Students',
-    primaryColor: '#1e40af',
-    accentColor: '#f59e0b',
-    motto: 'Excellence in Education',
-    icon: 'pi pi-globe',
-    type: 'Montessori to Grade 12'
-  },
-  {
-    id: 7,
-    name: 'Army Public School (APS)',
-    shortName: 'APS',
-    category: 'cbse',
-    board: 'CBSE Affiliated',
-    location: 'Cantt Campuses',
-    students: '2,750+ Students',
-    primaryColor: '#365314',
-    accentColor: '#b45309',
-    motto: 'Truth is God',
-    icon: 'pi pi-flag',
-    type: 'Senior Secondary School'
-  },
-  {
-    id: 8,
-    name: 'Modern International Academy',
-    shortName: 'Modern Academy',
-    category: 'international',
-    board: 'Cambridge & IB World',
-    location: 'Bangalore & Hyderabad',
-    students: '1,850+ Students',
-    primaryColor: '#312e81',
-    accentColor: '#06b6d4',
-    motto: 'Inspiring Global Minds',
-    icon: 'pi pi-sparkles',
-    type: 'International Day & Boarding'
-  },
-  {
-    id: 9,
-    name: 'Mount Litera Zee School',
-    shortName: 'Mount Litera',
-    category: 'cbse',
-    board: 'CBSE Affiliated',
-    location: 'Lucknow & Kanpur',
-    students: '2,100+ Students',
-    primaryColor: '#0e7490',
-    accentColor: '#ea580c',
-    motto: 'Great School Great Future',
-    icon: 'pi pi-send',
-    type: 'Future Ready K-12 Academy'
-  },
-  {
-    id: 10,
-    name: 'Holy Cross Convent School',
-    shortName: 'Holy Cross',
-    category: 'convent',
-    board: 'Convent / ICSE',
-    location: 'Muzaffarpur & Bihar',
-    students: '2,300+ Students',
-    primaryColor: '#581c87',
-    accentColor: '#cbd5e1',
-    motto: 'In The Cross is Salvation',
-    icon: 'pi pi-heart',
-    type: 'Higher Secondary Convent'
-  },
-  {
-    id: 11,
-    name: 'Springdales Senior School',
-    shortName: 'Springdales',
-    category: 'cbse',
-    board: 'CBSE Board',
-    location: 'Jaipur & Delhi',
-    students: '2,500+ Students',
-    primaryColor: '#831843',
-    accentColor: '#fbbf24',
-    motto: 'The World is My Family',
-    icon: 'pi pi-crown',
-    type: 'Heritage Public School'
-  },
-  {
-    id: 12,
-    name: 'Little Angels High School',
-    shortName: 'Little Angels',
-    category: 'cbse',
-    board: 'CBSE & State Board',
-    location: 'Faridabad & Haryana',
-    students: '1,950+ Students',
-    primaryColor: '#0284c7',
-    accentColor: '#facc15',
-    motto: 'Knowledge is Power',
-    icon: 'pi pi-trophy',
-    type: 'Senior Secondary Campus'
-  }
-];
+const CLIENTS_LIST = DEFAULT_CLIENTS_LIST;
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -267,8 +99,13 @@ export const LandingPage = () => {
       email: 'digitalvidyasaarthi@gmail.com',
       address: 'Faridabad, Delhi, Noida, Haryana | Muzaffarpur & Motihari (Bihar)',
       workingHours: 'Mon - Fri: 09:00 AM - 06:00 PM | Sat: 10:00 AM - 04:00 PM'
-    }
+    },
+    clients: DEFAULT_CLIENTS_LIST
   });
+
+  const displayClients = (cms.clients && Array.isArray(cms.clients) && cms.clients.length > 0)
+    ? cms.clients
+    : DEFAULT_CLIENTS_LIST;
 
   useEffect(() => {
     const loadCms = async () => {
@@ -276,7 +113,13 @@ export const LandingPage = () => {
         const res = await apiClient.get('/public/landing-settings');
         if (res.data?.data) {
           const parsed = typeof res.data.data === 'string' ? JSON.parse(res.data.data) : res.data.data;
-          setCms(prev => ({ ...prev, ...parsed }));
+          setCms(prev => ({
+            ...prev,
+            ...parsed,
+            clients: (parsed.clients && Array.isArray(parsed.clients) && parsed.clients.length > 0)
+              ? parsed.clients
+              : (prev.clients || DEFAULT_CLIENTS_LIST)
+          }));
         }
       } catch (err) {
         console.warn('Using default landing page config', err);
@@ -2367,7 +2210,7 @@ export const LandingPage = () => {
           <Box sx={{ mb: 5, overflow: 'hidden' }}>
             <div className="eduerp-marquee-container">
               <div className="eduerp-marquee-track">
-                {CLIENTS_LIST.concat(CLIENTS_LIST).map((client, idx) => (
+                {displayClients.concat(displayClients).map((client, idx) => (
                   <Box
                     key={`client-logo-stream-${idx}`}
                     sx={{
@@ -2382,10 +2225,10 @@ export const LandingPage = () => {
                       boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                       transition: 'all 0.2s ease',
                       '&:hover': {
-                        borderColor: client.primaryColor,
+                        borderColor: client.primaryColor || '#0a387c',
                         bgcolor: '#ffffff',
                         transform: 'translateY(-2px)',
-                        boxShadow: `0 6px 16px ${client.primaryColor}20`,
+                        boxShadow: `0 6px 16px ${client.primaryColor || '#0a387c'}20`,
                       },
                     }}
                   >
@@ -2394,15 +2237,26 @@ export const LandingPage = () => {
                         width: 38,
                         height: 38,
                         borderRadius: '50%',
-                        bgcolor: `${client.primaryColor}14`,
-                        border: `1.5px solid ${client.primaryColor}30`,
+                        bgcolor: `${client.primaryColor || '#0a387c'}14`,
+                        border: `1.5px solid ${client.primaryColor || '#0a387c'}30`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: client.primaryColor,
+                        color: client.primaryColor || '#0a387c',
+                        overflow: 'hidden',
+                        flexShrink: 0,
                       }}
                     >
-                      <i className={client.icon} style={{ fontSize: '1rem' }}></i>
+                      {client.image ? (
+                        <img 
+                          src={client.image} 
+                          alt={client.name} 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <i className={client.icon || 'pi pi-compass'} style={{ fontSize: '1rem' }}></i>
+                      )}
                     </Box>
                     <Box>
                       <Typography sx={{ color: '#1e293b', fontWeight: 800, fontSize: '0.86rem', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
@@ -2452,8 +2306,8 @@ export const LandingPage = () => {
 
           {/* Client Cards Grid */}
           <Grid container spacing={2.5}>
-            {CLIENTS_LIST.filter(c => clientCategory === 'all' || c.category === clientCategory).map((client, idx) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={client.id} data-aos="fade-up" data-aos-delay={(idx % 4) * 80}>
+            {displayClients.filter(c => clientCategory === 'all' || c.category === clientCategory).map((client, idx) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={client.id || idx} data-aos="fade-up" data-aos-delay={(idx % 4) * 80}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -2471,8 +2325,8 @@ export const LandingPage = () => {
                     overflow: 'hidden',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      borderColor: client.primaryColor,
-                      boxShadow: `0 12px 28px ${client.primaryColor}18`,
+                      borderColor: client.primaryColor || '#0a387c',
+                      boxShadow: `0 12px 28px ${client.primaryColor || '#0a387c'}18`,
                     },
                     '&::before': {
                       content: '""',
@@ -2481,7 +2335,7 @@ export const LandingPage = () => {
                       left: 0,
                       right: 0,
                       height: 4,
-                      bgcolor: client.primaryColor,
+                      bgcolor: client.primaryColor || '#0a387c',
                     },
                   }}
                 >
@@ -2493,20 +2347,33 @@ export const LandingPage = () => {
                           width: 54,
                           height: 54,
                           borderRadius: '14px',
-                          bgcolor: `${client.primaryColor}10`,
-                          border: `1.5px solid ${client.primaryColor}30`,
+                          bgcolor: `${client.primaryColor || '#0a387c'}10`,
+                          border: `1.5px solid ${client.primaryColor || '#0a387c'}30`,
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: `0 3px 10px ${client.primaryColor}15`,
+                          boxShadow: `0 3px 10px ${client.primaryColor || '#0a387c'}15`,
                           position: 'relative',
+                          overflow: 'hidden',
+                          p: client.image ? 0.6 : 0
                         }}
                       >
-                        <i className={client.icon} style={{ fontSize: '1.4rem', color: client.primaryColor }}></i>
-                        <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: client.primaryColor, letterSpacing: '0.04em', textTransform: 'uppercase', mt: 0.1, lineHeight: 1 }}>
-                          {client.shortName.substring(0, 4)}
-                        </Typography>
+                        {client.image ? (
+                          <img 
+                            src={client.image} 
+                            alt={client.name} 
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '10px' }} 
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <>
+                            <i className={client.icon || 'pi pi-compass'} style={{ fontSize: '1.4rem', color: client.primaryColor || '#0a387c' }}></i>
+                            <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: client.primaryColor || '#0a387c', letterSpacing: '0.04em', textTransform: 'uppercase', mt: 0.1, lineHeight: 1 }}>
+                              {(client.shortName || client.name).substring(0, 4)}
+                            </Typography>
+                          </>
+                        )}
                       </Box>
                       <Chip
                         icon={<VerifiedIcon sx={{ fontSize: '13px !important', color: '#16a34a !important' }} />}
@@ -2539,12 +2406,12 @@ export const LandingPage = () => {
                         label={client.board}
                         size="small"
                         sx={{
-                          bgcolor: `${client.primaryColor}0d`,
-                          color: client.primaryColor,
+                          bgcolor: `${client.primaryColor || '#0a387c'}0d`,
+                          color: client.primaryColor || '#0a387c',
                           fontWeight: 700,
                           fontSize: '0.68rem',
                           height: 22,
-                          border: `1px solid ${client.primaryColor}25`,
+                          border: `1px solid ${client.primaryColor || '#0a387c'}25`,
                         }}
                       />
                       <Chip

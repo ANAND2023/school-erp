@@ -5,7 +5,11 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Toast } from 'primereact/toast';
 import { TabView, TabPanel } from 'primereact/tabview';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
+import { Tag } from 'primereact/tag';
 import apiClient from '../../../api/client';
+import { DEFAULT_CLIENTS_LIST, CLIENT_CATEGORIES, CLIENT_ICONS } from '../../public/data/clientsData';
 
 export const WebsiteCmsPage = () => {
   const toastRef = React.useRef(null);
@@ -48,8 +52,28 @@ export const WebsiteCmsPage = () => {
       email: 'digitalvidyasaarthi@gmail.com',
       address: 'Faridabad, Delhi, Noida, Haryana | Muzaffarpur & Motihari (Bihar)',
       workingHours: 'Mon - Sun: 09:00 AM - 06:00 PM'
-    }
+    },
+    clients: DEFAULT_CLIENTS_LIST
   });
+
+  // Client dialog state
+  const [clientDialogVisible, setClientDialogVisible] = useState(false);
+  const [editingClientIndex, setEditingClientIndex] = useState(-1);
+  const defaultClientForm = {
+    name: '',
+    shortName: '',
+    category: 'cbse',
+    board: 'CBSE Affiliated',
+    location: '',
+    students: '2,500+ Students',
+    primaryColor: '#0a387c',
+    accentColor: '#d97706',
+    motto: '',
+    icon: 'pi pi-compass',
+    image: '',
+    type: 'Senior Secondary K-12'
+  };
+  const [clientForm, setClientForm] = useState(defaultClientForm);
 
   useEffect(() => {
     fetchSettings();
@@ -61,7 +85,13 @@ export const WebsiteCmsPage = () => {
       const res = await apiClient.get('/superadmin/landing-settings');
       if (res.data?.data) {
         const parsed = typeof res.data.data === 'string' ? JSON.parse(res.data.data) : res.data.data;
-        setCmsConfig(prev => ({ ...prev, ...parsed }));
+        setCmsConfig(prev => ({
+          ...prev,
+          ...parsed,
+          clients: (parsed.clients && Array.isArray(parsed.clients) && parsed.clients.length > 0)
+            ? parsed.clients
+            : (prev.clients || DEFAULT_CLIENTS_LIST)
+        }));
       }
     } catch (err) {
       console.error('Failed to load landing settings', err);
@@ -115,6 +145,93 @@ export const WebsiteCmsPage = () => {
     setCmsConfig({ ...cmsConfig, slides: updated });
   };
 
+  // Client Management Handlers
+  const openAddClientDialog = () => {
+    setEditingClientIndex(-1);
+    setClientForm({
+      ...defaultClientForm,
+      id: Date.now()
+    });
+    setClientDialogVisible(true);
+  };
+
+  const openEditClientDialog = (index) => {
+    setEditingClientIndex(index);
+    setClientForm({ ...cmsConfig.clients[index] });
+    setClientDialogVisible(true);
+  };
+
+  const handleSaveClient = () => {
+    if (!clientForm.name?.trim()) {
+      toastRef.current?.show({
+        severity: 'warn',
+        summary: 'School Name Required',
+        detail: 'Please enter the institution / school full name.',
+        life: 4000
+      });
+      return;
+    }
+
+    const updatedClients = [...(cmsConfig.clients || [])];
+    const clientToSave = {
+      ...clientForm,
+      name: clientForm.name.trim(),
+      shortName: clientForm.shortName?.trim() || clientForm.name.trim().substring(0, 8),
+      motto: clientForm.motto?.trim() || 'Excellence in Education',
+      board: clientForm.board?.trim() || 'CBSE Affiliated',
+      location: clientForm.location?.trim() || 'All India',
+      students: clientForm.students?.trim() || 'Active Campus',
+      type: clientForm.type?.trim() || 'Senior Secondary',
+      primaryColor: clientForm.primaryColor || '#0a387c',
+      accentColor: clientForm.accentColor || '#d97706',
+      icon: clientForm.icon || 'pi pi-compass'
+    };
+
+    if (editingClientIndex >= 0) {
+      updatedClients[editingClientIndex] = clientToSave;
+    } else {
+      updatedClients.push({
+        ...clientToSave,
+        id: clientToSave.id || Date.now()
+      });
+    }
+
+    setCmsConfig(prev => ({ ...prev, clients: updatedClients }));
+    setClientDialogVisible(false);
+    toastRef.current?.show({
+      severity: 'info',
+      summary: editingClientIndex >= 0 ? 'Client Updated' : 'Client Added',
+      detail: `"${clientToSave.name}" updated in list. Click "Save & Publish Live" at top right to apply!`,
+      life: 4000
+    });
+  };
+
+  const handleDeleteClient = (index) => {
+    const client = cmsConfig.clients[index];
+    if (window.confirm(`Are you sure you want to remove "${client?.name || 'this school'}" from the landing page?`)) {
+      const updated = cmsConfig.clients.filter((_, i) => i !== index);
+      setCmsConfig(prev => ({ ...prev, clients: updated }));
+      toastRef.current?.show({
+        severity: 'info',
+        summary: 'Client Removed',
+        detail: 'Remember to click "Save & Publish Live" to update the live website.',
+        life: 4000
+      });
+    }
+  };
+
+  const handleResetDefaultClients = () => {
+    if (window.confirm('Reset the client list back to the standard 12 showcase schools? Any custom additions will be replaced.')) {
+      setCmsConfig(prev => ({ ...prev, clients: DEFAULT_CLIENTS_LIST }));
+      toastRef.current?.show({
+        severity: 'success',
+        summary: 'Reset to Defaults',
+        detail: 'Default 12 partner schools loaded. Click "Save & Publish Live" to apply.',
+        life: 4000
+      });
+    }
+  };
+
   return (
     <div className="p-4 max-w-7xl mx-auto">
       <Toast ref={toastRef} />
@@ -127,7 +244,7 @@ export const WebsiteCmsPage = () => {
             Landing Page & Website CMS
           </h2>
           <p className="text-500 m-0 mt-1 text-sm">
-            Super Admin Controls: Manage Hero slider banners, theme brand color, headlines, descriptions, and contact info live on the public landing page.
+            Super Admin Controls: Manage Hero slider banners, theme brand color, headlines, partner schools / clients, and contact info live on the public landing page.
           </p>
         </div>
         <div className="flex gap-2">
@@ -402,7 +519,135 @@ export const WebsiteCmsPage = () => {
           </div>
         </TabPanel>
 
-        {/* Tab 3: Contact & Footer Info */}
+        {/* Tab 3: Partner Schools & Clients */}
+        <TabPanel header={`Partner Schools & Clients (${cmsConfig.clients?.length || 0})`} leftIcon="pi pi-building mr-2">
+          <div className="flex flex-column md:flex-row md:align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <h3 className="text-xl font-bold m-0 text-900 flex align-items-center gap-2">
+                <i className="pi pi-verified text-green-600"></i>
+                Partner Institutions & Client Schools Showcase
+              </h3>
+              <p className="text-500 text-sm m-0 mt-1">
+                Manage partner schools shown in the continuous running marquee and interactive category cards on the public landing page.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                label="Reset to Default 12" 
+                icon="pi pi-refresh" 
+                className="p-button-outlined p-button-secondary p-button-sm" 
+                onClick={handleResetDefaultClients}
+                tooltip="Reload standard 12 showcase schools" 
+              />
+              <Button 
+                label="Add New School" 
+                icon="pi pi-plus" 
+                className="p-button-primary p-button-sm" 
+                onClick={openAddClientDialog} 
+              />
+            </div>
+          </div>
+
+          {/* Grid of Client Cards */}
+          <div className="grid">
+            {(cmsConfig.clients || []).map((client, idx) => (
+              <div key={client.id || idx} className="col-12 sm:col-6 lg:col-4 mb-3">
+                <Card 
+                  className="shadow-1 border-round-xl h-full flex flex-column justify-content-between border-1 border-200 hover:shadow-3 transition-all transition-duration-200"
+                  style={{ borderTop: `4px solid ${client.primaryColor || '#0a387c'}` }}
+                >
+                  <div>
+                    {/* Card Top: Logo / Badge + Category Tag */}
+                    <div className="flex align-items-start justify-content-between gap-2 mb-3">
+                      <div 
+                        className="border-round-lg flex align-items-center justify-content-center overflow-hidden flex-shrink-0"
+                        style={{
+                          width: '52px',
+                          height: '52px',
+                          backgroundColor: `${client.primaryColor || '#0a387c'}15`,
+                          border: `1.5px solid ${client.primaryColor || '#0a387c'}30`,
+                        }}
+                      >
+                        {client.image ? (
+                          <img 
+                            src={client.image} 
+                            alt={client.name} 
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="flex flex-column align-items-center justify-content-center">
+                            <i className={client.icon || 'pi pi-compass'} style={{ color: client.primaryColor || '#0a387c', fontSize: '1.25rem' }}></i>
+                            <span style={{ color: client.primaryColor || '#0a387c', fontSize: '0.6rem', fontWeight: 800 }}>
+                              {(client.shortName || client.name).substring(0, 4).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-column align-items-end gap-1">
+                        <Tag 
+                          value={(client.category || 'cbse').toUpperCase()} 
+                          severity={client.category === 'international' ? 'warning' : client.category === 'icse' ? 'danger' : client.category === 'convent' ? 'info' : 'success'}
+                          className="text-xs uppercase font-bold"
+                        />
+                        <span className="text-xs text-500 font-semibold">{client.students || 'Active Campus'}</span>
+                      </div>
+                    </div>
+
+                    {/* School Name */}
+                    <h4 className="m-0 font-bold text-900 text-base line-clamp-1 mb-1" title={client.name}>
+                      {client.name}
+                    </h4>
+
+                    {/* Motto */}
+                    <p className="text-500 text-xs italic m-0 mb-2 line-clamp-1">
+                      "{client.motto || 'Service Before Self'}"
+                    </p>
+
+                    {/* Board & Location */}
+                    <div className="flex flex-column gap-1 text-xs text-600 mb-3">
+                      <span className="flex align-items-center gap-1 font-semibold text-700">
+                        <i className="pi pi-bookmark text-primary text-xs"></i>
+                        {client.board || 'CBSE Affiliated'}
+                      </span>
+                      <span className="flex align-items-center gap-1">
+                        <i className="pi pi-map-marker text-red-500 text-xs"></i>
+                        {client.location || 'All India'}
+                      </span>
+                      <span className="text-500">{client.type || 'Senior Secondary'}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex align-items-center justify-content-between pt-2 border-top-1 border-200">
+                    <span 
+                      className="w-1rem h-1rem border-circle inline-block"
+                      style={{ backgroundColor: client.primaryColor || '#0a387c' }}
+                      title={`Color: ${client.primaryColor}`}
+                    ></span>
+                    <div className="flex gap-1">
+                      <Button 
+                        icon="pi pi-pencil" 
+                        className="p-button-rounded p-button-text p-button-sm p-button-info" 
+                        onClick={() => openEditClientDialog(idx)}
+                        tooltip="Edit School Details" 
+                      />
+                      <Button 
+                        icon="pi pi-trash" 
+                        className="p-button-rounded p-button-text p-button-sm p-button-danger" 
+                        onClick={() => handleDeleteClient(idx)}
+                        tooltip="Remove School" 
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </TabPanel>
+
+        {/* Tab 4: Contact & Footer Info */}
         <TabPanel header="Contact & Footer Info" leftIcon="pi pi-phone mr-2">
           <Card className="shadow-1 border-round-xl">
             <div className="grid">
@@ -459,7 +704,250 @@ export const WebsiteCmsPage = () => {
           </Card>
         </TabPanel>
       </TabView>
+
+      {/* Add / Edit Client Dialog */}
+      <Dialog
+        visible={clientDialogVisible}
+        onHide={() => setClientDialogVisible(false)}
+        header={editingClientIndex >= 0 ? 'Edit Partner School / Client' : 'Add New Partner School / Client'}
+        style={{ width: '90vw', maxWidth: '720px' }}
+        modal
+        footer={
+          <div className="flex justify-content-end gap-2">
+            <Button 
+              label="Cancel" 
+              icon="pi pi-times" 
+              className="p-button-text p-button-secondary" 
+              onClick={() => setClientDialogVisible(false)} 
+            />
+            <Button 
+              label={editingClientIndex >= 0 ? 'Update School' : 'Add School to List'} 
+              icon="pi pi-check" 
+              className="p-button-primary" 
+              onClick={handleSaveClient} 
+            />
+          </div>
+        }
+      >
+        <div className="grid p-fluid mt-1">
+          <div className="col-12 md:col-8 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Institution / School Full Name *</label>
+            <InputText 
+              value={clientForm.name} 
+              onChange={e => setClientForm({ ...clientForm, name: e.target.value })} 
+              placeholder="e.g. Delhi Public School (DPS)"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-4 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Short Code / Monogram</label>
+            <InputText 
+              value={clientForm.shortName} 
+              onChange={e => setClientForm({ ...clientForm, shortName: e.target.value })} 
+              placeholder="e.g. DPS"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Institution Category</label>
+            <Dropdown 
+              value={clientForm.category} 
+              options={CLIENT_CATEGORIES} 
+              onChange={e => setClientForm({ ...clientForm, category: e.value })} 
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Board / Affiliation</label>
+            <InputText 
+              value={clientForm.board} 
+              onChange={e => setClientForm({ ...clientForm, board: e.target.value })} 
+              placeholder="e.g. CBSE Affiliated, ICSE / ISC Board"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Campus Location / City</label>
+            <InputText 
+              value={clientForm.location} 
+              onChange={e => setClientForm({ ...clientForm, location: e.target.value })} 
+              placeholder="e.g. Faridabad, Haryana | Muzaffarpur, Bihar"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Student Strength</label>
+            <InputText 
+              value={clientForm.students} 
+              onChange={e => setClientForm({ ...clientForm, students: e.target.value })} 
+              placeholder="e.g. 2,500+ Students"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-8 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">School Motto / Tagline</label>
+            <InputText 
+              value={clientForm.motto} 
+              onChange={e => setClientForm({ ...clientForm, motto: e.target.value })} 
+              placeholder="e.g. Service Before Self"
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-4 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">School Type / Level</label>
+            <InputText 
+              value={clientForm.type} 
+              onChange={e => setClientForm({ ...clientForm, type: e.target.value })} 
+              placeholder="e.g. Senior Secondary K-12"
+              className="w-full"
+            />
+          </div>
+
+          {/* Color pickers */}
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Brand Primary Color</label>
+            <div className="flex align-items-center gap-2">
+              <input 
+                type="color" 
+                value={clientForm.primaryColor || '#0a387c'} 
+                onChange={e => setClientForm({ ...clientForm, primaryColor: e.target.value })}
+                style={{ width: '42px', height: '38px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+              />
+              <InputText 
+                value={clientForm.primaryColor || '#0a387c'} 
+                onChange={e => setClientForm({ ...clientForm, primaryColor: e.target.value })} 
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <div className="col-12 md:col-6 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">Brand Accent Color</label>
+            <div className="flex align-items-center gap-2">
+              <input 
+                type="color" 
+                value={clientForm.accentColor || '#d97706'} 
+                onChange={e => setClientForm({ ...clientForm, accentColor: e.target.value })}
+                style={{ width: '42px', height: '38px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+              />
+              <InputText 
+                value={clientForm.accentColor || '#d97706'} 
+                onChange={e => setClientForm({ ...clientForm, accentColor: e.target.value })} 
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {/* Logo Upload & Icon Picker */}
+          <div className="col-12 mb-2">
+            <label className="block text-900 font-semibold mb-1 text-sm">School Logo (File Upload or Icon)</label>
+            <div className="p-3 border-1 border-200 border-round-lg bg-50 flex flex-column md:flex-row gap-3 align-items-center">
+              {/* Preview */}
+              <div 
+                className="border-round-lg flex align-items-center justify-content-center overflow-hidden flex-shrink-0 shadow-1"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  backgroundColor: `${clientForm.primaryColor || '#0a387c'}15`,
+                  border: `2px solid ${clientForm.primaryColor || '#0a387c'}40`,
+                }}
+              >
+                {clientForm.image ? (
+                  <img 
+                    src={clientForm.image} 
+                    alt="Logo preview" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  />
+                ) : (
+                  <div className="flex flex-column align-items-center justify-content-center">
+                    <i className={clientForm.icon || 'pi pi-compass'} style={{ color: clientForm.primaryColor || '#0a387c', fontSize: '1.5rem' }}></i>
+                    <span style={{ color: clientForm.primaryColor || '#0a387c', fontSize: '0.65rem', fontWeight: 800 }}>
+                      {(clientForm.shortName || clientForm.name || 'SCH').substring(0, 4).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload controls */}
+              <div className="flex-1 w-full flex flex-column gap-2">
+                <div className="flex flex-wrap gap-2 align-items-center">
+                  <label 
+                    htmlFor="client-logo-upload"
+                    className="p-button p-button-sm p-button-outlined p-button-primary cursor-pointer flex align-items-center gap-2 m-0"
+                    style={{ padding: '6px 14px' }}
+                  >
+                    <i className="pi pi-upload"></i>
+                    <span>Upload Logo Image</span>
+                  </label>
+                  <input
+                    id="client-logo-upload"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 3 * 1024 * 1024) {
+                          toastRef.current?.show({
+                            severity: 'warn',
+                            summary: 'Logo Too Large',
+                            detail: 'Please upload an image under 3 MB.',
+                            life: 4000
+                          });
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setClientForm(prev => ({ ...prev, image: ev.target?.result }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {clientForm.image && (
+                    <Button 
+                      label="Remove Custom Logo" 
+                      icon="pi pi-trash" 
+                      className="p-button-danger p-button-outlined p-button-sm"
+                      onClick={() => setClientForm(prev => ({ ...prev, image: '' }))} 
+                    />
+                  )}
+                </div>
+
+                <div className="grid">
+                  <div className="col-12 md:col-6">
+                    <InputText 
+                      value={clientForm.image?.startsWith('data:') ? 'Image uploaded from device (Base64)' : clientForm.image} 
+                      onChange={e => setClientForm({ ...clientForm, image: e.target.value })} 
+                      placeholder="Or enter logo Image URL..."
+                      disabled={clientForm.image?.startsWith('data:')}
+                      className="p-inputtext-sm w-full"
+                    />
+                  </div>
+                  <div className="col-12 md:col-6">
+                    <Dropdown 
+                      value={clientForm.icon} 
+                      options={CLIENT_ICONS} 
+                      onChange={e => setClientForm({ ...clientForm, icon: e.value })} 
+                      placeholder="Or choose default badge icon"
+                      className="p-inputtext-sm w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };
+
 export default WebsiteCmsPage;
