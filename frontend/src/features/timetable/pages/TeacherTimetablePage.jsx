@@ -20,9 +20,16 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Stack,
 } from '@mui/material';
-import { Print as PrintIcon, Person as TeacherIcon } from '@mui/icons-material';
+import {
+  Print as PrintIcon,
+  Person as TeacherIcon,
+  TableChart as ExcelIcon,
+  PictureAsPdf as PdfIcon,
+} from '@mui/icons-material';
 import api from '../../../api/client';
+import * as XLSX from 'xlsx';
 import { getTeacherTimetable } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -149,6 +156,50 @@ const TeacherTimetablePage = () => {
     doc.save(`Teacher_Timetable_${teacher?.fullName || 'Export'}.pdf`);
   };
 
+  const handleDownloadExcel = () => {
+    if (!timetable || !timetable.periods || timetable.periods.length === 0) {
+      setAlert({ type: 'error', message: 'No schedule available to export.' });
+      return;
+    }
+
+    const teacher = teachers.find(t => t.id === selectedTeacherId);
+
+    const data = [
+      ['Teacher Schedule & Timetable'],
+      [`Teacher: ${teacher?.fullName || 'Teacher'} (${teacher?.employeeCode || '-'})`],
+      [],
+      ['Day / Period', ...timetable.periods.map(p => `${p.name} (${p.startTime} - ${p.endTime})`)]
+    ];
+
+    DAYS.forEach(day => {
+      const row = [day.name];
+      timetable.periods.forEach(p => {
+        if (p.isBreak) {
+          row.push('BREAK');
+        } else {
+          const slot = (timetable.slots || []).find(s => s.dayOfWeek === day.id && s.periodId === p.id);
+          if (slot) {
+            let cellText = `${slot.className || ''} - ${slot.sectionName || ''} | ${slot.subjectName || ''}`;
+            if (slot.roomNo) cellText += ` [Room: ${slot.roomNo}]`;
+            row.push(cellText);
+          } else {
+            row.push('Free');
+          }
+        }
+      });
+      data.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const colWidths = [{ wch: 15 }];
+    timetable.periods.forEach(() => colWidths.push({ wch: 28 }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Teacher Timetable');
+    XLSX.writeFile(wb, `Teacher_Timetable_${teacher?.fullName || 'Export'}.xlsx`);
+  };
+
   return (
     <Box sx={{ pb: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -160,9 +211,52 @@ const TeacherTimetablePage = () => {
             Personalized weekly class view for teaching faculty
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint} sx={{ px: 2.5, height: 32, fontSize: '11.5px', textTransform: 'none' }}>
-          Download PDF
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={!timetable || !timetable.periods || timetable.periods.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
+            onClick={handlePrint}
+            disabled={!timetable || !timetable.periods || timetable.periods.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+        </Stack>
       </Box>
 
       {alert && (

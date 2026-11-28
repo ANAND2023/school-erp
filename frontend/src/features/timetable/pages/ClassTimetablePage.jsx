@@ -39,10 +39,13 @@ import {
   Edit as EditIcon,
   Schedule as PeriodIcon,
   TableChart as GridIcon,
+  TableChart as ExcelIcon,
+  PictureAsPdf as PdfIcon,
   Warning as WarningIcon,
   Print as PrintIcon,
 } from '@mui/icons-material';
 import api from '../../../api/client';
+import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
@@ -374,6 +377,53 @@ const ClassTimetablePage = () => {
     doc.save(`Class_Timetable_${cls?.name || 'Class'}_${sec?.name || 'Sec'}.pdf`);
   };
 
+  const handleDownloadExcel = () => {
+    if (!timetable || !periods || periods.length === 0) {
+      setAlert({ type: 'error', message: 'No schedule available to export.' });
+      return;
+    }
+
+    const cls = classes.find(c => c.id === selectedClassId);
+    const sec = sections.find(s => s.id === selectedSectionId);
+
+    const data = [
+      ['Class Timetable'],
+      [`Class: ${cls?.name || 'Class'} | Section: ${sec?.name || 'Section'}`],
+      [],
+      ['Day / Period', ...periods.map(p => `${p.name} (${p.startTime ? p.startTime.substring(0, 5) : ''} - ${p.endTime ? p.endTime.substring(0, 5) : ''})`)]
+    ];
+
+    DAYS.forEach(day => {
+      const row = [day.name];
+      periods.forEach(p => {
+        if (p.isBreak) {
+          row.push('BREAK');
+        } else {
+          const slot = (timetable?.slots || []).find(s => s.dayOfWeek === day.id && s.periodId === p.id);
+          if (slot) {
+            let cellText = slot.subjectName || '';
+            const teacher = slot.teacherName || slot.employeeName;
+            if (teacher) cellText += ` (${teacher})`;
+            if (slot.roomNo) cellText += ` [Room: ${slot.roomNo}]`;
+            row.push(cellText);
+          } else {
+            row.push('-');
+          }
+        }
+      });
+      data.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const colWidths = [{ wch: 15 }];
+    periods.forEach(() => colWidths.push({ wch: 28 }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Class Timetable');
+    XLSX.writeFile(wb, `Class_Timetable_${cls?.name || 'Class'}_${sec?.name || 'Sec'}.xlsx`);
+  };
+
   return (
     <Box sx={{ pb: 2 }}>
       {/* Header */}
@@ -388,18 +438,62 @@ const ClassTimetablePage = () => {
         </Box>
         <Stack direction="row" spacing={1}>
           <Button
+            size="small"
             variant="contained"
-            startIcon={<PrintIcon />}
+            startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={!timetable || !periods || periods.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
             onClick={handleDownloadPdf}
-            sx={{ px: 2.5 }}
+            disabled={!timetable || !periods || periods.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
           >
             Download PDF
           </Button>
           <Button
+            size="small"
             variant="outlined"
-            startIcon={<PeriodIcon />}
+            startIcon={<PeriodIcon sx={{ fontSize: 16 }} />}
             onClick={() => setPeriodDrawer(true)}
-            sx={{ px: 2.5 }}
+            sx={{
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
           >
             Manage Periods / Bell Schedule
           </Button>
