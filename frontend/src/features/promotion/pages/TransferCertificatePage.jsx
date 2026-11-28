@@ -279,7 +279,7 @@ export const TransferCertificatePage = () => {
   return (
     <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1.5} sx={{ mb: 1.5 }}>
         <Box>
           <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Transfer Certificates (TC)
@@ -288,7 +288,7 @@ export const TransferCertificatePage = () => {
             Generate, print and track official school leaving certificates with clearance verification
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
             size="small"
             variant="contained"

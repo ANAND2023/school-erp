@@ -363,7 +363,7 @@ const AttendanceReportsPage = () => {
   return (
     <Box sx={{ pb: 2 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
         <Box>
           <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#1e293b', m: 0, lineHeight: 1.2 }}>
             Attendance Reports & Registers
@@ -372,7 +372,7 @@ const AttendanceReportsPage = () => {
             Daily absence alert list with guardian contacts and monthly attendance percentage registers
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.2} alignItems="center">
+        <Stack direction="row" spacing={1.2} alignItems="center" sx={{ flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
           {tabValue === 0 && (
             <Button
               size="small"
