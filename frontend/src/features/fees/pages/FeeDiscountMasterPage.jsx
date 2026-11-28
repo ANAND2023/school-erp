@@ -37,7 +37,12 @@ import {
   Savings as DiscountIcon,
   Save as SaveIcon,
   Edit as EditIcon,
+  TableChart as ExcelIcon,
+  PictureAsPdf as PdfIcon,
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { userApi, roleApi } from '../../auth/api';
 import { useUiStore } from '../../../store/uiStore';
 import { usePermission } from '../../../hooks/usePermission';
@@ -359,8 +364,99 @@ export const FeeDiscountMasterPage = () => {
     }
   };
 
+  const handleDownloadExcel = () => {
+    if (!filteredUsers || filteredUsers.length === 0) return;
+
+    const data = [
+      ['Staff Fee Discount Privileges & Limits'],
+      [`Generated on: ${new Date().toLocaleDateString()}`],
+      [],
+      ['S.No', 'Staff Name', 'Username', 'Email', 'Mobile', 'Role', 'Discount Privilege', 'Max Discount Limit (%)']
+    ];
+
+    filteredUsers.forEach((u, idx) => {
+      const editState = rowEdits[u.id] || {
+        canGiveDiscount: Boolean(u.canGiveDiscount),
+        limitInput: String(u.maxDiscountLimit || 0),
+      };
+      const isEnabled = Boolean(editState.canGiveDiscount);
+      const numVal = parseFloat(editState.limitInput) || 0;
+      const limitText = !isEnabled ? 'Disabled' : (numVal === 0 || numVal >= 100) ? 'Unlimited (100%)' : `${numVal}%`;
+
+      data.push([
+        idx + 1,
+        u.fullName || '',
+        u.username || '',
+        u.email || '',
+        u.mobile || '',
+        u.roleName || 'Staff',
+        isEnabled ? 'Enabled' : 'Disabled',
+        limitText
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 22 },
+      { wch: 16 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 22 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Discounts');
+    XLSX.writeFile(wb, `Fee_Discount_Master_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleDownloadPdf = () => {
+    if (!filteredUsers || filteredUsers.length === 0) return;
+
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.setTextColor(30);
+    doc.text('Staff Fee Discount Privileges & Limits Report', 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+
+    const headRow = ['#', 'Staff Name', 'Username / Contact', 'Role', 'Status', 'Max Discount Limit'];
+    const bodyRows = filteredUsers.map((u, idx) => {
+      const editState = rowEdits[u.id] || {
+        canGiveDiscount: Boolean(u.canGiveDiscount),
+        limitInput: String(u.maxDiscountLimit || 0),
+      };
+      const isEnabled = Boolean(editState.canGiveDiscount);
+      const numVal = parseFloat(editState.limitInput) || 0;
+      const limitText = !isEnabled ? 'Disabled' : (numVal === 0 || numVal >= 100) ? 'Unlimited (100%)' : `${numVal}%`;
+
+      return [
+        idx + 1,
+        u.fullName || '',
+        `${u.username || ''}${u.mobile ? ' • ' + u.mobile : ''}`,
+        u.roleName || 'Staff',
+        isEnabled ? 'Enabled' : 'Disabled',
+        limitText
+      ];
+    });
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 30,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+    });
+
+    doc.save(`Fee_Discount_Master_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 } }}>
+    <Box sx={{ pb: 2 }}>
       {/* Header */}
       <Box
         sx={{
@@ -368,119 +464,230 @@ export const FeeDiscountMasterPage = () => {
           flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
           alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: { xs: 1.25, sm: 2 },
-          mb: 2.5,
+          gap: 1.5,
+          mb: 1.5,
         }}
       >
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-            <DiscountIcon color="primary" sx={{ fontSize: { xs: 22, sm: 28 } }} />
-            <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ fontSize: { xs: '1.15rem', sm: '1.45rem' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DiscountIcon color="primary" sx={{ fontSize: 22 }} />
+            <Typography variant="h6" fontWeight={800} color="text.primary" sx={{ fontSize: { xs: '1.15rem', sm: '1.25rem' }, lineHeight: 1.2 }}>
               Fee Discount Master
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.74rem', sm: '0.85rem' } }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: { xs: '0.72rem', sm: '0.78rem' }, mt: 0.25 }}>
             Staff-wise discount eligibility & percentage (%) limit configuration. (Students & Parents excluded).
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
-          onClick={fetchUsers}
-          disabled={loading}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: { xs: '0.75rem', sm: '0.85rem' },
-            py: 0.5,
-            px: 1.5,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Refresh
-        </Button>
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={filteredUsers.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadPdf}
+            disabled={filteredUsers.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+            onClick={fetchUsers}
+            disabled={loading}
+            sx={{
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.5,
+              borderRadius: '8px',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Refresh
+          </Button>
+        </Stack>
       </Box>
 
       {/* Info Alert */}
       <Alert
         severity="info"
         sx={{
-          mb: 2.5,
+          mb: 1.5,
+          py: 0.5,
+          px: 1.25,
           bgcolor: '#f0fdf4',
           border: '1px solid #bbf7d0',
           color: '#166534',
-          '& .MuiAlert-icon': { color: '#16a34a' },
+          fontSize: '0.78rem',
+          borderRadius: 1.5,
+          '& .MuiAlert-icon': { color: '#16a34a', py: 0.25, mr: 1 },
+          '& .MuiAlert-message': { py: 0.25 },
         }}
       >
-        <strong>Rules & Usage:</strong>
-        <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 13 }}>
-          • <strong>Enable/Disable Switch:</strong> Agar switch <strong>Disable</strong> hoga, toh us staff ko <strong>Fee Collection screen par discount ka input field show hi nahi hoga</strong>.
-          <br />
-          • <strong>Discount Limit (%):</strong> Yahan staff ke liye <strong>Percentage (%)</strong> limit enter karein (e.g. 5%, 10%, 20%). Staff bill collection karte samay is percentage se zyada discount nahi de sakega. <strong>Unlimited (100%) discount ke liye 0 ya 100 enter karein</strong>.
-          <br />
-          • <strong>Staff Only:</strong> Yahan sirf school staff members (Accountant, Teacher, Principal, Admin) listed hain. Students aur parents ko filter kar diya gaya hai.
-        </Box>
+        <strong>Rules & Usage:</strong> <b>Enabled</b> staff can give discounts up to their percentage (%) limit in Fee Collection. <b>Disabled</b> staff will not see any discount option. <b>0% or 100%</b> grants unlimited (100%) waiver authority.
       </Alert>
 
       {/* Metric Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={600} color="text.secondary">
-                TOTAL STAFF MEMBERS
-              </Typography>
-              <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ mt: 0.5 }}>
-                {stats.total}
-              </Typography>
-            </CardContent>
+          <Card
+            sx={{
+              p: 1.25,
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, rgba(241, 245, 249, 0.6) 0%, rgba(255, 255, 255, 1) 100%)',
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
+                  TOTAL STAFF MEMBERS
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {stats.total}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.67rem', display: 'block' }}>
+                  School staff directory
+                </Typography>
+              </Box>
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: '#f1f5f9', color: '#475569', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <DiscountIcon sx={{ fontSize: 18 }} />
+              </Box>
+            </Stack>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ border: '1px solid #86efac', bgcolor: '#f0fdf4', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#166534' }}>
-                DISCOUNT ENABLED
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ color: '#15803d', mt: 0.5 }}>
-                {stats.enabledCount}
-              </Typography>
-            </CardContent>
+          <Card
+            sx={{
+              p: 1.25,
+              borderRadius: 1.5,
+              border: '1px solid #86efac',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#166534', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
+                  DISCOUNT ENABLED
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#15803d', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {stats.enabledCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#166534', fontSize: '0.67rem', display: 'block' }}>
+                  Active discount access
+                </Typography>
+              </Box>
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: '#dcfce7', color: '#15803d', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <CheckCircleIcon sx={{ fontSize: 18 }} />
+              </Box>
+            </Stack>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ border: '1px solid #fde68a', bgcolor: '#fefce8', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#854d0e' }}>
-                UNLIMITED (100%) AUTHORITY
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ color: '#a16207', mt: 0.5 }}>
-                {stats.unlimitedCount}
-              </Typography>
-            </CardContent>
+          <Card
+            sx={{
+              p: 1.25,
+              borderRadius: 1.5,
+              border: '1px solid #fde68a',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#854d0e', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
+                  UNLIMITED (100%) AUTHORITY
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#a16207', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {stats.unlimitedCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#854d0e', fontSize: '0.67rem', display: 'block' }}>
+                  Full waiver privileges
+                </Typography>
+              </Box>
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: '#fef3c7', color: '#a16207', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <DiscountIcon sx={{ fontSize: 18 }} />
+              </Box>
+            </Stack>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ border: '1px solid #fca5a5', bgcolor: '#fef2f2', borderRadius: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#991b1b' }}>
-                DISCOUNT DISABLED (HIDDEN)
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ color: '#b91c1c', mt: 0.5 }}>
-                {stats.disabledCount}
-              </Typography>
-            </CardContent>
+          <Card
+            sx={{
+              p: 1.25,
+              borderRadius: 1.5,
+              border: '1px solid #fca5a5',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 1) 100%)',
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#991b1b', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: 0.3, display: 'block' }}>
+                  DISCOUNT DISABLED (HIDDEN)
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#b91c1c', fontSize: '1.2rem', lineHeight: 1.2, my: 0.25 }}>
+                  {stats.disabledCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#991b1b', fontSize: '0.67rem', display: 'block' }}>
+                  Input hidden in collection
+                </Typography>
+              </Box>
+              <Box sx={{ width: 34, height: 34, minWidth: 34, bgcolor: '#fee2e2', color: '#b91c1c', borderRadius: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', ml: 1 }}>
+                <CancelIcon sx={{ fontSize: 18 }} />
+              </Box>
+            </Stack>
           </Card>
         </Grid>
       </Grid>
 
       {/* Filter and Search Bar */}
-      <Paper elevation={0} sx={{ p: 2, mb: 2.5, border: '1px solid #e2e8f0', borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+      <Paper elevation={0} sx={{ p: 1.25, mb: 1.5, border: '1px solid #e2e8f0', borderRadius: 1.5 }}>
+        <Grid container spacing={1.5} alignItems="center">
           <Grid item xs={12} sm={5} md={5}>
             <TextField
               fullWidth
@@ -534,32 +741,32 @@ export const FeeDiscountMasterPage = () => {
       </Paper>
 
       {/* Standard Table (Zero focus-trapping or typing bugs) */}
-      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
-        <Table>
+      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5 }}>
+        <Table size="small">
           <TableHead sx={{ bgcolor: '#f8fafc' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Staff Member</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 140 }}>Role</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 170 }}>Discount Access</TableCell>
-              <TableCell sx={{ fontWeight: 700, minWidth: 320 }}>Discount Limit (%) / Authority</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, width: 160 }}>Action</TableCell>
+              <TableCell sx={{ fontWeight: 700, py: 1, fontSize: '0.75rem' }}>Staff Member</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 140, py: 1, fontSize: '0.75rem' }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 150, py: 1, fontSize: '0.75rem' }}>Discount Access</TableCell>
+              <TableCell sx={{ fontWeight: 700, minWidth: 300, py: 1, fontSize: '0.75rem' }}>Discount Limit (%) / Authority</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, width: 150, py: 1, fontSize: '0.75rem' }}>Action</TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                  <CircularProgress size={32} />
-                  <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                  <CircularProgress size={28} />
+                  <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary', fontSize: '0.8rem' }}>
                     Loading staff members...
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                  <Typography variant="body1" color="text.secondary">
+                <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                  <Typography variant="body2" color="text.secondary">
                     No staff members match the selected criteria.
                   </Typography>
                 </TableCell>
@@ -591,12 +798,12 @@ export const FeeDiscountMasterPage = () => {
                     }}
                   >
                     {/* Staff Member Info */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                    <TableCell sx={{ py: 0.75 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Box
                           sx={{
-                            width: 36,
-                            height: 36,
+                            width: 32,
+                            height: 32,
                             borderRadius: '50%',
                             bgcolor: isEnabled ? '#dcfce7' : '#f1f5f9',
                             color: isEnabled ? '#15803d' : '#64748b',
@@ -604,17 +811,17 @@ export const FeeDiscountMasterPage = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 700,
-                            fontSize: 14,
+                            fontSize: 13,
                             border: `1px solid ${isEnabled ? '#86efac' : '#cbd5e1'}`,
                           }}
                         >
                           {u.fullName?.charAt(0)?.toUpperCase() || 'S'}
                         </Box>
                         <Box>
-                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', lineHeight: 1.2 }}>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', lineHeight: 1.2, fontSize: '0.82rem' }}>
                             {u.fullName}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                             {u.email || u.username} {u.mobile ? `• ${u.mobile}` : ''}
                           </Typography>
                         </Box>
@@ -622,19 +829,19 @@ export const FeeDiscountMasterPage = () => {
                     </TableCell>
 
                     {/* Role */}
-                    <TableCell sx={{ py: 1.5 }}>
+                    <TableCell sx={{ py: 0.75 }}>
                       <Chip
                         label={u.roleName || 'Staff'}
                         size="small"
                         variant="outlined"
                         color="primary"
-                        sx={{ fontWeight: 600, fontSize: 11.5 }}
+                        sx={{ fontWeight: 600, fontSize: '0.7rem', height: 22 }}
                       />
                     </TableCell>
 
                     {/* Discount Access Switch */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TableCell sx={{ py: 0.75 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <Switch
                           size="small"
                           checked={isEnabled}
@@ -643,31 +850,31 @@ export const FeeDiscountMasterPage = () => {
                           color="success"
                         />
                         {isSaving ? (
-                          <CircularProgress size={16} />
+                          <CircularProgress size={14} />
                         ) : isEnabled ? (
                           <Chip
-                            icon={<CheckCircleIcon sx={{ fontSize: '13px !important' }} />}
+                            icon={<CheckCircleIcon sx={{ fontSize: '12px !important' }} />}
                             label="Enabled"
                             size="small"
                             sx={{
                               bgcolor: '#dcfce7',
                               color: '#15803d',
                               fontWeight: 700,
-                              fontSize: 10.5,
-                              height: 22,
+                              fontSize: '0.67rem',
+                              height: 20,
                             }}
                           />
                         ) : (
                           <Chip
-                            icon={<CancelIcon sx={{ fontSize: '13px !important' }} />}
+                            icon={<CancelIcon sx={{ fontSize: '12px !important' }} />}
                             label="Disabled"
                             size="small"
                             sx={{
                               bgcolor: '#fee2e2',
                               color: '#b91c1c',
                               fontWeight: 600,
-                              fontSize: 10.5,
-                              height: 22,
+                              fontSize: '0.67rem',
+                              height: 20,
                             }}
                           />
                         )}
@@ -675,14 +882,14 @@ export const FeeDiscountMasterPage = () => {
                     </TableCell>
 
                     {/* Discount Limit (%) / Authority */}
-                    <TableCell sx={{ py: 1.5 }}>
+                    <TableCell sx={{ py: 0.75 }}>
                       {!isEnabled ? (
-                        <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                        <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '0.72rem' }}>
                           No Access (Discount input hidden in Fee Collection)
                         </Typography>
                       ) : (
                         <Box>
-                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5 }}>
                             <TextField
                               size="small"
                               type="number"
@@ -690,19 +897,19 @@ export const FeeDiscountMasterPage = () => {
                               onChange={(e) => handleLimitInputChange(u.id, e.target.value)}
                               InputProps={{
                                 endAdornment: (
-                                  <InputAdornment position="end" sx={{ fontWeight: 700, color: '#334155' }}>
+                                  <InputAdornment position="end" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.75rem' }}>
                                     %
                                   </InputAdornment>
                                 ),
                               }}
                               inputProps={{ min: 0, max: 100, step: 'any' }}
                               sx={{
-                                width: 110,
+                                width: 85,
                                 bgcolor: '#fff',
                                 '& .MuiInputBase-input': {
-                                  py: 0.5,
-                                  px: 1,
-                                  fontSize: 13,
+                                  py: 0.3,
+                                  px: 0.75,
+                                  fontSize: '0.78rem',
                                   fontWeight: 700,
                                 },
                               }}
@@ -716,8 +923,8 @@ export const FeeDiscountMasterPage = () => {
                                   bgcolor: '#fef3c7',
                                   color: '#92400e',
                                   fontWeight: 700,
-                                  fontSize: 11,
-                                  height: 24,
+                                  fontSize: '0.68rem',
+                                  height: 22,
                                 }}
                               />
                             ) : (
@@ -728,15 +935,15 @@ export const FeeDiscountMasterPage = () => {
                                   bgcolor: '#eff6ff',
                                   color: '#1d4ed8',
                                   fontWeight: 700,
-                                  fontSize: 11,
-                                  height: 24,
+                                  fontSize: '0.68rem',
+                                  height: 22,
                                 }}
                               />
                             )}
                           </Stack>
 
                           {/* Quick % chips */}
-                          <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" gap={0.4}>
                             {[5, 10, 15, 20, 25, 50].map((pct) => (
                               <Chip
                                 key={pct}
@@ -745,8 +952,9 @@ export const FeeDiscountMasterPage = () => {
                                 onClick={() => handleSetQuickLimit(u.id, pct)}
                                 sx={{
                                   cursor: 'pointer',
-                                  fontSize: 10,
-                                  height: 20,
+                                  fontSize: '0.65rem',
+                                  height: 18,
+                                  px: 0.25,
                                   bgcolor: numVal === pct ? '#dbeafe' : '#f1f5f9',
                                   color: numVal === pct ? '#1e40af' : '#475569',
                                   fontWeight: numVal === pct ? 700 : 500,
@@ -755,13 +963,14 @@ export const FeeDiscountMasterPage = () => {
                               />
                             ))}
                             <Chip
-                              label="Unlimited (100%)"
+                              label="Unlimited"
                               size="small"
                               onClick={() => handleSetQuickLimit(u.id, 100)}
                               sx={{
                                 cursor: 'pointer',
-                                fontSize: 10,
-                                height: 20,
+                                fontSize: '0.65rem',
+                                height: 18,
+                                px: 0.25,
                                 bgcolor: isUnlimited ? '#fef3c7' : '#f1f5f9',
                                 color: isUnlimited ? '#92400e' : '#475569',
                                 fontWeight: isUnlimited ? 700 : 500,
@@ -774,16 +983,16 @@ export const FeeDiscountMasterPage = () => {
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                    <TableCell align="right" sx={{ py: 0.75 }}>
+                      <Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="center">
                         <Tooltip title="Quick Edit in Dialog">
                           <IconButton
                             size="small"
                             color="primary"
                             onClick={() => handleOpenEditModal(u)}
-                            sx={{ border: '1px solid #e2e8f0' }}
+                            sx={{ border: '1px solid #e2e8f0', p: 0.5 }}
                           >
-                            <EditIcon fontSize="small" />
+                            <EditIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
 
@@ -793,13 +1002,14 @@ export const FeeDiscountMasterPage = () => {
                           color={hasChanges ? 'primary' : 'inherit'}
                           disabled={isSaving}
                           onClick={() => handleSaveUserLimit(u.id)}
-                          startIcon={isSaving ? <CircularProgress size={14} /> : <SaveIcon fontSize="small" />}
+                          startIcon={isSaving ? <CircularProgress size={12} /> : <SaveIcon sx={{ fontSize: 14 }} />}
                           sx={{
                             textTransform: 'none',
-                            fontSize: 11.5,
+                            fontSize: '0.72rem',
                             fontWeight: 700,
-                            py: 0.4,
-                            px: 1.2,
+                            py: 0.3,
+                            px: 1,
+                            height: 28,
                           }}
                         >
                           {hasChanges ? 'Save' : 'Update'}
