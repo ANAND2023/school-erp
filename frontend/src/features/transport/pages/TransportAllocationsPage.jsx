@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Switch, Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl, Tooltip } from '@mui/material';
+import { Switch, Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl, Tooltip, Stack } from '@mui/material';
 import { Modal } from '../../../components/Modal';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HistoryIcon from '@mui/icons-material/History';
 import PaymentIcon from '@mui/icons-material/Payment';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import apiClient from '../../../api/client';
 import { MultiSelect } from 'primereact/multiselect';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const TransportAllocationsPage = () => {
   const [allocations, setAllocations] = useState([]);
@@ -164,13 +169,149 @@ export const TransportAllocationsPage = () => {
   // Helper to find stops for selected route
   const selectedRouteStops = routes.find(r => r.id === formData.routeId)?.stops || [];
 
+  const handleDownloadExcel = () => {
+    if (!filteredAllocations || filteredAllocations.length === 0) return;
+
+    const data = [
+      ['Student Transport Allocation Report'],
+      [`Generated on: ${new Date().toLocaleDateString()}`],
+      [],
+      ['S.No', 'Student Name', 'Admission No', 'Class / Section', 'Route Name', 'Stop Name', 'Monthly Fare (Rs.)', 'Start Date', 'Status']
+    ];
+
+    filteredAllocations.forEach((a, idx) => {
+      data.push([
+        idx + 1,
+        a.studentName || '',
+        a.admissionNo || '',
+        `${a.className || ''} ${a.sectionName ? '/ ' + a.sectionName : ''}`.trim(),
+        a.routeName || '',
+        a.stopName || '',
+        a.monthlyFare || 0,
+        a.startDate ? new Date(a.startDate).toLocaleDateString() : '',
+        a.status || ''
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 22 },
+      { wch: 15 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 12 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Allocations');
+    XLSX.writeFile(wb, `Student_Transport_Allocations_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleDownloadPdf = () => {
+    if (!filteredAllocations || filteredAllocations.length === 0) return;
+
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.setTextColor(30);
+    doc.text('Student Transport Allocation Report', 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+
+    const headRow = ['#', 'Student Name', 'Adm No', 'Class/Sec', 'Route', 'Stop Name', 'Fare', 'Start Date', 'Status'];
+    const bodyRows = filteredAllocations.map((a, idx) => [
+      idx + 1,
+      a.studentName || '',
+      a.admissionNo || '',
+      `${a.className || ''} / ${a.sectionName || ''}`,
+      a.routeName || '',
+      a.stopName || '',
+      `Rs. ${a.monthlyFare || 0}`,
+      a.startDate ? new Date(a.startDate).toLocaleDateString() : '',
+      a.status || ''
+    ]);
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 30,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+    });
+
+    doc.save(`Student_Transport_Allocations_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight="bold">Student Transport Allocation</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen}>
-          Assign Route
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<TableChartIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={filteredAllocations.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PictureAsPdfIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadPdf}
+            disabled={filteredAllocations.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpen}
+            sx={{
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Assign Route
+          </Button>
+        </Stack>
       </Box>
 
       

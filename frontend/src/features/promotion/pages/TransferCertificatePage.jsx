@@ -40,11 +40,16 @@ import {
   Close as CloseIcon,
   School as SchoolIcon,
   Warning as WarningIcon,
+  TableChart as TableChartIcon,
+  PictureAsPdf as PictureAsPdfIcon,
 } from '@mui/icons-material';
 import { promotionApi } from '../api';
 import { studentApi } from '../../students/api';
 import { printWithTitle } from '../../../utils/printUtils';
 import AppDatePicker from '../../../components/common/AppDatePicker';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const TransferCertificatePage = () => {
   const [tcList, setTcList] = useState([]);
@@ -190,6 +195,87 @@ export const TransferCertificatePage = () => {
     printWithTitle(`Transfer_Certificate_${sName}_${tcNo}`);
   };
 
+  const handleDownloadExcel = () => {
+    if (!tcList || tcList.length === 0) return;
+
+    const data = [
+      ['Transfer Certificates (TC) Register'],
+      [`Generated on: ${new Date().toLocaleDateString()}`],
+      [],
+      ['S.No', 'TC Number', 'Admission No', 'Student Name', 'Issue Date', 'Last Class Studied', 'Clearance Status', 'Promotion Status', 'Reason for Leaving', 'Conduct', 'Status']
+    ];
+
+    tcList.forEach((tc, idx) => {
+      data.push([
+        idx + 1,
+        tc.tcNumber || '',
+        tc.admissionNo || '',
+        tc.studentName || '',
+        tc.issueDate || '',
+        tc.lastClassStudied || '',
+        tc.feeCleared ? 'Fee Cleared' : 'Override Granted',
+        tc.qualifiedForPromotion ? 'Qualified' : 'Not Qualified',
+        tc.reasonForLeaving || '',
+        tc.conduct || '',
+        tc.status || ''
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 25 },
+      { wch: 12 },
+      { wch: 12 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'TC_Register');
+    XLSX.writeFile(wb, `Transfer_Certificates_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleDownloadPdf = () => {
+    if (!tcList || tcList.length === 0) return;
+
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.setTextColor(30);
+    doc.text('Transfer Certificates (TC) Register', 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+
+    const headRow = ['#', 'TC No', 'Adm No', 'Student Name', 'Issue Date', 'Class Studied', 'Fee Clearance', 'Status'];
+    const bodyRows = tcList.map((tc, idx) => [
+      idx + 1,
+      tc.tcNumber || '',
+      tc.admissionNo || '',
+      tc.studentName || '',
+      tc.issueDate || '',
+      tc.lastClassStudied || '',
+      tc.feeCleared ? 'Fee Cleared' : 'Override Granted',
+      tc.status || ''
+    ]);
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 30,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+    });
+
+    doc.save(`Transfer_Certificates_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <Box sx={{ pb: 2 }}>
       {/* Header */}
@@ -202,19 +288,73 @@ export const TransferCertificatePage = () => {
             Generate, print and track official school leaving certificates with clearance verification
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setSelectedStudent(null);
-            setClearanceData(null);
-            setStudentSearch('');
-            setStudentResults([]);
-            setIssueModal(true);
-          }}
-        >
-          Issue New TC
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<TableChartIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={tcList.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PictureAsPdfIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadPdf}
+            disabled={tcList.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setSelectedStudent(null);
+              setClearanceData(null);
+              setStudentSearch('');
+              setStudentResults([]);
+              setIssueModal(true);
+            }}
+            sx={{
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Issue New TC
+          </Button>
+        </Stack>
       </Stack>
 
       {alert && (

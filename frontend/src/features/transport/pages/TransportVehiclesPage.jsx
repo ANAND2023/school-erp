@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Box, Card, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, Button, TextField, Select, MenuItem, InputLabel, FormControl, Stack } from '@mui/material';
 import { Modal } from '../../../components/Modal';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import apiClient from '../../../api/client';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const TransportVehiclesPage = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -90,13 +95,140 @@ export const TransportVehiclesPage = () => {
     }
   };
 
+  const handleDownloadExcel = () => {
+    if (!vehicles || vehicles.length === 0) return;
+
+    const data = [
+      ['Transport Vehicles Master Report'],
+      [`Generated on: ${new Date().toLocaleDateString()}`],
+      [],
+      ['S.No', 'Registration No', 'Vehicle Type', 'Seating Capacity', 'Assigned Driver', 'Status']
+    ];
+
+    vehicles.forEach((v, idx) => {
+      data.push([
+        idx + 1,
+        v.registrationNo || '',
+        v.vehicleType || '',
+        v.capacity ? `${v.capacity} Seats` : '',
+        v.driver ? `${v.driver.firstName || ''} ${v.driver.lastName || ''}`.trim() : '-',
+        v.status || ''
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 15 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Vehicles');
+    XLSX.writeFile(wb, `Transport_Vehicles_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleDownloadPdf = () => {
+    if (!vehicles || vehicles.length === 0) return;
+
+    const doc = new jsPDF('portrait');
+    doc.setFontSize(16);
+    doc.setTextColor(30);
+    doc.text('Transport Vehicles Master Report', 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+
+    const headRow = ['#', 'Registration No', 'Type', 'Capacity', 'Driver', 'Status'];
+    const bodyRows = vehicles.map((v, idx) => [
+      idx + 1,
+      v.registrationNo || '',
+      v.vehicleType || '',
+      v.capacity ? `${v.capacity} Seats` : '',
+      v.driver ? `${v.driver.firstName || ''} ${v.driver.lastName || ''}`.trim() : '-',
+      v.status || ''
+    ]);
+
+    autoTable(doc, {
+      head: [headRow],
+      body: bodyRows,
+      startY: 30,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9.5, cellPadding: 3.5 },
+    });
+
+    doc.save(`Transport_Vehicles_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight="bold">Vehicles Master</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-          Add Vehicle
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<TableChartIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadExcel}
+            disabled={vehicles.length === 0}
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PictureAsPdfIcon sx={{ fontSize: 16 }} />}
+            onClick={handleDownloadPdf}
+            disabled={vehicles.length === 0}
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpen()}
+            sx={{
+              height: 34,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Add Vehicle
+          </Button>
+        </Stack>
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
