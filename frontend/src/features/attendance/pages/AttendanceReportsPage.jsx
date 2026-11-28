@@ -30,6 +30,9 @@ import {
   Search as SearchIcon,
   NotificationsActive as AlertIcon,
   CalendarMonth as RegisterIcon,
+  PictureAsPdf as PdfIcon,
+  TableChart as ExcelIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import api from '../../../api/client';
 import jsPDF from 'jspdf';
@@ -77,12 +80,10 @@ const AttendanceReportsPage = () => {
       ]);
       const classList = classRes.data?.data || classRes.data || [];
       setClasses(classList);
-      if (classList.length > 0) {
-        setSelectedClassId(classList[0].id);
-        const secs = classList[0].sections || [];
-        setSections(secs);
-        if (secs.length > 0) setSelectedSectionId(secs[0].id);
-      }
+      // Default to All Classes so report displays all classes
+      setSelectedClassId('');
+      setSections([]);
+      setSelectedSectionId('');
       setDepartments(deptRes.data?.data || deptRes.data || []);
     } catch (err) {
       console.error(err);
@@ -91,25 +92,26 @@ const AttendanceReportsPage = () => {
 
   const handleClassChange = (classId) => {
     setSelectedClassId(classId);
+    if (!classId) {
+      setSections([]);
+      setSelectedSectionId('');
+      return;
+    }
     const found = classes.find((c) => c.id === classId);
     const secs = found?.sections || [];
     setSections(secs);
-    if (secs.length > 0) {
-      setSelectedSectionId(secs[0].id);
-    } else {
-      setSelectedSectionId('');
-    }
+    setSelectedSectionId('');
   };
 
   useEffect(() => {
     if (tabValue === 0) {
       loadAbsentees();
-    } else if (tabValue === 1 && selectedSectionId) {
+    } else if (tabValue === 1) {
       loadStudentRegister();
     } else if (tabValue === 2) {
       loadStaffRegister();
     }
-  }, [tabValue, date, selectedSectionId, selectedDeptId, month, year]);
+  }, [tabValue, date, selectedClassId, selectedSectionId, selectedDeptId, month, year]);
 
   const loadAbsentees = async () => {
     setLoading(true);
@@ -130,11 +132,15 @@ const AttendanceReportsPage = () => {
   };
 
   const loadStudentRegister = async () => {
-    if (!selectedSectionId) return;
     setLoading(true);
     setAlert(null);
     try {
-      const res = await getStudentMonthlyRegister(selectedSectionId, month, year);
+      const res = await getStudentMonthlyRegister(
+        selectedSectionId ? selectedSectionId : null,
+        month,
+        year,
+        selectedClassId ? selectedClassId : null
+      );
       setStudentRegister(res.data?.data || res.data);
     } catch (err) {
       console.error(err);
@@ -180,18 +186,27 @@ const AttendanceReportsPage = () => {
   };
 
   const exportStudentExcel = () => {
-    if (!studentRegister || !studentRegister.rows) return;
+    if (!studentRegister || !studentRegister.rows || studentRegister.rows.length === 0) return;
     const wsData = [];
+    const showClassSec = !selectedClassId || !selectedSectionId;
     
     // Header
-    const headerRow = ['Roll', 'Student Name', 'Work', 'Attendance %'];
+    const headerRow = ['Roll', 'Student Name'];
+    if (showClassSec) {
+      headerRow.push('Class', 'Section');
+    }
+    headerRow.push('Work', 'Attendance %');
     for (let i = 1; i <= studentRegister.daysInMonth; i++) headerRow.push(i.toString());
     headerRow.push('P', 'A');
     wsData.push(headerRow);
 
     // Rows
     studentRegister.rows.forEach(row => {
-      const dataRow = [row.rollNo || '-', row.fullName, row.totalWorkingDays, row.attendancePercentage + '%'];
+      const dataRow = [row.rollNo || '-', row.fullName];
+      if (showClassSec) {
+        dataRow.push(row.className || '-', row.sectionName || '-');
+      }
+      dataRow.push(row.totalWorkingDays, row.attendancePercentage + '%');
       for (let i = 1; i <= studentRegister.daysInMonth; i++) {
         dataRow.push(row.dailyStatus[i] || '-');
       }
@@ -202,22 +217,34 @@ const AttendanceReportsPage = () => {
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Student_Register');
-    XLSX.writeFile(wb, `Student_Monthly_Register_${month}_${year}.xlsx`);
+    const classLabel = selectedClassId ? (classes.find(c => c.id === selectedClassId)?.name || 'Class') : 'All_Classes';
+    XLSX.writeFile(wb, `Student_Monthly_Register_${classLabel}_${month}_${year}.xlsx`);
   };
 
   const exportStudentPdf = () => {
-    if (!studentRegister || !studentRegister.rows) return;
+    if (!studentRegister || !studentRegister.rows || studentRegister.rows.length === 0) return;
     const doc = new jsPDF({ orientation: 'landscape' });
     
-    doc.setFontSize(16);
-    doc.text(`Student Monthly Register - ${month} ${year}`, 14, 15);
+    const classLabel = selectedClassId ? (classes.find(c => c.id === selectedClassId)?.name || 'Class') : 'All Classes';
+    const secLabel = selectedSectionId ? (sections.find(s => s.id === selectedSectionId)?.name || 'Sec') : 'All Sections';
+    doc.setFontSize(14);
+    doc.text(`Student Monthly Attendance Register - ${classLabel} (${secLabel}) - ${month}/${year}`, 14, 12);
     
-    const headRow = ['Roll', 'Name', 'Work', '%'];
+    const showClassSec = !selectedClassId || !selectedSectionId;
+    const headRow = ['Roll', 'Name'];
+    if (showClassSec) {
+      headRow.push('Class & Sec');
+    }
+    headRow.push('Work', '%');
     for (let i = 1; i <= studentRegister.daysInMonth; i++) headRow.push(i.toString());
     headRow.push('P', 'A');
 
     const bodyRows = studentRegister.rows.map(row => {
-      const dataRow = [row.rollNo || '-', row.fullName, row.totalWorkingDays, row.attendancePercentage + '%'];
+      const dataRow = [row.rollNo || '-', row.fullName];
+      if (showClassSec) {
+        dataRow.push(`${row.className || ''} ${row.sectionName || ''}`.trim());
+      }
+      dataRow.push(row.totalWorkingDays, row.attendancePercentage + '%');
       for (let i = 1; i <= studentRegister.daysInMonth; i++) {
         dataRow.push(row.dailyStatus[i] || '-');
       }
@@ -228,15 +255,16 @@ const AttendanceReportsPage = () => {
     autoTable(doc, {
       head: [headRow],
       body: bodyRows,
-      startY: 20,
-      styles: { fontSize: 7, cellPadding: 1, halign: 'center' },
+      startY: 16,
+      styles: { fontSize: 6.5, cellPadding: 0.8, halign: 'center' },
       columnStyles: {
         0: { halign: 'left' },
-        1: { halign: 'left' }
+        1: { halign: 'left' },
+        2: showClassSec ? { halign: 'left' } : { halign: 'center' }
       }
     });
 
-    doc.save(`Student_Monthly_Register_${month}_${year}.pdf`);
+    doc.save(`Student_Monthly_Register_${classLabel}_${month}_${year}.pdf`);
   };
 
   const exportAbsenteesExcel = () => {
@@ -344,39 +372,90 @@ const AttendanceReportsPage = () => {
             Daily absence alert list with guardian contacts and monthly attendance percentage registers
           </Typography>
         </Box>
-        {tabValue === 0 && absentees.length > 0 && (
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesCsv} sx={{ px: 2.5 }}>
+        <Stack direction="row" spacing={1.2} alignItems="center">
+          {tabValue === 0 && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={exportAbsenteesCsv}
+              disabled={absentees.length === 0}
+              sx={{
+                color: 'text.secondary',
+                borderColor: 'divider',
+                height: 32,
+                fontSize: '0.76rem',
+                fontWeight: 600,
+                px: 1.5,
+                borderRadius: '8px',
+                textTransform: 'none',
+              }}
+            >
               CSV
             </Button>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesExcel} sx={{ px: 2.5 }}>
-              Excel
-            </Button>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportAbsenteesPdf} sx={{ px: 2.5 }}>
-              PDF
-            </Button>
-          </Stack>
-        )}
-        {tabValue === 1 && studentRegister?.rows?.length > 0 && (
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStudentExcel} sx={{ px: 2.5 }}>
-              Excel
-            </Button>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStudentPdf} sx={{ px: 2.5 }}>
-              PDF
-            </Button>
-          </Stack>
-        )}
-        {tabValue === 2 && staffRegister?.rows?.length > 0 && (
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStaffExcel} sx={{ px: 2.5 }}>
-              Excel
-            </Button>
-            <Button variant="outlined" startIcon={<ExportIcon />} onClick={exportStaffPdf} sx={{ px: 2.5 }}>
-              PDF
-            </Button>
-          </Stack>
-        )}
+          )}
+
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<ExcelIcon sx={{ fontSize: 16 }} />}
+            onClick={() => {
+              if (tabValue === 0) exportAbsenteesExcel();
+              else if (tabValue === 1) exportStudentExcel();
+              else if (tabValue === 2) exportStaffExcel();
+            }}
+            disabled={
+              (tabValue === 0 && absentees.length === 0) ||
+              (tabValue === 1 && (!studentRegister || !studentRegister.rows || studentRegister.rows.length === 0)) ||
+              (tabValue === 2 && (!staffRegister || !staffRegister.rows || staffRegister.rows.length === 0))
+            }
+            sx={{
+              bgcolor: '#107c41',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(16, 124, 65, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#0b5c30', boxShadow: '0 4px 10px rgba(16, 124, 65, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download Excel
+          </Button>
+
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
+            onClick={() => {
+              if (tabValue === 0) exportAbsenteesPdf();
+              else if (tabValue === 1) exportStudentPdf();
+              else if (tabValue === 2) exportStaffPdf();
+            }}
+            disabled={
+              (tabValue === 0 && absentees.length === 0) ||
+              (tabValue === 1 && (!studentRegister || !studentRegister.rows || studentRegister.rows.length === 0)) ||
+              (tabValue === 2 && (!staffRegister || !staffRegister.rows || staffRegister.rows.length === 0))
+            }
+            sx={{
+              bgcolor: '#d32f2f',
+              color: '#ffffff',
+              height: 32,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              px: 1.8,
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(211, 47, 47, 0.25)',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#b71c1c', boxShadow: '0 4px 10px rgba(211, 47, 47, 0.4)' },
+              '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' },
+            }}
+          >
+            Download PDF
+          </Button>
+        </Stack>
       </Box>
 
       {alert && (
@@ -412,10 +491,16 @@ const AttendanceReportsPage = () => {
               </Grid>
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Class</InputLabel>
+                  <InputLabel shrink>Class</InputLabel>
                   <Select
                     value={selectedClassId}
                     label="Class"
+                    displayEmpty
+                    renderValue={(val) => {
+                      if (!val) return 'All Classes';
+                      const found = classes.find((c) => c.id === val);
+                      return found?.name || val;
+                    }}
                     onChange={(e) => handleClassChange(e.target.value)}
                   >
                     <MenuItem value="">All Classes</MenuItem>
@@ -429,10 +514,16 @@ const AttendanceReportsPage = () => {
               </Grid>
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Section</InputLabel>
+                  <InputLabel shrink>Section</InputLabel>
                   <Select
                     value={selectedSectionId}
                     label="Section"
+                    displayEmpty
+                    renderValue={(val) => {
+                      if (!val) return 'All Sections';
+                      const found = sections.find((s) => s.id === val);
+                      return found?.name || val;
+                    }}
                     onChange={(e) => setSelectedSectionId(e.target.value)}
                   >
                     <MenuItem value="">All Sections</MenuItem>
@@ -457,12 +548,19 @@ const AttendanceReportsPage = () => {
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Class</InputLabel>
+                  <InputLabel shrink>Class</InputLabel>
                   <Select
                     value={selectedClassId}
                     label="Class"
+                    displayEmpty
+                    renderValue={(val) => {
+                      if (!val) return 'All Classes';
+                      const found = classes.find((c) => c.id === val);
+                      return found?.name || val;
+                    }}
                     onChange={(e) => handleClassChange(e.target.value)}
                   >
+                    <MenuItem value="">All Classes</MenuItem>
                     {classes.map((c) => (
                       <MenuItem key={c.id} value={c.id}>
                         {c.name}
@@ -473,12 +571,20 @@ const AttendanceReportsPage = () => {
               </Grid>
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Section</InputLabel>
+                  <InputLabel shrink>Section</InputLabel>
                   <Select
                     value={selectedSectionId}
                     label="Section"
+                    displayEmpty
+                    renderValue={(val) => {
+                      if (!val) return 'All Sections';
+                      const found = sections.find((s) => s.id === val);
+                      return found?.name || val;
+                    }}
                     onChange={(e) => setSelectedSectionId(e.target.value)}
+                    disabled={!selectedClassId}
                   >
+                    <MenuItem value="">All Sections</MenuItem>
                     {sections.map((s) => (
                       <MenuItem key={s.id} value={s.id}>
                         {s.name}
@@ -654,6 +760,9 @@ const AttendanceReportsPage = () => {
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700, minWidth: 60 }}>Roll</TableCell>
                   <TableCell sx={{ fontWeight: 700, minWidth: 150 }}>Student Name</TableCell>
+                  {(!selectedClassId || !selectedSectionId) && (
+                    <TableCell sx={{ fontWeight: 700, minWidth: 110 }}>Class & Sec</TableCell>
+                  )}
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 50 }}>Work</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center', minWidth: 70 }}>Attendance %</TableCell>
                   {Array.from({ length: studentRegister.daysInMonth }, (_, i) => i + 1).map((d) => {
@@ -683,6 +792,11 @@ const AttendanceReportsPage = () => {
                   <TableRow key={row.studentId} hover>
                     <TableCell sx={{ fontWeight: 600 }}>{row.rollNo ?? '-'}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.fullName}</TableCell>
+                    {(!selectedClassId || !selectedSectionId) && (
+                      <TableCell sx={{ fontWeight: 600, color: '#0284c7', fontSize: '0.8rem' }}>
+                        {row.className || ''}{row.sectionName ? ` - ${row.sectionName}` : ''}
+                      </TableCell>
+                    )}
                     <TableCell sx={{ textAlign: 'center', fontWeight: 600 }}>
                       {row.totalWorkingDays}
                     </TableCell>

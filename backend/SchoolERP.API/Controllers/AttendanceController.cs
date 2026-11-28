@@ -380,7 +380,8 @@ namespace SchoolERP.API.Controllers
         [HttpGet("students/monthly-register")]
         [HasPermission("StudentAttendance", "View")]
         public async Task<ActionResult<ApiResponse<MonthlyAttendanceRegisterDto>>> GetMonthlyRegister(
-            [FromQuery] long sectionId,
+            [FromQuery] long? sectionId,
+            [FromQuery] long? classId,
             [FromQuery] int month,
             [FromQuery] int year)
         {
@@ -390,10 +391,38 @@ namespace SchoolERP.API.Controllers
             if (month < 1 || month > 12) return BadRequest(ApiResponse<MonthlyAttendanceRegisterDto>.Fail("Invalid month."));
             if (year < 2000 || year > 2100) return BadRequest(ApiResponse<MonthlyAttendanceRegisterDto>.Fail("Invalid year."));
 
-            var section = await _context.Sections
-                .Include(s => s.Class)
-                .FirstOrDefaultAsync(s => s.Id == sectionId && s.BranchId == branchId);
-            if (section == null) return NotFound(ApiResponse<MonthlyAttendanceRegisterDto>.Fail("Section not found."));
+            string className = "All Classes";
+            string sectionName = "All Sections";
+            List<long> targetSectionIds = new List<long>();
+
+            if (sectionId.HasValue && sectionId.Value > 0)
+            {
+                var section = await _context.Sections
+                    .Include(s => s.Class)
+                    .FirstOrDefaultAsync(s => s.Id == sectionId.Value && s.BranchId == branchId);
+                if (section == null) return NotFound(ApiResponse<MonthlyAttendanceRegisterDto>.Fail("Section not found."));
+
+                className = section.Class?.Name ?? "";
+                sectionName = section.Name;
+                targetSectionIds.Add(sectionId.Value);
+            }
+            else if (classId.HasValue && classId.Value > 0)
+            {
+                var cls = await _context.Classes.FirstOrDefaultAsync(c => c.Id == classId.Value && c.BranchId == branchId);
+                if (cls != null) className = cls.Name;
+
+                targetSectionIds = await _context.Sections
+                    .Where(s => s.ClassId == classId.Value && s.BranchId == branchId)
+                    .Select(s => s.Id)
+                    .ToListAsync();
+            }
+            else
+            {
+                targetSectionIds = await _context.Sections
+                    .Where(s => s.BranchId == branchId)
+                    .Select(s => s.Id)
+                    .ToListAsync();
+            }
 
             var daysInMonth = DateTime.DaysInMonth(year, month);
             var startDate = new DateTime(year, month, 1);
@@ -416,20 +445,32 @@ namespace SchoolERP.API.Controllers
                 if (dt.DayOfWeek == DayOfWeek.Sunday) sundayDays.Add(day);
             }
 
-            var enrollments = await _context.StudentEnrollments
+            var enrollmentsQuery = _context.StudentEnrollments
                 .Include(e => e.Student)
+                .Include(e => e.Section)
+                    .ThenInclude(s => s!.Class)
                 .Where(e => e.Student!.BranchId == branchId &&
                             e.AcademicYearId == yearId &&
-                            e.SectionId == sectionId &&
-                            e.Status == StudentStatus.Active)
-                .OrderBy(e => e.RollNo ?? int.MaxValue)
+                            e.Status == StudentStatus.Active);
+
+            if (targetSectionIds.Any())
+            {
+                enrollmentsQuery = enrollmentsQuery.Where(e => targetSectionIds.Contains(e.SectionId));
+            }
+
+            var enrollments = await enrollmentsQuery
+                .OrderBy(e => e.Section != null && e.Section.Class != null ? e.Section.Class.DisplayOrder : 999)
+                .ThenBy(e => e.Section != null ? e.Section.Name : "")
+                .ThenBy(e => e.RollNo ?? int.MaxValue)
                 .ThenBy(e => e.Student!.FirstName)
                 .ToListAsync();
+
+            var studentIds = enrollments.Select(e => e.StudentId).Distinct().ToList();
 
             var attendances = await _context.StudentAttendances
                 .Where(a => a.BranchId == branchId &&
                             a.AcademicYearId == yearId &&
-                            a.SectionId == sectionId &&
+                            studentIds.Contains(a.StudentId) &&
                             a.AttendanceDate.Date >= startDate &&
                             a.AttendanceDate.Date <= endDate)
                 .ToListAsync();
@@ -508,6 +549,8 @@ namespace SchoolERP.API.Controllers
                     AdmissionNo = en.Student?.AdmissionNo ?? "",
                     RollNo = en.RollNo,
                     FullName = en.Student?.FullName ?? "",
+                    ClassName = en.Section?.Class?.Name ?? "",
+                    SectionName = en.Section?.Name ?? "",
                     DailyStatus = dailyStatus,
                     TotalPresent = present,
                     TotalAbsent = absent,
@@ -522,8 +565,8 @@ namespace SchoolERP.API.Controllers
             var register = new MonthlyAttendanceRegisterDto
             {
                 SectionId = sectionId,
-                ClassName = section.Class?.Name ?? "",
-                SectionName = section.Name,
+                ClassName = className,
+                SectionName = sectionName,
                 Month = month,
                 Year = year,
                 DaysInMonth = daysInMonth,

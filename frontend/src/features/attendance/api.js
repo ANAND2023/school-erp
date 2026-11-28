@@ -13,8 +13,12 @@ export const saveStudentAttendanceBulk = (data) =>
   api.post('/attendance/students/bulk', data);
 export const getAbsenteesToday = (params) =>
   api.get('/attendance/students/absentees-today', { params });
-export const getStudentMonthlyRegister = (sectionId, month, year) =>
-  api.get(`/attendance/students/monthly-register?sectionId=${sectionId}&month=${month}&year=${year}`);
+export const getStudentMonthlyRegister = (sectionId, month, year, classId) => {
+  let url = `/attendance/students/monthly-register?month=${month}&year=${year}`;
+  if (sectionId) url += `&sectionId=${sectionId}`;
+  if (classId) url += `&classId=${classId}`;
+  return api.get(url);
+};
 
 // Staff Attendance
 export const getStaffAttendance = (date, departmentId) => {

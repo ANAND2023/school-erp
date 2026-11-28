@@ -85,6 +85,8 @@ namespace SchoolERP.Application.DTOs
         public string AdmissionNo { get; set; } = string.Empty;
         public int? RollNo { get; set; }
         public string FullName { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
+        public string SectionName { get; set; } = string.Empty;
         public Dictionary<int, string> DailyStatus { get; set; } = new Dictionary<int, string>();
         public decimal TotalPresent { get; set; }
         public decimal TotalAbsent { get; set; }
@@ -97,7 +99,7 @@ namespace SchoolERP.Application.DTOs
 
     public class MonthlyAttendanceRegisterDto
     {
-        public long SectionId { get; set; }
+        public long? SectionId { get; set; }
         public string ClassName { get; set; } = string.Empty;
         public string SectionName { get; set; } = string.Empty;
         public int Month { get; set; }
